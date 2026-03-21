@@ -392,175 +392,34 @@ namespace Service.Services.SeaClearance
         private bool ValidateStepRequirements(int seaClearanceDetailId, int stepId, List<int> stepDetailIds, SqlTransaction transaction, out string failureMessage)
         {
             failureMessage = null;
+            var canJump = true;
 
             switch (stepId)
             {
                 case 2:
-                    failureMessage = GetStep2RequirementFailureMessage(seaClearanceDetailId, transaction);
+                    canJump = ValidateStep2Jump(seaClearanceDetailId, transaction, out failureMessage);
                     break;
                 case 7:
-                    failureMessage = GetStep7RequirementFailureMessage(seaClearanceDetailId, stepDetailIds, transaction);
+                    canJump = ValidateStep7Jump(seaClearanceDetailId, stepDetailIds, transaction, out failureMessage);
                     break;
                 case 17:
-                    failureMessage = GetStep17RequirementFailureMessage(seaClearanceDetailId, transaction);
+                    canJump = ValidateStep17Jump(seaClearanceDetailId, transaction, out failureMessage);
                     break;
                 case 18:
-                    failureMessage = GetStep18RequirementFailureMessage(seaClearanceDetailId, stepDetailIds, transaction);
+                    canJump = ValidateStep18Jump(seaClearanceDetailId, stepDetailIds, transaction, out failureMessage);
                     break;
                 case 20:
-                    failureMessage = GetStep20RequirementFailureMessage(seaClearanceDetailId, transaction);
+                    canJump = ValidateStep20Jump(seaClearanceDetailId, transaction, out failureMessage);
                     break;
                 case 22:
-                    failureMessage = GetStep22RequirementFailureMessage(seaClearanceDetailId, transaction);
+                    canJump = ValidateStep22Jump(seaClearanceDetailId, transaction, out failureMessage);
                     break;
                 default:
-                    failureMessage = null;
+                    canJump = true;
                     break;
             }
 
-            return string.IsNullOrWhiteSpace(failureMessage);
-        }
-
-        private string GetStep2RequirementFailureMessage(int seaClearanceDetailId, SqlTransaction transaction)
-        {
-            var sql = @"
-                SELECT TOP 1
-                    d.ContactChangeData,
-                    d.ContactEmail,
-                    d.ImportDate,
-                    c.Cust_Name,
-                    o.Modifyby,
-                    o.Post_Entry,
-                    o.Jetf_Serial,
-                    o.Piece,
-                    o.Importer,
-                    o.Im_Phoneno,
-                    o.CreateDate,
-                    o.Eta
-                FROM jetf.dbo.SeaClearanceDetail d
-                LEFT JOIN jetf.dbo.SeaClearanceDetailOriginalMapping o ON d.Id = o.SeaClearanceDetailId
-                LEFT JOIN [DATA_CENTER].[dbo].[SYS_CUST] c ON o.Cust_Code = c.CUST_CODE
-                WHERE d.Id = @SeaClearanceDetailId
-                ORDER BY o.Gw DESC
-            ";
-
-            var detail = conn.QueryFirstOrDefault<dynamic>(sql, new { SeaClearanceDetailId = seaClearanceDetailId }, transaction);
-            if (detail == null)
-            {
-                return "找不到此筆通關資料。";
-            }
-
-            var missingFields = new List<string>();
-            if (string.IsNullOrEmpty(detail.Cust_Name)) missingFields.Add("客戶");
-            if (string.IsNullOrEmpty(detail.Modifyby)) missingFields.Add("倉別");
-            if (string.IsNullOrEmpty(detail.Post_Entry)) missingFields.Add("報關方式");
-            if (string.IsNullOrEmpty(detail.Jetf_Serial)) missingFields.Add("派件");
-            if (detail.Piece == null) missingFields.Add("件數");
-            if (string.IsNullOrEmpty(detail.Importer)) missingFields.Add("原單申報人");
-            if (string.IsNullOrEmpty(detail.Im_Phoneno)) missingFields.Add("原單人電話");
-            if (string.IsNullOrEmpty(detail.ContactChangeData)) missingFields.Add("聯繫人異動資料");
-            if (detail.CreateDate == null) missingFields.Add("收單通知日期");
-            if (detail.Eta == null) missingFields.Add("預計到港日");
-            if (detail.ImportDate == null) missingFields.Add("艙單到港日");
-            if (string.IsNullOrEmpty(detail.ContactEmail)) missingFields.Add("聯繫人信箱");
-
-            return missingFields.Any()
-                ? $"以下欄位尚未完成：{string.Join("、", missingFields)}。"
-                : null;
-        }
-
-        private string GetStep7RequirementFailureMessage(int seaClearanceDetailId, List<int> stepDetailIds, SqlTransaction transaction)
-        {
-            var postEntry = GetPostEntry(seaClearanceDetailId, transaction);
-            if (string.IsNullOrWhiteSpace(postEntry))
-            {
-                return "尚未設定報關方式。";
-            }
-
-            var signTimes = GetSeaClearanceSignTimes(seaClearanceDetailId, transaction);
-            var messages = new List<string>();
-
-            if (postEntry == "移倉" || postEntry == "轉移倉")
-            {
-                if (stepDetailIds == null || !stepDetailIds.Any(id => id == 25 || id == 83))
-                {
-                    messages.Add("未勾選「補件已收到」或「無須補件」。");
-                }
-
-                if (signTimes?.SignInTime == null)
-                {
-                    messages.Add("尚未填寫入倉日期。");
-                }
-            }
-            else if (postEntry == "X2" || postEntry == "X3" || postEntry == "G1" || postEntry == "轉G1")
-            {
-                if (signTimes?.SignInTime == null)
-                {
-                    messages.Add("尚未填寫入倉日期。");
-                }
-
-                if (signTimes?.SignOutTime == null)
-                {
-                    messages.Add("尚未填寫出倉日期。");
-                }
-            }
-
-            return messages.Any() ? string.Join("", messages) : null;
-        }
-
-        private string GetStep18RequirementFailureMessage(int seaClearanceDetailId, List<int> stepDetailIds, SqlTransaction transaction)
-        {
-            var postEntry = GetPostEntry(seaClearanceDetailId, transaction);
-            if (string.IsNullOrWhiteSpace(postEntry))
-            {
-                return "尚未設定報關方式。";
-            }
-
-            if ((postEntry == "移倉" || postEntry == "轉移倉") && (stepDetailIds == null || !stepDetailIds.Contains(74)))
-            {
-                return "尚未勾選「線上繳納」。";
-            }
-
-            return null;
-        }
-
-        private string GetStep17RequirementFailureMessage(int seaClearanceDetailId, SqlTransaction transaction)
-        {
-            var postEntry = GetPostEntry(seaClearanceDetailId, transaction);
-            if (string.IsNullOrWhiteSpace(postEntry))
-            {
-                return "尚未設定報關方式。";
-            }
-
-            if (postEntry == "X3" || postEntry == "X2")
-            {
-                return "GB321 尚未出現「連線收單建檔」。";
-            }
-
-            if (postEntry == "G1" || postEntry == "移倉" || postEntry == "轉移倉" || postEntry == "轉G1")
-            {
-                return "GB301 尚未出現「E1 收單建檔」。";
-            }
-
-            return "目前報關方式不符合自動跳轉條件。";
-        }
-
-        private string GetStep20RequirementFailureMessage(int seaClearanceDetailId, SqlTransaction transaction)
-        {
-            var signTimes = GetSeaClearanceSignTimes(seaClearanceDetailId, transaction);
-            return signTimes?.SignOutTime == null ? "尚未填寫出倉日期。" : null;
-        }
-
-        private string GetStep22RequirementFailureMessage(int seaClearanceDetailId, SqlTransaction transaction)
-        {
-            var sql = @"
-                SELECT IsCustomsHold
-                FROM jetf.dbo.SeaClearanceDetail
-                WHERE Id = @SeaClearanceDetailId
-            ";
-
-            var isCustomsHold = conn.QueryFirstOrDefault<bool?>(sql, new { SeaClearanceDetailId = seaClearanceDetailId }, transaction);
-            return isCustomsHold == true ? "目前為扣倉狀態。" : null;
+            return canJump;
         }
 
         /// <summary>
@@ -605,8 +464,9 @@ namespace Service.Services.SeaClearance
         /// <param name="seaClearanceDetailId"></param>
         /// <param name="transaction"></param>
         /// <returns></returns>
-        private bool ValidateStep2Jump(int seaClearanceDetailId, SqlTransaction transaction)
+        private bool ValidateStep2Jump(int seaClearanceDetailId, SqlTransaction transaction, out string failureMessage)
         {
+            failureMessage = null;
             var sql = @"
                 SELECT TOP 1
                     d.ContactChangeData,
@@ -632,6 +492,7 @@ namespace Service.Services.SeaClearance
 
             if (detail == null)
             {
+                failureMessage = "找不到此筆通關資料。";
                 return false;
             }
 
@@ -673,7 +534,13 @@ namespace Service.Services.SeaClearance
             if (string.IsNullOrEmpty(detail.ContactEmail))
                 missingFields.Add("聯繫人信箱");
 
-            return !missingFields.Any();
+            if (missingFields.Any())
+            {
+                failureMessage = $"以下欄位尚未完成：{string.Join("、", missingFields)}。";
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -682,31 +549,65 @@ namespace Service.Services.SeaClearance
         /// <param name="seaClearanceDetailId"></param>
         /// <param name="transaction"></param>
         /// <returns></returns>
-        private bool ValidateStep7Jump(int seaClearanceDetailId, List<int> stepDetailIds, SqlTransaction transaction)
+        private bool ValidateStep7Jump(int seaClearanceDetailId, List<int> stepDetailIds, SqlTransaction transaction, out string failureMessage)
         {
+            failureMessage = null;
             var postEntry = GetPostEntry(seaClearanceDetailId, transaction);
 
             if (string.IsNullOrWhiteSpace(postEntry))
             {
+                failureMessage = "尚未設定報關方式。";
                 return false;
             }
 
             var signTimes = GetSeaClearanceSignTimes(seaClearanceDetailId, transaction);
             DateTime? signInTime = signTimes?.SignInTime;
             DateTime? signOutTime = signTimes?.SignOutTime;
+            var messages = new List<string>();
 
             if (postEntry == "移倉" || postEntry == "轉移倉")
             {
-                //25:補件已收到
-                //83:無須補件
-                return stepDetailIds.Any(id => id == 25 || id == 83) && signInTime != null;
+                if (stepDetailIds == null || !stepDetailIds.Any(id => id == 25 || id == 83))
+                {
+                    messages.Add("未勾選「補件已收到」或「無須補件」。");
+                }
+
+                if (signInTime == null)
+                {
+                    messages.Add("尚未填寫入倉日期。");
+                }
+
+                if (messages.Any())
+                {
+                    failureMessage = string.Join("", messages);
+                    return false;
+                }
+
+                return true;
             }
 
             if (postEntry == "X2" || postEntry == "X3" || postEntry == "G1" || postEntry == "轉G1")
             {
-                return signInTime != null && signOutTime != null;
+                if (signInTime == null)
+                {
+                    messages.Add("尚未填寫入倉日期。");
+                }
+
+                if (signOutTime == null)
+                {
+                    messages.Add("尚未填寫出倉日期。");
+                }
+
+                if (messages.Any())
+                {
+                    failureMessage = string.Join("", messages);
+                    return false;
+                }
+
+                return true;
             }
 
+            failureMessage = "目前報關方式不符合自動跳轉條件。";
             return false;
         }
 
@@ -716,19 +617,24 @@ namespace Service.Services.SeaClearance
         /// <param name="seaClearanceDetailId"></param>
         /// <param name="transaction"></param>
         /// <returns></returns>
-        private bool ValidateStep18Jump(int seaClearanceDetailId, List<int> stepDetailIds, SqlTransaction transaction)
+        private bool ValidateStep18Jump(int seaClearanceDetailId, List<int> stepDetailIds, SqlTransaction transaction, out string failureMessage)
         {
+            failureMessage = null;
             var postEntry = GetPostEntry(seaClearanceDetailId, transaction);
 
             if (string.IsNullOrWhiteSpace(postEntry))
             {
+                failureMessage = "尚未設定報關方式。";
                 return false;
             }
 
             if (postEntry == "移倉" || postEntry == "轉移倉")
             {
-                //74:線上繳納
-                return stepDetailIds.Any(id => id == 74 );
+                if (stepDetailIds == null || !stepDetailIds.Any(id => id == 74))
+                {
+                    failureMessage = "尚未勾選「線上繳納」。";
+                    return false;
+                }
             }
 
             return true;
@@ -740,12 +646,14 @@ namespace Service.Services.SeaClearance
         /// <param name="seaClearanceDetailId"></param>
         /// <param name="transaction"></param>
         /// <returns></returns>
-        private bool ValidateStep17Jump(int seaClearanceDetailId, SqlTransaction transaction)
+        private bool ValidateStep17Jump(int seaClearanceDetailId, SqlTransaction transaction, out string failureMessage)
         {
+            failureMessage = null;
             var postEntry = GetPostEntry(seaClearanceDetailId, transaction);
 
             if (string.IsNullOrWhiteSpace(postEntry))
             {
+                failureMessage = "尚未設定報關方式。";
                 return false;
             }
 
@@ -762,6 +670,9 @@ namespace Service.Services.SeaClearance
                 {
                     return true;
                 }
+
+                failureMessage = "GB321 尚未出現「連線收單建檔」。";
+                return false;
             }
 
             if (postEntry == "G1" || postEntry =="移倉" || postEntry == "轉移倉" || postEntry == "轉G1")
@@ -777,8 +688,12 @@ namespace Service.Services.SeaClearance
                 {
                     return true;
                 }
+
+                failureMessage = "GB301 尚未出現「E1 收單建檔」。";
+                return false;
             }
 
+            failureMessage = "目前報關方式不符合自動跳轉條件。";
             return false;
         }
 
@@ -788,12 +703,19 @@ namespace Service.Services.SeaClearance
         /// <param name="seaClearanceDetailId"></param>
         /// <param name="transaction"></param>
         /// <returns></returns>
-        private bool ValidateStep20Jump(int seaClearanceDetailId, SqlTransaction transaction)
+        private bool ValidateStep20Jump(int seaClearanceDetailId, SqlTransaction transaction, out string failureMessage)
         {
+            failureMessage = null;
             var signTimes = GetSeaClearanceSignTimes(seaClearanceDetailId, transaction);
             DateTime? signOutTime = signTimes?.SignOutTime;
 
-            return signOutTime != null;
+            if (signOutTime == null)
+            {
+                failureMessage = "尚未填寫出倉日期。";
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -802,8 +724,9 @@ namespace Service.Services.SeaClearance
         /// <param name="seaClearanceDetailId"></param>
         /// <param name="transaction"></param>
         /// <returns></returns>
-        private bool ValidateStep22Jump(int seaClearanceDetailId, SqlTransaction transaction)
+        private bool ValidateStep22Jump(int seaClearanceDetailId, SqlTransaction transaction, out string failureMessage)
         {
+            failureMessage = null;
             var sql = @"
                 select IsCustomsHold
                 from jetf.dbo.SeaClearanceDetail
@@ -811,7 +734,13 @@ namespace Service.Services.SeaClearance
             ";
 
             var isCustomsHold = conn.QueryFirstOrDefault<bool?>(sql, new { SeaClearanceDetailId = seaClearanceDetailId }, transaction);
-            return isCustomsHold != true;
+            if (isCustomsHold == true)
+            {
+                failureMessage = "目前為扣倉狀態。";
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
