@@ -1,0 +1,82 @@
+﻿@{
+    ViewBag.Title = "拆袋統計表";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">拆袋統計表</span>
+<hr />
+<div ng-controller="UnpackingStatisticsController" class="containertype">
+   
+    <div class="row" style="margin-bottom:0.5rem;">
+        <div class="col-lg-12">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                <label>日期區間</label>
+                <input type="text" class="datepicker-input form-control" ng-model="query.startDate" 
+                       uib-datepicker-popup="yyyy-MM-dd"
+                       datepicker-options="dateOptions"
+                       is-open="datePopup.startDate"
+                       ng-click="openDatePopup('startDate')"
+                       close-text="關閉"
+                       current-text="今天"
+                       show-button-bar="false"
+                       readonly
+                       style="width:150px;" />
+                <span>~</span>
+                <input type="text" class="datepicker-input form-control" ng-model="query.endDate" 
+                       uib-datepicker-popup="yyyy-MM-dd"
+                       datepicker-options="dateOptions"
+                       is-open="datePopup.endDate"
+                       ng-click="openDatePopup('endDate')"
+                       close-text="關閉"
+                       current-text="今天"
+                       show-button-bar="false"
+                       readonly
+                       style="width:150px;" />
+                <button class="btn btn-primary" ng-click="load()">查詢</button>
+                <button class="btn btn-success" ng-click="export()" ng-disabled="sheets.length==0 || isExporting">
+                    {{isExporting ? '匯出中...' : '匯出'}}
+                </button>
+            </div>
+            
+            <!-- 日期快速選擇按鈕 - 移到底下 -->
+            <div style="display: flex; gap: 5px; margin-left: 20px;">
+                <button type="button" class="btn btn-outline-secondary btn-sm" ng-click="setQuickDate('today')" title="選擇當日">
+                    當日
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" ng-click="setQuickDate('thisMonth')" title="選擇當月">
+                    當月
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" ng-click="setQuickDate('lastMonth')" title="選擇上月">
+                    上月
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" ng-repeat="sheet in sheets">
+        <h4>{{sheet.DataType}}</h4>
+        <div class="table-responsive" ng-style="getTableStyle(sheet)">
+            <table class="table table-bordered table-striped table-sm" ng-style="getTableWidthStyle(sheet)">
+                <thead>
+                    <tr>
+                        <th class="text-center" style="min-width: 100px;">日期</th>
+                        <th class="text-center" style="min-width: 100px;">當日合計</th>
+                        <th class="text-center" ng-repeat="c in sheet.Customers" ng-style="getColumnStyle(sheet)">{{c}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="r in sheet.Rows">
+                        <td style="white-space: nowrap;">{{r.Date}}</td>
+                        <td class="text-right" style="white-space: nowrap;">{{r.DayTotal | number}}</td>
+                        <td class="text-right" ng-repeat="c in sheet.Customers" style="white-space: nowrap;">{{r.CustomerValues[c] | number}}</td>
+                    </tr>
+                    <tr class="info">
+                        <td style="font-weight: bold;">小計</td>
+                        <td class="text-right" style="font-weight: bold;">{{sheet.GrandTotal | number}}</td>
+                        <td class="text-right" ng-repeat="c in sheet.Customers" style="font-weight: bold;">{{getColTotal(sheet, c) | number}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

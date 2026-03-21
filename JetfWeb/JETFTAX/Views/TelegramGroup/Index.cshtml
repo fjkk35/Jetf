@@ -1,0 +1,102 @@
+﻿@model JETFTAX.Models.TelegramGroup.TelegramGroupViewModel
+
+@using JETFTAX.Extensions
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<script type="text/x-jquery-tmpl" id="telegramGroupTmpl">
+    <tr>
+        <td>
+            ${GroupId}
+        </td>
+        <td>${GroupName}</td>
+        <td>${ChatId}</td>
+        <td>${CrtUser}</td>
+        <td>${CrtDateTime}</td>
+        <td>
+            <button class="btn btn-danger" onclick="sendTextMessage('${ChatId}')">測試</button>
+        </td>
+       
+    </tr>
+</script>
+
+<span class="headtype">Telegram群組</span>
+<hr />
+
+<div class="col-8">
+    <table id="table" class="dataTable no-footer dtr-column" border="1">
+        <thead>
+            <tr>
+                <th>代號</th>
+                <th>名稱</th>
+                <th>ChatId</th>
+                <th>建立人員</th>
+                <th>建立時間</th>
+                <th>測試</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<!-- modal placeholder-->
+<div id='myModal' class='modal fade in'>
+    <div class="modal-dialog">
+        <div class="modal-content" style="height:30rem;">
+            <b class="item-close" onclick="$('#myModal').modal('hide');">x</b>
+            <div id='myModalContent'></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('#collapseLine').addClass("show");
+    $('#TelegramGroup').addClass("active");
+
+    $(function () {
+        if ('@Model.List.Count' != '0')
+        {
+            let itemList = (@Model.List.ToJsonRaw());
+
+            for (i = 0; i < itemList.length; i++)
+            {
+                let data = itemList[i];
+                //data.seq = i + 1;
+                $('#telegramGroupTmpl').tmpl(data).appendTo('#table');
+            }
+        }
+    })
+
+
+    function sendTextMessage(groupId) {
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("SendTextMessageAsync", "TelegramGroup")',
+            data: {
+                chatId: groupId,
+            },
+            success: function (data) {
+                if (data.Ok) {
+                    swal({
+                        title: "發送成功",
+                        icon: "success"
+                    });
+                } else {
+                    swal({
+                        title: "發送失敗",
+                        text: JSON.stringify(data),
+                        icon: "error"
+                    });
+                }
+            },
+            error: function () {
+                swal({
+                    title: "新增失敗",
+                    icon: "error"
+                });
+            }
+        });
+    }
+</script>

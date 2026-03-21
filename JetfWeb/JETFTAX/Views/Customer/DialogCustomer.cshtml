@@ -1,0 +1,111 @@
+﻿@model JETFTAX.Models.CustomerViewModel
+
+
+@{
+    bool isCreate = Model.id == null ? true : false;
+    ViewBag.Title = isCreate ? "新增客戶" : "編輯客戶";
+}
+
+
+<h2>@ViewBag.Title</h2>
+<hr />
+<form id="EditCustomerForm" action="@Url.Action("EditCustomer", "Customer")" method="post" enctype="multipart/form-data" class="containertype">
+    @Html.HiddenFor(m => m.id)
+    <div style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.tran_type)
+        @Html.DropDownListFor(m => m.tran_type, Model.ddlTranTypeList, new { @class = "form-control" })
+    </div>
+    <div style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.cust_id)
+        @Html.TextBoxFor(m => m.cust_id, new { @class = "form-control" })
+    </div>
+    <div style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.customer)
+        @Html.TextBoxFor(m => m.customer, new { @class = "form-control" })
+    </div>
+    <div style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.trans_no)
+        @Html.TextBoxFor(m => m.trans_no, new { @class = "form-control" })
+    </div>
+    <div style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.trans_name)
+        @Html.TextBoxFor(m => m.trans_name, new { @class = "form-control" })
+    </div>
+    <div style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.IsCainiaoP)
+        @Html.CheckBoxFor(m => m.IsCainiaoP, new { @class = "form-control", @style = "height:auto;transform:scale(1.8);margin-left:1.5rem" })
+    </div>
+    <div style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.include_tax)
+        @Html.DropDownListFor(m => m.include_tax, Model.ddlIncludeTaxList, new { @class = "form-control" })
+    </div>
+    <div style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.include_tax_name)
+        @Html.TextBoxFor(m => m.include_tax_name, new { @class = "form-control" })
+    </div>
+    <div style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.company_no)
+        @Html.DropDownListFor(m => m.company_no, Model.ddlCompanyList, new { @class = "form-control" })
+        @Html.HiddenFor(m => m.company)
+    </div>
+    <div style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.cod_fee)
+        @Html.TextBoxFor(m => m.cod_fee, new { @class = "form-control" })
+    </div>
+    @if (isCreate)
+    {
+        <div id="btnEdit" type="submit" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem;float: right;"><i class="fas fa-user-plus"></i> 新增</div>
+    }
+    else
+    {
+        <div id="btnEdit" type="submit" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem;float: right;"><i class="fas fa-redo-alt"></i> 更新</div>
+    }
+</form>
+<script>
+    $('#company_no').change(function () {
+        $('#company').val($('#company_no :selected').text());
+    });
+
+    $('#company_no').change();
+
+    $('#btnEdit').click(function () {
+        //防止連點
+        $("#btnEdit").attr('disabled', true);
+        var postData = new FormData($('#EditCustomerForm')[0]);
+            $.ajax({
+                type: "POST",
+                url: Router.action('Customer', 'EditCustomer'),
+                data: postData,
+                cache: false,
+                dataType: 'json',
+                processData: false,
+                //async: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    }
+                    else {
+                        if (data.status == "success") {
+                            swal({
+                                title: data.msg,
+                                icon: "success",
+                            });
+                            $('#myModal').modal('hide');
+                            //重新載入客戶資料
+                            getCustomerList();
+                        }
+                        else {
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                        }
+                    }
+                }
+            }).then(function () {
+                $("#btnEdit").attr('disabled', false);
+            })
+    })
+
+</script>

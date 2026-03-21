@@ -1,0 +1,308 @@
+﻿@model JETFTAX.Models.ErrorOrderSend.ErrorOrderSendViewModel
+
+@using JETFTAX.Extensions
+@{
+    ViewBag.Title = "Search";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="text/x-jquery-tmpl" id="errorOrderSendTmpl">
+    <tr>
+        <td class="text-sm-right" >
+            <input type="hidden" name="ErrorOrderSend.Index" value="${seq}" />
+            <input type="hidden" name="ErrorOrderSend[${seq}].Id" value="${Id}" />
+            ${Id}
+        </td>
+        <td class="text-sm-right" >${FileName}</td>
+        <td class="text-sm-right" >${TotalCount}</td>
+        <td class="text-sm-right" >${PhoneCount}</td>
+        <td class="text-sm-right" >${LineCount}</td>
+        <td class="text-sm-right" >${IsSend == 1 ? "已發送" : "未發送"}</td>
+        <td class="text-sm-right" >${SuccessCount}</td>
+        <td class="text-sm-right" style="${ErrorCount > 0 ? 'color:red;font-size:1.5rem;' : ''}">${ErrorCount}</td>
+        <td class="text-sm-right" >${UploadOpe}</td>
+        <td class="text-sm-right" >${formatDate(CrtDateTime)}</td>
+        <td>
+            {{if IsSend == 0}}
+            <button class="btn btn-primary" onclick="send('${Id}')">發送訊息</button>
+            {{/if}}
+        </td>
+        <td>
+            <button class="btn btn-success" onclick="download('${Id}')">下載檔案</button>
+        </td>
+        <td>
+            {{if IsSend == 0}}
+            <button class="btn btn-danger" onclick="deleteErrorOrderSend ('${Id}')">刪除</button>
+            {{/if}}
+        </td>
+    </tr>
+</script>
+
+<span class="headtype">錯單發送簡訊</span>
+<hr />
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<form id="UploadFileForm" action="@Url.Action("", "")" method="post" enctype="multipart/form-data" class="containertype">
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.SmsMessageList)
+        @Html.DropDownListFor(m => m.SmsMessageId, Model.SmsMessageList, new { @class = "form-control" })
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <input type="file" name="file" id="fileTax" />
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\上傳錯單發送簡訊_範例.xlsx&fileName=上傳錯單發送簡訊_範例.xlsx' target='_blank'>下載範例</a>
+    </div>
+    <div id="btntUploadFile" type="button" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem;"><i class="fas fa-upload"></i> 上傳</div>
+
+    <div class="loader loader-bar" data-rounded data-text="執行中"></div>
+</form>
+
+
+<div class="col-12">
+    <table id="table" style="color:black" class="dataTable no-footer dtr-column" border="1">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>檔名</th>
+                <th>總筆數</th>
+                <th>簡訊筆數</th>
+                <th>Line筆數</th>
+                <th>發送狀態</th>
+                <th>成功筆數</th>
+                <th>失敗筆數</th>
+                <th>上傳人員</th>
+                <th>時間</th>
+                <th>發送訊息</th>
+                <th>明細</th>
+                <th>刪除</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+
+@{
+    <script>
+
+        $('#collapseSend').addClass("show");
+        $('#ErrorOrderSend').addClass("active");
+
+  $(function () {
+       if ('@Model.ErrorOrderSendList.Count' != '0')
+       {
+           let itemList = (@Model.ErrorOrderSendList.ToJsonRaw());
+
+           for (i = 0; i < itemList.length; i++)
+           {
+               let data = itemList[i];
+               data.seq = i + 1;
+               $('#errorOrderSendTmpl').tmpl(data).appendTo('#table');
+           }
+       }
+   })
+
+
+
+        $('#btntUploadFile').click(function () {
+            $('.loader').addClass("is-active");
+
+            var file = document.getElementById('fileTax');
+            var postData = new FormData($('#UploadFileForm')[0]);
+            $.ajax({
+                type: "POST",
+                url: Router.action('ErrorOrderSend', 'Upload'),
+                data: postData,
+                cache: false,
+                dataType: 'json',
+                processData: false,
+                //async: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    }
+                    else {
+                        if (data.status == "success") {
+                            swal({
+                                title: data.msg,
+                                icon: "success"
+                            }).then(function () {
+                                location.reload(); // 重新整理頁面
+                            });
+                        }
+                        else {
+                            //顯示錯誤資訊
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                        }
+                        file.outerHTML = file.outerHTML; //重置了file的outerHTML
+                    }
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        })
+
+        function send(id) {
+            swal({
+                title: "確定要發送訊息嗎？",
+                icon: "warning",
+                buttons: {
+                    cancel: {
+                        text: "取消",
+                        value: null,
+                        visible: true,
+                        className: "btn btn-secondary",
+                        closeModal: true,
+                    },
+                    confirm: {
+                        text: "確定",
+                        value: true,
+                        visible: true,
+                        className: "btn btn-primary",
+                        closeModal: true
+                    }
+                },
+                dangerMode: true,
+            }).then((willSend) => {
+                if (willSend) {
+                    $('.loader').addClass("is-active");
+                    $.ajax({
+                        type: "POST",
+                        url: Router.action('ErrorOrderSend', 'Send'),
+                        data: { id: id }, // 傳遞 id 參數
+                        cache: false,
+                        dataType: 'json',
+                        success: function (data) {
+                            if (data.Redirect) {
+                                window.location = Router.action('Account', 'Login');
+                            } else {
+                                if (data.status == "success") {
+                                    swal({
+                                        title: data.msg,
+                                        icon: "success"
+                                    }).then(function () {
+                                        location.reload(); // 重新整理頁面
+                                    });
+                                } else {
+                                    //顯示錯誤資訊
+                                    swal({
+                                        title: data.msg,
+                                        icon: "error"
+                                    });
+                                }
+                            }
+                        }
+                    }).then(function () {
+                        $('.loader').removeClass("is-active");
+                    });
+                }
+            });
+        }
+
+
+        function formatDate(dateString) {
+            var date = new Date(dateString);
+            var year = date.getFullYear();
+            var month = ('0' + (date.getMonth() + 1)).slice(-2);
+            var day = ('0' + date.getDate()).slice(-2);
+            var hours = ('0' + date.getHours()).slice(-2);
+            var minutes = ('0' + date.getMinutes()).slice(-2);
+            var seconds = ('0' + date.getSeconds()).slice(-2);
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        function download(id)
+        {
+            $('.loader').addClass("is-active");
+            $.ajax({
+                type: "POST",
+                url: Router.action('ErrorOrderSend', 'ErrorOrderSendDetailExcel'),
+                data: { id: id }, // 傳遞 id 參數
+                cache: false,
+                dataType: 'json',
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    } else {
+                        if (data.msg != "") {
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                        }
+                        else if (data.fileName != "") {
+                            var path = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid
+                                + '&filename=' + data.fileName;
+                            //window.location = path;
+                            window.open(path);
+                        }
+                    }
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        }
+
+        function deleteErrorOrderSend(id) {
+            swal({
+                title: `確定要刪除Id:${id}嗎？`,
+                icon: "warning",
+                buttons: {
+                    cancel: {
+                        text: "取消",
+                        value: null,
+                        visible: true,
+                        className: "btn btn-secondary",
+                        closeModal: true,
+                    },
+                    confirm: {
+                        text: "確定",
+                        value: true,
+                        visible: true,
+                        className: "btn btn-primary",
+                        closeModal: true
+                    }
+                },
+                dangerMode: true,
+            }).then((willSend) => {
+                if (willSend) {
+                    $('.loader').addClass("is-active");
+                    $.ajax({
+                        type: "POST",
+                        url: Router.action('ErrorOrderSend', 'Delete'),
+                        data: { id: id }, // 傳遞 id 參數
+                        cache: false,
+                        dataType: 'json',
+                        success: function (data) {
+                            if (data.Redirect) {
+                                window.location = Router.action('Account', 'Login');
+                            } else {
+                                if (data.status == "success") {
+                                    swal({
+                                        title: data.msg,
+                                        icon: "success"
+                                    }).then(function () {
+                                        location.reload(); // 重新整理頁面
+                                    });
+                                } else {
+                                    //顯示錯誤資訊
+                                    swal({
+                                        title: data.msg,
+                                        icon: "error"
+                                    });
+                                }
+                            }
+                        }
+                    }).then(function () {
+                        $('.loader').removeClass("is-active");
+                    });
+                }
+            });
+        }
+
+    </script>
+
+}

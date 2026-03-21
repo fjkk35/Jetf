@@ -1,0 +1,92 @@
+﻿@{
+    ViewBag.Title = "刷槍作業差異表";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">刷槍作業差異表</span>
+<hr />
+
+<div ng-controller="ScanCargoCustomerDiffController" class="containertype">
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <!-- 日期 -->
+        <div class="row mb-3 align-items-center">
+            <div class="form-group row col-lg-12 mb-0 align-items-center">
+                <label for="startDate" class="col-lg-1 col-form-label text-right">日期</label>
+                <div class="col-lg-10">
+                    <div class="d-flex" style="gap:8px; align-items:center; flex-wrap:nowrap;">
+                        <input type="text"
+                               id="startDate"
+                               class="datepicker-input form-control"
+                               style="max-width:200px;"
+                               ng-model="searchForm.startDate"
+                               ng-change="onDateChange()"
+                               uib-datepicker-popup="yyyy-MM-dd"
+                               datepicker-options="dateOptions"
+                               is-open="startDatePopup.opened"
+                               ng-click="openStartDatePopup()"
+                               close-text="關閉"
+                               current-text="今天"
+                               show-button-bar="false"
+                               readonly
+                               placeholder="請選擇開始日期" />
+
+                        <select class="form-control" style="max-width:80px;" ng-model="searchForm.startHour" ng-change="onDateChange()">
+                            <option ng-repeat="h in hourOptions" ng-value="h">{{h}}</option>
+                        </select>
+                        <span>:</span>
+                        <select class="form-control" style="max-width:80px;" ng-model="searchForm.startMinute" ng-change="onDateChange()">
+                            <option ng-repeat="m in minuteOptions" ng-value="m">{{m}}</option>
+                        </select>
+
+                        <span style="white-space:nowrap;">~</span>
+
+                        <input type="text"
+                               id="endDate"
+                               class="datepicker-input form-control"
+                               style="max-width:200px;"
+                               ng-model="searchForm.endDate"
+                               ng-change="onDateChange()"
+                               uib-datepicker-popup="yyyy-MM-dd"
+                               datepicker-options="dateOptions"
+                               is-open="endDatePopup.opened"
+                               ng-click="openEndDatePopup()"
+                               close-text="關閉"
+                               current-text="今天"
+                               show-button-bar="false"
+                               readonly
+                               placeholder="請選擇結束日期" />
+
+                        <select class="form-control" style="max-width:80px;" ng-model="searchForm.endHour" ng-change="onDateChange()">
+                            <option ng-repeat="h in hourOptions" ng-value="h">{{h}}</option>
+                        </select>
+                        <span>:</span>
+                        <select class="form-control" style="max-width:80px;" ng-model="searchForm.endMinute" ng-change="onDateChange()">
+                            <option ng-repeat="m in minuteOptions" ng-value="m">{{m}}</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 作業地區 -->
+        <div class="row mb-3 align-items-center">
+            <div class="form-group row col-lg-12 mb-0 align-items-center">
+                <label class="col-lg-1 col-form-label text-right">作業地區</label>
+                <div class="col-lg-10">
+                    <select class="form-control" ng-model="searchForm.dataType" ng-options="x.Value as x.Text for x in dataTypeList"></select>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12">
+                <button type="button" class="btn btn-primary col-lg-2 offset-1" ng-click="exportExcel()" ng-disabled="loading">
+                    <i class="fas fa-download"></i> 下載
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="loader loader-bar" ng-class="{'is-active': loading}" data-rounded data-text="處理中"></div>
+</div>
+

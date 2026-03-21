@@ -1,0 +1,191 @@
+﻿@{
+    ViewBag.Title = "工作天作業地區";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="WorkDayAreaController" class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>工作天作業地區</h2>
+            <hr />
+
+            <!-- 查詢區塊 -->
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">查詢條件</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="query-form-inline">
+                        <!-- 作業地區 -->
+                        <div class="form-group-inline">
+                            <label class="control-label">作業地區</label>
+                            <select class="form-control" 
+                                    ng-model="queryData.workAreaId" 
+                                    ng-options="area.Id as area.AreaName for area in workAreaList"
+                                    ng-disabled="isLoading">
+                            </select>
+                        </div>
+                        <!-- 開始日期 -->
+                        <div class="form-group-inline">
+                            <label class="control-label">開始日期</label>
+                            <input type="text"
+                                   class="datepicker-input form-control"
+                                   ng-model="queryData.startDate"
+                                   uib-datepicker-popup="yyyy-MM-dd"
+                                   datepicker-options="dateOptions"
+                                   is-open="startDatePopup.opened"
+                                   ng-click="openStartDatePopup()"
+                                   close-text="關閉"
+                                   current-text="今天"
+                                   show-button-bar="false"
+                                   readonly
+                                   placeholder="請選擇開始日期"
+                                   ng-disabled="isLoading" />
+                        </div>
+                        <!-- 結束日期 -->
+                        <div class="form-group-inline">
+                            <label class="control-label">結束日期</label>
+                            <input type="text"
+                                   class="datepicker-input form-control"
+                                   ng-model="queryData.endDate"
+                                   uib-datepicker-popup="yyyy-MM-dd"
+                                   datepicker-options="dateOptions"
+                                   is-open="endDatePopup.opened"
+                                   ng-click="openEndDatePopup()"
+                                   close-text="關閉"
+                                   current-text="今天"
+                                   show-button-bar="false"
+                                   readonly
+                                   placeholder="請選擇結束日期"
+                                   ng-disabled="isLoading" />
+                        </div>
+                        <!-- 查詢按鈕 -->
+                        <div class="form-group-inline">
+                            <button type="button" class="btn btn-primary" ng-click="query()" ng-disabled="isLoading" style="margin-top: 25px;">
+                                <i class="fa fa-search"></i> 查詢
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 結果顯示區塊 -->
+            <div class="panel panel-info" ng-show="results.length > 0">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        查詢結果 - <strong>{{getCurrentWorkAreaName()}}</strong>
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <div class="table-responsive table-container">
+                        <table class="table table-bordered table-hover workday-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 30%;">日期</th>
+                                    <th style="width: 30%;">類別</th>
+                                    <th ng-if="workDayAreaAuthoritiy" style="width: 40%;">修改</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="item in results">
+                                    <td ng-class="{'holiday-text': item.DateType == 2}">
+                                        {{item.Date}} ({{item.DayOfWeek}})
+                                    </td>
+                                    <td ng-class="{'holiday-text': item.DateType == 2}">
+                                        <span class="label" ng-class="getDateTypeClass(item.DateType)">
+                                            {{item.DateTypeName}}
+                                        </span>
+                                    </td>
+                                    <td ng-if="workDayAreaAuthoritiy" ng-class="{'holiday-text': item.DateType == 2}">
+                                        <button type="button" 
+                                                class="btn btn-sm" 
+                                                ng-class="getToggleButtonClass(item.DateType)"
+                                                ng-click="toggleDateType(item)" 
+                                                ng-disabled="isLoading">
+                                            <i class="fa fa-exchange"></i> {{getToggleButtonText(item.DateType)}}
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading 提示 -->
+            <div ng-show="isLoading" class="text-center" style="margin-top: 20px;">
+                <i class="fa fa-spinner fa-spin fa-3x"></i>
+                <p>處理中...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* 查詢表單 inline 排列 */
+    .query-form-inline {
+        display: flex;
+        align-items: flex-end;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .form-group-inline {
+        display: flex;
+        flex-direction: column;
+        min-width: 200px;
+    }
+
+    .form-group-inline label {
+        font-weight: 500;
+        margin-bottom: 5px;
+        white-space: nowrap;
+    }
+
+    .form-group-inline .form-control {
+        width: 100%;
+    }
+
+    /* 表格容器 - 固定高度並啟用滾動 */
+    .table-container {
+        max-height: 600px;
+        overflow-y: auto;
+        position: relative;
+    }
+
+    /* 固定表頭 */
+    .workday-table {
+        margin-bottom: 0;
+    }
+
+    .workday-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #f8f9fa;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .workday-table tbody td {
+        vertical-align: middle;
+    }
+
+    /* 假日文字顏色 - 紅色 */
+    .workday-table .holiday-text {
+        color: #dc3545;
+        font-weight: 500;
+    }
+
+    /* 取消表格斑馬紋效果 */
+    .workday-table tbody tr {
+        background-color: #ffffff;
+    }
+
+    /* Hover 效果 */
+    .workday-table tbody tr:hover {
+        background-color: #f5f5f5 !important;
+    }
+</style>

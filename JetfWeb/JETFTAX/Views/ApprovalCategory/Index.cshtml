@@ -1,0 +1,245 @@
+﻿@{
+    ViewBag.Title = "簽審類別管理";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">簽審類別</span>
+<hr />
+
+<div ng-controller="ApprovalCategoryController">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="panel panel-default">
+                    <div class="panel-actions">
+                        <button type="button" class="btn btn-primary btn-sm" ng-click="showAddModal()">
+                            <i class="fa fa-plus"></i> 新增
+                        </button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="alert alert-info">
+                            <i class="fa fa-info-circle"></i>
+                            可以直接點擊並拖曳任一行來調整簽審類別的排序
+                        </div>
+
+                        <!-- 載入指示器 -->
+                        <div ng-show="loading" class="text-center">
+                            <i class="fa fa-spinner fa-spin fa-2x"></i>
+                            <p>載入中...</p>
+                        </div>
+
+                        <!-- 簽審類別表格 -->
+                        <div ng-hide="loading" class="approval-category-table">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th width="80" class="text-center">排序</th>
+                                        <th>類別名稱</th>
+                                        <th width="80" class="text-center">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody ui-sortable="sortableOptions" ng-model="categories">
+                                    <tr ng-repeat="category in categories" class="sortable-row">
+                                        <td class="text-center sort-cell">
+                                            <i class="fa fa-bars drag-handle" title="拖曳以重新排序"></i>
+                                            <span class="sort-number">{{category.Sort}}</span>
+                                        </td>
+                                        <td class="category-name-cell">
+                                            <span class="category-name">{{category.CategoryName}}</span>
+                                        </td>
+                                        <td class="text-center action-cell">
+                                            <button type="button"
+                                                    class="btn btn-xs btn-warning"
+                                                    ng-click="showEditModal(category)"
+                                                    title="編輯簽審類別">
+                                                <i class="fa fa-edit"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- 空資料提示 -->
+                            <div ng-if="categories.length === 0" class="no-data">
+                                <i class="fa fa-folder-open fa-3x text-muted"></i>
+                                <p class="text-muted">目前沒有簽審類別資料</p>
+                                <button type="button" class="btn btn-primary" ng-click="showAddModal()">
+                                    <i class="fa fa-plus"></i> 立即新增
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增/編輯 Modal -->
+    <div class="modal fade" id="categoryModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">{{modalTitle}}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="關閉">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form name="categoryForm" novalidate>
+                        <div class="form-group">
+                            <label for="categoryName" class="form-label required">類別名稱</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="categoryName"
+                                   name="categoryName"
+                                   ng-model="currentCategory.CategoryName"
+                                   required
+                                   maxlength="50"
+                                   placeholder="請輸入類別名稱">
+                            <div ng-show="categoryForm.categoryName.$invalid && categoryForm.categoryName.$touched" class="text-danger">
+                                <small ng-show="categoryForm.categoryName.$error.required">類別名稱為必填</small>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="sort" class="form-label required">排序</label>
+                            <input type="number"
+                                   class="form-control"
+                                   id="sort"
+                                   name="sort"
+                                   ng-model="currentCategory.Sort"
+                                   required
+                                   min="1"
+                                   placeholder="請輸入排序數字">
+                            <small class="form-text text-muted">系統會自動調整其他項目的排序，避免重複</small>
+                            <div ng-show="categoryForm.sort.$invalid && categoryForm.sort.$touched" class="text-danger">
+                                <small ng-show="categoryForm.sort.$error.required">排序為必填</small>
+                                <small ng-show="categoryForm.sort.$error.min">排序必須大於0</small>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button"
+                            class="btn btn-primary"
+                            ng-click="saveCategory()"
+                            ng-disabled="categoryForm.$invalid || saving">
+                        <span ng-show="saving">
+                            <i class="fa fa-spinner fa-spin"></i> 儲存中...
+                        </span>
+                        <span ng-hide="saving">
+                            <i class="fa fa-save"></i> 儲存
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .panel-actions {
+        padding: 15px 15px 10px 15px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .approval-category-table {
+        overflow - x: auto;
+    }
+
+    .table > tbody > tr.sortable-row {
+        cursor: move;
+        user-select: none;
+        transition: all 0.2s ease;
+    }
+
+        .table > tbody > tr.sortable-row:hover {
+            background - color: #f8f9fa;
+        }
+
+    .table > tbody > tr.ui-sortable-helper {
+        background - color: #fff !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        /* 移除 transform: rotate(1deg); 讓tr不會斜斜的 */
+        z-index: 1000;
+        opacity: 0.9;
+        border: 2px solid #007bff;
+    }
+
+    .ui-sortable-placeholder {
+        background - color: #e3f2fd !important;
+        border: 2px dashed #2196f3 !important;
+        visibility: visible !important;
+        height: 45px;
+    }
+
+        .ui-sortable-placeholder td {
+            border: none !important;
+            background: transparent !important;
+        }
+
+    .sort-cell {
+        vertical - align: middle;
+        padding: 8px !important;
+        /* 移除pointer-events限制，讓整個cell都可以拖曳 */
+    }
+
+    .drag-handle {
+        color: #999;
+        margin-right: 8px;
+        font-size: 14px;
+        cursor: move;
+    }
+
+        .drag-handle:hover {
+            color: #666;
+        }
+
+    .sort-number {
+        font - weight: 500;
+        color: #666;
+    }
+
+    .category-name-cell {
+        vertical - align: middle;
+        /* 移除pointer-events: none; 讓整個cell都可以拖曳 */
+    }
+
+    .category-name {
+        font - size: 15px;
+        font-weight: 500;
+    }
+
+    .action-cell {
+        vertical - align: middle;
+        /* 保持按鈕的點擊功能 */
+    }
+
+        .action-cell button {
+            pointer - events: auto;
+            position: relative;
+            z-index: 10;
+        }
+
+    /* 拖曳時禁用按鈕 */
+    .ui-sortable-helper .action-cell {
+        pointer - events: none;
+    }
+
+    .no-data {
+        text - align: center;
+        padding: 40px 20px;
+    }
+
+    .required:after {
+        content: " *";
+        color: red;
+    }
+
+    .form-label {
+        font - weight: 500;
+        margin-bottom: 5px;
+    }
+</style>
+

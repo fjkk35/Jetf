@@ -1,0 +1,597 @@
+@{
+    ViewBag.Title = "貨況明細";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@Html.Css("~/Content/Views/SearchCargo/Detail.css")
+
+<div ng-app="mainApp" ng-controller="SearchCargoDetailController">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span class="headtype">貨況明細</span>
+        <button class="btn btn-info btn-sm" ng-click="showLogCargoStatus()">
+            <i class="fa fa-history"></i> 查詢紀錄
+        </button>
+    </div>
+    <hr />
+
+    <!-- 載入中 -->
+    <div ng-if="loading" class="loading-container">
+        <div class="loader loader-bar" data-rounded data-text="載入中"></div>
+    </div>
+
+    <!-- 明細內容 -->
+    <div ng-if="!loading && detailData" class="detail-container">
+        <!-- 基本資料 -->
+        <div class="detail-section">
+            <h5 class="section-title">基本資料</h5>
+            <table class="detail-table">
+                <colgroup>
+                    <col style="width: 10%;">
+                    <col style="width: 20%;">
+                    <col style="width: 10%;">
+                    <col style="width: 25%;">
+                    <col style="width: 10%;">
+                    <col style="width: 25%;">
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <td class="label">到港日</td>
+                        <td>{{detailData.ETA | customDate}}</td>
+                        <td class="label">毛重</td>
+                        <td>{{detailData.GW}}</td>
+                        <td class="label">件數</td>
+                        <td>{{detailData.PIECE}}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">出倉日期</td>
+                        <td>{{detailData.Out_Datetime | customDate}}</td>
+                        <td class="label">倉儲類型</td>
+                        <td>{{detailData.Source}}</td>
+                        <td class="label">報關類型</td>
+                        <td>{{detailData.Type}}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">主提單號</td>
+                        <td>{{detailData.Main_Number}}</td>
+                        <td class="label">清關袋號</td>
+                        <td>
+                            <a href="javascript:void(0);"
+                               ng-click="showBagNumberDetail()"
+                               style="cursor: pointer; color: #007bff; text-decoration: underline;">
+                                {{detailData.Bag_Number}}
+                            </a>
+                            <button class="btn btn-info btn-sm"
+                                    ng-click="showShenzhenCargoDetail()"
+                                    style="margin-left: 10px;">
+                                速派新遞貨號
+                            </button>
+                        </td>
+                        <td class="label">稅單號碼</td>
+                        <td>
+                            <span ng-repeat="taxNumber in detailData.TaxNumberList">
+                                <a target="_blank" ng-href="~/Cargo/GetTaxNumberPdf?taxNumber={{taxNumber}}">{{taxNumber}}</a>
+                                <span ng-if="!$last">、</span>
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">客戶名稱</td>
+                        <td>{{detailData.Cust_Name}}</td>
+                        <td class="label">派件公司</td>
+                        <td>{{detailData.Trans_Name}}</td>
+                        <td class="label">物流貨號</td>
+                        <td><a target="_blank" ng-href="~/Cargo/CargoSignReceipt?cargoNumber={{detailData.Deliveryno}}">{{detailData.Deliveryno}}</a></td>
+                    </tr>
+                    <tr>
+                        <td class="label">分提單號</td>
+                        <td>
+                            <a href="javascript:void(0);"
+                               ng-click="showTrackingNoDetail()"
+                               style="cursor: pointer; color: #007bff; text-decoration: underline;">
+                                {{detailData.Dlv_Inv}}
+                            </a>
+                        </td>
+                        <td class="label">派件公司(新)</td>
+                        <td>{{detailData.Trans_Name_New}}</td>
+                        <td class="label">尾程單號</td>
+                        <td>{{detailData.Express_No}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 原始申報人資料 -->
+        <div class="detail-section">
+            <h5 class="section-title">原始申報人資料</h5>
+            <table class="detail-table">
+                <colgroup>
+                    <col style="width: 10%;">
+                    <col style="width: 15%;">
+                    <col style="width: 10%;">
+                    <col style="width: 15%;">
+                    <col style="width: 10%;">
+                    <col style="width: 40%;">
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <td class="label">申報人</td>
+                        <td>{{detailData.Recipient}}</td>
+                        <td class="label">申報人電話</td>
+                        <td>{{detailData.Recphone}}</td>
+                        <td class="label">申報人地址</td>
+                        <td>{{detailData.Recaddress}}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">客戶外箱號</td>
+                        <td>{{detailData.Field_X}}</td>
+                        <td class="label">客戶訂單號</td>
+                        <td>{{detailData.Order_No}}</td>
+                        <td class="label">到付款</td>
+                        <td>{{detailData.CC}}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">狀態</td>
+                        <td>{{detailData.Status}}</td>
+
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 實際申報人資料 -->
+        <div class="detail-section">
+            <h5 class="section-title">實際申報人資料</h5>
+            <table class="detail-table">
+                <colgroup>
+                    <col style="width: 20%;">
+                    <col style="width: 30%;">
+                    <col style="width: 20%;">
+                    <col style="width: 30%;">
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <td class="label">申報人</td>
+                        <td>{{detailData.ActualDeclarant}}</td>
+                        <td class="label">申報人電話</td>
+                        <td>{{detailData.ActualDeclarantPhone}}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">申報品名</td>
+                        <td>
+                            <div ng-if="!detailData.ActualItemNameList || detailData.ActualItemNameList.length == 0">
+                                無申報品名
+                            </div>
+                            <div ng-if="detailData.ActualItemNameList && detailData.ActualItemNameList.length > 0">
+                                <!-- 只顯示第一筆 -->
+                                <div ng-if="!showAllItems">
+                                    <div>
+                                        <span>{{detailData.ActualItemNameList[0]}}</span>
+                                    </div>
+                                    <a href="javascript:void(0);"
+                                       ng-if="detailData.ActualItemNameList.length > 1"
+                                       ng-click="toggleShowAllItems()"
+                                       style="color: #007bff; margin-top: 10px; display: inline-block; text-decoration: underline; ">
+                                        顯示更多 (共 {{detailData.ActualItemNameList.length}} 筆)
+                                    </a>
+                                </div>
+                                <!-- 顯示所有品名 -->
+                                <div ng-if="showAllItems">
+                                    <div ng-repeat="item in detailData.ActualItemNameList track by $index" style="margin-bottom: 5px;">
+                                        <span>{{$index+1}}.{{item}}</span>
+                                    </div>
+                                    <a href="javascript:void(0);"
+                                       ng-click="toggleShowAllItems()"
+                                       style="color: #007bff; margin-top: 10px; display: inline-block; text-decoration: underline;">
+                                        收合
+                                    </a>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="label">申報金額</td>
+                        <td colspan="3" style="text-align: right;">{{detailData.ActualInvoiceAmount | number:2}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 清關進度 -->
+        <div class="detail-section">
+            <h5 class="section-title">清關進度</h5>
+            <table class="detail-table">
+                <colgroup>
+                    <col style="width: 10%;">
+                    <col style="width: 20%;">
+                    <col style="width: 10%;">
+                    <col style="width: 25%;">
+                    <col style="width: 10%;">
+                    <col style="width: 25%;">
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <td class="label">入倉時間</td>
+                        <td>{{detailData.In_Datetime | customDateTime}}</td>
+                        <td class="label">出倉時間</td>
+                        <td>{{detailData.Out_Datetime | customDateTime}}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">掃貨上車</td>
+                        <td>{{detailData.ScanCargoUploadTime | customDateTime}}</td>
+                        <td class="label">掃讀工號</td>
+                        <td>{{detailData.ScanCargoUploadOpe}}</td>
+                        <td class="label">錯單類別</td>
+                        <td colspan="3">{{detailData.ErrorReason}}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">接駁公司</td>
+                        <td>{{detailData.ScanCargoTransName}}</td>
+                        <td class="label">櫃號車號</td>
+                        <td>{{detailData.ScanCargoCarNo}}</td>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 稅金資料 -->
+        <div class="detail-section">
+            <h5 class="section-title">稅金類別：{{detailData.Include_Tax}}</h5>
+            <table class="detail-table">
+                <colgroup>
+                    <col style="width: 10%;">
+                    <col style="width: 20%;">
+                    <col style="width: 10%;">
+                    <col style="width: 25%;">
+                    <col style="width: 10%;">
+                    <col style="width: 25%;">
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <td class="label">稅金1</td>
+                        <td style="text-align: right;">{{detailData.Tax1 | number}}</td>
+                        <td class="label">稅金2</td>
+                        <td style="text-align: right;">{{detailData.Tax2 | number}}</td>
+                        <td class="label">稅金合計</td>
+                        <td style="text-align: right;">{{detailData.TotalTax | number}}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">報關費</td>
+                        <td style="text-align: right;">{{detailData.CCFee | number}}</td>
+                        <td class="label">代收手續費</td>
+                        <td style="text-align: right;">{{detailData.Fee | number}}</td>
+                        <td class="label">到付款</td>
+                        <td style="text-align: right;">{{detailData.Cod | number}}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">跟派送收稅金</td>
+                        <td style="text-align: right;">{{detailData.TransCod | number}}</td>
+                        <td class="label">跟廠商收稅金</td>
+                        <td style="text-align: right;">{{detailData.CustomerCod | number}}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">物流代收款</td>
+                        <td style="text-align: right;">{{detailData.To_Dlv_Cod | number}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 處置說明 -->
+        <div class="detail-section">
+            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <h5 style="margin: 0;">處置說明</h5>
+                <div>
+                    <button class="btn btn-primary btn-sm" ng-click="showAddProcessDialog()">
+                        <i class="fas fa-plus"></i> 新增
+                    </button>
+                    <button class="btn btn-success btn-sm" ng-click="finishProcess()">
+                        <i class="fa fa-check"></i> 處置說明結案
+                    </button>
+                </div>
+            </div>
+            <table class="table table-striped table-bordered" style="margin-top: 10px;">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">分類</th>
+                        <th style="width: 30%;">處置說明</th>
+                        <th style="width: 12%;">檔案</th>
+                        <th style="width: 8%;">人員</th>
+                        <th style="width: 13%;">時間</th>
+                        <th style="width: 5%;">結案</th>
+                        <th style="width: 10%;">結案人員</th>
+                        <th style="width: 7%;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-if="!processList || processList.length == 0">
+                        <td colspan="8" style="text-align: center;">無處置說明</td>
+                    </tr>
+                    <tr ng-repeat="item in processList">
+                        <td>{{item.PROCESS_TYPE}}</td>
+                        <td>{{item.REMARK}}</td>
+                        <td>
+                            <a ng-if="item.FILENAME" href="/Cargo/DownloadFile?filePath={{item.FILEPATH}}&fileName={{item.FILENAME}}" target="_blank">
+                                {{item.FILENAME}}
+                            </a>
+                        </td>
+                        <td>{{item.USER_NAME}}</td>
+                        <td>{{item.FormatCrtDateTime}}</td>
+                        <td>{{item.FINISH}}</td>
+                        <td>{{item.FINISH_USER_NAME}}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm"
+                                    ng-click="deleteProcess(item.ID)"
+                                    title="刪除">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 配送進度 -->
+        <div class="detail-section">
+            <h5 class="section-title">配送進度</h5>
+            <table class="status-table">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">時間</th>
+                        <th style="width: 70%;">狀態</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-if="!detailData.CargoStatusList || detailData.CargoStatusList.length == 0">
+                        <td colspan="2" style="text-align: center;">無配送進度</td>
+                    </tr>
+                    <tr ng-repeat="status in detailData.CargoStatusList">
+                        <td>{{status.Time}}</td>
+                        <td>{{status.Status}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 操作按鈕 -->
+        <div class="button-section">
+            <button class="btn btn-secondary" ng-click="closeWindow()">
+                <i class="fas fa-times"></i> 關閉
+            </button>
+        </div>
+    </div>
+
+    <!-- 新增處置說明 Modal -->
+    <div class="modal fade" id="processModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">{{modalTitle}}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="關閉">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form name="processForm" novalidate>
+                        <div class="form-group">
+                            <label for="processType" class="form-label required">分類</label>
+                            <select class="form-control"
+                                    id="processType"
+                                    name="processType"
+                                    ng-model="processData.type"
+                                    required>
+                                <option value="1">貨況</option>
+                                <option value="2">退運</option>
+                                <option value="3">錯單公司名義收單</option>
+                                <option value="4">現場轉出</option>
+                                <option value="5">公司名義不回艙</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="processRemark" class="form-label required">處置說明</label>
+                            <textarea class="form-control"
+                                      id="processRemark"
+                                      name="processRemark"
+                                      ng-model="processData.remark"
+                                      required
+                                      rows="4"
+                                      placeholder="請輸入處置說明"></textarea>
+                            <div ng-show="processForm.processRemark.$invalid && processForm.processRemark.$touched" class="text-danger">
+                                <small ng-show="processForm.processRemark.$error.required">處置說明為必填</small>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="processFile" class="form-label">附件</label>
+                            <input type="file"
+                                   class="form-control-file"
+                                   id="processFile"
+                                   name="processFile"
+                                   onchange="angular.element(this).scope().onFileSelect(this)" />
+                            <small class="form-text text-muted" ng-if="processData.file">
+                                已選擇: {{processData.file.name}}
+                            </small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button"
+                            class="btn btn-primary"
+                            ng-click="saveProcess()"
+                            ng-disabled="processForm.$invalid || saving">
+                        <span ng-show="saving">
+                            <i class="fa fa-spinner fa-spin"></i> 儲存中...
+                        </span>
+                        <span ng-hide="saving">
+                            <i class="fa fa-save"></i> 儲存
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查詢紀錄 Modal -->
+    <div class="modal fade" id="logModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">查詢紀錄</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="關閉">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">貨號</th>
+                                <th style="width: 30%;">查詢時間</th>
+                                <th style="width: 20%;">查詢人員</th>
+                                <th style="width: 25%;">查詢IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-if="!logList || logList.length == 0">
+                                <td colspan="4" style="text-align: center;">無查詢紀錄</td>
+                            </tr>
+                            <tr ng-repeat="log in logList">
+                                <td>{{log.Dlv_Inv}}</td>
+                                <td>{{log.Search_Time | customDateTime}}</td>
+                                <td>{{log.User_Id}}</td>
+                                <td>{{log.User_Ip}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通關袋號明細 Modal -->
+    <div class="modal fade" id="bagNumberModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">通關袋號明細</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="關閉">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">通關袋號</th>
+                                <th style="width: 25%;">袋號</th>
+                                <th style="width: 25%;">進倉時間</th>
+                                <th style="width: 25%;">出倉時間</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-if="!bagNumberList || bagNumberList.length == 0">
+                                <td colspan="4" style="text-align: center;">無通關袋號明細</td>
+                            </tr>
+                            <tr ng-repeat="item in bagNumberList">
+                                <td>{{item.TARGET_CODE}}</td>
+                                <td>{{item.SOURCE_CODE}}</td>
+                                <td>{{item.Format_SIGN_IN_TIME}}</td>
+                                <td>{{item.Format_SIGN_OUT_TIME}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通關分提單號明細 Modal -->
+    <div class="modal fade" id="trackingNoModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">通關分提單號明細</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="關閉">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">通關分提單號</th>
+                                <th style="width: 25%;">分提單號</th>
+                                <th style="width: 25%;">進倉時間</th>
+                                <th style="width: 25%;">出倉時間</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-if="!trackingNoList || trackingNoList.length == 0">
+                                <td colspan="4" style="text-align: center;">無通關分提單號明細</td>
+                            </tr>
+                            <tr ng-repeat="item in trackingNoList">
+                                <td>{{item.TARGET_CODE}}</td>
+                                <td>{{item.SOURCE_CODE}}</td>
+                                <td>{{item.Format_SIGN_IN_TIME}}</td>
+                                <td>{{item.Format_SIGN_OUT_TIME}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 速派新遞貨號 Modal -->
+    <div class="modal fade" id="shenzhenCargoModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">速派新遞貨號</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="關閉">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th style="width: 50%;">分提單號</th>
+                                <th style="width: 50%;">物流貨號</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-if="!shenzhenCargoList || shenzhenCargoList.length == 0">
+                                <td colspan="2" style="text-align: center;">無速派新遞貨號資料</td>
+                            </tr>
+                            <tr ng-repeat="item in shenzhenCargoList">
+                                <td>{{item.TrackingNo}}</td>
+                                <td>{{item.DeliveryNo}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .required:after {
+        content: " *";
+        color: red;
+    }
+
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 5px;
+    }
+</style>

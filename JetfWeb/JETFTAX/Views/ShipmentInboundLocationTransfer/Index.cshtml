@@ -1,0 +1,172 @@
+﻿@{
+    ViewBag.Title = "儲位調撥";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .larger-checkbox {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+</style>
+
+<div ng-controller="ShipmentInboundLocationTransferController">
+    <span class="headtype">儲位調撥</span>
+    <hr />
+
+    <!-- 查詢條件區域 -->
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <div class="row mb-3 align-items-center">
+            <!-- 儲位 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="locationCodeInput" class="col-lg-2 col-form-label text-right">儲位</label>
+                <div class="col-lg-10">
+                    <input type="text"
+                           id="locationCodeInput"
+                           class="form-control"
+                           ng-model="searchForm.locationCode"
+                           placeholder="請輸入儲位" />
+                </div>
+            </div>
+            <!-- 單號 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="trackingNoInput" class="col-lg-2 col-form-label text-right">單號</label>
+                <div class="col-lg-10">
+                    <input type="text"
+                           id="trackingNoInput"
+                           class="form-control"
+                           ng-model="searchForm.trackingNo"
+                           placeholder="請輸入單號" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 按鈕區 -->
+        <div class="row">
+            <div class="col-lg-12 text-right">
+                <button type="button" 
+                        class="btn btn-primary" 
+                        ng-click="search()" 
+                        ng-disabled="loading">
+                    <i class="fa fa-search"></i> 查詢
+                </button>
+                <button type="button" 
+                        class="btn btn-secondary ml-2" 
+                        ng-click="clearSearch()" 
+                        ng-disabled="loading">
+                    <i class="fa fa-eraser"></i> 清除
+                </button>
+            </div>
+        </div>
+    </div>
+    <hr />
+
+    <!-- 載入中提示 -->
+    <div ng-show="loading" class="text-center">
+        <i class="fa fa-spinner fa-spin fa-3x"></i>
+        <p>載入中...</p>
+    </div>
+
+    <!-- 查詢結果區域 -->
+    <div ng-show="isSearched && !loading">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <!-- 批次操作按鈕與統計資訊 -->
+                    <div class="row mb-2">
+                        <div class="col-lg-6">
+                            <button type="button" 
+                                    class="btn btn-success" 
+                                    ng-click="openBatchTransferModal()"
+                                    ng-disabled="saving">
+                                <i class="fa fa-exchange"></i> 批次移儲
+                            </button>
+                        </div>
+                        <div class="col-lg-6 text-right">
+                            <span>共 {{totalCount}} 筆資料</span>
+                        </div>
+                    </div>
+
+                    <!-- 資料表格 -->
+                    <div class="table-responsive mt-3">
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th style="width: 60px;" class="text-center">
+                                        <input type="checkbox" 
+                                               class="larger-checkbox"
+                                               ng-model="selectAll" 
+                                               ng-change="toggleSelectAll()" />
+                                    </th>
+                                    <th>序號</th>
+                                    <th>單號</th>
+                                    <th>儲位</th>
+                                    <th style="width: 150px;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-if="data.length === 0">
+                                    <td colspan="5" class="text-center">查無資料</td>
+                                </tr>
+                                <tr ng-repeat="item in data">
+                                    <td class="text-center">
+                                        <input type="checkbox" 
+                                               class="larger-checkbox"
+                                               ng-checked="isSelected(item.Id)" 
+                                               ng-click="toggleSelection(item.Id)" />
+                                    </td>
+                                    <td>{{$index + 1}}</td>
+                                    <td>{{item.TrackingNo}}</td>
+                                    <td>{{item.LocationCode}}</td>
+                                    <td class="text-center">
+                                        <button type="button" 
+                                                class="btn btn-sm btn-info" 
+                                                ng-click="openSingleTransferModal(item)"
+                                                ng-disabled="saving">
+                                            <i class="fa fa-exchange"></i> 單件移儲
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 儲位調撥 Modal -->
+    <div class="modal fade" id="transferModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{modalTitle}}</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- 新儲位輸入 -->
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">新儲位 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <input type="text" 
+                                   class="form-control" 
+                                   ng-model="transferForm.newLocationCode"
+                                   placeholder="請輸入新儲位" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveTransfer()" ng-disabled="saving || isSameLocation()">
+                        <i class="fa fa-spinner fa-spin" ng-show="saving"></i>
+                        {{saving ? '儲存中...' : '確定'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

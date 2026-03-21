@@ -1,0 +1,72 @@
+﻿@model JETFTAX.Models.CainiaoHiLifeTaxDetails.CainiaoHiLifeTaxDetailsViewModel
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">萊爾富接收稅金明細表</span>
+<hr />
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<form id="DownloadFileForm" action="@Url.Action("Download", "CainiaoHiLifeTax")" method="post" enctype="multipart/form-data" class="containertype">
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.StartDate)
+        @Html.TextBoxFor(m => m.StartDate, new { @class = "form-control" })~
+        @Html.TextBoxFor(m => m.EndDate, new { @class = "form-control" })
+    </div>
+    <div id="btntDownload" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem; "><i class="fas fa-download"></i> 下載</div>
+</form>
+
+@{
+    <script>
+        $('#collapseUpload').addClass("show");
+        $('#CainiaoHiLifeTaxDetails').addClass("active");
+
+        //日期
+        $('#StartDate').click(function () {
+            WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' });
+        });
+        $('#EndDate').click(function () {
+            WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' });
+        });
+
+        $('#btntDownload').click(function () {
+            $('.loader').addClass("is-active");
+
+            var postData = new FormData($('#DownloadFileForm')[0]);
+            $.ajax({
+                type: "POST",
+                url: Router.action('CainiaoHiLifeTaxDetails', 'GetExcel'),
+                data: postData,
+                cache: false,
+                dataType: 'json',
+                processData: false,
+                //async: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    }
+                    else {
+                        if (data.msg != "") {
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                            $('.loader').removeClass("is-active");
+                            return;
+                        }
+                        else if (data.fileName != "") {
+                            var path = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid
+                                + '&filename=' + data.fileName;
+                            //window.location = path;
+                            window.open(path);
+                        }
+                    }
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        })
+    </script>
+}

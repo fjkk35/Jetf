@@ -1,0 +1,49 @@
+﻿@{
+    ViewBag.Title = "主號稅金查詢";
+}
+
+<div ng-controller="MainTaxSearchController" class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>主號稅金查詢</h2>
+            <hr />
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">主號</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="form-horizontal">
+                        <div class="form-group">
+                            <div class="col-sm-8">
+                                <textarea class="form-control"
+                                          ng-model="queryData.mainNumberList"
+                                          rows="10"
+                                          placeholder="請輸入主號，每行一筆"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-offset-2 col-sm-10">
+                                <button type="button"
+                                        class="btn btn-success"
+                                        ng-click="exportExcel()"
+                                        ng-disabled="isLoading || !queryData.mainNumberList">
+                                    <i class="fa fa-file-excel-o"></i> 匯出 Excel
+                                </button>
+                                <button type="button"
+                                        class="btn btn-warning"
+                                        ng-click="clear()">
+                                    <i class="fa fa-refresh"></i> 清除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center" ng-show="isLoading">
+                <i class="fa fa-spinner fa-spin fa-3x"></i>
+                <p>處理中，請稍候...</p>
+            </div>
+        </div>
+    </div>
+</div>

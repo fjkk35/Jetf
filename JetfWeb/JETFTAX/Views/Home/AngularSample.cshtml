@@ -1,0 +1,98 @@
+@model dynamic
+
+@{
+    ViewBag.Title = "Angular範例";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Angular範例</h1>
+    </div>
+
+    <div class="row" ng-cloak>
+        <!-- Basic Card Example -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">資料綁定範例</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="exampleInputName">輸入名稱</label>
+                        <input type="text" class="form-control" id="exampleInputName" ng-model="vm.name" placeholder="請輸入名稱">
+                    </div>
+                    <div class="form-group">
+                        <p>您輸入的名稱是: <strong>{{vm.name || '未輸入'}}</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Basic Card Example -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">列表範例</h6>
+                </div>
+                <div class="card-body">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" ng-model="vm.newItem" placeholder="新項目">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" ng-click="vm.addItem()">新增</button>
+                        </div>
+                    </div>
+                    <ul class="list-group">
+                        <li class="list-group-item" ng-repeat="item in vm.items">
+                            {{ item }}
+                            <button type="button" class="close" ng-click="vm.removeItem($index)">
+                                <span>&times;</span>
+                            </button>
+                        </li>
+                        <li class="list-group-item text-muted" ng-if="vm.items.length === 0">目前沒有項目</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        // Extend MainController for this specific view
+        angular.module('jetfTaxApp').controller('MainController', ['$scope', '$http', function ($scope, $http) {
+            var vm = this;
+            
+            // Controller properties
+            vm.title = '進口快遞管理系統';
+            vm.name = '';
+            vm.newItem = '';
+            vm.items = ['項目一', '項目二', '項目三'];
+            
+            // Controller methods
+            vm.initialize = initialize;
+            vm.addItem = addItem;
+            vm.removeItem = removeItem;
+            
+            // Initialize the controller
+            function initialize() {
+                console.log('AngularJS Sample Controller initialized');
+            }
+            
+            function addItem() {
+                if (vm.newItem && vm.newItem.trim() !== '') {
+                    vm.items.push(vm.newItem);
+                    vm.newItem = '';
+                }
+            }
+            
+            function removeItem(index) {
+                vm.items.splice(index, 1);
+            }
+            
+            // Call initialize on controller instantiation
+            vm.initialize();
+        }]);
+    </script>
+}

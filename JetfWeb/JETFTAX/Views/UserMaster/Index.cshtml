@@ -1,0 +1,185 @@
+﻿@{
+    ViewBag.Title = "帳號管理";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="UserMasterIndexController" class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h3 class="m-0 font-weight-bold text-primary">帳號管理</h3>
+                </div>
+                <div class="card-body">
+                    <!-- 操作按鈕 -->
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-primary" ng-click="showAddModal()">
+                            <i class="fas fa-plus"></i> 新增會員
+                        </button>
+                    </div>
+
+                    <!-- 會員清單 -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th width="120">會員ID</th>
+                                    <th>會員名稱</th>
+                                    <th width="80">狀態</th>
+                                    <th>權限群組</th>
+                                    <th width="120">更新人員</th>
+                                    <th width="150">更新時間</th>
+                                    <th width="120">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="user in users">
+                                    <td><code>{{user.UserId}}</code></td>
+                                    <td>{{user.UserName}}</td>
+                                    <td class="text-center">
+                                        <span class="badge" ng-class="user.UserStatus === '1' ? 'badge-success' : 'badge-secondary'">
+                                            {{user.UserStatusText}}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span ng-if="user.AuthorityGroups && user.AuthorityGroups.length > 0">
+                                            <span class="badge badge-info mr-1" ng-repeat="group in user.AuthorityGroups">
+                                                {{group.GroupName}}
+                                            </span>
+                                        </span>
+                                        <span ng-if="!user.AuthorityGroups || user.AuthorityGroups.length === 0" class="text-muted">無</span>
+                                    </td>
+                                    <td>{{user.UpdOpe}}</td>
+                                    <td>{{user.UpdTime | customDateTime}}</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-info" ng-click="showEditModal(user.UserId)">
+                                            <i class="fas fa-edit"></i> 修改
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr ng-if="users.length === 0">
+                                    <td colspan="7" class="text-center">暫無會員資料</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="userModal" tabindex="-1" role="dialog" aria-labelledby="userModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalLabel">{{modalTitle}}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form ng-submit="saveUser()">
+                    <div class="modal-body">
+                        <!-- 會員ID -->
+                        <div class="form-group row">
+                            <label for="userId" class="col-sm-3 col-form-label text-right">
+                                會員ID <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="userId" 
+                                       ng-model="currentUser.UserId" required maxlength="50"
+                                       placeholder="請輸入會員ID"
+                                       ng-readonly="isEdit">
+                                <small class="form-text text-muted">
+                                    <span ng-if="isEdit">修改時不能變更會員ID</span>
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- 會員名稱 -->
+                        <div class="form-group row">
+                            <label for="userName" class="col-sm-3 col-form-label text-right">
+                                會員名稱 <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="userName" 
+                                       ng-model="currentUser.UserName" required maxlength="100"
+                                       placeholder="請輸入會員名稱">
+                            </div>
+                        </div>
+                        
+                        <!-- 密碼 -->
+                        <div class="form-group row">
+                            <label for="password" class="col-sm-3 col-form-label text-right">
+                                密碼 <span class="text-danger" ng-if="!isEdit">*</span>
+                            </label>
+                            <div class="col-sm-9">
+                                <input type="password" class="form-control" id="password" 
+                                       ng-model="currentUser.Password" maxlength="100"
+                                       placeholder="{{isEdit ? '留空表示不修改密碼' : '請輸入密碼'}}">
+                                <small class="form-text text-muted">
+                                    <span ng-if="isEdit">留空表示不修改密碼，有輸入則更新為新密碼</span>
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- 狀態 -->
+                        <div class="form-group row">
+                            <label for="userStatus" class="col-sm-3 col-form-label text-right">
+                                狀態 <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-sm-9">
+                                <select class="form-control" id="userStatus" 
+                                        ng-model="currentUser.UserStatus" required>
+                                    <option value="">請選擇狀態</option>
+                                    <option ng-repeat="option in statusOptions" value="{{option.Value}}">
+                                        {{option.Text}}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- 權限群組 -->
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label text-right">
+                                權限群組
+                            </label>
+                            <div class="col-sm-9">
+                                <div class="card">
+                                    <div class="card-header py-2">
+                                        <small class="text-muted">可選擇多個權限群組，不選擇表示該會員沒有特殊權限</small>
+                                    </div>
+                                    <div class="card-body py-2" style="max-height: 200px; overflow-y: auto;">
+                                        <div ng-if="authorityGroupOptions.length > 0">
+                                            <div class="form-check" ng-repeat="option in authorityGroupOptions">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       id="group_{{option.Id}}"
+                                                       ng-model="currentUser.SelectedGroups[option.Id]">
+                                                <label class="form-check-label" for="group_{{option.Id}}">
+                                                    {{option.GroupName}}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div ng-if="authorityGroupOptions.length === 0" class="text-center text-muted">
+                                            暫無權限群組
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary" ng-disabled="saving">
+                            <span ng-if="saving">
+                                <i class="fas fa-spinner fa-spin"></i> 處理中...
+                            </span>
+                            <span ng-if="!saving">儲存</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+

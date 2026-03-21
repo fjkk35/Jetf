@@ -1,0 +1,153 @@
+﻿@{
+    ViewBag.Title = "空快客戶作業量報表";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="EtlCustomerWorkLoadReportController">
+    <span class="headtype">空快客戶作業量報表</span>
+    <hr />
+
+    <div class="containertype">
+        <style>
+            .containertype .form-label {
+                padding-right: 10px;
+                align-items: center;
+                justify-content: right;
+                display: flex;
+                font-size: 1.2rem;
+            }
+
+            .containertype .form-group {
+                margin-bottom: 0.5rem;
+            }
+
+            .containertype .control-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .containertype .customer-list {
+                padding: 8px;
+                border: 1px solid #eee;
+                border-radius: 4px;
+            }
+        </style>
+
+        <!-- 日期選擇 -->
+        <div class="form-group row">
+            <label class="col-lg-1 form-label">日期</label>
+            <div class="col-lg-11 control-row">
+                <input type="text"
+                       id="sDate"
+                       class="datepicker-input form-control"
+                       style="width:180px;"
+                       ng-model="searchData.sDate"
+                       uib-datepicker-popup="yyyy-MM-dd"
+                       datepicker-options="dateOptions"
+                       is-open="sDatePopup.opened"
+                       ng-click="openSDatePopup()"
+                       close-text="關閉"
+                       current-text="今天"
+                       show-button-bar="false"
+                       readonly
+                       placeholder="請選擇開始日期" />
+                <span>13:00</span>
+                <span>～</span>
+                <input type="text"
+                       id="eDate"
+                       class="datepicker-input form-control"
+                       style="width:180px;"
+                       ng-model="searchData.eDate"
+                       uib-datepicker-popup="yyyy-MM-dd"
+                       datepicker-options="dateOptions"
+                       is-open="eDatePopup.opened"
+                       ng-click="openEDatePopup()"
+                       close-text="關閉"
+                       current-text="今天"
+                       show-button-bar="false"
+                       readonly
+                       placeholder="請選擇結束日期" />
+                <span>12:59</span>
+            </div>
+        </div>
+
+        <!-- 客戶格式選擇 -->
+        <div class="form-group row">
+            <label class="col-lg-1 form-label">客戶格式</label>
+            <div class="col-lg-11">
+                <select class="form-control" ng-model="searchData.custTypeId">
+                    <option ng-repeat="type in customerTypeList" value="{{type.Value}}">
+                        {{type.Text}}
+                    </option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 主號 -->
+        <div class="form-group row">
+            <label class="col-lg-1 form-label">主號</label>
+            <div class="col-lg-11">
+                <textarea class="form-control"
+                          rows="4"
+                          placeholder="可輸入多個主號一行一個"
+                          ng-model="searchData.mainNumbers"></textarea>
+            </div>
+        </div>
+
+        <!-- 群組選擇 -->
+        <div class="form-group row">
+            <label class="col-lg-1 form-label">群組</label>
+            <div class="col-lg-11">
+                <select ng-model="searchData.selectedGroup"
+                        class="form-control"
+                        ng-disabled="loadingGroups"
+                        ng-change="onGroupChange()">
+                    <option value="">請選擇群組</option>
+                    <option ng-repeat="group in groupList" value="{{group.Id}}">{{group.GroupName}}</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 客戶選擇 -->
+        <div class="form-group row">
+            <label style="align-items:normal" class="col-lg-1 form-label">客戶</label>
+            <div class="col-lg-11">
+                <div style="margin-bottom:6px;">
+                    <a href="javascript:void(0)" ng-click="selectAllCustomers()" style="font-size: 1rem;">全選</a> |
+                    <a href="javascript:void(0)" ng-click="deselectAllCustomers()" style="font-size: 1rem;">取消</a>
+                </div>
+
+                <div ng-if="!loadingCustomers" class="row customer-list">
+                    <label ng-repeat="customer in customerList" class="col-6 col-md-2" style="display:flex; align-items:center;">
+                        <input type="checkbox"
+                               ng-model="customer.Selected"
+                               style="cursor: pointer; margin-right:6px; height:auto" />
+                        <span>{{customer.Text}}</span>
+                    </label>
+                </div>
+                <div ng-if="loadingCustomers" style="padding: 10px; text-align: center;">
+                    載入中...
+                </div>
+            </div>
+        </div>
+
+        <!-- 下載按鈕 -->
+        <div class="form-group row">
+            <div class="col-lg-1"></div>
+            <div class="col-lg-3">
+                <button type="button" class="btn btn-primary confirmbtn"
+                        style="font-size: 1.2rem; width: 100%;"
+                        ng-click="downloadExcel()"
+                        ng-disabled="downloading || loadingCustomers || loadingGroups">
+                    <i class="fas fa-download" ng-hide="downloading"></i>
+                    <i class="fas fa-spinner fa-spin" ng-show="downloading"></i>
+                    {{downloading ? '下載中...' : '下載'}}
+                </button>
+            </div>
+        </div>
+
+        <!-- 載入動畫 -->
+        <div class="loader loader-bar" data-rounded data-text="檔案下載中"></div>
+    </div>
+</div>

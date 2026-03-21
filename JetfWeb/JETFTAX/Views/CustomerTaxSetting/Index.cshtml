@@ -1,0 +1,216 @@
+﻿@{
+    ViewBag.Title = "客戶稅金時間設定";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">客戶稅金時間設定</span>
+<hr />
+
+<div ng-controller="CustomerTaxSettingController">
+    <div class="container-fluid">
+        <!-- 工具列 -->
+        <div class="row" style="margin-bottom: 20px;">
+            <div class="col-md-12">
+                <button type="button" 
+                        class="btn btn-primary" 
+                        ng-click="openAddModal()">
+                    <i class="fa fa-plus"></i>
+                    新增客戶設定
+                </button>
+            </div>
+        </div>
+
+        <!-- 設定結果顯示 -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-body">
+                        <!-- 載入指示器 -->
+                        <div ng-show="loadingSettings" class="text-center">
+                            <i class="fa fa-spinner fa-spin fa-2x"></i>
+                            <p>載入中...</p>
+                        </div>
+
+                        <!-- 設定結果表格 -->
+                        <div ng-hide="loadingSettings">
+                            <div ng-if="customerSettings.length === 0" class="alert alert-info">
+                                目前沒有任何客戶稅金時間設定
+                            </div>
+                            
+                            <div ng-if="customerSettings.length > 0" class="table-responsive">
+                                <table class="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center">客戶代號</th>
+                                            <th class="text-center">客戶名稱</th>
+                                            <th class="text-center" ng-repeat="taxTime in taxTimes">{{taxTime.TaxTime}}</th>
+                                            <th class="text-center">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr ng-repeat="setting in customerSettings">
+                                            <td>{{setting.Cust_Code}}</td>
+                                            <td>{{setting.Cust_Name}}</td>
+                                            <td class="text-center" ng-repeat="taxTime in taxTimes">
+                                                <span ng-if="setting.TaxTimeSettings[taxTime.TaxTime]" class="text-success">
+                                                    <i class="fa fa-check"></i>
+                                                </span>
+                                                <span ng-if="!setting.TaxTimeSettings[taxTime.TaxTime]" class="text-muted">
+                                                    -
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-warning" 
+                                                        ng-click="openEditModal(setting)"
+                                                        title="編輯">
+                                                    <i class="fa fa-edit"></i>
+                                                </button>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-danger" 
+                                                        ng-click="confirmDeleteSetting(setting.Cust_Code)"
+                                                        title="刪除">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增/編輯 Modal -->
+    <div class="modal fade" id="customerTaxSettingModal" tabindex="-1" role="dialog" aria-labelledby="customerTaxSettingModalLabel">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header modal-header-flex">
+                    <h4 class="modal-title text-left" id="customerTaxSettingModalLabel">
+                        {{modalMode === 'add' ? '新增客戶稅金時間設定' : '編輯客戶稅金時間設定'}}
+                    </h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form class="form-horizontal">
+                        <!-- 客戶選擇 -->
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">選擇客戶：</label>
+                            <div class="col-sm-10">
+                                <select class="form-control" 
+                                        ng-model="selectedCustomer" 
+                                        ng-change="loadCustomerSetting()"
+                                        ng-disabled="modalMode === 'edit'"
+                                        ng-options="customer.Cust_Code + ' - ' + customer.Cust_Name for customer in getModalCustomers() track by customer.Cust_Code">
+                                    <option value="">請選擇客戶</option>
+                                </select>
+                                <div ng-if="modalMode === 'edit'" class="help-block">
+                                    編輯模式下不可更改客戶
+                                </div>
+                                <div ng-if="modalMode === 'add' && availableCustomers.length === 0" class="help-block text-warning">
+                                    <i class="fa fa-warning"></i> 所有客戶都已設定稅金時間
+                                </div>
+                                <div ng-if="modalMode === 'add' && availableCustomers.length > 0" class="help-block">
+                                    可選擇 {{availableCustomers.length}} 個未設定的客戶
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 稅金時間勾選 -->
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">稅金時間：</label>
+                            <div class="col-sm-10">
+                                <div class="checkbox-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 5px;">
+                                    <label class="checkbox-inline" ng-repeat="taxTime in taxTimes" style="margin: 0; display: flex; align-items: center;">
+                                        <input type="checkbox" 
+                                               ng-model="selectedTaxTimes[taxTime.Id]"
+                                               ng-disabled="!selectedCustomer"
+                                               style="margin-right: 5px;"> 
+                                        {{taxTime.TaxTime}}
+                                    </label>
+                                </div>
+                                <div class="help-block">
+                                    請選擇該客戶適用的稅金時間
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" 
+                            class="btn btn-default" 
+                            data-dismiss="modal">
+                        取消
+                    </button>
+                    <button type="button" 
+                            class="btn btn-primary" 
+                            ng-click="saveCustomerTaxSetting()"
+                            ng-disabled="!selectedCustomer || saving || !hasSelectedTaxTime()">
+                        <i class="fa fa-save" ng-hide="saving"></i>
+                        <i class="fa fa-spinner fa-spin" ng-show="saving"></i>
+                        {{saving ? '儲存中...' : '儲存設定'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .checkbox-container {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        background-color: #fafafa;
+    }
+
+    .checkbox-container .checkbox-inline {
+        white-space: nowrap;
+        padding: 5px;
+        border-radius: 3px;
+        transition: background-color 0.2s;
+    }
+
+    .checkbox-container .checkbox-inline:hover {
+        background-color: #e9ecef;
+    }
+
+    .modal-lg {
+        width: 800px;
+    }
+    .modal-header-flex {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px 20px 15px 20px;
+        border-bottom: 1px solid #e5e5e5;
+    }
+.modal-header-flex .modal-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 500;
+    color: #666;
+}
+.modal-header-flex .close {
+    font-size: 28px;
+    font-weight: 400;
+    color: #888;
+    opacity: 1;
+    margin-left: 20px;
+    margin-right: 0;
+    outline: none;
+}
+.modal-header-flex .close:hover {
+    color: #333;
+    opacity: 1;
+}
+    
+</style>
+

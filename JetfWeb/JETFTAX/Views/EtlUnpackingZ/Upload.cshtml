@@ -1,0 +1,110 @@
+﻿
+@{
+    ViewBag.Title = "UploadFile";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">上傳空快拆袋打Z資料</span>
+<hr />
+
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<form id="UploadFileForm" action="@Url.Action("Upload", "EtlMergeBagNo")" method="post" enctype="multipart/form-data" class="containertype">
+    <label>查詢主號</label>
+    <div>
+        <textarea id="txtMawb" style="height:200px"></textarea>
+    </div>
+    <div id="btntDownloadFile" type="button" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem;"><i class="fas fa-download"></i> 下載</div>
+    <div class="col-lg-12" style="margin:3rem 0;">
+        <input type="file" name="files" multiple="true" id="files" accept=".csv" />
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\上傳空快拆袋打Z_範例.csv&fileName=上傳空快拆袋打Z_範例.csv' target='_blank'>下載上傳空快拆袋打Z範例</a>
+    </div>
+    <div id="btntUploadFile" type="button" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem;"><i class="fas fa-upload"></i> 上傳</div>
+
+    <div class="loader loader-bar" data-rounded data-text="檔案上傳中"></div>
+</form>
+
+@{
+    <script>
+
+        $('#collapseCCLWork').addClass("show");
+        $('#EtlUnpackingZ').addClass("active");
+
+
+        $('#btntDownloadFile').click(function () {
+            $('.loader').addClass("is-active");
+
+            $.ajax({
+                type: "POST",
+                url: Router.action('EtlUnpackingZ', 'Download'),
+                data: { "data": $('#txtMawb').val() },
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    }
+                    else {
+                        if (data.msg != "") {
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                        }
+                        else if (data.fileName != "") {
+                            var path = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid
+                                + '&filename=' + data.fileName;
+                            //window.location = path;
+                            window.open(path);
+                        }
+                    }
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        });
+
+
+        $('#btntUploadFile').click(function () {
+            $('.loader').addClass("is-active");
+
+            let files = document.getElementById('files');
+            let postData = new FormData($('#UploadFileForm')[0]);
+            $.ajax({
+                type: "POST",
+                url: Router.action('EtlUnpackingZ', 'Upload'),
+                data: postData,
+                cache: false,
+                dataType: 'json',
+                processData: false,
+                //async: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    }
+                    else {
+                        if (data.status == "success") {
+                            swal({
+                                title: data.msg,
+                                icon: "success"
+                            });
+                        }
+                        else {
+                            //顯示錯誤資訊
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                        }
+
+                        files.outerHTML = files.outerHTML; //重置了file的outerHTML
+                    }
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        })
+    </script>
+
+}
+

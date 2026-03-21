@@ -1,0 +1,171 @@
+﻿
+@{
+    ViewBag.Title = "SearchCargo";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<span class="headtype">稅金查詢</span>
+<hr />
+<form id="DownloadFileForm" action="@Url.Action("SearchCargo", "Cargo")" method="post" enctype="multipart/form-data" class="containertype">
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        <input type="text" id="invoice" name="invoice" value="" />
+        <div id="btntSearch" class="btn btn-success" style="font-size: 1.2rem;"><i class="fas fa-search"></i> 查詢</div>
+    </div>
+
+    <div class="col-12 col-md-12 col-sm-12">
+        <table id="cargoTable" style="width:100%;">
+            <thead>
+                <tr>
+                    <th>作業日</th>
+                    <th>倉儲類型</th>
+                    <th>出倉日期</th>
+                    <th>客戶名稱</th>
+                    <th>主提單號</th>
+                    <th>清關袋號</th>
+                    <th>物流貨號</th>
+                    @*<th></th>*@
+                </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+            </tfoot>
+        </table>
+    </div>
+    <div class="loader loader-bar" data-rounded data-text="查詢中"></div>
+
+</form>
+
+<!-- modal placeholder-->
+<div id='myModal' class='modal fade in'>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <b class="item-close" onclick="$('#myModal').modal('hide');">x</b>
+            <div id='myModalContent'></div>
+        </div>
+    </div>
+</div>
+
+<script>
+   
+    $('#collapseSearch').addClass("show");
+    $('#SearchCargo').addClass("active");
+
+    var getCargoList;
+    $(function () {
+        getCargoList =
+            $('#cargoTable').DataTable({
+                "processing": true,
+                "serverSide": true,
+                //pageLength: 10,
+                //lengthMenu: [10, 25, 50, 100, 200],
+                bSort:false,
+                searching:false,
+                paging: false,
+                //searchDelay: 500, //延遲搜尋
+                "ajax": {
+                    "url": Router.action('Cargo', 'GetFee_Master'),
+                    "data": function (data) {
+                        var obj = new Object();
+                        obj.invoice = $('#invoice').val().trim();
+                        //obj.endDate = $('#endDate').val();
+                        //obj.custno = $('#custno').val();
+                        //obj.itemno = $('#itemno').val();
+                        //obj.draw = data.draw;
+                        //obj.start = data.start;
+                        //obj.length = data.length;
+                        //obj.order = data.order[0].dir; //升序或降序：隨滑鼠點擊發生變化
+                        ////obj.sort = data.order[0].column == "2" ? "itemno" : data.order[0].column == "4" ? "ikindname" : "";//排序欄位
+                        //obj.search = data.search.value;
+                        return $.extend({}, {}, {
+                            data: JSON.stringify(obj),
+                        })
+                    },
+                    dataSrc: function (data) {
+                        if (data.Redirect) {
+                            window.location = Router.action('Account', 'Login');
+                        }
+                        return JSON.parse(data.data); //指定返回資料列的位置，該資料列為陣列形式
+                    }
+                },
+                language: {
+                    "url": "../Scripts/DataTables/Chinese-traditional.json",
+                },
+                //destroy: true,  //Cannot reinitialise DataTable,解决重新載入問題
+                //data: data,
+                //responsive: {
+                //    details: {
+                //        display: $.fn.dataTable.Responsive.display.modal({
+                //            header: function (row) {
+                //                var data = row.data();
+                //                return '明細';
+                //            }
+                //        }),
+                //        renderer: $.fn.dataTable.Responsive.renderer.tableAll({
+                //            tableClass: 'ui table'
+                //        })
+                //    }
+                //},
+                columns: [
+                    { "data": "DATADATE" },
+                    { "data": "SOURCE" },
+                    { "data": "Format_OUT_DATETIME" },
+                    { "data": "CUST_NAME" },
+                    { "data": "MAIN_NUMBER" },
+                    { "data": "BAG_NUMBER" },
+                    {
+                        //參考https://dotblogs.com.tw/shadow/2018/04/03/065712
+                        "data": "DLV_INV",//資料行繫結屬性
+                        orderable: false, // 禁用排序
+                        render: function (data, type, row, meta) {
+                            if (data == "") {
+                                return "";
+                            }
+                            else {
+                                 //row指的是資料列物件 data變數相等於row.sysid
+                            return "<input type='button' class='btn btn-info' value='" + data + "' onclick=showDialogCargo('" + data + "') />";
+                            }
+                        }
+                    },
+                    //{ "defaultContent": "" }
+                ],
+                columnDefs: [{
+                    className: 'control',
+                    orderable: false,
+                    targets: -1
+                },
+                {
+                    //targets: [0], //隱藏欄位
+                    visible: false,
+                    searchable: false
+                }
+                ]
+            });
+
+
+        $('body').keypress(function (e) {
+            var key = window.event ? e.keyCode : e.which;
+            if (key == 13) {
+                getCargoList.draw();
+                return false;
+            }
+        });
+
+    });
+
+    $('#btntSearch').click(function () {
+        getCargoList.draw();
+    })
+
+    function showDialogCargo(trans_number) {
+        $('#myModalContent').load(Router.action('Cargo', 'DialogCargo') + "?trans_number=" + trans_number, function () {
+            $('#myModal').modal({
+                /*backdrop: 'static',*/
+                keyboard: true
+            }, 'show');
+            //bindFormCustomer(this);
+        });
+        return false;
+    }
+
+
+</script>

@@ -1,0 +1,579 @@
+﻿@{
+    ViewBag.Title = "貨件紀錄查詢";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .fixed-table-container {
+        max-height: 600px;
+        overflow-y: scroll;
+        overflow-x: scroll;
+        position: relative;
+        border: 1px solid #dee2e6;
+    }
+
+        .fixed-table-container table {
+            width: max-content;
+            min-width: 100%;
+            margin-bottom: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .fixed-table-container thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #343a40;
+            color: white;
+        }
+
+        .fixed-table-container td,
+        .fixed-table-container th {
+            word-wrap: break-word;
+            word-break: break-all;
+            white-space: normal;
+            padding: 8px;
+            vertical-align: middle;
+            border: 1px solid #dee2e6;
+        }
+
+        .fixed-table-container tbody tr:nth-of-type(odd) {
+            background-color: #F2F2F2;
+        }
+
+        .fixed-table-container tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .fixed-table-container th.fixed-column,
+        .fixed-table-container td.fixed-column {
+            position: sticky;
+            left: 0;
+            z-index: 9;
+            background-color: #fff;
+        }
+
+        .fixed-table-container thead th.fixed-column {
+            z-index: 11;
+            background-color: #343a40;
+        }
+
+        .fixed-table-container tbody tr:nth-of-type(odd) td.fixed-column {
+            background-color: #F2F2F2;
+        }
+
+        .fixed-table-container tbody tr:hover td.fixed-column {
+            background-color: #f5f5f5;
+        }
+
+    .col-seq {
+        max-width: 60px;
+    }
+
+    .col-date {
+        max-width: 150px;
+    }
+
+    .col-customer {
+        max-width: 250px;
+    }
+
+    .col-tracking-no {
+        max-width: 180px;
+    }
+
+    .col-source {
+        max-width: 100px;
+    }
+
+    .col-process-type {
+        max-width: 150px;
+    }
+
+    .col-trans {
+        max-width: 150px;
+    }
+
+    .col-importer {
+        max-width: 120px;
+    }
+
+    .col-phone {
+        max-width: 120px;
+    }
+
+    .col-address {
+        max-width: 250px;
+    }
+
+    .col-store-code {
+        max-width: 100px;
+    }
+
+    .col-store-name {
+        max-width: 150px;
+    }
+
+    .col-freight-payer {
+        max-width: 100px;
+    }
+
+    .col-amount {
+        max-width: 120px;
+    }
+
+    .col-remark {
+        max-width: 300px;
+    }
+
+    .col-seq-no {
+        max-width: 100px;
+    }
+
+    .col-location {
+        max-width: 100px;
+    }
+
+    .col-outbound-date {
+        max-width: 100px;
+    }
+
+    .col-outbound-no {
+        max-width: 180px;
+    }
+
+    /* 放大 checkbox（Bootstrap custom-control） */
+    #columnSettingModal .custom-control {
+        padding-left: 2.2rem;
+    }
+
+    #columnSettingModal .custom-control-label {
+        font-size: 1.05rem;
+        line-height: 1.8rem;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    #columnSettingModal .custom-control-label::before,
+    #columnSettingModal .custom-control-label::after {
+        width: 1.3rem;
+        height: 1.3rem;
+        top: 0.2rem;
+    }
+
+    #columnSettingModal .custom-control-input {
+        width: 1.3rem;
+        height: 1.3rem;
+    }
+</style>
+
+<div ng-controller="ShipmentInboundRecordController">
+    <span class="headtype">貨件紀錄查詢</span>
+    <hr />
+
+    <!-- 查詢條件區域 -->
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <div class="row mb-3 align-items-center">
+            <!-- 進口方式 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="dataTypeOption" class="col-lg-4 col-form-label text-right">進口方式</label>
+                <div class="col-lg-8">
+                    <select id="dataTypeOption"
+                            class="form-control"
+                            ng-model="searchForm.dataType">
+                        <option value="">全部</option>
+                        <option ng-repeat="type in dataTypes" value="{{type.Value}}">{{type.Text}}</option>
+                    </select>
+                </div>
+            </div>
+            <!-- 入庫日期(起) -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="inboundDateStart" class="col-lg-4 col-form-label text-right">入庫日期(起)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="inboundDateStart"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.inboundDateStart"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="startDatePopup.opened"
+                           ng-click="openStartDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇開始日期" />
+                </div>
+            </div>
+
+            <!-- 入庫日期(迄) -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="inboundDateEnd" class="col-lg-4 col-form-label text-right">入庫日期(迄)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="inboundDateEnd"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.inboundDateEnd"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="endDatePopup.opened"
+                           ng-click="openEndDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇結束日期" />
+                </div>
+            </div>
+
+            <!-- 客戶(多選) -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="custCodeOption" class="col-lg-4 col-form-label text-right">客戶</label>
+                <div class="col-lg-8">
+                    <customer-multi-select
+                        select-all="customerSelectAll"
+                        selected-cust-codes="selectedCustCodes"
+                        display-text="customerDisplayText"
+                        display-full-text="customerDisplayFullText">
+                    </customer-multi-select>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+            <!-- 貨物來源 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="sourceTypeOption" class="col-lg-4 col-form-label text-right">貨物來源</label>
+                <div class="col-lg-8">
+                    <select id="sourceTypeOption"
+                            class="form-control"
+                            ng-model="searchForm.sourceType">
+                        <option value="">全部</option>
+                        <option ng-repeat="source in sourceTypeList" value="{{source.Value}}">{{source.Text}}</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 單號 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="trackingNoInput" class="col-lg-4 col-form-label text-right">單號</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="trackingNoInput"
+                           class="form-control"
+                           ng-model="searchForm.trackingNo"
+                           placeholder="請輸入單號" />
+                </div>
+            </div>
+
+            <!-- 處理方式 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="processType" class="col-lg-4 col-form-label text-right">處理方式</label>
+                <div class="col-lg-8">
+                    <select id="processType"
+                            class="form-control"
+                            ng-model="searchForm.processType">
+                        <option value="">全部</option>
+                        <option ng-repeat="type in processTypeList" value="{{type.Value}}">{{type.Text}}</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 儲位 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="locationCode" class="col-lg-4 col-form-label text-right">儲位</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="locationCode"
+                           class="form-control"
+                           ng-model="searchForm.locationCode"
+                           placeholder="請輸入儲位" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+            <!-- 倉庫狀態 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="warehouseProcessType" class="col-lg-4 col-form-label text-right">倉庫狀態</label>
+                <div class="col-lg-8">
+                    <select id="warehouseProcessType"
+                            class="form-control"
+                            ng-model="searchForm.warehouseProcessType">
+                        <option value="">全部</option>
+                        <option ng-repeat="type in warehouseProcessTypeList" value="{{type.Value}}">{{type.Text}}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 按鈕區 -->
+        <div class="row">
+            <div class="col-lg-12 text-right">
+                <button type="button"
+                        class="btn btn-primary"
+                        ng-click="search()"
+                        ng-disabled="loading">
+                    <i class="fa fa-search"></i> 查詢
+                </button>
+                <button type="button"
+                        class="btn btn-secondary ml-2"
+                        ng-click="clearSearch()"
+                        ng-disabled="loading">
+                    <i class="fa fa-eraser"></i> 清除
+                </button>
+                <button type="button"
+                        class="btn btn-success ml-2"
+                        ng-click="downloadExcel()"
+                        ng-disabled="loading">
+                    <i class="fa fa-download"></i> 下載Excel
+                </button>
+                <button type="button"
+                        class="btn btn-info ml-2"
+                        ng-click="openColumnSetting()"
+                        ng-disabled="loading">
+                    <i class="fa fa-columns"></i> 欄位顯示/隱藏
+                </button>
+            </div>
+        </div>
+    </div>
+    <hr />
+
+    <!-- 載入中提示 -->
+    <div ng-show="loading" class="text-center">
+        <i class="fa fa-spinner fa-spin fa-3x"></i>
+        <p>載入中...</p>
+    </div>
+
+    <!-- 查詢結果區域 -->
+    <div ng-show="isSearched && !loading">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <!-- 每頁顯示筆數 -->
+                    <div class="row mb-2">
+                        <div class="col-lg-6">
+                            <div class="form-inline">
+                                <label class="mr-2">每頁顯示</label>
+                                <select class="form-control"
+                                        ng-model="pageSize"
+                                        ng-change="changePageSize()">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <label class="ml-2">筆</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 text-right">
+                            <span>{{recordsInfo}}</span>
+                        </div>
+                    </div>
+
+                    <!-- 資料表格 -->
+                    <div class="fixed-table-container mt-3">
+                        <table class="table table-bordered table-hover">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th class="col-seq" ng-show="visibleColumns.seq">序號</th>
+                                    <th class="col-date" ng-show="visibleColumns.inboundDate">入庫日期</th>
+                                    <th ng-show="visibleColumns.dataType">進口方式</th>
+                                    <th class="col-customer" ng-show="visibleColumns.customer">客戶</th>
+                                    <th class="col-tracking-no fixed-column">單號</th>
+                                    <th class="col-source" ng-show="visibleColumns.sourceType">貨件來源</th>
+                                    <th class="col-process-type" ng-show="visibleColumns.processType">處理方式</th>
+                                    <th ng-show="visibleColumns.processTime">客服處理日期</th>
+                                    <th ng-show="visibleColumns.processOpe">客服處理人</th>
+                                    <th ng-show="visibleColumns.outboundDate">出庫日期</th>
+                                    <th ng-show="visibleColumns.outboundTime">出庫操作日</th>
+                                    <th ng-show="visibleColumns.outboundOpe">出庫操作人</th>
+                                    <th ng-show="visibleColumns.warehouseProcessName">倉庫狀態</th>
+                                    <th ng-show="visibleColumns.warehouseProcessTime">倉庫狀態操作日</th>
+                                    <th ng-show="visibleColumns.warehouseProcessOpe">倉庫狀態操作人</th>
+                                    <th class="col-trans" ng-show="visibleColumns.processTransName">重出派件公司</th>
+                                    <th class="col-importer" ng-show="visibleColumns.processImporter">收件人</th>
+                                    <th class="col-phone" ng-show="visibleColumns.processImporterPhone">電話</th>
+                                    <th class="col-address" ng-show="visibleColumns.processImporterAddr">宅配地址</th>
+                                    <th class="col-store-code" ng-show="visibleColumns.storeCode">門市店號</th>
+                                    <th class="col-store-name" ng-show="visibleColumns.storeName">門市名稱</th>
+                                    <th class="col-freight-payer" ng-show="visibleColumns.freightPayerName">運費支付方</th>
+                                    <th class="col-amount" ng-show="visibleColumns.totalAmount">代收款總金額</th>
+                                    <th class="col-remark" ng-show="visibleColumns.remark">備註</th>
+                                    <th class="col-seq-no" ng-show="visibleColumns.seqNo">流水號</th>
+                                    <th class="col-location" ng-show="visibleColumns.locationCode">儲位</th>
+                                    <th class="col-outbound-no" ng-show="visibleColumns.outboundTrackingNo">重出單號</th>
+                                    <th ng-show="visibleColumns.cod">到付款</th>
+                                    <th ng-show="visibleColumns.freightFee">運費</th>
+                                    <th ng-show="visibleColumns.tax">稅金</th>
+                                    <th ng-show="visibleColumns.ccfee">報關費</th>
+                                    <th ng-show="visibleColumns.fee">代收手續費</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-if="data.length === 0">
+                                    <td colspan="33" class="text-center">查無資料</td>
+                                </tr>
+                                <tr ng-repeat="item in data">
+                                    <td class="col-seq" ng-show="visibleColumns.seq">{{(currentPage - 1) * pageSize + $index + 1}}</td>
+                                    <td class="col-date" ng-show="visibleColumns.inboundDate">{{item.InboundDate | customDate}}</td>
+                                    <td ng-show="visibleColumns.dataType">{{item.DataType}}</td>
+                                    <td class="col-customer" ng-show="visibleColumns.customer">{{item.CustName || item.CustCode}}</td>
+                                    <td class="col-tracking-no fixed-column">
+                                        <a href="~/ShipmentInboundRecord/Detail?id={{item.Id}}"
+                                           target="_blank"
+                                           class="text-primary"
+                                           style="cursor: pointer; text-decoration: underline; font-weight: 600;">
+                                            {{item.TrackingNo}}
+                                        </a>
+                                    </td>
+                                    <td class="col-source" ng-show="visibleColumns.sourceType">{{item.SourceTypeName}}</td>
+                                    <td class="col-process-type" ng-show="visibleColumns.processType">{{item.ProcessTypeName}}</td>
+                                    <td ng-show="visibleColumns.processTime">{{item.ProcessTime | customDateTime}}</td>
+                                    <td ng-show="visibleColumns.processOpe">{{item.ProcessOpe}}</td>
+                                    <td ng-show="visibleColumns.outboundDate">{{item.OutboundDate | customDate}}</td>
+                                    <td ng-show="visibleColumns.outboundTime">{{item.OutboundTime | customDateTime}}</td>
+                                    <td ng-show="visibleColumns.outboundOpe">{{item.OutboundOpe}}</td>
+                                    <td ng-show="visibleColumns.warehouseProcessName">{{item.WarehouseProcessName}}</td>
+                                    <td ng-show="visibleColumns.warehouseProcessTime">{{item.WarehouseProcessTime | customDateTime}}</td>
+                                    <td ng-show="visibleColumns.warehouseProcessOpe">{{item.WarehouseProcessOpe}}</td>
+                                    <td class="col-trans" ng-show="visibleColumns.processTransName">{{item.ProcessTransName}}</td>
+                                    <td class="col-importer" ng-show="visibleColumns.processImporter">{{item.ProcessImporter}}</td>
+                                    <td class="col-phone" ng-show="visibleColumns.processImporterPhone">{{item.ProcessImporterPhone}}</td>
+                                    <td class="col-address" ng-show="visibleColumns.processImporterAddr">{{item.ProcessImporterAddr}}</td>
+                                    <td class="col-store-code" ng-show="visibleColumns.storeCode">{{item.StoreCode}}</td>
+                                    <td class="col-store-name" ng-show="visibleColumns.storeName">{{item.StoreName}}</td>
+                                    <td class="col-freight-payer" ng-show="visibleColumns.freightPayerName">{{item.FreightPayerName}}</td>
+                                    <td class="col-amount" ng-show="visibleColumns.totalAmount">{{item.TotalAmount | number}}</td>
+                                    <td class="col-remark" ng-show="visibleColumns.remark">{{item.Remark}}</td>
+                                    <td class="col-seq-no" ng-show="visibleColumns.seqNo">{{item.SeqNo}}</td>
+                                    <td class="col-location" ng-show="visibleColumns.locationCode">
+                                        <a href="javascript:void(0)"
+                                           ng-click="showLocationHistoryModal(item.Id, item.TrackingNo, item.LocationCode)"
+                                           class="text-primary"
+                                           style="cursor: pointer; text-decoration: underline;">
+                                            {{item.LocationCode}}
+                                        </a>
+                                    </td>
+                                    <td class="col-outbound-no" ng-show="visibleColumns.outboundTrackingNo">{{item.OutboundTrackingNo}}</td>
+                                    <td ng-show="visibleColumns.cod">{{item.Cod | number}}</td>
+                                    <td ng-show="visibleColumns.freightFee">{{item.FreightFee | number}}</td>
+                                    <td ng-show="visibleColumns.tax">{{item.Tax | number}}</td>
+                                    <td ng-show="visibleColumns.ccfee">{{item.Ccfee | number}}</td>
+                                    <td ng-show="visibleColumns.fee">{{item.Fee | number}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分頁控制 -->
+                    <div class="row" ng-show="totalPages > 1">
+                        <div class="col-lg-12">
+                            <nav>
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item" ng-class="{disabled: currentPage === 1}">
+                                        <a class="page-link" href="javascript:void(0)" ng-click="previousPage()">上一頁</a>
+                                    </li>
+                                    <li class="page-item"
+                                        ng-repeat="page in getPages()"
+                                        ng-class="{active: page === currentPage}">
+                                        <a class="page-link" href="javascript:void(0)" ng-click="changePage(page)">{{page}}</a>
+                                    </li>
+                                    <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
+                                        <a class="page-link" href="javascript:void(0)" ng-click="nextPage()">下一頁</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 欄位顯示/隱藏 Modal -->
+    <div class="modal fade" id="columnSettingModal" tabindex="-1" role="dialog" aria-labelledby="columnSettingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="columnSettingModalLabel">欄位顯示/隱藏</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-end mb-2">
+                        <button type="button" class="btn btn-outline-primary mr-2" ng-click="selectAllColumns()">全選</button>
+                        <button type="button" class="btn btn-outline-secondary" ng-click="deselectAllColumns()">取消</button>
+                    </div>
+
+                    <div class="column-setting-list">
+                        <div class="row">
+                            <div class="col-md-4" ng-repeat="col in columnOptions">
+                                <div class="custom-control custom-checkbox mb-2">
+                                    <input type="checkbox"
+                                           class="custom-control-input"
+                                           id="col_{{col.key}}"
+                                           ng-model="visibleColumns[col.key]"
+                                           ng-disabled="col.locked" />
+                                    <label class="custom-control-label" for="col_{{col.key}}">{{col.title}}</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Modal for Location History -->
+    <div class="modal fade" id="locationHistoryModal" tabindex="-1" role="dialog" aria-labelledby="locationHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="locationHistoryModalLabel">儲位歷史紀錄 - {{currentTrackingNo}}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <strong>目前儲位：</strong>
+                        <span class="badge badge-primary">{{currentLocationCode || '無'}}</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th style="width: 25%;">舊儲位</th>
+                                    <th style="width: 25%;">新儲位</th>
+                                    <th style="width: 20%;">建立人員</th>
+                                    <th style="width: 30%;">建立時間</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="history in locationHistory">
+                                    <td>{{history.OldLocationCode || ''}}</td>
+                                    <td>{{history.NewLocationCode || ''}}</td>
+                                    <td>{{history.CreatedOpe || ''}}</td>
+                                    <td>{{history.CreatedTime | customDateTime}}</td>
+                                </tr>
+                                <tr ng-if="locationHistory.length === 0">
+                                    <td colspan="4" class="text-center text-muted">查無歷史紀錄</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

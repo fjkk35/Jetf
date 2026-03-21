@@ -1,0 +1,442 @@
+/* 貨況明細樣式 */
+
+/* 整體背景 */
+body {
+    background-color: #f0f4f8;
+}
+
+.detail-container {
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* 標題區域 */
+.headtype {
+    color: #334155;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* 區塊樣式 */
+.detail-section {
+    margin-bottom: 30px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+/* 區塊標題 */
+.section-title {
+    background: #f1f5f9;
+    padding: 18px 24px;
+    margin: 0;
+    font-size: 19px;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 2px solid #cbd5e1;
+}
+
+.section-title h5 {
+    color: #475569;
+    margin: 0;
+    font-size: 19px;
+}
+
+/* 表格樣式 */
+.detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+}
+
+.detail-table tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background-color 0.2s ease;
+}
+
+.detail-table tbody tr:hover {
+    background-color: #fafcfe;
+}
+
+.detail-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.detail-table td {
+    padding: 18px 24px;
+    color: #475569;
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+.detail-table td.label {
+    background: #fafcfe;
+    font-weight: 600;
+    color: #64748b;
+    border-right: 1px solid #f1f5f9;
+    font-size: 16px;
+}
+
+/* 連結樣式 */
+.detail-table a {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    border-bottom: 1px solid transparent;
+    font-size: 16px;
+}
+
+.detail-table a:hover {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+}
+
+/* 稅金資料特殊樣式 */
+.detail-section:has(.section-title:contains("稅金類別")) .section-title {
+    background: #fffbeb;
+    border-bottom-color: #fcd34d;
+}
+
+.detail-section:has(.section-title:contains("稅金類別")) .detail-table td.label {
+    background: #fffbeb;
+    color: #d97706;
+}
+
+/* 處置說明表格 */
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #ffffff;
+}
+
+.table-striped tbody tr:hover {
+    background-color: #fafcfe;
+}
+
+.table-bordered {
+    border-color: #e2e8f0;
+}
+
+.table-bordered th,
+.table-bordered td {
+    border-color: #e2e8f0;
+    padding: 18px 24px;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #475569;
+}
+
+.table thead th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    padding: 18px 24px;
+    border-bottom: 2px solid #cbd5e1;
+    text-align: center;
+    font-size: 16px;
+}
+
+/* 配送進度表格 */
+.status-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+}
+
+.status-table thead {
+    background: #f8fafc;
+}
+
+.status-table th {
+    padding: 18px 24px;
+    text-align: left;
+    font-weight: 600;
+    color: #475569;
+    border-bottom: 2px solid #cbd5e1;
+    font-size: 16px;
+}
+
+.status-table td {
+    padding: 18px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #475569;
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+.status-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.status-table tbody tr:hover {
+    background-color: #fafcfe;
+}
+
+.status-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* 按鈕樣式優化 */
+.btn-info {
+    background: #3b82f6;
+    border: none;
+    color: #ffffff;
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
+    transition: all 0.2s ease;
+}
+
+.btn-info:hover {
+    background: #2563eb;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+    color: #ffffff;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    border: none;
+    color: #ffffff;
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+    color: #ffffff;
+}
+
+.btn-success {
+    background: #10b981;
+    border: none;
+    color: #ffffff;
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.2);
+    transition: all 0.2s ease;
+}
+
+.btn-success:hover {
+    background: #059669;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+    transform: translateY(-1px);
+    color: #ffffff;
+}
+
+.btn-danger {
+    background: #ef4444;
+    border: none;
+    color: #ffffff;
+    padding: 8px 14px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.2);
+    transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+    transform: translateY(-1px);
+    color: #ffffff;
+}
+
+.btn-secondary {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+    color: #334155;
+}
+
+.btn-sm {
+    padding: 8px 14px;
+    font-size: 14px;
+}
+
+/* 按鈕區域 */
+.button-section {
+    margin-top: 40px;
+    text-align: center;
+    padding: 20px 0;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* 載入動畫 */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+}
+
+/* Modal 樣式優化 */
+.modal-header {
+    background: #f8fafc;
+    color: #334155;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 20px 24px;
+}
+
+.modal-header .modal-title {
+    color: #334155;
+    font-weight: 600;
+    font-size: 20px;
+}
+
+.modal-header .close {
+    color: #64748b;
+    opacity: 0.8;
+    text-shadow: none;
+    font-size: 28px;
+}
+
+.modal-header .close:hover {
+    opacity: 1;
+    color: #334155;
+}
+
+.modal-body {
+    background-color: #ffffff;
+    padding: 24px;
+}
+
+.modal-content {
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+
+.modal-footer {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 16px 24px;
+}
+
+/* 表單樣式 */
+.form-control {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 16px;
+    transition: all 0.2s ease;
+    color: #334155;
+}
+
+.form-control:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #334155;
+    font-size: 15px;
+    display: block;
+}
+
+.required:after {
+    content: " *";
+    color: #ef4444;
+}
+
+/* 文字顏色優化 */
+.text-danger {
+    color: #ef4444 !important;
+    font-size: 15px;
+}
+
+.text-muted {
+    color: #94a3b8 !important;
+    font-size: 15px;
+}
+
+/* 分隔線 */
+hr {
+    border-top: 1px solid #e2e8f0;
+    margin: 24px 0;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .detail-container {
+        padding: 20px 15px;
+    }
+
+    .detail-table {
+        font-size: 15px;
+    }
+
+    .detail-table td {
+        padding: 14px 18px;
+    }
+
+    .section-title {
+        font-size: 17px;
+        padding: 16px 20px;
+    }
+
+    .headtype {
+        font-size: 24px;
+    }
+}
+
+/* 數字右對齊樣式增強 */
+.detail-table td[style*="text-align: right"] {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: 500;
+    color: #334155;
+    font-variant-numeric: tabular-nums;
+    font-size: 16px;
+}
+
+/* 圖示與文字對齊 */
+.btn i {
+    margin-right: 6px;
+}
+
+/* 表格資料置中 */
+.table tbody td {
+    vertical-align: middle;
+}
+
+/* 優化間距 */
+.detail-section + .detail-section {
+    margin-top: 25px;
+}

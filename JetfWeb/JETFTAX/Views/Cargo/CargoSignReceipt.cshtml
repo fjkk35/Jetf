@@ -1,0 +1,35 @@
+﻿@model JETFTAX.Models.CargoSignReceiptViewModel
+
+@{
+    ViewBag.Title = "CargoSignReceipt";
+    Layout = null;
+}
+
+@Styles.Render("~/Content/viewer/main.css")
+@Styles.Render("~/Content/viewer/viewer.css")
+<h1 style="text-align:center">簽收單</h1>
+
+@if (Model.UrlList.Count > 0)
+{
+    <ul id="dowebok" style="text-align:center;list-style:none">
+        @for (int i = 0; i < Model.UrlList.Count; i++)
+        {
+            <li><img src="data:image/jpg;base64, @Model.UrlList[i].Url"></li>
+        }
+    </ul>
+}
+else {
+       <h2 style="text-align:center;color:red;margin-top:2em">無簽收單</h2>
+}
+
+
+@Scripts.Render("~/Scripts/jquery-1.10.2.min.js")
+@Scripts.Render("~/Scripts/lib/viewer/viewer.js")
+
+<script>
+    $('#dowebok').viewer();
+</script>
+
+
+
+

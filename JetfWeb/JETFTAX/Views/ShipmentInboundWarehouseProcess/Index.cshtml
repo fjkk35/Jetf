@@ -1,0 +1,196 @@
+﻿@{
+    ViewBag.Title = "倉庫處理狀態";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="ShipmentInboundWarehouseProcessController">
+    <span class="headtype">倉庫處理狀態</span>
+    <hr />
+
+    <!-- 查詢條件區域 -->
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <div class="row mb-3 align-items-center">
+            <!-- 單號 -->
+            <div class="form-group row col-lg-6 mb-0">
+                <label for="trackingNoInput" class="col-lg-2 col-form-label text-right">單號</label>
+                <div class="col-lg-10">
+                    <input type="text"
+                           id="trackingNoInput"
+                           class="form-control"
+                           ng-model="searchForm.trackingNo"
+                           placeholder="請輸入單號" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 按鈕區 -->
+        <div class="row">
+            <div class="col-lg-12 text-right">
+                <button type="button" 
+                        class="btn btn-primary" 
+                        ng-click="search()" 
+                        ng-disabled="loading">
+                    <i class="fa fa-search"></i> 查詢
+                </button>
+                <button type="button" 
+                        class="btn btn-secondary ml-2" 
+                        ng-click="clearSearch()" 
+                        ng-disabled="loading">
+                    <i class="fa fa-eraser"></i> 清除
+                </button>
+                <button type="button"
+                        class="btn btn-info ml-2"
+                        ng-click="openBatchUploadModal()"
+                        ng-disabled="loading || uploading">
+                    <i class="fa fa-upload"></i> 批量上傳
+                </button>
+            </div>
+        </div>
+    </div>
+    <hr />
+
+    <!-- 載入中提示 -->
+    <div ng-show="loading" class="text-center">
+        <i class="fa fa-spinner fa-spin fa-3x"></i>
+        <p>載入中...</p>
+    </div>
+
+    <!-- 查詢結果區域 -->
+    <div ng-show="isSearched && !loading">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <!-- 資料表格 -->
+                    <div class="table-responsive mt-3">
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>序號</th>
+                                    <th>單號</th>
+                                    <th>處理狀態</th>
+                                    <th>處理時間</th>
+                                    <th>處理人員</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-if="data.length === 0">
+                                    <td colspan="5" class="text-center">查無資料</td>
+                                </tr>
+                                <tr ng-repeat="item in data">
+                                    <td>{{$index + 1}}</td>
+                                    <td>{{item.TrackingNo}}</td>
+                                    <td>
+                                        <button ng-if="item.WarehouseProcessType" 
+                                                class="btn btn-sm btn-info" 
+                                                ng-click="openProcessTypeModal(item)">
+                                            {{item.WarehouseProcessTypeName}}
+                                        </button>
+                                        <button ng-if="!item.WarehouseProcessType" 
+                                                class="btn btn-sm btn-secondary" 
+                                                ng-click="openProcessTypeModal(item)">
+                                            未設定
+                                        </button>
+                                    </td>
+                                    <td>{{item.WarehouseProcessTime | customDateTime}}</td>
+                                    <td>{{item.WarehouseProcessOpe}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量上傳 Modal -->
+    <div class="modal fade" id="batchUploadModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">批量上傳</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <input type="file" class="form-control" id="batchUploadFile" accept=".xls,.xlsx" />
+                    </div>
+                    <div class="mb-3">
+                        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\倉庫處理狀態批量上傳_範例.xlsx&fileName=倉庫處理狀態批量上傳_範例.xlsx' target='_blank'>下載範例</a>
+                    </div>
+
+                    <div ng-show="uploadResult" class="mt-3">
+                        <div class="alert" ng-class="{'alert-success': uploadResult.status === 'success', 'alert-danger': uploadResult.status === 'error'}">
+                            {{uploadResult.msg}}
+                        </div>
+                    </div>
+
+                    <div class="mt-3" ng-if="uploadErrors && uploadErrors.length > 0">
+                        <h5>驗證失敗明細</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>單號</th>
+                                        <th style="width: 180px;">處理狀態</th>
+                                        <th>失敗原因</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="e in uploadErrors">
+                                        <td>{{e.TrackingNo}}</td>
+                                        <td>{{e.WarehouseProcessTypeText}}</td>
+                                        <td class="text-danger">{{e.Reason}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-disabled="uploading">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="uploadBatchExcel()" ng-disabled="uploading">
+                        <i class="fa fa-spinner fa-spin" ng-show="uploading"></i>
+                        {{uploading ? '上傳中...' : '上傳'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 處理狀態 Modal -->
+    <div class="modal fade" id="processTypeModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{modalTitle}}</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- 處理狀態選擇 -->
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">處理狀態 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <select class="form-control" 
+                                    ng-model="processTypeForm.warehouseProcessType">
+                                <option value="">請選擇</option>
+                                <option ng-repeat="type in warehouseProcessTypeList" ng-value="type.Value">{{type.Text}}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveProcessType()" ng-disabled="saving">
+                        <i class="fa fa-spinner fa-spin" ng-show="saving"></i>
+                        {{saving ? '儲存中...' : '確定'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,75 @@
+﻿@model JETFTAX.Models.BatchUploadProcess.BatchUploadProcessViewModel
+@{
+    ViewBag.Title = "BatchUploadProcess";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<span class="headtype">處置說明批次上傳</span>
+<hr />
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<form id="UploadFileForm" action="@Url.Action("", "")" method="post" enctype="multipart/form-data" class="containertype">
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.Status)
+        @Html.DropDownListFor(m => m.Status, Model.ProcessTypeList, new { @class = "form-control" })
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <input type="file" name="file" id="fileTax" />
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\處置說明批次上傳_範例.xlsx&fileName=處置說明批次上傳_範例.xlsx' target='_blank'>下載範例(處置說明)</a>
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\處置說明批次上傳(結案)_範例.xlsx&fileName=處置說明批次上傳(結案)_範例.xlsx' target='_blank'>下載範例(結案)</a>
+    </div>
+    <div id="btntUploadFile" type="button" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem;"><i class="fas fa-upload"></i> 上傳</div>
+
+    <div class="loader loader-bar" data-rounded data-text="檔案上傳中"></div>
+</form>
+
+@{
+    <script>
+
+        $('#collapseSearch').addClass("show");
+        $('#BatchUploadProcess').addClass("active");
+
+        $('#btntUploadFile').click(function () {
+            $('.loader').addClass("is-active");
+
+            var file = document.getElementById('fileTax');
+            var postData = new FormData($('#UploadFileForm')[0]);
+            $.ajax({
+                type: "POST",
+                url: Router.action('BatchUploadProcess', 'Upload'),
+                data: postData,
+                cache: false,
+                dataType: 'json',
+                processData: false,
+                //async: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    }
+                    else {
+                        if (data.status == "success") {
+                            swal({
+                                title: data.msg,
+                                icon: "success"
+                            });
+                        }
+                        else {
+                            //顯示錯誤資訊
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                        }
+                        file.outerHTML = file.outerHTML; //重置了file的outerHTML
+                    }
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        })
+    </script>
+
+}

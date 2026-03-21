@@ -1,0 +1,174 @@
+﻿@{
+    ViewBag.Title = "客戶稅金結算";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">客戶稅金結算</span>
+<hr />
+
+<div ng-controller="CustomerTaxStatisticsController">
+    <!-- 查詢條件區域 -->
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <div class="row mb-3 align-items-center">
+            <!-- 客戶選擇 -->
+            <div class="form-group row col-lg-4 mb-0">
+                <label class="col-lg-3 col-form-label text-right">選擇客戶</label>
+                <div class="col-lg-9">
+                    <select class="form-control"
+                            ng-model="selectedCustomer"
+                            ng-options="customer.Cust_Code as (customer.Cust_Code + ' - ' + customer.CUST_NAME) for customer in customers track by customer.Cust_Code">
+                        <option value="">請選擇客戶</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- 開始日期選擇 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label class="col-lg-4 col-form-label text-right">開始日期</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           class="datepicker-input form-control"
+                           ng-model="startDate"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="startDatePopup.opened"
+                           ng-click="openStartDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇開始日期" />
+                </div>
+            </div>
+            
+            <!-- 結束日期選擇 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label class="col-lg-4 col-form-label text-right">結束日期</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           class="datepicker-input form-control"
+                           ng-model="endDate"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="endDatePopup.opened"
+                           ng-click="openEndDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇結束日期" />
+                </div>
+            </div>
+            
+            <!-- 匯出按鈕 -->
+            <div class="col-lg-2">
+                <button type="button"
+                        class="btn btn-success btn-block"
+                        style="font-size: 1.2rem;"
+                        ng-click="exportExcel()"
+                        ng-disabled="!selectedCustomer || !startDate || !endDate || isExporting">
+                    <i class="fas fa-file-export" ng-hide="isExporting"></i>
+                    <i class="fas fa-spinner fa-spin" ng-show="isExporting"></i>
+                    {{isExporting ? '匯出中...' : '匯出 Excel'}}
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .card {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: box-shadow 0.15s ease-in-out;
+    }
+
+    .form-group.row {
+        margin-bottom: 0;
+    }
+
+    .col-form-label {
+        padding-top: 7px;
+        font-weight: 500;
+        color: #495057;
+    }
+
+    .form-control {
+        border-radius: 4px;
+        border: 1px solid #ced4da;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    .alert {
+        border-radius: 6px;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .alert i {
+        margin-right: 8px;
+    }
+
+    .panel-default {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .panel-title {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .feature-box {
+        text-align: center;
+        padding: 20px;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        height: 100%;
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .feature-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .feature-icon {
+        margin-bottom: 15px;
+    }
+
+    .feature-box h5 {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .feature-box p {
+        color: #6c757d;
+        font-size: 14px;
+        line-height: 1.4;
+        margin-bottom: 0;
+    }
+
+    .btn {
+        border-radius: 6px;
+        font-weight: 500;
+    }
+
+    .btn-success {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+
+    .btn-success:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+    }
+</style>
+

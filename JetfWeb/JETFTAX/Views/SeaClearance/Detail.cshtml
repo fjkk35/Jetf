@@ -1,0 +1,946 @@
+﻿@{
+    ViewBag.Title = "Detail";
+    Layout = "~/Views/Shared/_DetailLayout.cshtml";
+}
+
+@Html.Css("~/Content/Views/SeaClearance/Detail.css")
+
+<div ng-app="seaClearanceDetailApp" ng-controller="SeaClearanceDetailController">
+    <table id="detail">
+        <colgroup>
+            <col style="width: 10%;">   <!-- 第1欄：標題 -->
+            <col style="width: 10%;">  <!-- 第2欄：值 -->
+            <col style="width: 10%;">   <!-- 第3欄：標題 -->
+            <col style="width: 20%;">  <!-- 第4欄：值 -->
+            <col style="width: 10%;">   <!-- 第5欄：標題 -->
+            <col style="width: 20%;">  <!-- 第6欄：值 -->
+            <col style="width: 10%;">   <!-- 第7欄：標題 -->
+            <col style="width: 10%;">  <!-- 第8欄：值 -->
+        </colgroup>
+        <thead>
+            <tr>
+                <th class="tablesort" colspan="8" style="padding: 0.3rem 0;height:2.5rem">
+                    <button class="edit-history-btn" ng-click="showEditHistoryModal()">
+                        <i class="fas fa-history"></i>編輯紀錄
+                    </button>
+                </th>
+            </tr>
+            <tr>
+                <th colspan="8">
+                    <h5>基本資料</h5>
+                </th>
+            </tr>
+        </thead>
+        <tbody id="detailBody" ng-if="detailData">
+            <tr>
+                <td class="tabletitle">收單通知日期</td>
+                <td>{{detailData.SeaOrderOriginals[0].CreateDate | customDate}}</td>
+                <td class="tabletitle">倉別</td>
+                <td>{{detailData.SeaOrderOriginals[0].Modifyby}}</td>
+                <td class="tabletitle">報單傳輸日</td>
+                <td>{{detailData.ProDateTime | customDate}}</td>
+                <td class="tabletitle">負責人</td>
+                <td>{{processor}}</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">原單是否上傳</td>
+                <td>
+                    <span ng-if="detailData.IsSeaOrderOriginal">是</span>
+                    <span ng-if="!detailData.IsSeaOrderOriginal">否</span>
+                </td>
+                <td class="tabletitle">報關方式</td>
+                <td>
+                    <div class="editable-field-container">
+                        <span class="editable-field" ng-if="!editMode.Post_Entry">{{detailData.SeaOrderOriginals[0].Post_Entry}}</span>
+                        <div ng-if="editMode.Post_Entry">
+                            <select class="form-control" ng-model="tempValues.Post_Entry" ng-keydown="handleSelectKeyDown($event, 'Post_Entry')">
+                                <option value="">請選擇報關方式</option>
+                                <option ng-repeat="option in postEntryOptions" ng-value="option.Value">{{option.Text}}</option>
+                            </select>
+                            <div class="edit-buttons">
+                                <button class="btn-save" ng-click="saveField('Post_Entry')">儲存</button>
+                                <button class="btn-cancel" ng-click="cancelEdit('Post_Entry')">取消</button>
+                            </div>
+                        </div>
+                        <button class="edit-btn" ng-if="!editMode.Post_Entry" ng-click="editField('Post_Entry')" ng-disabled="isEditLocked('Post_Entry')" ng-class="{'is-disabled': isEditLocked('Post_Entry')}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+                <td class="tabletitle">報驗公司</td>
+                <td>
+                    <div class="editable-field-container">
+                        <span class="editable-field" ng-if="!editMode.CustomsBroker">{{getCustomsBrokerName(detailData.CustomsBrokerId)}}</span>
+                        <div ng-if="editMode.CustomsBroker">
+                            <select class="form-control" ng-model="tempValues.CustomsBrokerId" ng-keydown="handleSelectKeyDown($event, 'CustomsBroker')">
+                                <option value="">請選擇報驗公司</option>
+                                <option ng-repeat="broker in customsBrokerOptions" ng-value="broker.Value">{{broker.Text}}</option>
+                            </select>
+                            <div class="edit-buttons">
+                                <button class="btn-save" ng-click="saveField('CustomsBroker')">儲存</button>
+                                <button class="btn-cancel" ng-click="cancelEdit('CustomsBroker')">取消</button>
+                            </div>
+                        </div>
+                        <button class="edit-btn" ng-if="!editMode.CustomsBroker" ng-click="editField('CustomsBroker')" ng-disabled="isEditLocked('CustomsBroker')" ng-class="{'is-disabled': isEditLocked('CustomsBroker')}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+                <td class="tabletitle">報單傳輸截止日</td>
+                <td>{{detailData.ProDateTimeDeadline | customDate}}</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">建檔日期</td>
+                <td>{{detailData.CrtDateTime | customDate}}</td>
+                <td class="tabletitle">客戶</td>
+                <td>{{detailData.SeaOrderOriginals[0].Cust_Name}}</td>
+                <td class="tabletitle">簽審類別</td>
+                <td>
+                    <div class="editable-field-container">
+                        <div class="selected-categories-display">
+                            <p ng-repeat="category in selectedCategories" class="category-tag">{{category.CategoryName}}</p>
+                        </div>
+                        <button class="edit-btn" ng-click="showApprovalCategoryModal()" ng-disabled="isAnyEditing()" ng-class="{'is-disabled': isAnyEditing()}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+                <td class="tabletitle">要求客戶截止日</td>
+                <td>{{detailData.CustomerDeadline | customDate}}</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">艙單到港日</td>
+                <td>
+                    <div class="editable-field-container">
+                        <span>{{detailData.ImportDate | formatDateStr}}</span>
+                        <button class="btn-success"
+                                ng-click="updateImportDate()">
+                            <i class="fas fa-sync-alt"></i> 更新
+                        </button>
+                    </div>
+                </td>
+                <td class="tabletitle">主號</td>
+                <td>{{detailData.MainNumber}}</td>
+                <td class="tabletitle">派件</td>
+                <td>{{detailData.SeaOrderOriginals[0].Jetf_Serial}}</td>
+                <td class="tabletitle">強制結案日</td>
+                <td>{{detailData.CloseDate | customDate}}</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">預計到港日</td>
+                <td>
+                    <div class="editable-field-container">
+                        <span>{{detailData.SeaOrderOriginals[0].Eta | customDate}}</span>
+                        <button class="btn-success"
+                                ng-click="updateEta()">
+                            <i class="fas fa-sync-alt"></i> 更新
+                        </button>
+                    </div>
+                </td>
+                <td class="tabletitle">分提單號碼</td>
+                <td>{{detailData.TrackingNo}}</td>
+                <td class="tabletitle">件數</td>
+                <td>{{detailData.SeaOrderOriginals[0].Piece}}</td>
+                <td class="tabletitle">滯報費</td>
+                <td>
+                    <span ng-if="detailData.LateDeclarationFee < 0">無</span>
+                    <span ng-if="detailData.LateDeclarationFee >= 0">{{detailData.LateDeclarationFee}}</span>
+                </td>
+            </tr>
+            <tr>
+                <td class="tabletitle">入倉日期</td>
+                <td>
+                    <div class="editable-field-container">
+                        <div ng-if="!editMode.SignInTime">
+                            <span ng-if="detailData.SignInTime">{{detailData.SignInTime | customDate}}</span>
+                        </div>
+                        <div ng-if="editMode.SignInTime" class="date-edit-container">
+                            <div class="datepicker-container">
+                                <input type="text"
+                                       class="datepicker-input"
+                                       ng-model="tempValues.SignInTime"
+                                       uib-datepicker-popup="yyyy/MM/dd"
+                                       datepicker-options="dateOptions"
+                                       is-open="datePopup.SignInTime"
+                                       ng-click="openDatePopup('SignInTime')"
+                                       show-button-bar="false"
+                                       readonly />
+                            </div>
+                            <div class="date-edit-buttons">
+                                <button class="date-btn-save" ng-click="saveField('SignInTime')">儲存</button>
+                                <button class="date-btn-cancel" ng-click="cancelEdit('SignInTime')">取消</button>
+                            </div>
+                        </div>
+                        <button class="edit-btn" ng-if="!editMode.SignInTime" ng-click="editField('SignInTime')" ng-disabled="isEditLocked('SignInTime')" ng-class="{'is-disabled': isEditLocked('SignInTime')}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+                <td class="tabletitle">報單號碼</td>
+                <td>
+                    <div class="editable-field-container">
+                        <span class="editable-field" style="white-space: pre;" ng-if="!editMode.DeclNo">{{detailData.DeclNo}}</span>
+                        <div ng-if="editMode.DeclNo">
+                            <input type="text" class="edit-dropdown" ng-model="tempValues.DeclNo" ng-keydown="handleKeyDown($event, 'DeclNo')">
+                            <div class="edit-buttons">
+                                <button class="btn-save" ng-click="saveField('DeclNo')">儲存</button>
+                                <button class="btn-cancel" ng-click="cancelEdit('DeclNo')">取消</button>
+                            </div>
+                        </div>
+                        <button class="edit-btn" ng-if="!editMode.DeclNo" ng-click="editField('DeclNo')" ng-disabled="isEditLocked('DeclNo')" ng-class="{'is-disabled': isEditLocked('DeclNo')}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+                <td class="tabletitle">原單人電話</td>
+                <td>{{detailData.SeaOrderOriginals[0].Im_Phoneno}}</td>
+                <td class="tabletitle">收到正本選單</td>
+                <td>
+                    <div class="editable-field-container">
+                        <button class="edit-btn" ng-click="showAuthorizationFormModal(1)" ng-disabled="isAnyEditing()" ng-class="{'is-disabled': isAnyEditing()}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="tabletitle">出倉日期</td>
+                <td>
+                    <div class="editable-field-container">
+                        <div ng-if="!editMode.SignOutTime">
+                            <span ng-if="detailData.SignOutTime">{{detailData.SignOutTime | customDate}}</span>
+                        </div>
+                        <div ng-if="editMode.SignOutTime" class="date-edit-container">
+                            <div class="datepicker-container">
+                                <input type="text"
+                                       class="datepicker-input"
+                                       ng-model="tempValues.SignOutTime"
+                                       uib-datepicker-popup="yyyy/MM/dd"
+                                       datepicker-options="dateOptions"
+                                       is-open="datePopup.SignOutTime"
+                                       ng-click="openDatePopup('SignOutTime')"
+                                       show-button-bar="false"
+                                       readonly />
+                            </div>
+                            <div class="date-edit-buttons">
+                                <button class="date-btn-save" ng-click="saveField('SignOutTime')">儲存</button>
+                                <button class="date-btn-cancel" ng-click="cancelEdit('SignOutTime')">取消</button>
+                            </div>
+                        </div>
+                        <button class="edit-btn" ng-if="!editMode.SignOutTime" ng-click="editField('SignOutTime')" ng-disabled="isEditLocked('SignOutTime')" ng-class="{'is-disabled': isEditLocked('SignOutTime')}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+                <td class="tabletitle">原單申報人</td>
+                <td>
+                    <div class="editable-field-container">
+                        <span class="editable-field" ng-if="!editMode.Importer">{{detailData.SeaOrderOriginals[0].Importer}}</span>
+                        <div ng-if="editMode.Importer">
+                            <input type="text" class="edit-dropdown" ng-model="tempValues.Importer" ng-keydown="handleKeyDown($event, 'Importer')">
+                            <div class="edit-buttons">
+                                <button class="btn-save" ng-click="saveField('Importer')">儲存</button>
+                                <button class="btn-cancel" ng-click="cancelEdit('Importer')">取消</button>
+                            </div>
+                        </div>
+                        <button class="edit-btn" ng-if="!editMode.Importer" ng-click="editField('Importer')" ng-disabled="isEditLocked('Importer')" ng-class="{'is-disabled': isEditLocked('Importer')}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+                <td class="tabletitle">聯繫人信箱</td>
+                <td>
+                    <div class="editable-field-container">
+                        <div ng-if="!editMode.ContactEmail" class="contact-email-display">
+                            <!-- 顯示截斷版本或完整版本 -->
+                            <span ng-if="detailData.ContactEmail">
+                                <span ng-if="!showFullContactEmail && detailData.ContactEmail.length > 50">
+                                    {{detailData.ContactEmail.substring(0, 50)}}...
+                                    <button class="show-more-btn" ng-click="toggleContactEmailDisplay(true)">[更多]</button>
+                                </span>
+                                <span ng-if="showFullContactEmail || detailData.ContactEmail.length <= 50">
+                                    {{detailData.ContactEmail}}
+                                    <button class="show-less-btn" ng-if="showFullContactEmail && detailData.ContactEmail.length > 50"
+                                            ng-click="toggleContactEmailDisplay(false)">
+                                        [收起]
+                                    </button>
+                                </span>
+                            </span>
+                            <span ng-if="!detailData.ContactEmail" class="text-muted">無資料</span>
+                        </div>
+                        <div ng-if="editMode.ContactEmail" style="width:100%">
+                            <textarea class="form-control"
+                                      ng-model="tempValues.ContactEmail"
+                                      ng-keydown="handleKeyDown($event, 'ContactEmail')"
+                                      rows="3"
+                                      placeholder="請輸入聯繫人信箱"></textarea>
+                            <div class="edit-buttons">
+                                <button class="btn-save" ng-click="saveField('ContactEmail')">儲存</button>
+                                <button class="btn-cancel" ng-click="cancelEdit('ContactEmail')">取消</button>
+                            </div>
+                        </div>
+                        <button class="edit-btn" ng-if="!editMode.ContactEmail" ng-click="editField('ContactEmail')" ng-disabled="isEditLocked('ContactEmail')" ng-class="{'is-disabled': isEditLocked('ContactEmail')}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+                <td class="tabletitle">寄文件選單</td>
+                <td>
+                    <div class="editable-field-container">
+                        <button class="edit-btn" ng-click="showAuthorizationFormModal(2)" ng-disabled="isAnyEditing()" ng-class="{'is-disabled': isAnyEditing()}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="tabletitle">到倉天數</td>
+                <td>
+                    {{detailData.WarehouseDays}}
+                </td>
+                <td class="tabletitle">進口人統一編號</td>
+                <td>
+                    <div class="editable-field-container">
+                        <span class="editable-field" ng-if="!editMode.Importer_Id">{{detailData.SeaOrderOriginals[0].Importer_Id}}</span>
+                        <div ng-if="editMode.Importer_Id">
+                            <input type="text" class="edit-dropdown" ng-model="tempValues.Importer_Id" ng-keydown="handleKeyDown($event, 'Importer_Id')">
+                            <div class="edit-buttons">
+                                <button class="btn-save" ng-click="saveField('Importer_Id')">儲存</button>
+                                <button class="btn-cancel" ng-click="cancelEdit('Importer_Id')">取消</button>
+                            </div>
+                        </div>
+                        <button class="edit-btn" ng-if="!editMode.Importer_Id" ng-click="editField('Importer_Id')" ng-disabled="isEditLocked('Importer_Id')" ng-class="{'is-disabled': isEditLocked('Importer_Id')}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+                <td class="tabletitle">聯繫人異動資料</td>
+                <td>
+                    <div class="editable-field-container">
+                        <span class="editable-field" ng-if="!editMode.ContactChangeData">{{detailData.ContactChangeData}}</span>
+                        <div ng-if="editMode.ContactChangeData">
+                            <input type="text" class="edit-dropdown" ng-model="tempValues.ContactChangeData" ng-keydown="handleKeyDown($event, 'ContactChangeData')">
+                            <div class="edit-buttons">
+                                <button class="btn-save" ng-click="saveField('ContactChangeData')">儲存</button>
+                                <button class="btn-cancel" ng-click="cancelEdit('ContactChangeData')">取消</button>
+                            </div>
+                        </div>
+                        <button class="edit-btn" ng-if="!editMode.ContactChangeData" ng-click="editField('ContactChangeData')" ng-disabled="isEditLocked('ContactChangeData')" ng-class="{'is-disabled': isEditLocked('ContactChangeData')}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+                <td class="tabletitle">扣倉</td>
+                <td>
+                    <div class="editable-field-container">
+                        <span ng-if="!editMode.IsCustomsHold">
+                            <label>
+                                <input type="checkbox"
+                                       class="customs-hold-checkbox"
+                                       ng-model="detailData.IsCustomsHold"
+                                       disabled
+                                       style="margin-right: 5px;">
+                                {{detailData.IsCustomsHold ? '是' : '否'}}
+                            </label>
+                        </span>
+                        <div ng-if="editMode.IsCustomsHold">
+                            <label>
+                                <input type="checkbox"
+                                       class="customs-hold-checkbox"
+                                       ng-model="tempValues.IsCustomsHold"
+                                       style="margin-right: 5px;">
+                                {{tempValues.IsCustomsHold ? '是' : '否'}}
+                            </label>
+                            <div class="edit-buttons">
+                                <button class="btn-save" ng-click="saveField('IsCustomsHold')">儲存</button>
+                                <button class="btn-cancel" ng-click="cancelEdit('IsCustomsHold')">取消</button>
+                            </div>
+                        </div>
+                        <button class="edit-btn" ng-if="!editMode.IsCustomsHold" ng-click="editField('IsCustomsHold')" ng-disabled="isEditLocked('IsCustomsHold')" ng-class="{'is-disabled': isEditLocked('IsCustomsHold')}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="tabletitle">代理報驗</td>
+                <td>
+                    <div class="editable-field-container">
+                        <span class="editable-field" ng-if="!editMode.CustomsBrokerage">{{getCustomsBrokerageName(detailData.CustomsBrokerageId) || '無'}}</span>
+                        <div ng-if="editMode.CustomsBrokerage">
+                            <select class="form-control"
+                                    ng-model="tempValues.CustomsBrokerageId"
+                                    ng-options="brokerage.Value as brokerage.Text for brokerage in customsBrokerageOptions"
+                                    ng-keydown="handleSelectKeyDown($event, 'CustomsBrokerage')">
+                                <option value="">請選擇代理報驗</option>
+                            </select>
+                            <div class="edit-buttons">
+                                <button class="btn-save" ng-click="saveField('CustomsBrokerage')">儲存</button>
+                                <button class="btn-cancel" ng-click="cancelEdit('CustomsBrokerage')">取消</button>
+                            </div>
+                        </div>
+                        <button class="edit-btn" ng-if="!editMode.CustomsBrokerage" ng-click="editField('CustomsBrokerage')" ng-disabled="isEditLocked('CustomsBrokerage')" ng-class="{'is-disabled': isEditLocked('CustomsBrokerage')}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+                <td colspan="4"></td>
+                <td class="tabletitle">扣倉項次</td>
+                <td>
+                    <div class="editable-field-container">
+                        <span class="editable-field" ng-if="!editMode.CustomsHold">{{detailData.CustomsHold || '無'}}</span>
+                        <div ng-if="editMode.CustomsHold">
+                            <input type="text"
+                                   class="edit-dropdown"
+                                   ng-model="tempValues.CustomsHold"
+                                   ng-keydown="handleKeyDown($event, 'CustomsHold')"
+                                   placeholder="請輸入數字，使用半形逗號分隔">
+                            <div class="edit-buttons">
+                                <button class="btn-save" ng-click="saveField('CustomsHold')">儲存</button>
+                                <button class="btn-cancel" ng-click="cancelEdit('CustomsHold')">取消</button>
+                            </div>
+                        </div>
+                        <button class="edit-btn" ng-if="!editMode.CustomsHold" ng-click="editField('CustomsHold')" ng-disabled="isEditLocked('CustomsHold')" ng-class="{'is-disabled': isEditLocked('CustomsHold')}">
+                            <i class="fas fa-edit"></i> 編輯
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="tabletitle">步驟</td>
+                <td colspan="3">
+                    <div class="step-management-container">
+                        <div class="step-selection">
+                            <div class="form-group">
+                                <select class="form-control"
+                                        ng-model="tempValues.selectedStepId"
+                                        ng-options="step.Id as step.StepName for step in stepOptions"
+                                        ng-change="loadStepDetails()">
+                                </select>
+                            </div>
+                            <button type="button"
+                                    class="btn btn-primary btn-sm step-confirm-btn"
+                                    ng-click="showStepDetailModal()"
+                                    ng-disabled="!tempValues.selectedStepId">
+                                <i class="fas fa-check"></i> 詳細
+                            </button>
+                            <button type="button"
+                                    class="edit-history-btn"
+                                    ng-click="showStepHistoryModal()"
+                                    title="查看完整步驟歷史">
+                                <i class="fas fa-history"></i>歷程
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="tabletitle">異常狀態</td>
+                <td colspan="3">
+                    <div class="step-management-container">
+                        <div class="step-selection">
+                            <div class="form-group">
+                                <select class="form-control"
+                                        ng-model="tempValues.selectedAbnormalStateId"
+                                        ng-options="abnormalState.Id as abnormalState.AbnormalStateName for abnormalState in abnormalStateOptions"
+                                        ng-change="loadAbnormalStateDetails()">
+                                    <option value="">請選擇異常狀態</option>
+                                </select>
+                            </div>
+                            <button type="button"
+                                    class="btn btn-primary btn-sm step-confirm-btn"
+                                    ng-click="showAbnormalStateDetailModal()"
+                                    ng-disabled="!tempValues.selectedAbnormalStateId">
+                                <i class="fas fa-check"></i> 詳細
+                            </button>
+                            <button type="button"
+                                    class="edit-history-btn"
+                                    ng-click="showAbnormalStateHistoryModal()"
+                                    title="查看完整異常狀態歷史">
+                                <i class="fas fa-history"></i>歷程
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="tabletitle">備註</td>
+                <td colspan="7">
+                    <div class="remark-container">
+                        <div class="remark-input-section">
+                            <textarea class="form-control remark-textarea"
+                                      ng-model="tempValues.newRemark"
+                                      placeholder="請輸入備註內容..."
+                                      rows="3"></textarea>
+                            <button type="button"
+                                    class="btn btn-primary btn-sm remark-add-btn"
+                                    ng-click="addRemark()"
+                                    ng-disabled="!tempValues.newRemark || tempValues.newRemark.trim() === ''">
+                                <i class="fas fa-plus"></i> 新增備註
+                            </button>
+                        </div>
+                        <!-- 備註歷史記錄表格 -->
+                        <div class="remark-history-section" ng-if="remarks.length > 0">
+                            <h6 class="remark-history-title">備註歷史記錄</h6>
+                            <table class="remark-history-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60%;">備註</th>
+                                        <th style="width: 20%;">建立人員</th>
+                                        <th style="width: 20%;">建立時間</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="remark in remarks">
+                                        <td class="remark-content">{{remark.Remark}}</td>
+                                        <td>{{remark.CrtUser}}</td>
+                                        <td>{{remark.CreateTime | customDateTime}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 無備註時的提示 -->
+                        <div ng-if="remarks.length === 0" class="no-remarks-message">
+                            <i class="fas fa-info-circle"></i> 目前沒有備註記錄
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="tabletitle">Gb301</td>
+                <td colspan="7">
+                    <!-- 載入中 -->
+                    <div ng-if="isLoadingCptData" class="loading-container">
+                        <i class="fas fa-spinner fa-spin"></i> 載入中...
+                    </div>
+                    <!-- 有資料 -->
+                    <div ng-if="!isLoadingCptData && cptData.Gb301GridModel">
+                        <div style="margin-bottom: 10px;">
+                            <strong>放行附帶條件：</strong>
+                            <span>{{cptData.Gb301RelCondCd}}</span>
+                        </div>
+                        <table class="gb-data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">處理日期時間</th>
+                                    <th style="width: 30%;">通關狀態代號</th>
+                                    <th style="width: 50%;">處理說明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="item in cptData.Gb301GridModel">
+                                    <td>{{item.ProDateTime | customDateTime}}</td>
+                                    <td>{{item.ProcEventCodeStr}}</td>
+                                    <td>{{item.ProgDesc}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- 查無資料 -->
+                    <div ng-if="!isLoadingCptData && !cptData.Gb301GridModel" class="text-muted">
+                        查無 GB301 資料
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class="tabletitle">Gb321</td>
+                <td colspan="7">
+                    <!-- 載入中 -->
+                    <div ng-if="isLoadingCptData" class="loading-container">
+                        <i class="fas fa-spinner fa-spin"></i> 載入中...
+                    </div>
+                    <!-- 有資料 -->
+                    <div ng-if="!isLoadingCptData && cptData.Gb321GridModel">
+                        <table class="gb-data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">事件發生日期</th>
+                                    <th style="width: 15%;">時間</th>
+                                    <th style="width: 70%;">處理狀況</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="item in cptData.Gb321GridModel">
+                                    <td>{{item.ProDateTime | customDate}}</td>
+                                    <td>{{item.ProDateTime | customTime}}</td>
+                                    <td>{{item.ProType}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 查無資料 -->
+                    <div ng-if="!isLoadingCptData && !cptData.Gb321GridModel" class="text-muted">
+                        查無 GB321 資料
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Bootstrap Modal for Edit History -->
+    <div class="modal fade" id="editHistoryModal" tabindex="-1" role="dialog" aria-labelledby="editHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="editHistoryModalLabel">編輯紀錄</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="editHistoryContent">
+                        <div class="edit-history-table-container">
+                            <table class="edit-history-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 20%;">欄位名稱</th>
+                                        <th style="width: 20%;">舊值</th>
+                                        <th style="width: 20%;">新值</th>
+                                        <th style="width: 20%;">詳細</th>
+                                        <th style="width: 10%;">編輯時間</th>
+                                        <th style="width: 10%;">編輯人員</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="record in editHistory">
+                                        <td>{{record.FieldName}}</td>
+                                        <td>{{record.OldValue}}</td>
+                                        <td>{{record.NewValue}}</td>
+                                        <td>{{record.Memo}}</td>
+                                        <td>{{record.EditTime | customDateTime}}</td>
+                                        <td>{{record.EditUser}}</td>
+                                    </tr>
+                                    <tr ng-if="editHistory.length === 0">
+                                        <td colspan="5" class="no-history-message">目前沒有編輯紀錄</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Modal for Approval Categories -->
+    <div class="modal fade" id="approvalCategoryModal" tabindex="-1" role="dialog" aria-labelledby="approvalCategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="approvalCategoryModalLabel">選擇簽審類別</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">簽審類別 (可多選)</label>
+                        <div class="approval-category-container">
+                            <div ng-repeat="category in approvalCategoryOptions" class="approval-category-item">
+                                <input type="checkbox" class="approval-category-checkbox"
+                                       ng-model="tempValues.ApprovalCategories[category.Id]"
+                                       id="modalCategory{{category.Id}}">
+                                <label for="modalCategory{{category.Id}}" class="approval-category-label">{{category.CategoryName}}</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveApprovalCategories()">儲存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Modal for Authorization Forms -->
+    <div class="modal fade" id="authorizationFormModal" tabindex="-1" role="dialog" aria-labelledby="authorizationFormModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="authorizationFormModalLabel">{{currentAuthFormType == 1 ? '選擇收到正本選單' : '選擇寄文件選單'}}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">{{currentAuthFormType == 1 ? '收到正本選單' : '寄文件選單'}} (可多選)</label>
+                        <div class="approval-category-container">
+                            <div ng-repeat="form in authorizationFormOptions" class="approval-category-item">
+                                <input type="checkbox" class="approval-category-checkbox"
+                                       ng-model="tempValues.AuthorizationForms[form.Id]"
+                                       id="modalForm{{form.Id}}">
+                                <label for="modalForm{{form.Id}}" class="approval-category-label">{{form.FormName}}</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 授權表單歷史記錄表格 -->
+                    <div class="authorization-history-section" ng-if="authorizationFormHistory.length > 0">
+                        <table class="authorization-history-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">日期</th>
+                                    <th style="width: 60%;">文件</th>
+                                    <th style="width: 10%;">建立人員</th>
+                                    <th style="width: 15%;">時間</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="record in authorizationFormHistory">
+                                    <td>{{record.DataDate | customDate}}</td>
+                                    <td>
+                                        <span style="white-space: nowrap;" ng-repeat="formName in record.FormNames.split(', ')" class="category-tag">{{formName}}</span>
+                                    </td>
+                                    <td>{{record.CreateUser}}</td>
+                                    <td>{{record.CreateTime | customDateTime}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveAuthorizationForms()" ng-disabled="!hasSelectedAuthorizationForms()">儲存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Modal for Step Details -->
+    <div class="modal fade" id="stepDetailModal" tabindex="-1" role="dialog" aria-labelledby="stepDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="stepDetailModalLabel">選擇步驟詳細</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">
+                            步驟：<strong>{{getSelectedStepName()}}</strong>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <!-- 根據 IsMultiple 顯示不同的提示文字 -->
+                        <label class="form-label">
+                            請選擇步驟詳細 <span ng-if="getSelectedStepIsMultiple()">(可多選)</span><span ng-if="!getSelectedStepIsMultiple()">(單選)</span>
+                        </label>
+                        <div class="step-detail-container">
+                            <!-- 多選模式 - 使用 checkbox -->
+                            <div ng-if="getSelectedStepIsMultiple()">
+                                <div ng-repeat="detail in availableStepDetails" class="step-detail-item">
+                                    <input type="checkbox" 
+                                           class="step-detail-checkbox"
+                                           ng-model="tempValues.StepDetails[detail.Id]"
+                                           ng-disabled="isStepDetailDisabled()"
+                                           id="stepDetail{{detail.Id}}">
+                                    <label for="stepDetail{{detail.Id}}" class="step-detail-label">
+                                        {{detail.StepDetailName}}
+                                    </label>
+                                </div>
+                            </div>
+                            <!-- 單選模式 - 使用 radio -->
+                            <div ng-if="!getSelectedStepIsMultiple()">
+                                <div ng-repeat="detail in availableStepDetails" class="step-detail-item">
+                                    <input type="radio" 
+                                           class="step-detail-radio"
+                                           ng-model="tempValues.selectedStepDetailId"
+                                           ng-value="detail.Id"
+                                           ng-disabled="isStepDetailDisabled()"
+                                           name="stepDetailRadio"
+                                           id="stepDetailRadio{{detail.Id}}">
+                                    <label for="stepDetailRadio{{detail.Id}}" class="step-detail-label">
+                                        {{detail.StepDetailName}}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div ng-if="availableStepDetails.length === 0" class="no-step-details">
+                            <p class="text-muted">此步驟尚未建立任何詳細項目</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" 
+                            class="btn btn-primary" 
+                            ng-click="saveStepAndDetails()">
+                        <span ng-show="savingStep">
+                            <i class="fa fa-spinner fa-spin"></i> 儲存中...
+                        </span>
+                        <span ng-hide="savingStep">
+                            <i class="fa fa-save"></i> 儲存
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Modal for Step History -->
+    <div class="modal fade" id="stepHistoryModal" tabindex="-1" role="dialog" aria-labelledby="stepHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="stepHistoryModalLabel">步驟歷史記錄</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="step-history-table-container">
+                        <table class="step-history-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">日期</th>
+                                    <th style="width: 25%;">步驟名稱</th>
+                                    <th style="width: 40%;">步驟詳細</th>
+                                    <th style="width: 15%;">操作人員</th>
+                                    <th style="width: 10%;">時間</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="step in allSteps">
+                                    <td>{{step.DataDate | customDate}}</td>
+                                    <td>{{step.StepName}}</td>
+                                    <td>
+                                        <span ng-if="step.StepDetails && step.StepDetails.length > 0">
+                                            <span ng-repeat="detail in step.StepDetails" class="step-detail-tag">
+                                                {{detail.StepDetailName}}
+                                            </span>
+                                        </span>
+                                        <span ng-if="!step.StepDetails || step.StepDetails.length === 0" class="text-muted">
+                                            無詳細項目
+                                        </span>
+                                    </td>
+                                    <td>{{step.CrtUser}}</td>
+                                    <td>{{step.CreateTime | customDateTime}}</td>
+                                </tr>
+                                <tr ng-if="allSteps.length === 0">
+                                    <td colspan="5" class="no-history-message">目前沒有步驟記錄</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Modal for Abnormal State Details -->
+    <div class="modal fade" id="abnormalStateDetailModal" tabindex="-1" role="dialog" aria-labelledby="abnormalStateDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="abnormalStateDetailModalLabel">選擇異常狀態詳細</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">
+                            異常狀態：<strong>{{getSelectedAbnormalStateName()}}</strong>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">請選擇異常狀態詳細 (可多選)</label>
+                        <div class="step-detail-container">
+                            <div ng-repeat="detail in availableAbnormalStateDetails" class="step-detail-item">
+                                <input type="checkbox" 
+                                       class="step-detail-checkbox"
+                                       ng-model="tempValues.AbnormalStateDetails[detail.Id]"
+                                       id="abnormalStateDetail{{detail.Id}}">
+                                <label for="abnormalStateDetail{{detail.Id}}" class="step-detail-label">
+                                    {{detail.AbnormalStateDetailName}}
+                                </label>
+                            </div>
+                        </div>
+                        <div ng-if="availableAbnormalStateDetails.length === 0" class="no-step-details">
+                            <p class="text-muted">此異常狀態尚未建立任何詳細項目</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" 
+                            class="btn btn-primary" 
+                            ng-click="saveAbnormalStateAndDetails()">
+                        <span ng-show="savingAbnormalState">
+                            <i class="fa fa-spinner fa-spin"></i> 儲存中...
+                        </span>
+                        <span ng-hide="savingAbnormalState">
+                            <i class="fa fa-save"></i> 儲存
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Modal for Abnormal State History -->
+    <div class="modal fade" id="abnormalStateHistoryModal" tabindex="-1" role="dialog" aria-labelledby="abnormalStateHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="abnormalStateHistoryModalLabel">異常狀態歷史記錄</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="step-history-table-container">
+                        <table class="step-history-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">日期</th>
+                                    <th style="width: 25%;">異常狀態名稱</th>
+                                    <th style="width: 40%;">異常狀態詳細</th>
+                                    <th style="width: 15%;">操作人員</th>
+                                    <th style="width: 10%;">時間</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="abnormalState in allAbnormalStates">
+                                    <td>{{abnormalState.DataDate | customDate}}</td>
+                                    <td>{{abnormalState.AbnormalStateName}}</td>
+                                    <td>
+                                        <span ng-if="abnormalState.AbnormalStateDetails && abnormalState.AbnormalStateDetails.length > 0">
+                                            <span ng-repeat="detail in abnormalState.AbnormalStateDetails" class="step-detail-tag">
+                                                {{detail.AbnormalStateDetailName}}
+                                            </span>
+                                        </span>
+                                        <span ng-if="!abnormalState.AbnormalStateDetails || abnormalState.AbnormalStateDetails.length === 0" class="text-muted">
+                                            無詳細項目
+                                        </span>
+                                    </td>
+                                    <td>{{abnormalState.CrtUser}}</td>
+                                    <td>{{abnormalState.CreateTime | customDateTime}}</td>
+                                </tr>
+                                <tr ng-if="allAbnormalStates.length === 0">
+                                    <td colspan="5" class="no-history-message">目前沒有異常狀態記錄</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

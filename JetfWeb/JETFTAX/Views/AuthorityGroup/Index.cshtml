@@ -1,0 +1,188 @@
+﻿@{
+    ViewBag.Title = "權限群組";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="AuthorityGroupIndexController" class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h3 class="m-0 font-weight-bold text-primary">權限群組維護</h3>
+                </div>
+                <div class="card-body">
+                    <!-- 操作按鈕 -->
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-primary" ng-click="showAddModal()">
+                            <i class="fas fa-plus"></i> 新增群組
+                        </button>
+                    </div>
+
+                    <!-- 群組列表 -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th width="10">序號</th>
+                                    <th width="100">群組名稱</th>
+                                    <th width="100">備註</th>
+                                    <th width="300">權限</th>
+                                    <th width="70">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="group in groups">
+                                    <td class="text-center">{{$index + 1}}</td>
+                                    <td><strong>{{group.GroupName}}</strong></td>
+                                    <td>{{group.Memo || '-'}}</td>
+                                    <td>
+                                        <div ng-if="group.AuthorityCount > 0">
+                                            <!-- 權限總數徽章和展開按鈕 -->
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge badge-info mr-2">
+                                                    <i class="fas fa-shield-alt"></i> {{group.AuthorityCount}} 項權限
+                                                </span>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                        ng-click="toggleGroupAuthorities(group.Id)"
+                                                        title="{{isGroupExpanded(group.Id) ? '收合權限' : '展開權限'}}">
+                                                    <i class="fas" ng-class="isGroupExpanded(group.Id) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                                                    {{isGroupExpanded(group.Id) ? '收合' : '展開'}}
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- 權限詳細內容 - 預設隱藏，點擊展開後顯示，按 PartnerSort 排序 -->
+                                            <div ng-show="isGroupExpanded(group.Id)" class="mt-2">
+                                                <div ng-repeat="categoryName in getOrderedPartnerNames(group.groupedAuthorities, group.orderedPartnerNames)" class="mb-2">
+                                                    <!-- 分類標題 -->
+                                                    <div class="mb-1">
+                                                        <small class="text-primary font-weight-bold">
+                                                            <i class="fas fa-folder-open"></i> {{categoryName}}
+                                                        </small>
+                                                    </div>
+                                    
+                                                    <!-- 該分類下的權限 - 使用淡色系 -->
+                                                    <div class="ml-2">
+                                                        <span ng-repeat="auth in group.groupedAuthorities[categoryName]" 
+                                                              class="badge badge-light mr-1 mb-1"
+                                                              style="font-size: 0.8rem; padding: 0.4em 0.6em; background-color: #e9ecef; border: 1px solid #dee2e6; color: #495057;">
+                                                            {{auth.Text}}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div ng-if="group.AuthorityCount === 0" class="text-muted">
+                                            <i class="fas fa-info-circle"></i> 無權限設定
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-info" ng-click="showEditModal(group.Id)" 
+                                                title="修改群組">
+                                            <i class="fas fa-edit"></i> 修改
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger ml-1" ng-click="deleteGroup(group.Id, group.GroupName)"
+                                                title="刪除群組">
+                                            <i class="fas fa-trash"></i> 刪除
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr ng-if="groups.length === 0">
+                                    <td colspan="5" class="text-center py-4">
+                                        <i class="fas fa-info-circle text-muted"></i> 暫無群組資料
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="groupModal" tabindex="-1" role="dialog" aria-labelledby="groupModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="groupModalLabel">{{modalTitle}}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form ng-submit="saveGroup()">
+                    <div class="modal-body">
+                        <!-- 群組名稱 -->
+                        <div class="form-group row">
+                            <label for="groupName" class="col-sm-3 col-form-label text-right">
+                                群組名稱 <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="groupName" 
+                                       ng-model="currentGroup.GroupName" required maxlength="50"
+                                       placeholder="請輸入權限群組名稱">
+                            </div>
+                        </div>
+                        
+                        <!-- 備註 -->
+                        <div class="form-group row">
+                            <label for="memo" class="col-sm-3 col-form-label text-right">
+                                備註
+                            </label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="memo" 
+                                       ng-model="currentGroup.Memo" maxlength="200"
+                                       placeholder="請輸入備註（選填）">
+                            </div>
+                        </div>
+                        
+                        <!-- 權限設定 -->
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label text-right">
+                                權限設定
+                            </label>
+                            <div class="col-sm-9">
+                                <div class="border p-3" style="max-height: 400px; overflow-y: auto;">
+                                    <!-- 使用有序的分類名稱進行顯示 -->
+                                    <div ng-repeat="partnerId in getOrderedPartnerNames(groupedAuthorities, orderedPartnerNames)" class="mb-3">
+                                        <h6 class="text-primary mb-2">
+                                            <i class="fas fa-folder-open"></i> {{partnerId}}
+                                        </h6>
+                                        <div class="row">
+                                            <div class="col-md-6" ng-repeat="auth in groupedAuthorities[partnerId]">
+                                                <div class="custom-control custom-checkbox mb-1">
+                                                    <input type="checkbox"
+                                                           class="custom-control-input"
+                                                           id="auth_{{auth.Id}}"
+                                                           ng-model="selectedAuthorities[auth.Id]">
+                                                    <label class="custom-control-label" for="auth_{{auth.Id}}">
+                                                        {{auth.Text}}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 無權限資料時顯示 -->
+                                    <div ng-if="authorities.length === 0" class="text-center text-muted py-3">
+                                        <i class="fas fa-info-circle"></i> 暫無權限資料
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">請勾選要授予此群組的權限</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary" ng-disabled="saving">
+                            <span ng-if="saving">
+                                <i class="fas fa-spinner fa-spin"></i> 處理中...
+                            </span>
+                            <span ng-if="!saving">儲存</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,55 @@
+﻿@{
+    ViewBag.Title = "開立電子發票作業";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="InvoiceNewController">
+    <span class="headtype">開立電子發票作業</span>
+    <hr />
+
+    <div class="containertype">
+        <div class="row">
+            <div class="col-lg-12" style="margin:0.5rem 0;">
+                <label class="control-label">選擇檔案：</label>
+                <input type="file" 
+                       id="fileTax" 
+                       name="file" 
+                       accept=".xlsx"
+                       onchange="angular.element(this).scope().onFileSelect(this.files)" />
+                <span ng-if="fileName" class="text-muted" style="margin-left: 10px;">
+                    已選擇：{{fileName}}
+                </span>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12" style="margin:0.5rem 0;">
+                <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\開立電子發票作業New_範例.xlsx&fileName=開立電子發票作業New_範例.xlsx' target='_blank'>
+                    <i class="fas fa-download"></i> 下載範例檔案
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12" style="margin:0.5rem 0;">
+                <button type="button" 
+                        class="btn btn-primary confirmbtn col-lg-3" 
+                        ng-click="uploadFile()"
+                        ng-disabled="isLoading"
+                        style="font-size: 1.2rem;">
+                    <i class="fas fa-upload"></i> 
+                    <span ng-if="!isLoading">上傳</span>
+                    <span ng-if="isLoading">處理中...</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading 指示器 -->
+        <div class="loader loader-bar" 
+             ng-class="{'is-active': isLoading}" 
+             data-rounded 
+             data-text="檔案處理中">
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,269 @@
+﻿@model JETFTAX.Models.SeaClearanceCreate.SeaClearanceCreateViewModel
+@using JETFTAX.Extensions
+@{
+    ViewBag.Title = "UploadFile";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="text/x-jquery-tmpl" id="seaClearanceTmpl">
+    <tr>
+        <td>
+            <input type="hidden" name="SeaClearance.Index" value="${seq}" />
+            <input type="hidden" name="SeaClearance[${seq}].Id" value="${Id}" />
+            ${Id}
+        </td>
+        <td>${FileName}</td>
+        <td>${UploadOpe}</td>
+        <td>${formatDate(CrtDateTime)}</td>
+        <td>
+            <button class="btn btn-success" onclick="download('${Id}')">下載檔案</button>
+        </td>
+        <td>
+            <button class="btn btn-info" onclick="uploadResult('${Id}')">上傳結果</button>
+        </td>
+    </tr>
+</script>
+
+<script type="text/x-jquery-tmpl" id="uploadResultTmpl">
+    <tr>
+        <td>${DataDate}</td>
+        <td>${MainNumber}</td>
+        <td>${TrackingNo}</td>
+        <td>
+            {{if IsSucess}}
+                <span class="badge badge-success">成功</span>
+            {{else}}
+                <span class="badge badge-danger">失敗</span>
+            {{/if}}
+        </td>
+        <td>${Memo || ''}</td>
+    </tr>
+</script>
+
+<span class="headtype">海快後段報關建檔</span>
+<hr />
+
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<form id="UploadFileForm" action="@Url.Action("UploadFile", "SeaClearanceCreate")" method="post" enctype="multipart/form-data" class="containertype">
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.DataDate)
+        @Html.TextBoxFor(m => m.DataDate, new { @class = "form-control" })
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <input type="file" name="file" id="fileTax" />
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\海快後段報關建檔_範例.xlsx&fileName=海快後段報關建檔_範例.xlsx' target='_blank'>下載範例</a>
+    </div>
+    <div id="btntUploadFile" type="button" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem;"><i class="fas fa-upload"></i> 上傳</div>
+
+    <div class="loader loader-bar" data-rounded data-text="檔案上傳中"></div>
+</form>
+
+<div class="col-12">
+    <table id="table" style="color:black" class="dataTable no-footer dtr-column" border="1">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>檔名</th>
+                <th>上傳人員</th>
+                <th>時間</th>
+                <th>明細</th>
+                <th>上傳結果</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<!-- Bootstrap Modal -->
+<div class="modal fade" id="uploadResultModal" tabindex="-1" role="dialog" aria-labelledby="uploadResultModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadResultModalLabel">上傳結果</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>作業日</th>
+                                <th>主提單號</th>
+                                <th>分提單號</th>
+                                <th>上傳結果</th>
+                                <th>原因</th>
+                            </tr>
+                        </thead>
+                        <tbody id="uploadResultTableBody">
+                            <!-- 資料將透過 JavaScript 動態填入 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@{
+    <script>
+
+        $('#collapseSeaClearance').addClass("show");
+        $('#SeaClearanceCreate').addClass("active");
+
+        //日期
+        $('#DataDate').click(function () {
+            WdatePicker({ dateFmt: 'yyyy-MM-dd' });
+        });
+
+        $(function () {
+            if ('@Model.SeaClearanceList.Count' != '0') {
+                let itemList = (@Model.SeaClearanceList.ToJsonRaw());
+
+                for (i = 0; i < itemList.length; i++) {
+                    let data = itemList[i];
+                    data.seq = i + 1;
+                    $('#seaClearanceTmpl').tmpl(data).appendTo('#table');
+                }
+            }
+        })
+
+        $('#btntUploadFile').click(function () {
+            $('.loader').addClass("is-active");
+
+            var file = document.getElementById('fileTax');
+            var postData = new FormData($('#UploadFileForm')[0]);
+            $.ajax({
+                type: "POST",
+                url: Router.action('SeaClearanceCreate', 'UploadFile'),
+                data: postData,
+                cache: false,
+                dataType: 'json',
+                processData: false,
+                //async: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    }
+                    else {
+                        if (data.status == "success") {
+                            swal({
+                                title: data.msg,
+                                icon: "success"
+                            }).then(function () {
+                                location.reload(); // 重新整理頁面
+                            });;
+                        }
+                        else {
+                            //顯示錯誤資訊
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                        }
+                        file.outerHTML = file.outerHTML; //重置了file的outerHTML
+                    }
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        })
+
+        function formatDate(dateString) {
+            var date = new Date(dateString);
+            var year = date.getFullYear();
+            var month = ('0' + (date.getMonth() + 1)).slice(-2);
+            var day = ('0' + date.getDate()).slice(-2);
+            var hours = ('0' + date.getHours()).slice(-2);
+            var minutes = ('0' + date.getMinutes()).slice(-2);
+            var seconds = ('0' + date.getSeconds()).slice(-2);
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        function download(id) {
+            $('.loader').addClass("is-active");
+            $.ajax({
+                type: "POST",
+                url: Router.action('SeaClearanceCreate', 'SeaClearanceDetailExcel'),
+                data: { id: id }, // 傳遞 id 參數
+                cache: false,
+                dataType: 'json',
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    } else {
+                        if (data.msg != "") {
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                            return;
+                        }
+
+                        var path = Router.action('Download', 'DownloadFile') +
+                                '?fileGuid=' + encodeURIComponent(data.fileGuid) +
+                                '&filename=' + encodeURIComponent(data.fileName);
+
+                        // 建立隱藏 <a> 並觸發下載
+                        var link = document.createElement('a');
+                            link.href = path;
+                            link.download = data.fileName;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+
+                    }
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        }
+
+        function uploadResult(id) {
+            $('.loader').addClass("is-active");
+            $.ajax({
+                type: "GET",
+                url: Router.action('SeaClearanceCreate', 'GetUploadResult'),
+                data: { id: id },
+                cache: false,
+                dataType: 'json',
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    } else {
+                        // 清空表格內容
+                        $('#uploadResultTableBody').empty();
+                        
+                        // 填入資料
+                        if (data && data.length > 0) {
+                            for (var i = 0; i < data.length; i++) {
+                                var item = data[i];
+                                $('#uploadResultTmpl').tmpl(item).appendTo('#uploadResultTableBody');
+                            }
+                        } else {
+                            $('#uploadResultTableBody').append('<tr><td colspan="5" class="text-center">查無資料</td></tr>');
+                        }
+                        
+                        // 顯示 Modal
+                        $('#uploadResultModal').modal('show');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    swal({
+                        title: "取得上傳結果失敗",
+                        text: "請稍後再試",
+                        icon: "error"
+                    });
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        }
+    </script>
+}

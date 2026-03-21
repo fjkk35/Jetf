@@ -1,0 +1,23 @@
+@TaxPortalApi_HostAddress = http://localhost:5132
+
+@UserName = demo
+@Password = password
+@Token = 
+
+GET {{TaxPortalApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+POST {{TaxPortalApi_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+	"userName": "{{UserName}}",
+	"password": "{{Password}}"
+}
+
+###
+
+GET {{TaxPortalApi_HostAddress}}/api/v1/tax-documents/by-tax-number?taxNumber=TEST123
+Authorization: Bearer {{Token}}

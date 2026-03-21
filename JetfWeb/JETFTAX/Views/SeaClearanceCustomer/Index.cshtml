@@ -1,0 +1,257 @@
+﻿@{
+    ViewBag.Title = "客戶管理";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">客戶管理</span>
+<hr />
+
+<div ng-controller="SeaClearanceCustomerController">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 可用客戶區域 -->
+            <div class="col-md-6">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4 class="panel-title">選擇客戶</h4>
+                        <div class="panel-actions">
+                            <button type="button" 
+                                    class="btn btn-primary btn-sm" 
+                                    ng-click="addSelectedCustomers()"
+                                    ng-disabled="!hasUnselectedCustomers() || adding">
+                                <i class="fa fa-plus" ng-hide="adding"></i>
+                                <i class="fa fa-spinner fa-spin" ng-show="adding"></i>
+                                {{adding ? '新增中...' : '新增選擇的客戶'}}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <!-- 搜尋框 -->
+                        <div class="search-container">
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       ng-model="availableSearchText" 
+                                       placeholder="搜尋客戶代碼或名稱...">
+                                <span class="input-group-addon">
+                                    <i class="fa fa-search"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 全選/全不選 -->
+                        <div class="checkbox-controls">
+                            <label class="checkbox-inline">
+                                <input type="checkbox" 
+                                       ng-model="selectAllAvailable" 
+                                       ng-change="toggleAllAvailable()"> 
+                                全選/全不選
+                            </label>
+                            <span class="text-muted">({{getUnselectedCount()}} 個可新增)</span>
+                        </div>
+
+                        <!-- 載入指示器 -->
+                        <div ng-show="loadingAvailable" class="text-center">
+                            <i class="fa fa-spinner fa-spin fa-2x"></i>
+                            <p>載入中...</p>
+                        </div>
+
+                        <!-- 客戶列表 -->
+                        <div ng-hide="loadingAvailable" class="customer-list">
+                            <div class="customer-item" 
+                                 ng-repeat="customer in availableCustomers | filter:availableFilter">
+                                <label class="customer-checkbox" ng-class="{'selected': customer.IsSelected}">
+                                    <input type="checkbox" 
+                                           ng-model="customer.IsSelected"
+                                           ng-disabled="customer.IsInSystem">
+                                    <span class="customer-code">{{customer.Cust_Code}}</span>
+                                    <span class="customer-name">{{customer.Cust_Name}}</span>
+                                    <span ng-if="customer.IsInSystem" class="badge badge-success">已新增</span>
+                                </label>
+                            </div>
+
+                            <!-- 空資料提示 -->
+                            <div ng-if="(availableCustomers | filter:availableFilter).length === 0" class="no-data">
+                                <i class="fa fa-search fa-2x text-muted"></i>
+                                <p class="text-muted">沒有找到符合條件的客戶</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 已選擇客戶區域 -->
+            <div class="col-md-6">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4 class="panel-title">已選擇客戶 ({{selectedCustomers.length}})</h4>
+                        <div class="panel-actions">
+                            <button type="button" 
+                                    class="btn btn-danger btn-sm" 
+                                    ng-click="deleteSelectedCustomers()"
+                                    ng-disabled="!hasSelectedCustomersToDelete() || deleting">
+                                <i class="fa fa-trash" ng-hide="deleting"></i>
+                                <i class="fa fa-spinner fa-spin" ng-show="deleting"></i>
+                                {{deleting ? '刪除中...' : '刪除選擇的客戶'}}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <!-- 搜尋框 -->
+                        <div class="search-container">
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       ng-model="selectedSearchText" 
+                                       placeholder="搜尋客戶代碼或名稱...">
+                                <span class="input-group-addon">
+                                    <i class="fa fa-search"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 全選/全不選 -->
+                        <div class="checkbox-controls">
+                            <label class="checkbox-inline">
+                                <input type="checkbox" 
+                                       ng-model="selectAllSelected" 
+                                       ng-change="toggleAllSelected()"> 
+                                全選/全不選
+                            </label>
+                            <span class="text-muted">({{getSelectedForDeleteCount()}} 個選擇刪除)</span>
+                        </div>
+
+                        <!-- 載入指示器 -->
+                        <div ng-show="loadingSelected" class="text-center">
+                            <i class="fa fa-spinner fa-spin fa-2x"></i>
+                            <p>載入中...</p>
+                        </div>
+
+                        <!-- 客戶列表 -->
+                        <div ng-hide="loadingSelected" class="customer-list">
+                            <div class="customer-item" 
+                                 ng-repeat="customer in selectedCustomers | filter:selectedFilter">
+                                <label class="customer-checkbox">
+                                    <input type="checkbox" ng-model="customer.IsSelectedForDelete">
+                                    <span class="customer-code">{{customer.Cust_Code}}</span>
+                                    <span class="customer-name">{{customer.Cust_Name}}</span>
+                                </label>
+                            </div>
+
+                            <!-- 空資料提示 -->
+                            <div ng-if="selectedCustomers.length === 0" class="no-data">
+                                <i class="fa fa-users fa-2x text-muted"></i>
+                                <p class="text-muted">目前沒有選擇任何客戶</p>
+                            </div>
+
+                            <div ng-if="selectedCustomers.length > 0 && (selectedCustomers | filter:selectedFilter).length === 0" class="no-data">
+                                <i class="fa fa-search fa-2x text-muted"></i>
+                                <p class="text-muted">沒有找到符合條件的客戶</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .panel-heading {
+        position: relative;
+    }
+
+    .panel-actions {
+        position: absolute;
+        right: 15px;
+        top: 8px;
+    }
+
+    .search-container {
+        margin-bottom: 15px;
+    }
+
+    .checkbox-controls {
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .customer-list {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+
+    .customer-item {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 5px;
+        transition: all 0.2s ease;
+    }
+
+    .customer-item:hover {
+        background-color: #f8f9fa;
+        border-color: #007bff;
+    }
+
+    .customer-checkbox {
+        display: block;
+        padding: 10px 15px;
+        margin: 0;
+        cursor: pointer;
+        width: 100%;
+        font-weight: normal;
+    }
+
+    .customer-checkbox.selected {
+        background-color: #e3f2fd;
+        border-color: #2196f3;
+    }
+
+    .customer-checkbox input[type="checkbox"] {
+        margin-right: 10px;
+        vertical-align: middle;
+    }
+
+    .customer-code {
+        font-weight: 500;
+        color: #333;
+        margin-right: 10px;
+        min-width: 80px;
+        display: inline-block;
+    }
+
+    .customer-name {
+        color: #666;
+    }
+
+    .badge {
+        margin-left: 10px;
+        padding: 4px 8px;
+        font-size: 11px;
+        border-radius: 3px;
+    }
+
+    .badge-success {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+    }
+
+    .checkbox-inline {
+        font-weight: 500;
+        margin-right: 20px;
+    }
+
+</style>
+
+<script>
+    $('#collapseSeaClearance').addClass("show");
+    $('#SeaClearanceCustomer').addClass("active");
+</script>
+

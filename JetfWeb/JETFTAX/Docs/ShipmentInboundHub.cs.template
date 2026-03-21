@@ -1,0 +1,51 @@
+using Microsoft.AspNet.SignalR;
+using System;
+using System.Threading.Tasks;
+
+namespace JETFTAX.Hubs
+{
+    /// <summary>
+    /// 貨件入庫處理 SignalR Hub
+    /// 用於即時通知所有連線的客戶端資料更新
+    /// </summary>
+    public class ShipmentInboundHub : Hub
+    {
+        /// <summary>
+        /// 通知所有客戶端有資料更新
+        /// </summary>
+        /// <param name="updatedData">更新後的資料</param>
+        public static void NotifyDataUpdated(object updatedData)
+        {
+            var context = GlobalHost.ConnectionManager.GetHubContext<ShipmentInboundHub>();
+            context.Clients.All.dataUpdated(updatedData);
+        }
+
+        /// <summary>
+        /// 客戶端連線時
+        /// </summary>
+        /// <returns></returns>
+        public override Task OnConnected()
+        {
+            return base.OnConnected();
+        }
+
+        /// <summary>
+        /// 客戶端斷線時
+        /// </summary>
+        /// <param name="stopCalled"></param>
+        /// <returns></returns>
+        public override Task OnDisconnected(bool stopCalled)
+        {
+            return base.OnDisconnected(stopCalled);
+        }
+
+        /// <summary>
+        /// 客戶端重新連線時
+        /// </summary>
+        /// <returns></returns>
+        public override Task OnReconnected()
+        {
+            return base.OnReconnected();
+        }
+    }
+}

@@ -1,0 +1,64 @@
+﻿@{
+    ViewBag.Title = "貨件出庫批量上傳";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="ShipmentOutboundBatchImportController">
+    <span class="headtype">貨件出庫批量上傳</span>
+    <hr />
+
+    <div class="containertype">
+        <div class="col-lg-12" style="margin-bottom:0.5rem;">
+            <label>選擇檔案</label>
+            <input type="file" id="fileInput" accept=".xlsx" class="form-control" />
+        </div>
+
+        <div class="col-lg-12" style="margin:0.5rem 0;">
+            <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\貨件出庫批量上傳_範例.xlsx&fileName=貨件出庫批量上傳_範例.xlsx' target='_blank'>下載範例</a>
+        </div>
+
+        <div class="col-lg-12" style="margin:0.5rem 0;">
+            <button type="button" class="btn btn-primary confirmbtn" ng-click="uploadFile()" ng-disabled="uploading">
+                <i class="fas fa-upload"></i> {{ uploading ? '上傳中...' : '上傳' }}
+            </button>
+        </div>
+
+        <div class="loader loader-bar" ng-class="{'is-active': uploading}" data-rounded data-text="檔案上傳中"></div>
+
+        <div class="col-lg-12" style="margin-top:1rem;" ng-if="uploadResult">
+            <div class="alert" ng-class="{'alert-success': uploadResult.success, 'alert-danger': !uploadResult.success}">
+                {{ uploadResult.message }}
+            </div>
+        </div>
+
+        <div class="col-lg-12" style="margin-top:1rem;" ng-if="uploadData && uploadData.length > 0">
+            <h4>上傳結果明細</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>狀態</th>
+                            <th>失敗原因</th>
+                            <th>原單號</th>
+                            <th>轉出日期</th>
+                            <th>新物流單號</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="item in uploadData" ng-class="{'table-danger': item.UploadStatus === '失敗', 'table-success': item.UploadStatus === '成功'}">
+                            <td>
+                                <span ng-if="item.UploadStatus === '成功'" class="badge badge-success">{{ item.UploadStatus }}</span>
+                                <span ng-if="item.UploadStatus === '失敗'" class="badge badge-danger">{{ item.UploadStatus }}</span>
+                            </td>
+                            <td>{{ item.FailReason }}</td>
+                            <td>{{ item.TrackingNo }}</td>
+                            <td>{{ item.OutboundDate | customDate }}</td>
+                            <td>{{ item.OutboundTrackingNo }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+

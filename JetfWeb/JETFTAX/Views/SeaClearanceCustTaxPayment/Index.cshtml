@@ -1,0 +1,155 @@
+﻿@model JETFTAX.Models.SeaClearanceCustTaxPayment.SeaClearanceCustTaxPaymentViewModel
+
+@using JETFTAX.Extensions
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<script type="text/x-jquery-tmpl" id="seaClearanceCustTaxPaymentTmpl">
+    <tr>
+
+        <td>
+            <input type="hidden" name="SeaClearanceCustTaxPayment.Index" value="${seq}" />
+            <input type="hidden" name="SeaClearanceCustTaxPayment[${seq}].Id" value="${Id}" />
+            ${CustCode}-${CustName}
+        </td>
+        <td>${TaxPaymentDisplay}</td>
+        <td>
+            <button class="btn btn-danger" onclick="deleteCustomer('${Id}','${CustCode}-${CustName}')">刪除</button>
+        </td>
+    </tr>
+</script>
+
+<span class="headtype">海快後段客戶收費方式</span>
+<hr />
+
+<div class="col-12">
+    客戶：
+    @Html.DropDownListFor(m => m.CustCode, Model.CustList, new { @class = "form-control" })
+    收費方式：
+    @Html.DropDownListFor(m => m.TaxPaymentType, Model.TaxPaymentTypeList, new { @class = "form-control" })
+    <div id="btntSearch" class="btn btn-success" onclick="create()" style="font-size: 1.2rem;"><i class="fas fa-search"></i> 新增</div>
+</div>
+
+<hr />
+<div class="col-6">
+    <table id="table" class="dataTable no-footer dtr-column" border="1">
+        <thead>
+            <tr>
+                <th>客戶</th>
+                <th>收費方式</th>
+                <th>刪除</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<!-- modal placeholder-->
+<div id='myModal' class='modal fade in'>
+    <div class="modal-dialog">
+        <div class="modal-content" style="height:30rem;">
+            <b class="item-close" onclick="$('#myModal').modal('hide');">x</b>
+            <div id='myModalContent'></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('#collapseSeaClearance').addClass("show");
+    $('#SeaClearanceCustTaxPayment').addClass("active");
+
+    $(function () {
+        if ('@Model.List.Count' != '0')
+        {
+            let itemList = (@Model.List.ToJsonRaw());
+
+            for (i = 0; i < itemList.length; i++)
+            {
+                let data = itemList[i];
+                data.seq = i + 1;
+                $('#seaClearanceCustTaxPaymentTmpl').tmpl(data).appendTo('#table');
+            }
+        }
+    })
+
+
+    function create() {
+        var custCode = $('#CustCode').val();
+        var taxPaymentType = $('#TaxPaymentType').val();
+
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("Create", "SeaClearanceCustTaxPayment")',
+            data: {
+                CustCode: custCode,
+                TaxPaymentType: taxPaymentType
+            },
+            success: function (data) {
+                if (data.status == "success") {
+                    swal({
+                        title: "新增成功",
+                        icon: "success"
+                    }).then(function () {
+                        location.reload(); // 重新整理頁面
+                    });
+                } else {
+                    swal({
+                        title: data.msg,
+                        icon: "error"
+                    });
+                }
+            },
+            error: function () {
+                swal({
+                    title: "新增失敗",
+                    icon: "error"
+                });
+            }
+        });
+    }
+
+    function deleteCustomer(id, customer) {
+         swal({
+        title: "確認刪除",
+        text: `您確定要刪除${customer}？`,
+        icon: "warning",
+        buttons: true,
+        dangerMode: true,
+    }).then((willDelete) => {
+        if (willDelete) {
+            $.ajax({
+                type: "POST",
+                url: '@Url.Action("Delete", "SeaClearanceCustTaxPayment")',
+                data: { id: id },
+                success: function (data) {
+                    if (data.status == "success") {
+                        swal({
+                            title: "刪除成功",
+                            icon: "success"
+                        }).then(function () {
+                            location.reload(); // 重新整理頁面
+                        });
+                    } else {
+                        swal({
+                            title: data.msg,
+                            icon: "error"
+                        });
+                    }
+                },
+                error: function () {
+                    swal({
+                        title: "刪除失敗",
+                        icon: "error"
+                    });
+                }
+            });
+        }
+    });
+
+    }
+
+
+
+</script>

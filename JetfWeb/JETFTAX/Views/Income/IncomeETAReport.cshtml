@@ -1,0 +1,135 @@
+﻿@model JETFTAX.Models.IncomeReportViewModel
+
+@{
+    ViewBag.Title = "IncomeETAReport";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .radio-rdoSearchType {
+        position: relative;
+        display: inline-block;
+        margin-right: 12px;
+    }
+
+        .radio-rdoSearchType input {
+            vertical-align: middle;
+            margin-top: -2px;
+            margin-bottom: 1px;
+            /* 前面三行程式碼是為了讓radio單選按鈕與文字對齊 */
+            width: 20px;
+            height: 20px;
+            appearance: none; /*清楚預設樣式*/
+            -webkit-appearance: none;
+            opacity: 0;
+            outline: none;
+            /* 注意不能設定為display:none*/
+        }
+
+        .radio-rdoSearchType label {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #337ab7;
+            border-radius: 100%;
+        }
+
+        .radio-rdoSearchType input:checked + label {
+            background: #337ab7;
+        }
+
+            .radio-rdoSearchType input:checked + label::after {
+                content: "";
+                position: absolute;
+                left: 8px;
+                top: 2px;
+                width: 5px;
+                height: 12px;
+                border-right: 1px solid #fff;
+                border-bottom: 1px solid #fff;
+                transform: rotate(45deg);
+            }
+</style>
+
+<span class="headtype">營收報表-到港日</span>
+<hr />
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<form id="DownloadFileForm" action="@Url.Action("", "Income")" method="post" enctype="multipart/form-data" class="containertype">
+
+
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.sDate)
+        @Html.TextBoxFor(m => m.sDate, new { @class = "form-control" })~
+        @Html.TextBoxFor(m => m.eDate, new { @class = "form-control" })
+    </div>
+    <div class="col-lg-12">
+        @Html.LabelFor(m => m.rdoSearchType)
+        <div class="radio-rdoSearchType">
+            <input type="radio" id="rdoYes" name="rdoSearchType" value="Yes">
+            <label for="rdoYes"></label>是
+        </div>
+        <div class="radio-rdoSearchType">
+            <input type="radio" id="rdoNo" name="rdoSearchType" value="No" checked="checked">
+            <label for="rdoNo"></label>否
+        </div>
+    </div>
+
+    <div id="btntDownload" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem; "><i class="fas fa-download"></i> 下載</div>
+    <div class="loader loader-bar" data-rounded data-text="檔案下載中"></div>
+</form>
+
+
+
+<script>
+    $('#collapseIncome').addClass("show");
+    $('#IncomeETAReport').addClass("active");
+
+    //日期
+    $('#sDate').click(function () {
+        WdatePicker({ dateFmt: 'yyyy-MM-dd' });
+    });
+
+    $('#eDate').click(function () {
+        WdatePicker({ dateFmt: 'yyyy-MM-dd' });
+    });
+
+    $('#btntDownload').click(function () {
+        //$("#DownloadFileForm").submit();
+        $('.loader').addClass("is-active");
+        var postData = new FormData($('#DownloadFileForm')[0]);
+        $.ajax({
+            type: "POST",
+            url: Router.action('Income', 'IncomeETAReportExcel'),
+            data: postData,
+            cache: false,
+            dataType: 'json',
+            processData: false,
+            //async: false,
+            contentType: false,
+            success: function (data) {
+                if (data.Redirect) {
+                    window.location = Router.action('Account', 'Login');
+                }
+                else {
+                    if (data.msg != "") {
+                        swal({
+                            title: data.msg,
+                            icon: "error"
+                        });
+                    }
+                    else if (data.fileName != "") {
+                        var path = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid
+                            + '&filename=' + data.fileName;
+                        //window.location = path;
+                        window.open(path);
+                       
+                    }
+                }
+            }
+        }).then(function () {
+            $('.loader').removeClass("is-active");
+        })
+    })
+</script>

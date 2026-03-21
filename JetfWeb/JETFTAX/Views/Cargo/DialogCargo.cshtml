@@ -1,0 +1,152 @@
+﻿@model JETFTAX.Models.DialogCargoViewModel
+
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>DialogCargo</title>
+</head>
+<body>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="tablesort" colspan="11" style="padding: 0.3rem 0">
+                    <div class="btn btn-success" onclick="showDialogLogCargoStatus('@Model.Dlv_Inv')">
+                        <i class="fas fa-search"> 查詢紀錄</i>
+                    </div>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.Out_Date)</td>
+                <td>@Model.Out_Date</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Source)</td>
+                <td>@Model.Source</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Type)</td>
+                <td colspan="5">@Model.Type</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.Main_Number)</td>
+                <td>@Model.Main_Number</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Bag_Number)</td>
+                <td>@Model.Bag_Number</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Tax_Number)</td>
+                <td colspan="5">@Model.Tax_Number</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.Cust_Name)</td>
+                <td>@Model.Cust_Name</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Trans_Name)</td>
+                <td>@Model.Trans_Name</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Dlv_Inv)</td>
+                <td colspan="5">@Model.Dlv_Inv</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.Recipient)</td>
+                <td>@Model.Recipient</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Recphone)</td>
+                <td>@Model.Recphone</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Recaddress)</td>
+                <td colspan="5" style="max-width:5rem;">@Model.Recaddress</td>
+            </tr>
+            <tr>
+                <td class="tablesort" colspan="6">清關進度</td>
+                <td class="tablesort" colspan="5">處置說明</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.In_Datetime)</td>
+                <td colspan="2">@Model.In_Datetime</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Out_Datetime)</td>
+                <td colspan="2">@Model.Out_Datetime</td>
+                <td colspan="4" rowspan="5" style="border-left:1px solid #000"></td>
+            </tr>
+            <tr class="tablesort">
+                <td>@Html.LabelFor(o => o.Include_Tax)</td>
+                <td colspan="5">@Model.Include_Tax</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.Tax1)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.Tax1</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Tax2)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.Tax2</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.TotalTax)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.TotalTax</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.CCFee)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.CCFee</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Fee)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.Fee</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Cod)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.Cod</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.To_Dlv_Cod)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.To_Dlv_Cod</td>
+                <td class="tabletitle"></td>
+                <td></td>
+                <td class="tabletitle"></td>
+                <td></td>
+            </tr>
+</tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th colspan="2" class="tablesort">配送進度</th>
+            </tr>
+        </thead>
+        <tbody class="deliverycontent">
+            <tr>
+                <td>作業時間</td>
+                <td>配送狀態</td>
+            </tr>
+            @{
+                if (Model.DialogCargoList != null && Model.DialogCargoList.Count>0)
+                {
+                    for (int i = 0; i < Model.DialogCargoList.Count; i++)
+                    {
+                        <tr>
+                            <td>@Model.DialogCargoList[i].tran_modify_time</td>
+                            <td>@Model.DialogCargoList[i].tran_status</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="2" style="text-align:center">無配送狀態</td></tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <!-- modal placeholder-->
+    <div id='myModal2' class='modal fade in'>
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <b class="item-close" onclick="$('#myModal2').modal('hide');">x</b>
+                <div id='myModalContent2'></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function showDialogLogCargoStatus(dlv_inv) {
+            $('#myModalContent2').load(Router.action('Cargo', 'DialogLogCargoStatus') + "?dlv_inv=" + dlv_inv, function () {
+                $('#myModal2').modal({
+                    /*backdrop: 'static',*/
+                    keyboard: true
+                }, 'show');
+            });
+            return false;
+        }
+    </script>
+</body>
+
+</html>

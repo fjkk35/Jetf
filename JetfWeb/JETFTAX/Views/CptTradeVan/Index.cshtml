@@ -1,0 +1,125 @@
+﻿@model JETFTAX.Models.CptTradeVan.CptTradeVanViewModel
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">CPT單一入口網站查詢</span>
+<hr />
+
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<form id="UploadFileForm" action="@Url.Action("", "")" method="post" enctype="multipart/form-data" class="containertype">
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.ddlSourceList)
+        @Html.DropDownListFor(m => m.source, Model.ddlSourceList, new { @class = "form-control", onchange = "onSourceChange(this)" })
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <input id="uploadfile" type="file" name="file" id="fileTax" accept=".xlsx" />
+        <div>
+            @Html.TextAreaFor(m => m.Data, new { @style = "height: 300px; display: none;" })
+        </div>
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\上傳收單查詢範例.xlsx&fileName=上傳收單查詢範例.xlsx' target='_blank'>下載收單查詢範例</a>
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\上傳海運主號查詢範例.xlsx&fileName=上傳海運主號查詢範例.xlsx' target='_blank'>下載海運主號查詢範例</a>
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\上傳錯單查詢範例.xlsx&fileName=上傳錯單查詢範例.xlsx' target='_blank'>下載錯單查詢範例</a>
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\上傳銷艙率範例.xlsx&fileName=上傳銷艙率範例.xlsx' target='_blank'>下載銷艙率範例</a>
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\上傳空運正式報單查詢範例.xlsx&fileName=上傳空運正式報單查詢範例.xlsx' target='_blank'>下載空運正式報單查詢範例</a>
+    </div>
+    <div id="btntUploadFile" type="button" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem;"><i class="fas fa-upload"></i> 上傳</div>
+
+    <div class="loader loader-bar" data-rounded data-text="檔案上傳中"></div>
+</form>
+
+@{
+    <script>
+
+        $('#collapseWorkLoad').addClass("show");
+        $('#cptTradeVan').addClass("active");
+
+        function onSourceChange(element) {
+            if (element.value == "SeaMainNumber" ||
+                element.value == "SeaReceiveOrderWork" ||
+                element.value == "ErrorOrderWork" ||
+                element.value == "DeleteSeaMainNumber") {
+                $('#uploadfile').hide();
+                $('#Data').show();
+            } else {
+                $('#uploadfile').show();
+                $('#Data').hide();
+            }
+        }
+
+        $('#btntUploadFile').click(function () {
+            $('.loader').addClass("is-active");
+
+            var file = document.getElementById('fileTax');
+            var postData = new FormData($('#UploadFileForm')[0]);
+
+            $.ajax({
+                type: "POST",
+                url: Router.action('CptTradeVan', 'Upload'),
+                data: postData,
+                cache: false,
+                dataType: 'json',
+                processData: false,
+                //async: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                        return;
+                    }
+
+                    if (data.status == "error") {
+                        swal({
+                            title: data.msg,
+                            icon: "error"
+                        });
+                        return;
+                    }
+
+                    if (data.msg) {
+                        swal({
+                            title: data.msg,
+                            icon: "success"
+                        });
+                        return;
+                    }
+
+                    if (data.fileName != "") {
+                        downloadFile(data);
+                    }
+  
+                    file.outerHTML = file.outerHTML; //重置了file的outerHTML
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        })
+
+
+        function downloadFile(data) {
+            var path = Router.action('Download', 'DownloadFile')
+                + '?fileGuid=' + data.fileGuid
+                + '&filename=' + data.fileName;
+
+            var a = document.createElement('a');
+            a.href = path;
+            a.download = data.fileName; // 瀏覽器會以這個檔名下載
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+
+}

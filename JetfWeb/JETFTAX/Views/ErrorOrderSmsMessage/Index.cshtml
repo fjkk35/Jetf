@@ -1,0 +1,220 @@
+﻿@model JETFTAX.Models.ErrorOrderSmsMessage.ErrorOrderSmsMessageViewModel
+
+@using JETFTAX.Extensions
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<script type="text/x-jquery-tmpl" id="errorOrderSmsMessageTmpl">
+    <tr>
+        <td>
+            <input type="hidden" name="ErrorOrderSendCustomer.Index" value="${seq}" />
+            <input type="hidden" name="ErrorOrderSendCustomer[${seq}].Id" value="${Id}" />
+            ${Name}
+        </td>
+        <td>${Content}</td>
+        <td>
+            <button class="btn btn-primary" onclick="showEdit('${Id}')">修改</button>
+        </td>
+        <td>
+            <button class="btn btn-danger" onclick="deleteSms('${Id}','${Name}')">刪除</button>
+        </td>
+    </tr>
+</script>
+
+<span class="headtype">罐頭簡訊</span>
+<hr />
+
+
+
+<div class="col-12 mb-3">
+    <div class="col-12 mb-3">
+        <label class="form-label col-6" style="font-size:1.2rem">簡訊內容須包含：<span style="color:red">＜平台＞</span>、<span style="color:red">＜分提單號＞</span></label>
+    </div>
+
+    <div class="col-12 mb-3">
+        <label for="smsTitle" class="form-label col-1">簡訊名稱：</label>
+        <input type="text" id="smsName" class="form-control col-4" />
+    </div>
+    <div class="col-12 mb-3">
+        <label for="smsContent" class="form-label col-1">簡訊內容：</label>
+        <textarea id="smsContent" style="height:100px" class="form-control col-6"></textarea>
+    </div>
+    <div class="col-12 mb-3">
+        <button id="btntSearch" class="btn btn-success col-2" onclick="create()" style="font-size: 1.2rem;">
+            <i class="fas fa-plus"></i> 新增
+        </button>
+    </div>
+</div>
+
+<hr />
+<div class="col-12">
+    <table id="table" class="dataTable no-footer dtr-column" border="1">
+        <thead>
+            <tr>
+                <th class="col-3">簡訊名稱</th>
+                <th class="col-7">簡訊內容</th>
+                <th class="col-1">修改</th>
+                <th class="col-1">刪除</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<!-- modal placeholder-->
+<div id='myModal' class='modal fade in'>
+    <div class="modal-dialog">
+        <div class="modal-content" style="height:30rem;">
+            <b class="item-close" onclick="$('#myModal').modal('hide');">x</b>
+            <div id='myModalContent'></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('#collapseSend').addClass("show");
+    $('#ErrorOrderSmsMessage').addClass("active");
+
+    $(function () {
+        if ('@Model.List.Count' != '0')
+        {
+            let itemList = (@Model.List.ToJsonRaw());
+
+            for (i = 0; i < itemList.length; i++)
+            {
+                let data = itemList[i];
+                data.seq = i + 1;
+                $('#errorOrderSmsMessageTmpl').tmpl(data).appendTo('#table');
+            }
+        }
+    })
+
+
+    function create() {
+        let name = $('#smsName').val().trim();
+        let content = $('#smsContent').val();
+
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("Create", "ErrorOrderSmsMessage")',
+            data: {
+                Name: name,
+                Content: content
+            },
+            success: function (data) {
+                if (data.status == "success") {
+                    swal({
+                        title: "新增成功",
+                        icon: "success"
+                    }).then(function () {
+                        location.reload(); // 重新整理頁面
+                    });
+                } else {
+                    swal({
+                        title: data.msg,
+                        icon: "error"
+                    });
+                }
+            },
+            error: function () {
+                swal({
+                    title: "新增失敗",
+                    icon: "error"
+                });
+            }
+        });
+    }
+
+    function showEdit(id) {
+        $('#myModalContent').load(Router.action('ErrorOrderSmsMessage', 'Detail') + "?id=" + id, function () {
+            $('#myModal').modal({
+                /*backdrop: 'static',*/
+                keyboard: true
+            }, 'show');
+            //bindFormCustomer(this);
+        });
+        return false;
+    }
+
+    function editSms(id)
+    {
+        let name = $('#SmsMessage_Name').val().trim();
+        let content = $('#SmsMessage_Content').val();
+
+        $.ajax({
+            type: "POST",
+            url: '@Url.Action("Update", "ErrorOrderSmsMessage")',
+            data: {
+                Id: id,
+                Name: name,
+                Content: content
+            },
+            success: function (data) {
+                if (data.status == "success") {
+                    swal({
+                        title: "更新成功",
+                        icon: "success"
+                    }).then(function () {
+                        location.reload(); // 重新整理頁面
+                    });
+                } else {
+                    swal({
+                        title: data.msg,
+                        icon: "error"
+                    });
+                }
+            },
+            error: function () {
+                swal({
+                    title: "新增失敗",
+                    icon: "error"
+                });
+            }
+        });
+    }
+
+    function deleteSms(id, name) {
+         swal({
+        title: "確認刪除",
+        text: `您確定要刪除簡訊名稱${name}？`,
+        icon: "warning",
+        buttons: true,
+        dangerMode: true,
+    }).then((willDelete) => {
+        if (willDelete) {
+            $.ajax({
+                type: "POST",
+                url: '@Url.Action("Delete", "ErrorOrderSmsMessage")',
+                data: { id: id },
+                success: function (data) {
+                    if (data.status == "success") {
+                        swal({
+                            title: "刪除成功",
+                            icon: "success"
+                        }).then(function () {
+                            location.reload(); // 重新整理頁面
+                        });
+                    } else {
+                        swal({
+                            title: data.msg,
+                            icon: "error"
+                        });
+                    }
+                },
+                error: function () {
+                    swal({
+                        title: "刪除失敗",
+                        icon: "error"
+                    });
+                }
+            });
+        }
+    });
+
+    }
+
+
+
+</script>

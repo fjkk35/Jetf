@@ -1,0 +1,209 @@
+﻿@{
+    ViewBag.Title = "派送助理";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="DeliveryAssistantController">
+    <span class="headtype">派送助理</span>
+    <hr />
+
+    <!-- 查詢條件區域 -->
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <div class="row mb-3 align-items-center">
+            <!-- 日期(起) -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="startDate" class="col-lg-4 col-form-label text-right">日期(起)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="startDate"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.startDate"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="startDatePopup.opened"
+                           ng-click="openStartDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇開始日期" />
+                </div>
+            </div>
+
+            <!-- 日期(迄) -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="endDate" class="col-lg-4 col-form-label text-right">日期(迄)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="endDate"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.endDate"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="endDatePopup.opened"
+                           ng-click="openEndDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇結束日期" />
+                </div>
+            </div>
+
+            <!-- 作業地區 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="dataTypeOption" class="col-lg-4 col-form-label text-right">作業地區</label>
+                <div class="col-lg-8">
+                    <select id="dataTypeOption"
+                            class="form-control"
+                            ng-model="searchForm.dataType">
+                        <option value="">請選擇</option>
+                        <option ng-repeat="item in dataTypeList" value="{{item.DataType}}">{{item.DataType}}</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 派件公司 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="transOption" class="col-lg-4 col-form-label text-right">派件公司</label>
+                <div class="col-lg-8">
+                    <select id="transOption"
+                            class="form-control"
+                            ng-model="searchForm.transNo">
+                        <option value="">請選擇</option>
+                        <option ng-repeat="item in transList" value="{{item.TransNo}}">{{item.TransName}}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 按鈕區 -->
+        <div class="row">
+            <div class="col-lg-12 text-right">
+                <button type="button"
+                        class="btn btn-primary mr-2"
+                        ng-click="openUploadModal()"
+                        ng-disabled="uploading">
+                    <i class="fa fa-upload"></i> 上傳
+                </button>
+                <button type="button"
+                        class="btn btn-success"
+                        ng-click="exportExcel()"
+                        ng-disabled="exporting">
+                    <i class="fa" ng-class="{'fa-spinner fa-spin': exporting, 'fa-download': !exporting}"></i>
+                    {{exporting ? '匯出中...' : '匯出Excel'}}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 上傳 Modal -->
+    <div class="modal fade" id="uploadOrderModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">上傳託運單資料</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>請選擇 Excel 檔案（.xlsx）</label>
+                        <input type="file" id="uploadOrderFile" class="form-control" accept=".xlsx" />
+                    </div>
+
+                    <!-- 結果訊息 -->
+                    <div ng-show="uploadResult" class="mt-3">
+                        <div class="alert"
+                             ng-class="{'alert-success': uploadResult.status === 'success', 'alert-danger': uploadResult.status !== 'success'}">
+                            <i class="fa" ng-class="{'fa-check-circle': uploadResult.status === 'success', 'fa-times-circle': uploadResult.status !== 'success'}"></i>
+                            {{uploadResult.msg}}
+                        </div>
+                    </div>
+
+                    <div ng-show="uploadApiResults.uploadOrderInfo" class="mt-3">
+                        <h6>託運資料</h6>
+                        <div class="alert"
+                             ng-class="{'alert-success': uploadApiResults.uploadOrderInfo.success, 'alert-danger': !uploadApiResults.uploadOrderInfo.success}">
+                            <i class="fa" ng-class="{'fa-check-circle': uploadApiResults.uploadOrderInfo.success, 'fa-times-circle': !uploadApiResults.uploadOrderInfo.success}"></i>
+                            {{uploadApiResults.uploadOrderInfo.msg}}
+                        </div>
+
+                        <div ng-show="uploadApiResults.uploadOrderInfo.rows && uploadApiResults.uploadOrderInfo.rows.length > 0" class="table-responsive" style="max-height:300px; overflow-y:auto;">
+                            <table class="table table-bordered table-sm table-hover mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>客戶單號</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="row in uploadApiResults.uploadOrderInfo.rows track by $index">
+                                        <td>{{$index + 1}}</td>
+                                        <td>{{row.cusOrder}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div ng-show="uploadApiResults.establishDcShip" class="mt-3">
+                        <h6>車次</h6>
+                        <div class="alert"
+                             ng-class="{'alert-success': uploadApiResults.establishDcShip.success, 'alert-danger': !uploadApiResults.establishDcShip.success}">
+                            <i class="fa" ng-class="{'fa-check-circle': uploadApiResults.establishDcShip.success, 'fa-times-circle': !uploadApiResults.establishDcShip.success}"></i>
+                            {{uploadApiResults.establishDcShip.msg}}
+                        </div>
+
+                        <div ng-show="uploadApiResults.establishDcShip.row" class="table-responsive mb-2">
+                            <table class="table table-bordered table-sm mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>車次編號</th>
+                                        <th>駕駛</th>
+                                        <th>到貨日期</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>{{uploadApiResults.establishDcShip.row.dcShip}}</td>
+                                        <td>{{uploadApiResults.establishDcShip.row.driverId}}</td>
+                                        <td>{{uploadApiResults.establishDcShip.row.arriveDate}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div ng-show="uploadApiResults.establishDcShip.rows && uploadApiResults.establishDcShip.rows.length > 0" class="table-responsive" style="max-height:300px; overflow-y:auto;">
+                            <table class="table table-bordered table-sm table-hover mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>客戶單號</th>
+                                        <th>到貨日期</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="row in uploadApiResults.establishDcShip.rows track by $index">
+                                        <td>{{$index + 1}}</td>
+                                        <td>{{row.cusOrder}}</td>
+                                        <td>{{row.arriveDate}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-disabled="uploading">關閉</button>
+                    <button type="button" class="btn btn-primary" ng-click="uploadOrderInfo()" ng-disabled="uploading">
+                        <i class="fa fa-spinner fa-spin" ng-show="uploading"></i>
+                        {{uploading ? '上傳中...' : '上傳'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -1,0 +1,195 @@
+﻿
+@{
+    ViewBag.Title = "SearchLineGroup";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">Line群組查詢</span>
+<hr />
+<div class="col-12 col-md-12 col-sm-12">
+    <table id="lineGroupTable" style="width:100%;">
+        <thead>
+            <tr style="background-color: #FFF;">
+                <th>代號</th>
+                <th>名稱</th>
+                <th>Token</th>
+                <th>建立人員</th>
+                <th>建立時間</th>
+                <th>測試</th>
+                <th>刪除</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+        </tfoot>
+    </table>
+</div>
+
+
+<script>
+    $('#collapseLine').addClass("show");
+    $('#SearchLineGroup').addClass("active");
+
+    $(function () {
+        getLineGroupList();
+    });
+
+    function getLineGroupList() {
+        $.ajax({
+            url: Router.action('Line', 'GetLineGroup'),
+            type: "POST",   //用POST的方式
+            dataType: "json",   //response的資料格式
+            //data: { "data": JSON.stringify(obj) },
+            //async: false,
+            success: function (response) {
+                let data = JSON.parse(response);
+                //console.log(response);
+                //datatable更多Responsive用法請參考
+                //https://datatables.net/extensions/responsive/examples/
+
+                //此設定參考於這篇
+                //datatable套件參考網址
+                //https://datatables.net/extensions/responsive/examples/child-rows/right-column.html
+                $('#lineGroupTable').DataTable({
+                    paging: false,
+                    language: {
+                        "url": "../Scripts/DataTables/Chinese-traditional.json",
+                    },
+                    destroy: true,  //Cannot reinitialise DataTable,解决重新載入問題
+                    data: data,
+                    responsive: {
+                        details: {
+                            type: 'column',
+                            target: -1
+                        }
+                    },
+                    columns: [
+                        { "data": "GroupId" },
+                        { "data": "GroupName" },
+                        { "data": "Token" },
+                        { "data": "CrtUser" },
+                        { "data": "CrtDateTime" },
+                        {
+                            //參考https://dotblogs.com.tw/shadow/2018/04/03/065712
+                            "data": "Token",//資料行繫結屬性
+                            orderable: false, // 禁用排序
+                            render: function (data, type, row, meta) {
+                                //row指的是資料列物件 data變數相等於row.sysid
+                                return "<input type='button' value='測試' onclick=SendLineMessage('" + data + "') />";
+                            }
+                        },
+                        {
+                            //參考https://dotblogs.com.tw/shadow/2018/04/03/065712
+                            "data": "Token",//資料行繫結屬性
+                            orderable: false, // 禁用排序
+                            render: function (data, type, row, meta) {
+                                //row指的是資料列物件 data變數相等於row.sysid
+                                return "<input type='button' value='刪除' onclick=DeleteLineGroup('" + data + "','" + row.GroupName + "') />";
+                            }
+                        },
+                        { "defaultContent": "" }
+                    ],
+                    columnDefs: [{
+                        className: 'control',
+                        orderable: false,
+                        targets: -1
+                    },
+                    {
+                        visible: false,
+                        searchable: false
+                    }
+                    ]
+                });
+                new $.fn.dataTable.FixedHeader($('#lineGroupTable').DataTable());
+            }
+        });
+    }
+
+    function SendLineMessage(token) {
+        var obj = new Object();
+        obj.token = token;
+        obj.message = "測試";
+        $.ajax({
+            type: "POST",
+            url: Router.action('Line', 'SendLineMessage'),
+            data: { "data": JSON.stringify(obj) },
+            dataType: 'json',
+            //async: false,
+            //contentType: false,
+            success: function (data) {
+                if (data.Redirect) {
+                    window.location = Router.action('Account', 'Login');
+                }
+                else {
+                    if (data.status == "success") {
+                        swal({
+                            title: data.msg,
+                            icon: "success",
+                        });
+                    }
+                    else {
+                        swal({
+                            title: data.msg,
+                            icon: "error"
+                        });
+                    }
+                }
+            }
+        })
+    }
+
+
+    function DeleteLineGroup(token, groupName) {
+        swal({
+            title: "刪除LINE群組名稱：" + groupName,
+            icon: "warning",
+            buttons: {
+                Btn: false,
+                cancel: {
+                    text: "取消",
+                    visible: true
+                },
+                confirm: {
+                    text: "確定",
+                    visible: true
+                }
+            }
+        }).then((value) => {
+            if (value) {
+                var obj = new Object();
+                obj.token = token;
+                $.ajax({
+                    type: "POST",
+                    url: Router.action('Line', 'DeleteLineGroup'),
+                    data: { "data": JSON.stringify(obj) },
+                    dataType: 'json',
+                    //async: false,
+                    //contentType: false,
+                    success: function (data) {
+                        if (data.Redirect) {
+                            window.location = Router.action('Account', 'Login');
+                        }
+                        else {
+                            if (data.status == "success") {
+                                swal({
+                                    title: data.msg,
+                                    icon: "success",
+                                });
+                                getLineGroupList();
+                            }
+                            else {
+                                swal({
+                                    title: data.msg,
+                                    icon: "error"
+                                });
+                            }
+                        }
+                    }
+                })
+            }
+        });
+    }
+
+</script>
+

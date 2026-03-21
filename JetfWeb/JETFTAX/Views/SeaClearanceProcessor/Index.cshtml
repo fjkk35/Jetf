@@ -1,0 +1,345 @@
+﻿@{
+    ViewBag.Title = "負責人建檔";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">負責人建檔</span>
+<hr />
+
+<div ng-controller="SeaClearanceProcessorController">
+    <div class="container-fluid">
+        <!-- 查詢區域 -->
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4 class="panel-title">查詢條件</h4>
+            </div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>步驟</label>
+                            <select class="form-control" ng-model="query.StepId">
+                                <option value="">全部</option>
+                                <option ng-repeat="step in steps" value="{{step.Id}}">{{step.StepName}}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>客戶</label>
+                            <select class="form-control" ng-model="query.Cust_Code">
+                                <option value="">全部</option>
+                                <option ng-repeat="customer in customers" value="{{customer.Cust_Code}}">
+                                    {{customer.Cust_Code}}-{{customer.Cust_Name}}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <div>
+                                <button type="button" class="btn btn-primary" ng-click="loadProcessorList()">
+                                    <i class="fa fa-search"></i> 查詢
+                                </button>
+                                <button type="button" class="btn btn-secondary" ng-click="resetQuery()">
+                                    <i class="fa fa-eraser"></i> 重置
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 資料列表區域 -->
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4 class="panel-title">負責人列表</h4>
+                <div class="panel-actions">
+                    <button type="button" class="btn btn-success" ng-click="openModal('add')">
+                        <i class="fa fa-plus"></i> 新增
+                    </button>
+                </div>
+            </div>
+            <div class="panel-body">
+                <!-- 載入指示器 -->
+                <div ng-show="loading" class="text-center">
+                    <i class="fa fa-spinner fa-spin fa-2x"></i>
+                    <p>載入中...</p>
+                </div>
+
+                <!-- 資料表格 -->
+                <div ng-hide="loading" class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th width="100">步驟</th>
+                                <th width="150">客戶</th>
+                                <th width="80">X2</th>
+                                <th width="80">X3</th>
+                                <th width="80">G1</th>
+                                <th width="80">移倉</th>
+                                <th width="80">轉G1</th>
+                                <th width="80">轉移倉</th>
+                                <th width="120" class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="item in processorList">
+                                <td>{{item.StepName}}</td>
+                                <td>{{item.Cust_Code}}-{{item.Cust_Name}}</td>
+                                <td>{{item.X2 || '-'}}</td>
+                                <td>{{item.X3 || '-'}}</td>
+                                <td>{{item.G1 || '-'}}</td>
+                                <td>{{item.MoveWarehouse || '-'}}</td>
+                                <td>{{item.TransferG1 || '-'}}</td>
+                                <td>{{item.TransferWarehouse || '-'}}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-primary" ng-click="openModal('edit', item)" title="編輯">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-danger" ng-click="deleteProcessor(item)" title="刪除">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- 空資料提示 -->
+                    <div ng-if="processorList.length === 0" class="no-data">
+                        <i class="fa fa-list fa-3x text-muted"></i>
+                        <p class="text-muted">目前沒有負責人資料</p>
+                        <button type="button" class="btn btn-primary" ng-click="openModal('add')">
+                            <i class="fa fa-plus"></i> 立即新增
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="processorModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">{{modalMode === 'add' ? '新增負責人' : '編輯負責人'}}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label required">步驟</label>
+                                <select class="form-control" 
+                                        ng-model="processorForm.StepId" 
+                                        ng-disabled="modalMode === 'edit'">
+                                    <option value="">請選擇步驟</option>
+                                    <option ng-repeat="step in steps" value="{{step.Id}}">{{step.StepName}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label required">客戶</label>
+                                <select class="form-control" 
+                                        ng-model="processorForm.Cust_Code" 
+                                        ng-disabled="modalMode === 'edit'">
+                                    <option value="">請選擇客戶</option>
+                                    <option ng-repeat="customer in customers" value="{{customer.Cust_Code}}">
+                                        {{customer.Cust_Code}}-{{customer.Cust_Name}}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">X2負責人</label>
+                                <input type="text" class="form-control" ng-model="processorForm.X2" maxlength="50" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">X3負責人</label>
+                                <input type="text" class="form-control" ng-model="processorForm.X3" maxlength="50" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">G1負責人</label>
+                                <input type="text" class="form-control" ng-model="processorForm.G1" maxlength="50" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">移倉負責人</label>
+                                <input type="text" class="form-control" ng-model="processorForm.MoveWarehouse" maxlength="50" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">轉G1負責人</label>
+                                <input type="text" class="form-control" ng-model="processorForm.TransferG1" maxlength="50" />
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">轉移倉負責人</label>
+                                <input type="text" class="form-control" ng-model="processorForm.TransferWarehouse" maxlength="50" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fa fa-info-circle"></i>
+                        至少需要填寫一個負責人欄位
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" 
+                            class="btn btn-primary" 
+                            ng-click="saveProcessor()"
+                            ng-disabled="!canSave() || saving">
+                        <span ng-show="saving">
+                            <i class="fa fa-spinner fa-spin"></i> 儲存中...
+                        </span>
+                        <span ng-hide="saving">
+                            <i class="fa fa-save"></i> 儲存
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .panel {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 1px 1px rgba(0,0,0,.05);
+        margin-bottom: 20px;
+    }
+
+    .panel-heading {
+        position: relative;
+        background-color: #f5f5f5;
+        border-bottom: 1px solid #ddd;
+        padding: 10px 15px;
+        border-radius: 4px 4px 0 0;
+        min-height: 50px;
+    }
+
+    .panel-title {
+        margin: 0;
+        font-size: 16px;
+        color: inherit;
+        padding-right: 120px;
+    }
+
+    .panel-actions {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+    }
+
+    .panel-body {
+        padding: 15px;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .table {
+        width: 100%;
+        margin-bottom: 0;
+        border-collapse: collapse;
+    }
+
+    .table > thead > tr > th,
+    .table > tbody > tr > td {
+        padding: 8px;
+        border: 1px solid #ddd;
+        vertical-align: middle;
+    }
+
+    .table > thead > tr > th {
+        background-color: #f5f5f5;
+        font-weight: 600;
+    }
+
+    .table > tbody > tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+    }
+
+    .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+    }
+
+    .alert-info {
+        color: #31708f;
+        background-color: #d9edf7;
+        border-color: #bce8f1;
+    }
+
+    .required:after {
+        content: " *";
+        color: red;
+    }
+
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 5px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-control {
+        display: block;
+        width: 100%;
+        padding: 6px 12px;
+        font-size: 14px;
+        line-height: 1.42857143;
+        color: #555;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+   
+    .text-center {
+        text-align: center;
+    }
+
+    .text-muted {
+        color: #777;
+    }
+</style>
+
+<script>
+    $('#collapseSeaClearance').addClass("show");
+    $('#SeaClearanceProcessor').addClass("active");
+</script>
+

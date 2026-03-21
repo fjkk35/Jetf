@@ -1,0 +1,248 @@
+﻿@{
+    ViewBag.Title = "文件名稱管理";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">文件名稱管理</span>
+<hr />
+
+<div ng-controller="AuthorizationFormController">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="panel panel-default">
+                    <div class="panel-actions">
+                        <button type="button" class="btn btn-primary btn-sm" ng-click="showAddModal()">
+                            <i class="fa fa-plus"></i> 新增
+                        </button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="alert alert-info">
+                            <i class="fa fa-info-circle"></i>
+                            可以直接點擊並拖曳任一行來調整文件名稱的排序
+                        </div>
+
+                        <!-- 載入指示器 -->
+                        <div ng-show="loading" class="text-center">
+                            <i class="fa fa-spinner fa-spin fa-2x"></i>
+                            <p>載入中...</p>
+                        </div>
+
+                        <!-- 文件名稱表格 -->
+                        <div ng-hide="loading" class="authorization-form-table">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th width="80" class="text-center">排序</th>
+                                        <th>文件名稱</th>
+                                        <th width="80" class="text-center">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody ui-sortable="sortableOptions" ng-model="forms">
+                                    <tr ng-repeat="form in forms" class="sortable-row">
+                                        <td class="text-center sort-cell">
+                                            <i class="fa fa-bars drag-handle" title="拖曳以重新排序"></i>
+                                            <span class="sort-number">{{form.Sort}}</span>
+                                        </td>
+                                        <td class="form-name-cell">
+                                            <span class="form-name">{{form.FormName}}</span>
+                                        </td>
+                                        <td class="text-center action-cell">
+                                            <button type="button"
+                                                    class="btn btn-xs btn-warning"
+                                                    ng-click="showEditModal(form)"
+                                                    title="編輯文件名稱">
+                                                <i class="fa fa-edit"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- 空資料提示 -->
+                            <div ng-if="forms.length === 0" class="no-data">
+                                <i class="fa fa-folder-open fa-3x text-muted"></i>
+                                <p class="text-muted">目前沒有文件名稱資料</p>
+                                <button type="button" class="btn btn-primary" ng-click="showAddModal()">
+                                    <i class="fa fa-plus"></i> 立即新增
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增/編輯 Modal -->
+    <div class="modal fade" id="formModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">{{modalTitle}}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="關閉">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form name="formForm" novalidate>
+                        <div class="form-group">
+                            <label for="formName" class="form-label required">文件名稱</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="formName"
+                                   name="formName"
+                                   ng-model="currentForm.FormName"
+                                   required
+                                   maxlength="100"
+                                   placeholder="請輸入文件名稱">
+                            <div ng-show="formForm.formName.$invalid && formForm.formName.$touched" class="text-danger">
+                                <small ng-show="formForm.formName.$error.required">文件名稱為必填</small>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="sort" class="form-label required">排序</label>
+                            <input type="number"
+                                   class="form-control"
+                                   id="sort"
+                                   name="sort"
+                                   ng-model="currentForm.Sort"
+                                   required
+                                   min="1"
+                                   placeholder="請輸入排序數字">
+                            <small class="form-text text-muted">系統會自動調整其他項目的排序，避免重複</small>
+                            <div ng-show="formForm.sort.$invalid && formForm.sort.$touched" class="text-danger">
+                                <small ng-show="formForm.sort.$error.required">排序為必填</small>
+                                <small ng-show="formForm.sort.$error.min">排序必須大於0</small>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button"
+                            class="btn btn-primary"
+                            ng-click="saveForm()"
+                            ng-disabled="formForm.$invalid || saving">
+                        <span ng-show="saving">
+                            <i class="fa fa-spinner fa-spin"></i> 儲存中...
+                        </span>
+                        <span ng-hide="saving">
+                            <i class="fa fa-save"></i> 儲存
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<style>
+    .panel-actions {
+        padding: 15px 15px 10px 15px;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .authorization-form-table {
+        overflow-x: auto;
+    }
+
+    .table > tbody > tr.sortable-row {
+        cursor: move;
+        user-select: none;
+        transition: all 0.2s ease;
+    }
+
+        .table > tbody > tr.sortable-row:hover {
+            background-color: #f8f9fa;
+        }
+
+    .table > tbody > tr.ui-sortable-helper {
+        background-color: #fff !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        z-index: 1000;
+        opacity: 0.9;
+        border: 2px solid #007bff;
+    }
+
+    .ui-sortable-placeholder {
+        background-color: #e3f2fd !important;
+        border: 2px dashed #2196f3 !important;
+        visibility: visible !important;
+        height: 45px;
+    }
+
+        .ui-sortable-placeholder td {
+            border: none !important;
+            background: transparent !important;
+        }
+
+    .sort-cell {
+        vertical-align: middle;
+        padding: 8px !important;
+    }
+
+    .drag-handle {
+        color: #999;
+        margin-right: 8px;
+        font-size: 14px;
+        cursor: move;
+    }
+
+        .drag-handle:hover {
+            color: #666;
+        }
+
+    .sort-number {
+        font-weight: 500;
+        color: #666;
+    }
+
+    .form-name-cell {
+        vertical-align: middle;
+    }
+
+    .form-name {
+        font-size: 15px;
+        font-weight: 500;
+    }
+
+    .action-cell {
+        vertical-align: middle;
+    }
+
+        .action-cell button {
+            pointer-events: auto;
+            position: relative;
+            z-index: 10;
+        }
+
+    /* 拖曳時禁用按鈕 */
+    .ui-sortable-helper .action-cell {
+        pointer-events: none;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 40px 20px;
+    }
+
+    .required:after {
+        content: " *";
+        color: red;
+    }
+
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 5px;
+    }
+</style>
+
+<script>
+    $('#collapseSeaClearance').addClass("show");
+    $('#AuthorizationForm').addClass("active");
+</script>
+
+

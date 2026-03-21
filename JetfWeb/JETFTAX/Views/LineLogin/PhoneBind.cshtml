@@ -1,0 +1,282 @@
+﻿@model JETFTAX.Models.LineLogin.LineUserProfileViewModel
+
+@{
+    Layout = null;
+}
+
+<style>
+    .user-bind-image {
+        margin-bottom: 0.5em;
+    }
+
+        .user-bind-image img {
+            max-inline-size: 100%;
+            block-size: auto;
+            vertical-align: middle;
+            border-style: none;
+            opacity: 0.6;
+        }
+
+    .input-group {
+        position: relative;
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-wrap: wrap;
+        flex-wrap: wrap;
+        -ms-flex-align: stretch;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .input-group-prepend {
+        display: flex;
+    }
+
+    .input-icon {
+        padding: 7px 0;
+        justify-content: center;
+        width: 44px;
+    }
+
+    .input-group-text {
+        display: -ms-flexbox;
+        display: flex;
+        -ms-flex-align: center;
+        align-items: center;
+        padding: .375rem .75rem;
+        margin-bottom: 0;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #495057;
+        text-align: center;
+        white-space: nowrap;
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+        border-radius: .25rem;
+    }
+
+    .input-import {
+        display: block;
+        width: 100%;
+        height: calc(1.5em + .75rem + 2px);
+        padding: .375rem .75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #495057;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #ced4da;
+        border-radius: .25rem;
+        transition: border-c;
+    }
+
+    .inputText {
+        border-radius: 0 0.3rem 0.3rem 0;
+        position: relative;
+        -ms-flex: 1 1 auto;
+        flex: 1 1 auto;
+        width: 1%;
+        margin-bottom: 0;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+</style>
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Callback</title>
+
+    <!-- Custom fonts for this template-->
+    <link href="~/Scripts/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+          rel="stylesheet">
+
+    <!-- Custom styles for this template-->
+    <link href="~/Content/sb-admin-2.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-primary">
+    <div class="container">
+
+        <!-- Outer Row -->
+        <div class="row justify-content-center">
+
+            <div class="col-xl-10 col-lg-12 col-md-9">
+
+                <div class="card o-hidden border-0 shadow-lg my-5">
+                    <div class="card-body p-0">
+                        <!-- Nested Row within Card Body -->
+                        <div class="row">
+                            <div class="col-lg-12">
+                                <div class="p-5">
+                                    <div class="text-center">
+                                        <img class="img-fluid px-3 px-sm-4 mt-3 mb-4" style="width: 25rem;"
+                                             src="~/img/logo.png">
+                                    </div>
+                                    <div class="user-bind-image">
+                                        <img src="~/img/phoneBind.jpg" />
+                                    </div>
+
+                                    <div id="divDisplay" class="hidden">
+                                        <div class="input-group">
+                                            <div class="input-group-prepend"><span class="fa fa-user input-icon input-group-text"></span></div>
+                                            <input type="text" id="phoneDisplay" value="@Model.Phone" class = "inputText" disabled />
+                                        </div>
+                                        <div style="margin-top:0.5em;font-size:0.8rem;margin-bottom:0.5rem;">
+                                            <p style="color: #cc1632; margin-bottom: 15px; font-size: 1.5em; background-color: #efefef; padding: 5px 10px;">※ 手機已綁定完成</p>
+                                        </div>
+                                        <button id="rebind" class="btn btn-primary btn-user btn-block" style="padding: 0.8rem;" id="loginBtn">
+                                            <span class="fa fa-paper-plane"> 重新綁定手機</span>
+                                        </button>
+                                    </div>
+
+                                    <div id="divBind" class="hidden">
+                                        @using (Html.BeginForm("PhoneBind", "LineLogin", FormMethod.Post, new { id = "loginForm" }))
+                                        {
+                                            @Html.HiddenFor(m => m.UserId)
+                                            @Html.HiddenFor(m => m.DisplayName)
+                                            <div class="input-group">
+                                                <div class="input-group-prepend"><span class="fa fa-user input-icon input-group-text"></span></div>
+                                                @Html.TextBoxFor(m => m.Phone, new { @type = "number", @oninput = "validateLength(this)", @class = "inputText", maxLength = 10, @placeholder = "手機號碼", inputmode = "numeric" })
+                                            </div>
+                                            <div style="margin-top:0.5em;font-size:0.8rem;margin-bottom:0.5rem;">
+                                                <p style="color: #cc1632; margin-bottom: 15px; font-size: 14px; background-color: #efefef; padding: 5px 10px;">※ 請輸入以上資訊來完成綁定註冊</p>
+                                                <label>
+                                                    <input id="privacyCheckbox" type="checkbox" /> 我已閱讀<a href="~/LineLogin/Privacy" target="_blank"> 捷豐國際物流隱私權聲明</a>，同意以上資料提供捷豐國際物流公司使用。 您所輸入的個人資料，我們僅做為回覆您的意見或需求之用，並會遵守個人資料保護法相關規定，及隱私權聲明。未經您的同意，絕不提供第三方使用。
+                                                </label>
+                                            </div>
+
+                                            <button type="submit" class="btn btn-primary btn-user btn-block" style="padding: 0.8rem;" id="loginBtn">
+                                                <span class="fa fa-paper-plane"> 綁定手機</span>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="~/Scripts/vendor/jquery/jquery.min.js"></script>
+    <script src="~/Scripts/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="~/Scripts/vendor/jquery-easing/jquery.easing.min.js"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="~/Scripts/js/sb-admin-2.min.js"></script>
+
+    @Scripts.Render("~/Scripts/lib/sweetalert.min.js")
+    @Scripts.Render(RouteJs.RouteJsHandler.HandlerUrl)
+
+    <script>
+        const isBind = '@Model.IsBind';
+
+        if (isBind == 'True') {
+            $("#divDisplay").removeClass('hidden');
+        }
+        else {
+            $("#divBind").removeClass('hidden');
+        }
+
+        $('#rebind').click(function () {
+            $("#divDisplay").addClass('hidden');
+            $("#divBind").removeClass('hidden');
+        });
+
+        $('#loginBtn').click(function (e) {
+            e.preventDefault(); // 防止默認提交行為
+            $("#loginForm").submit();
+        });
+
+        $("#loginForm").submit(function (e) {
+            //防止連點
+            $("#loginBtn").attr('disabled', true);
+
+            e.preventDefault(); // avoid to execute the actual submit of the form.
+
+            let form = $("#loginForm");
+            let url = Router.action('LineLogin', 'PhoneBind');
+
+            if (!$('#privacyCheckbox').is(':checked')) {
+                swal({
+                    title: '請同意隱私權聲明',
+                    icon: "warning"
+                });
+
+                $("#loginBtn").attr('disabled', false);
+
+                return;
+            }
+
+            if (!validatePhoneNumber($('#Phone').val())) {
+                swal({
+                    title: '手機號碼錯誤，請確認',
+                    icon: "error"
+                });
+
+                $("#loginBtn").attr('disabled', false);
+
+                return;
+            }
+
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: form.serialize(), // serializes the form's elements.
+                success: function (data) {
+                    if (data.status == "success") {
+                        swal({
+                            title: data.msg,
+                            icon: "success",
+                            timer: 2000,
+                            showConfirmButton: false,
+                        }).then(function () {
+                            $("#divDisplay").removeClass('hidden');
+                            $("#divBind").addClass('hidden');
+
+                            $('#phoneDisplay').val($('#Phone').val());
+                        });
+                    }
+                    else {
+                        //顯示錯誤資訊
+                        swal({
+                            title: data.msg,
+                            icon: "error"
+                        });
+                    }
+
+                    $("#loginBtn").attr('disabled', false);
+                }
+            });
+        });
+
+
+        function validatePhoneNumber(phoneNumber) {
+            const regex = /^09\d{8}$/;
+            return regex.test(phoneNumber);
+        }
+
+        function validateLength(input) {
+            if (input.value.length > 10) {
+                input.value = input.value.slice(0, 10);
+            }
+        }
+
+      
+    </script>
+
+</body>
+</html>

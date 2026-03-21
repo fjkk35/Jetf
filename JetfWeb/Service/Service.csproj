@@ -1,0 +1,649 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{6FD04CA2-9661-4544-9BFE-BF2DC6720C80}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Service</RootNamespace>
+    <AssemblyName>Service</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Autofac, Version=8.1.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
+      <HintPath>..\packages\Autofac.8.1.0\lib\netstandard2.0\Autofac.dll</HintPath>
+    </Reference>
+    <Reference Include="Autofac.Extensions.DependencyInjection, Version=10.0.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
+      <HintPath>..\packages\Autofac.Extensions.DependencyInjection.10.0.0\lib\netstandard2.0\Autofac.Extensions.DependencyInjection.dll</HintPath>
+    </Reference>
+    <Reference Include="BouncyCastle.Crypto, Version=1.8.9.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
+      <HintPath>..\packages\BouncyCastle.1.8.9\lib\BouncyCastle.Crypto.dll</HintPath>
+    </Reference>
+    <Reference Include="ChineseConverter, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9ecab500adebae88, processorArchitecture=MSIL">
+      <HintPath>..\packages\ChineseConverter.1.0.0\lib\net20\ChineseConverter.dll</HintPath>
+    </Reference>
+    <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Dapper.2.1.35\lib\net461\Dapper.dll</HintPath>
+    </Reference>
+    <Reference Include="FluentFTP, Version=52.0.0.0, Culture=neutral, PublicKeyToken=f4af092b1d8df44f, processorArchitecture=MSIL">
+      <HintPath>..\packages\FluentFTP.52.0.0\lib\net472\FluentFTP.dll</HintPath>
+    </Reference>
+    <Reference Include="HtmlAgilityPack, Version=1.12.4.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
+      <HintPath>..\packages\HtmlAgilityPack.1.12.4\lib\Net45\HtmlAgilityPack.dll</HintPath>
+    </Reference>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=1.3.3.11, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+      <HintPath>..\packages\SharpZipLib.1.3.3\lib\net45\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
+    <Reference Include="itextsharp, Version=5.5.13.3, Culture=neutral, PublicKeyToken=8354ae6d2174ddca, processorArchitecture=MSIL">
+      <HintPath>..\packages\iTextSharp.5.5.13.3\lib\itextsharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.9.0.0\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.TimeProvider, Version=8.0.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Bcl.TimeProvider.8.0.1\lib\net462\Microsoft.Bcl.TimeProvider.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Configuration.Abstractions, Version=9.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.Configuration.Abstractions.9.0.0\lib\net462\Microsoft.Extensions.Configuration.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection, Version=9.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.DependencyInjection.9.0.0\lib\net462\Microsoft.Extensions.DependencyInjection.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions, Version=9.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.DependencyInjection.Abstractions.9.0.0\lib\net462\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Http, Version=9.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.Http.9.0.0\lib\net462\Microsoft.Extensions.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging, Version=9.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.Logging.9.0.0\lib\net462\Microsoft.Extensions.Logging.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=9.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.Logging.Abstractions.9.0.0\lib\net462\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Options, Version=9.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.Options.9.0.0\lib\net462\Microsoft.Extensions.Options.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Primitives, Version=9.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.Primitives.9.0.0\lib\net462\Microsoft.Extensions.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.IdentityModel.Abstractions, Version=8.1.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.IdentityModel.Abstractions.8.1.2\lib\net472\Microsoft.IdentityModel.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.IdentityModel.JsonWebTokens, Version=8.1.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.IdentityModel.JsonWebTokens.8.1.2\lib\net472\Microsoft.IdentityModel.JsonWebTokens.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.IdentityModel.Logging, Version=8.1.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.IdentityModel.Logging.8.1.2\lib\net472\Microsoft.IdentityModel.Logging.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.IdentityModel.Tokens, Version=8.1.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.IdentityModel.Tokens.8.1.2\lib\net472\Microsoft.IdentityModel.Tokens.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualBasic" />
+    <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
+    </Reference>
+    <Reference Include="Nager.LicenseSystem, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Nager.LicenseSystem.1.1.0\lib\net472\Nager.LicenseSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="NPOI, Version=2.5.6.0, Culture=neutral, PublicKeyToken=0df73ec7942b34e1, processorArchitecture=MSIL">
+      <HintPath>..\packages\NPOI.2.5.6\lib\net45\NPOI.dll</HintPath>
+    </Reference>
+    <Reference Include="NPOI.OOXML, Version=2.5.6.0, Culture=neutral, PublicKeyToken=0df73ec7942b34e1, processorArchitecture=MSIL">
+      <HintPath>..\packages\NPOI.2.5.6\lib\net45\NPOI.OOXML.dll</HintPath>
+    </Reference>
+    <Reference Include="NPOI.OpenXml4Net, Version=2.5.6.0, Culture=neutral, PublicKeyToken=0df73ec7942b34e1, processorArchitecture=MSIL">
+      <HintPath>..\packages\NPOI.2.5.6\lib\net45\NPOI.OpenXml4Net.dll</HintPath>
+    </Reference>
+    <Reference Include="NPOI.OpenXmlFormats, Version=2.5.6.0, Culture=neutral, PublicKeyToken=0df73ec7942b34e1, processorArchitecture=MSIL">
+      <HintPath>..\packages\NPOI.2.5.6\lib\net45\NPOI.OpenXmlFormats.dll</HintPath>
+    </Reference>
+    <Reference Include="Polly, Version=8.0.0.0, Culture=neutral, PublicKeyToken=c8a3ffc3f8f825cc, processorArchitecture=MSIL">
+      <HintPath>..\packages\Polly.8.5.0\lib\net472\Polly.dll</HintPath>
+    </Reference>
+    <Reference Include="Polly.Core, Version=8.0.0.0, Culture=neutral, PublicKeyToken=c8a3ffc3f8f825cc, processorArchitecture=MSIL">
+      <HintPath>..\packages\Polly.Core.8.5.0\lib\net472\Polly.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Renci.SshNet, Version=2024.0.0.0, Culture=neutral, PublicKeyToken=1cee9f8bde3db106, processorArchitecture=MSIL">
+      <HintPath>..\packages\SSH.NET.2024.0.0\lib\net462\Renci.SshNet.dll</HintPath>
+    </Reference>
+    <Reference Include="Spire.License, Version=1.3.8.20, Culture=neutral, PublicKeyToken=b1144360237c8b3f, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>bin\Debug\Spire.License.dll</HintPath>
+    </Reference>
+    <Reference Include="Spire.Pdf, Version=6.10.0.0, Culture=neutral, PublicKeyToken=663f351905198cb3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>bin\Debug\Spire.Pdf.dll</HintPath>
+    </Reference>
+    <Reference Include="Spire.XLS, Version=10.10.1.0, Culture=neutral, PublicKeyToken=663f351905198cb3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>bin\Debug\Spire.XLS.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.Annotations, Version=4.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ComponentModel.Annotations.4.5.0\lib\net461\System.ComponentModel.Annotations.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Diagnostics.DiagnosticSource, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Diagnostics.DiagnosticSource.9.0.0\lib\net462\System.Diagnostics.DiagnosticSource.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IdentityModel.Tokens.Jwt, Version=8.1.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.IdentityModel.Tokens.Jwt.8.1.2\lib\net472\System.IdentityModel.Tokens.Jwt.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IO.Compression, Version=4.1.2.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.IO.Compression.4.3.0\lib\net46\System.IO.Compression.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Memory.4.5.5\lib\net461\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Caching" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Encodings.Web, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Text.Encodings.Web.8.0.0\lib\net462\System.Text.Encodings.Web.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Json, Version=8.0.0.4, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Text.Json.8.0.4\lib\net462\System.Text.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Transactions" />
+    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Helpers, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.Helpers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Mvc, Version=5.2.7.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.Mvc.5.2.7\lib\net45\System.Web.Mvc.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.Razor.3.2.7\lib\net45\System.Web.Razor.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.WebPages, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.WebPages.Deployment, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.Deployment.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.WebPages.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.Razor.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="EnumTax\Authority.cs" />
+    <Compile Include="EnumTax\AuthorityPartner.cs" />
+    <Compile Include="EnumTax\CacheName.cs" />
+    <Compile Include="EnumTax\CargoProcessType.cs" />
+    <Compile Include="EnumTax\CptStatusEnum.cs" />
+    <Compile Include="EnumTax\CptTradeVanEnum.cs" />
+    <Compile Include="EnumTax\DataTypeEnum.cs" />
+    <Compile Include="EnumTax\DateType.cs" />
+    <Compile Include="EnumTax\ErrorOrder.cs" />
+    <Compile Include="EnumTax\EtlTaxType.cs" />
+    <Compile Include="EnumTax\FtzReptileUrl.cs" />
+    <Compile Include="EnumTax\ImporterSearchType.cs" />
+    <Compile Include="EnumTax\PostEntryType.cs" />
+    <Compile Include="EnumTax\ProcessStatus.cs" />
+    <Compile Include="EnumTax\EtlSevenElevenTax.cs" />
+    <Compile Include="EnumTax\SeaClearanceEditField.cs" />
+    <Compile Include="EnumTax\SeaErrorReportEnum.cs" />
+    <Compile Include="EnumTax\SeaTaxType.cs" />
+    <Compile Include="EnumTax\SeaWarehouseType.cs" />
+    <Compile Include="EnumTax\SendType.cs" />
+    <Compile Include="EnumTax\ShipmentInboundFreightPayerNo.cs" />
+    <Compile Include="EnumTax\ShipmentInboundProcessTransNo.cs" />
+    <Compile Include="EnumTax\ShipmentInboundProcessType.cs" />
+    <Compile Include="EnumTax\ShipmentInboundSourceType.cs" />
+    <Compile Include="EnumTax\TactReptileUrl.cs" />
+    <Compile Include="EnumTax\TaxPaymentType.cs" />
+    <Compile Include="EnumTax\EtlFamilyTax.cs" />
+    <Compile Include="EnumTax\UserStatusEnum.cs" />
+    <Compile Include="EnumTax\WarehouseProcessType.cs" />
+    <Compile Include="Extensions\ConvertToDateTimeExtensions.cs" />
+    <Compile Include="Extensions\ConvertToEnumExtensions.cs" />
+    <Compile Include="Extensions\ConvertToNumberExtensions.cs" />
+    <Compile Include="Extensions\SqlBuilderExtensions.cs" />
+    <Compile Include="Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Extensions\EnumHelper.cs" />
+    <Compile Include="Extensions\NPOIExtensions.cs" />
+    <Compile Include="Extensions\StringExtensions.cs" />
+    <Compile Include="Extensions\BCryptCompatibility.cs" />
+    <Compile Include="Helpers\CacheHelper.cs" />
+    <Compile Include="Models\AbnormalState\AbnormalStateModel.cs" />
+    <Compile Include="Models\ApprovalCategory\ApprovalCategoryModel.cs" />
+    <Compile Include="Models\AuthorizationForm\AuthorizationFormModel.cs" />
+    <Compile Include="Models\BusinessRegistryNew\BusinessRegistryNewModel.cs" />
+    <Compile Include="Models\BusinessRegistry\BusinessRegistryModel.cs" />
+    <Compile Include="Models\CainiaoFamilySeaTax\CainiaoFamilySeaTaxModel.cs" />
+    <Compile Include="Models\CainiaoHiLifeTax\CainiaoHiLifeTaxModel.cs" />
+    <Compile Include="Models\Cargo\FeeMasterModel.cs" />
+    <Compile Include="Models\CptSeaMainNumberJob\CptSeaMainNumberDetailModel.cs" />
+    <Compile Include="Models\CptTradeVan\CargoManifestModel.cs" />
+    <Compile Include="Models\CptTradeVan\ErrorOrderModel.cs" />
+    <Compile Include="Models\CptTradeVan\EtlClearanceOrderModel.cs" />
+    <Compile Include="Models\CptTradeVan\EtlErrorOrderModel.cs" />
+    <Compile Include="Models\CptTradeVan\Gb301Model.cs" />
+    <Compile Include="Models\CptTradeVan\Gb302Model.cs" />
+    <Compile Include="Models\CptTradeVan\Gb321Model.cs" />
+    <Compile Include="Models\CptTradeVan\Gb326Model.cs" />
+    <Compile Include="Models\CptTradeVan\Gb330Model.cs" />
+    <Compile Include="Models\CptTradeVan\Gb350Model.cs" />
+    <Compile Include="Models\CptTradeVan\Gb353Model.cs" />
+    <Compile Include="Models\CptTradeVan\Gb378Model.cs" />
+    <Compile Include="Models\CptTradeVan\NotReplyDetailModel.cs" />
+    <Compile Include="Models\CptTradeVan\ReceiveOrderModel.cs" />
+    <Compile Include="Models\CustomerModel.cs" />
+    <Compile Include="Models\CustomerTaxCalculate\CustomerTaxCalculateModel.cs" />
+    <Compile Include="Models\CustomerTaxSetting\CustomerTaxSettingModel.cs" />
+    <Compile Include="Models\CustomsBroker\CustomsBrokerModel.cs" />
+    <Compile Include="Models\ErrorOrderSendCustomer\CustomerPlatformMapping.cs" />
+    <Compile Include="Models\ErrorOrderSendDetail\ErrorOrderSendDetailResponse.cs" />
+    <Compile Include="Models\ErrorOrderSend\ErrorOrderSendMessageModel.cs" />
+    <Compile Include="Models\ErrorOrderSend\ErrorOrderSendModel.cs" />
+    <Compile Include="Models\ErrorOrderSend\ErrorOrderSendDetailModel.cs" />
+    <Compile Include="Models\ErrorOrderSend\LineUserProfile.cs" />
+    <Compile Include="Models\ErrorOrderSend\SendMessageResponse.cs" />
+    <Compile Include="Models\ErrorOrderSmsMessage\ErrorOrderSmsMessageModel.cs" />
+    <Compile Include="Models\EtlCustWorkLoad\ArrivalTimeModel.cs" />
+    <Compile Include="Models\EtlCustWorkLoad\SignOutTimeModel.cs" />
+    <Compile Include="Models\EtlUnpackingZ\EtlUnpackingZModel.cs" />
+    <Compile Include="Models\EtlUnpackingZ\MawbModel.cs" />
+    <Compile Include="Models\ExportClearance\ExportClearanceInfoModel.cs" />
+    <Compile Include="Models\ExportClearance\ExportFlightDetailModel.cs" />
+    <Compile Include="Models\GlobalModel.cs" />
+    <Compile Include="Models\HctEtlTax\HctEtlTaxDetail.cs" />
+    <Compile Include="Models\Importer\ImporterResponse.cs" />
+    <Compile Include="Models\IncomeReport\IncomeReportCustomerRateModel.cs" />
+    <Compile Include="Models\LineGroupModel.cs" />
+    <Compile Include="Models\LineLogin\LineTokenResponse.cs" />
+    <Compile Include="Models\LogCargoStatusModel.cs" />
+    <Compile Include="Models\LogClearanceWork.cs" />
+    <Compile Include="Models\LogRecModel.cs" />
+    <Compile Include="Models\ManifestModel.cs" />
+    <Compile Include="Models\PostClearance\PostClearanceModel.cs" />
+    <Compile Include="Models\PostClearance\PostClearanceUploadModel.cs" />
+    <Compile Include="Models\ProcessModel.cs" />
+    <Compile Include="Models\ScanCargoArrivalTime\ScanCargoArrivalTimeModel.cs" />
+    <Compile Include="Models\SeaClearanceCreate\ApprovalCategoryModel.cs" />
+    <Compile Include="Models\SeaClearanceCreate\SeaClearanceCustTaxPayment.cs" />
+    <Compile Include="Models\SeaClearanceCreate\SeaClearanceDetailEditHistoryModel.cs" />
+    <Compile Include="Models\SeaClearanceCreate\SeaClearanceDetailModel.cs" />
+    <Compile Include="Models\SeaClearanceCreate\SeaClearanceModel.cs" />
+    <Compile Include="Models\SeaClearanceCreate\SeaClearanceSjlTaxPayment.cs" />
+    <Compile Include="Models\SeaClearanceCreate\UploadResultModel.cs" />
+    <Compile Include="Models\SeaClearanceCustomer\SeaClearanceCustomerModel.cs" />
+    <Compile Include="Models\SeaClearanceCustTaxPayment\SeaClearanceCustTaxPaymentModel.cs" />
+    <Compile Include="Models\SeaClearanceFeeModel.cs" />
+    <Compile Include="Models\SeaClearanceFee\SeaClearanceFeeModel.cs" />
+    <Compile Include="Models\SeaClearanceSjlTaxPayment\SeaClearanceSjlTaxPaymentModel.cs" />
+    <Compile Include="Models\SeaClearance\AuthorizationFormModel.cs" />
+    <Compile Include="Models\SeaClearance\SeaClearanceAbnormalStateModel.cs" />
+    <Compile Include="Models\SeaClearance\SeaClearanceRemarkModel.cs" />
+    <Compile Include="Models\SeaClearance\SeaClearanceStepModel.cs" />
+    <Compile Include="Models\SeaClearance\StepConditionModel.cs" />
+    <Compile Include="Models\SeaClearance\StepModel.cs" />
+    <Compile Include="Models\SeaTransRecord\SeaTransRecordModel.cs" />
+    <Compile Include="Models\SeaUnboxingRecord\SeaShortCargoModel.cs" />
+    <Compile Include="Models\SeaUnboxingRecord\SeaSiteCargoModel.cs" />
+    <Compile Include="Models\SeaUnboxingRecord\SeaUnboxingRecordModel.cs" />
+    <Compile Include="Models\SeaUnreceivedOrder\CesMainOrderDetailModel.cs" />
+    <Compile Include="Models\SeaUnreceivedOrder\SeaUnreceivedOrderModel.cs" />
+    <Compile Include="Models\SeaWorkErrorOrderReport\SeaManifestModel.cs" />
+    <Compile Include="Models\SeaWorkErrorOrderReport\SeaNoStatusModel.cs" />
+    <Compile Include="Models\SeaWorkErrorOrderReport\SeaWorkErrorOrderReportModel.cs" />
+    <Compile Include="Models\SeaWorkErrorOrder\SeaWorkErrorOrderModel.cs" />
+    <Compile Include="Models\SendPhoneMessage\OTPReceive.cs" />
+    <Compile Include="Models\SendPhoneMessage\OTPSend.cs" />
+    <Compile Include="Models\SevenElevenEtlTax\CainiaoSevenElevenEtlTaxModel.cs" />
+    <Compile Include="Models\SevenElevenEtlTax\SagawaSevenElevenEtlTaxModel.cs" />
+    <Compile Include="Models\Shenzhen\ShenzhenCargoModel.cs" />
+    <Compile Include="Models\Step\StepModel.cs" />
+    <Compile Include="Models\Tax\TaxData.cs" />
+    <Compile Include="Models\TelegramGroup\TelegramGroupModel.cs" />
+    <Compile Include="Models\TpctContainer\QueryCntrStatusModel.cs" />
+    <Compile Include="Models\TpctContainer\TpctContainerModel.cs" />
+    <Compile Include="Models\TransferBagReport\TransferBagReportModel.cs" />
+    <Compile Include="Models\UserMaster\UserMasterModel.cs" />
+    <Compile Include="Models\UserMaster\ResetPasswordModel.cs" />
+    <Compile Include="Models\WorkDay\DateRequest.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\AbnormalState\AbnormalStateService.cs" />
+    <Compile Include="Services\AccountService.cs" />
+    <Compile Include="Services\AccsShopee\AccsShopeeService.cs" />
+    <Compile Include="Services\AccsShopee\Domain\AccsLoginRequest.cs" />
+    <Compile Include="Services\AccsShopee\Domain\AccsQueryRequest.cs" />
+    <Compile Include="Services\AccsShopee\Domain\AccsQueryResult.cs" />
+    <Compile Include="Services\AccsShopee\Domain\AccsSessionInfo.cs" />
+    <Compile Include="Services\ApprovalCategory\ApprovalCategoryService.cs" />
+    <Compile Include="Services\AuthorityGroup\AuthorityGroupService.cs" />
+    <Compile Include="Services\AuthorityGroup\Domain\AuthorityGroupDto.cs" />
+    <Compile Include="Services\Authority\AuthorityService.cs" />
+    <Compile Include="Services\Authority\Domain\AuthorityDto.cs" />
+    <Compile Include="Services\AuthorizationForm\AuthorizationFormService.cs" />
+    <Compile Include="Services\BatchEditOrder\BatchEditOrderService.cs" />
+    <Compile Include="Services\BatchSearchShenzhenCargo\BatchSearchShenzhenCargoService.cs" />
+    <Compile Include="Services\BatchSearchShenzhenCargo\Domain\BatchSearchShenzhenCargoRequest.cs" />
+    <Compile Include="Services\BatchSearchShenzhenCargo\Domain\ShenzhenCargoModel.cs" />
+    <Compile Include="Services\BatchSearchTax\BatchSearchTaxService.cs" />
+    <Compile Include="Services\BatchSearchTax\Domain\BatchSearchTaxRequest.cs" />
+    <Compile Include="Services\BatchSearchTax\Domain\FeeMasterModel.cs" />
+    <Compile Include="Services\BatchUploadProcess\BatchUploadProcessService.cs" />
+    <Compile Include="Services\BusinessRegistryNew\BusinessRegistryNewService.cs" />
+    <Compile Include="Services\BusinessRegistry\BusinessRegistryService.cs" />
+    <Compile Include="Services\CainiaoFamilySeaTax\CainiaoFamilySeaTaxService.cs" />
+    <Compile Include="Services\CainiaoFamilyTax\CainiaoFamilyTaxService.cs" />
+    <Compile Include="Services\CainiaoHiLifeTaxDetails\CainiaoHiLifeTaxDetailsService.cs" />
+    <Compile Include="Services\CainiaoHiLifeTax\CainiaoHiLifeTaxService.cs" />
+    <Compile Include="Services\CainiaoSevenElevenSeaTax\CainiaoSevenElevenSeaTaxService.cs" />
+    <Compile Include="Services\CainiaoTaixinStarSeaTax\CainiaoTaixinStarSeaTaxService.cs" />
+    <Compile Include="Services\CainiaoTaixinStarTax\CainiaoTaixinStarTaxService.cs" />
+    <Compile Include="Services\CainiaoYtoSeaTax\CainiaoYtoSeaTaxService.cs" />
+    <Compile Include="Services\CargoService.cs" />
+    <Compile Include="Services\CCLWorkService.cs" />
+    <Compile Include="Services\CompanySeaTax\CompanySeaTaxService.cs" />
+    <Compile Include="Services\CptStatusReport\CptStatusReportService.cs" />
+    <Compile Include="Services\CptTradeVan\CptPortalApi.cs" />
+    <Compile Include="Services\CptTradeVan\CptTradeVanService.cs" />
+    <Compile Include="Services\CustomerService.cs" />
+    <Compile Include="Services\CustomerTaxCalculate\CustomerTaxCalculateService.cs" />
+    <Compile Include="Services\CustomerTaxSetting\CustomerTaxSettingService.cs" />
+    <Compile Include="Services\CustomerTaxStatistics\CustomerTaxStatisticsService.cs" />
+    <Compile Include="Services\CustomerTaxStatistics\Domain\CustomerTaxStatisticsModel.cs" />
+    <Compile Include="Services\TaxPortalCustomer\Domain\TaxPortalCustomerOptionModel.cs" />
+    <Compile Include="Services\TaxPortalCustomer\Domain\TaxPortalPasswordResultModel.cs" />
+    <Compile Include="Services\TaxPortalCustomer\Domain\TaxPortalUserDetailModel.cs" />
+    <Compile Include="Services\TaxPortalCustomer\Domain\TaxPortalUserQueryRequest.cs" />
+    <Compile Include="Services\TaxPortalCustomer\Domain\TaxPortalUserSaveRequest.cs" />
+    <Compile Include="Services\TaxPortalCustomer\Domain\TaxPortalUserSummaryModel.cs" />
+    <Compile Include="Services\TaxPortalCustomer\TaxPortalCustomerService.cs" />
+    <Compile Include="Services\CustomsBroker\CustomsBrokerService.cs" />
+    <Compile Include="Services\DeliveryAssistant\DeliveryAssistantService.cs" />
+    <Compile Include="Services\DeliveryAssistant\Domain\DataTypeModel.cs" />
+    <Compile Include="Services\DeliveryAssistant\Domain\DeliveryAssistantExportModel.cs" />
+    <Compile Include="Services\DeliveryAssistant\Domain\DeliveryAssistantRequest.cs" />
+    <Compile Include="Services\DeliveryAssistant\Domain\DeliveryAssistantUploadResult.cs" />
+    <Compile Include="Services\DeliveryAssistant\Domain\EstablishDcShipRequest.cs" />
+    <Compile Include="Services\DeliveryAssistant\Domain\EstablishDcShipResponse.cs" />
+    <Compile Include="Services\DeliveryAssistant\Domain\PdtTransModel.cs" />
+    <Compile Include="Services\DeliveryAssistant\Domain\UploadOrderInfoItem.cs" />
+    <Compile Include="Services\DeliveryAssistant\Domain\UploadOrderInfoResponse.cs" />
+    <Compile Include="Services\DeliveryAssistant\Domain\UploadOrderInfoRow.cs" />
+    <Compile Include="Services\DownloadService.cs" />
+    <Compile Include="Services\DropDownListService.cs" />
+    <Compile Include="Services\EtlClearanceDetails\Domain\CoupangGoodsModel.cs" />
+    <Compile Include="Services\EtlCustomerWorkLoadReport\Domain\CustWorkLoadDetailModel.cs" />
+    <Compile Include="Services\EtlCustomerWorkLoadReport\Domain\CustWorkLoadDetailsSheetRowModel.cs" />
+    <Compile Include="Services\EtlCustomerWorkLoadReport\Domain\CustWorkLoadReport2RowModel.cs" />
+    <Compile Include="Services\EtlCustomerWorkLoadReport\Domain\CustWorkLoadReportRowModel.cs" />
+    <Compile Include="Services\EtlCustomerWorkLoadReport\EtlCustomerWorkLoadReportService.cs" />
+    <Compile Include="Services\EtlErrorWork\Domain\EtlErrorWorkDetailsModel.cs" />
+    <Compile Include="Services\EtlErrorWork\Domain\EtlErrorWorkReportCountModel.cs" />
+    <Compile Include="Services\EtlErrorWork\Domain\EtlErrorWorkReportModel.cs" />
+    <Compile Include="Services\EtlErrorWork\EtlErrorWorkService.cs" />
+    <Compile Include="Services\Ftz\Domain\FtzBagQueryRequest.cs" />
+    <Compile Include="Services\Ftz\Domain\FtzBagQueryResult.cs" />
+    <Compile Include="Services\Ftz\Domain\FtzLoginRequest.cs" />
+    <Compile Include="Services\Ftz\Domain\FtzMainQueryRequest.cs" />
+    <Compile Include="Services\Ftz\Domain\FtzMainQueryResult.cs" />
+    <Compile Include="Services\Ftz\Domain\FtzMainQueryViewModel.cs" />
+    <Compile Include="Services\Ftz\Domain\FtzNoGciQueryResult.cs" />
+    <Compile Include="Services\Ftz\Domain\FtzQueryRequest.cs" />
+    <Compile Include="Services\Ftz\Domain\FtzQueryResult.cs" />
+    <Compile Include="Services\Ftz\FtzBagService.cs" />
+    <Compile Include="Services\Ftz\FtzMainService.cs" />
+    <Compile Include="Services\Ftz\FtzService.cs" />
+    <Compile Include="Services\InvoiceNew\Domain\InvoiceWorkNewModel.cs" />
+    <Compile Include="Services\InvoiceNew\InvoiceNewService.cs" />
+    <Compile Include="Services\Job\FtzWebClientJob\FtzWebClientJobService.cs" />
+    <Compile Include="Services\Job\FtzWebClientJob\Model\FtzRelnonoutModel.cs" />
+    <Compile Include="Services\Job\TactWebClientJob\Model\TactRelnonoutModel.cs" />
+    <Compile Include="Services\Job\TactWebClientJob\TactWebClientJobService.cs" />
+    <Compile Include="Services\MainTaxSearch\Domain\MainTaxSearchModel.cs" />
+    <Compile Include="Services\MainTaxSearch\Domain\MainTaxSearchRequest.cs" />
+    <Compile Include="Services\MainTaxSearch\MainTaxSearchService.cs" />
+    <Compile Include="Services\PdtScanCargoArrivalTime\Domain\PdtScanCargoArrivalTimeDetailModel.cs" />
+    <Compile Include="Services\PdtScanCargoArrivalTime\Domain\PdtScanCargoArrivalTimeGroupModel.cs" />
+    <Compile Include="Services\PdtScanCargoArrivalTime\Domain\PdtScanCargoArrivalTimeQueryRow.cs" />
+    <Compile Include="Services\PdtScanCargoArrivalTime\Domain\PdtScanCargoArrivalTimeRequest.cs" />
+    <Compile Include="Services\PdtScanCargoArrivalTime\Domain\PdtScanCargoArrivalTimeUpdateRequest.cs" />
+    <Compile Include="Services\PdtScanCargoArrivalTime\PdtScanCargoArrivalTimeService.cs" />
+    <Compile Include="Services\ScanCargoCustomerDiff\Domain\CustomerNameModel.cs" />
+    <Compile Include="Services\ScanCargoCustomerDiff\Domain\ScanCargoCustomerDiffModel.cs" />
+    <Compile Include="Services\ScanCargoCustomerDiff\ScanCargoCustomerDiffService.cs" />
+    <Compile Include="Services\SeaClearanceCustomer\SeaClearanceCustomerService.cs" />
+    <Compile Include="Services\SeaClearanceDetailEditHistory\SeaClearanceDetailEditHistoryService.cs" />
+    <Compile Include="Services\ErrorOrderSendCustomer\ErrorOrderSendCustomerService.cs" />
+    <Compile Include="Services\ErrorOrderSendDetail\ErrorOrderSendDetailService.cs" />
+    <Compile Include="Services\ErrorOrderSend\ErrorOrderSendService.cs" />
+    <Compile Include="Services\ErrorOrderSmsMessage\ErrorOrderSmsMessageService.cs" />
+    <Compile Include="Services\EtlClearanceDetails\EtlClearanceDetailsService.cs" />
+    <Compile Include="Services\EtlCustWorkLoad\EtlCustWorkLoadService.cs" />
+    <Compile Include="Services\EtlErrorG\EtlErrorGService.cs" />
+    <Compile Include="Services\EtlMergeBagNoService.cs" />
+    <Compile Include="Services\EtlUnpackingZService.cs" />
+    <Compile Include="Services\ExportClearanceService.cs" />
+    <Compile Include="Services\GlobalService.cs" />
+    <Compile Include="Services\HctEtlTax\HctEtlTaxService.cs" />
+    <Compile Include="Services\Importer\ImporterService.cs" />
+    <Compile Include="Services\IncomeService.cs" />
+    <Compile Include="Services\InvoiceService.cs" />
+    <Compile Include="Services\Job\CainiaoCheckJob\CainiaoCheckJobService.cs" />
+    <Compile Include="Services\Job\CainiaoNeedJob\CainiaoNeedJobService.cs" />
+    <Compile Include="Services\Job\ComponentJob\ComponentJobService.cs" />
+    <Compile Include="Services\Job\IncomeJob\IncomeJobService.cs" />
+    <Compile Include="Services\Job\IncomeJob\IncomeRateReport.cs" />
+    <Compile Include="Services\LineLogin\LineUserProfile.cs" />
+    <Compile Include="Services\LineService.cs" />
+    <Compile Include="Services\LineLogin\LineLoginService.cs" />
+    <Compile Include="Services\LogRecService.cs" />
+    <Compile Include="Services\PostClearanceService.cs" />
+    <Compile Include="Services\ScanCargoArrivalTimeService.cs" />
+    <Compile Include="Services\ScanCargoCustomer\ScanCargoCustomerService.cs" />
+    <Compile Include="Services\SeaClearanceCreate\SeaClearanceCreateService.cs" />
+    <Compile Include="Services\SeaClearanceCustTaxPayment\SeaClearanceCustTaxPaymentService.cs" />
+    <Compile Include="Services\SeaClearanceFee\SeaClearanceFeeService.cs" />
+    <Compile Include="Services\SeaClearanceProcessor\Domain\SeaClearanceProcessorModel.cs" />
+    <Compile Include="Services\SeaClearanceProcessor\SeaClearanceProcessorService.cs" />
+    <Compile Include="Services\SeaClearanceSjlTaxPayment\SeaClearanceSjlTaxPaymentService.cs" />
+    <Compile Include="Services\SeaClearance\Domain\ClearanceSignTimeModel.cs" />
+    <Compile Include="Services\SeaClearance\Domain\GetCptDataRequest.cs" />
+    <Compile Include="Services\SeaClearance\Domain\SeaClearanceCptModel.cs" />
+    <Compile Include="Services\SeaClearance\Domain\SeaClearanceDetailResponse.cs" />
+    <Compile Include="Services\SeaClearance\Domain\SeaClearanceRequest.cs" />
+    <Compile Include="Services\SeaClearance\Domain\SeaClearanceResponse.cs" />
+    <Compile Include="Services\SeaClearance\SeaClearanceAbnormalState.cs" />
+    <Compile Include="Services\SeaClearance\SeaClearanceApprovalCategory.cs" />
+    <Compile Include="Services\SeaClearance\SeaClearanceCpt.cs" />
+    <Compile Include="Services\SeaClearance\SeaClearanceExportService.cs" />
+    <Compile Include="Services\SeaClearance\SeaClearanceProcessorService.cs" />
+    <Compile Include="Services\SeaClearance\SeaClearanceRemarkService.cs" />
+    <Compile Include="Services\SeaClearance\SeaClearanceService.cs" />
+    <Compile Include="Services\SeaClearance\SeaClearanceStep.cs" />
+    <Compile Include="Services\SearchCargo\Domain\CargoDetailResponse.cs" />
+    <Compile Include="Services\SearchCargo\Domain\CargoStatusDetailModel.cs" />
+    <Compile Include="Services\SearchCargo\Domain\CargoTargetBagNumberModel.cs" />
+    <Compile Include="Services\SearchCargo\Domain\CargoTargetTrackingNoModel.cs" />
+    <Compile Include="Services\SearchCargo\Domain\ErrorReasonModel.cs" />
+    <Compile Include="Services\SearchCargo\Domain\MergeOriginalListModel.cs" />
+    <Compile Include="Services\SearchCargo\Domain\PdtScanCargoUploadModel.cs" />
+    <Compile Include="Services\SearchCargo\Domain\ProcessInfoModel.cs" />
+    <Compile Include="Services\SearchCargo\Domain\SearchCargoRequest.cs" />
+    <Compile Include="Services\SearchCargo\Domain\SearchCargoResponse.cs" />
+    <Compile Include="Services\SearchCargo\Domain\TaxNumberModel.cs" />
+    <Compile Include="Services\SearchCargo\SearchCargoService.cs" />
+    <Compile Include="Services\SeaTransRecord\SeaTransRecordService.cs" />
+    <Compile Include="Services\SeaUnboxingRecord\SeaUnboxingRecordService.cs" />
+    <Compile Include="Services\SeaUnreceivedOrder\SeaUnreceivedOrderService.cs" />
+    <Compile Include="Services\SeaWorkErrorOrderReport\SeaWorkErrorOrderReportService.cs" />
+    <Compile Include="Services\SeaWorkErrorOrder\SeaWorkErrorOrderService.cs" />
+    <Compile Include="Services\SeaWorkRecognizance\SeaWorkRecognizanceService.cs" />
+    <Compile Include="Services\SelectListService.cs" />
+    <Compile Include="Services\SendPhoneMessageService.cs" />
+    <Compile Include="Services\SevenElevenEtlTaxTax\SevenElevenEtlTaxTaxService.cs" />
+    <Compile Include="Services\ShenzhenService.cs" />
+    <Compile Include="Services\Job\SjlJob\Domain\JhfTaxApiRequestModel.cs" />
+    <Compile Include="Services\Job\SjlJob\Domain\JhfTaxBusinessResponseModel.cs" />
+    <Compile Include="Services\Job\SjlJob\Domain\JhfTaxExecutionResultModel.cs" />
+    <Compile Include="Services\Job\SjlJob\Domain\JhfTaxPayloadModel.cs" />
+    <Compile Include="Services\Job\SjlJob\Domain\JhfTaxQueryModel.cs" />
+    <Compile Include="Services\Job\SjlJob\Domain\JhfTaxResponseModel.cs" />
+    <Compile Include="Services\Job\SjlJob\Domain\JhfTaxSendRequestModel.cs" />
+    <Compile Include="Services\Job\SjlJob\SjlJobService.cs" />
+    <Compile Include="Services\Job\TaxJob\Model\EtlTaxModel.cs" />
+    <Compile Include="Services\Job\TaxJob\Model\SeaTaxModel.cs" />
+    <Compile Include="Services\Job\TaxJob\Model\TaxRequestModel.cs" />
+    <Compile Include="Services\Job\TaxJob\Model\TaxResponseModel.cs" />
+    <Compile Include="Services\Job\TaxJob\TaxJobService.cs" />
+    <Compile Include="Services\ShipmentInboundBatchImport\Domain\ShipmentFeeData.cs" />
+    <Compile Include="Services\ShipmentInboundBatchImport\Domain\ShipmentInboundModel.cs" />
+    <Compile Include="Services\ShipmentInboundBatchImport\Domain\ShipmentOrderData.cs" />
+    <Compile Include="Services\ShipmentInboundBatchImport\ShipmentInboundBatchImportService.cs" />
+    <Compile Include="Services\ShipmentInboundLocationTransfer\Domain\LocationHistoryModel.cs" />
+    <Compile Include="Services\ShipmentInboundLocationTransfer\Domain\LocationTransferModel.cs" />
+    <Compile Include="Services\ShipmentInboundLocationTransfer\Domain\LocationTransferRequest.cs" />
+    <Compile Include="Services\ShipmentInboundLocationTransfer\Domain\LocationTransferResponse.cs" />
+    <Compile Include="Services\ShipmentInboundLocationTransfer\Domain\LocationTransferUpdateRequest.cs" />
+    <Compile Include="Services\ShipmentInboundLocationTransfer\ShipmentInboundLocationTransferService.cs" />
+    <Compile Include="Services\ShipmentInboundPick\Domain\ShipmentInboundPickModel.cs" />
+    <Compile Include="Services\ShipmentInboundPick\Domain\ShipmentInboundPickRequest.cs" />
+    <Compile Include="Services\ShipmentInboundPick\ShipmentInboundPickService.cs" />
+    <Compile Include="Services\ShipmentInboundProcess\Domain\ReturnReasonBatchUploadErrorModel.cs" />
+    <Compile Include="Services\ShipmentInboundProcess\Domain\ReturnReasonBatchUploadRowModel.cs" />
+    <Compile Include="Services\ShipmentInboundProcess\Domain\SelectListModel.cs" />
+    <Compile Include="Services\ShipmentInboundProcess\Domain\ShipmentInboundProcessBatchUploadErrorModel.cs" />
+    <Compile Include="Services\ShipmentInboundProcess\Domain\ShipmentInboundProcessBatchUploadRowModel.cs" />
+    <Compile Include="Services\ShipmentInboundProcess\Domain\ShipmentInboundProcessDetailModel.cs" />
+    <Compile Include="Services\ShipmentInboundProcess\Domain\ShipmentInboundProcessModel.cs" />
+    <Compile Include="Services\ShipmentInboundProcess\Domain\ShipmentInboundProcessRequest.cs" />
+    <Compile Include="Services\ShipmentInboundProcess\Domain\ShipmentInboundProcessResponse.cs" />
+    <Compile Include="Services\ShipmentInboundProcess\Domain\ShipmentInboundProcessUpdateRequest.cs" />
+    <Compile Include="Services\ShipmentInboundProcess\ShipmentInboundProcessService.cs" />
+    <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundCustomerGroupModel.cs" />
+    <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundEditHistoryModel.cs" />
+    <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundLocationHistoryModel.cs" />
+    <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundRecordExportExcelResult.cs" />
+    <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundRecordModel.cs" />
+    <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundRecordRequest.cs" />
+    <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundRecordResponse.cs" />
+    <Compile Include="Services\ShipmentInboundRecord\Domain\UpdateAmountRequest.cs" />
+    <Compile Include="Services\ShipmentInboundRecord\ShipmentInboundRecordService.cs" />
+    <Compile Include="Services\ShipmentInboundWarehouseProcess\Domain\ShipmentInboundWarehouseProcessBatchUploadErrorModel.cs" />
+    <Compile Include="Services\ShipmentInboundWarehouseProcess\Domain\ShipmentInboundWarehouseProcessBatchUploadRowModel.cs" />
+    <Compile Include="Services\ShipmentInboundWarehouseProcess\Domain\ShipmentInboundWarehouseProcessModel.cs" />
+    <Compile Include="Services\ShipmentInboundWarehouseProcess\Domain\ShipmentInboundWarehouseProcessRequest.cs" />
+    <Compile Include="Services\ShipmentInboundWarehouseProcess\Domain\ShipmentInboundWarehouseProcessUpdateRequest.cs" />
+    <Compile Include="Services\ShipmentInboundWarehouseProcess\ShipmentInboundWarehouseProcessService.cs" />
+    <Compile Include="Services\ShipmentOutboundBatchImportRevoke\Domain\ShipmentOutboundRevokeModel.cs" />
+    <Compile Include="Services\ShipmentOutboundBatchImportRevoke\ShipmentOutboundBatchImportRevokeService.cs" />
+    <Compile Include="Services\ShipmentOutboundBatchImport\Domain\ShipmentOutboundModel.cs" />
+    <Compile Include="Services\ShipmentOutboundBatchImport\ShipmentOutboundBatchImportService.cs" />
+    <Compile Include="Services\SjlBatchImport\Domain\SjlBatchImportQueryRequest.cs" />
+    <Compile Include="Services\SjlBatchImport\Domain\SjlShippingDataModel.cs" />
+    <Compile Include="Services\SjlBatchImport\Domain\SjlShippingDataUploadModel.cs" />
+    <Compile Include="Services\SjlBatchImport\SjlBatchImportService.cs" />
+    <Compile Include="Services\Step\StepService.cs" />
+    <Compile Include="Services\Tact\Domain\TactBagNoModel.cs" />
+    <Compile Include="Services\Tact\Domain\TactBagQueryRequest.cs" />
+    <Compile Include="Services\Tact\Domain\TactHwbModel.cs" />
+    <Compile Include="Services\Tact\Domain\TactLoginRequest.cs" />
+    <Compile Include="Services\Tact\Domain\TactMainNoDetailModel.cs" />
+    <Compile Include="Services\Tact\Domain\TactMainQueryRequest.cs" />
+    <Compile Include="Services\Tact\Domain\TactMainQueryViewModel.cs" />
+    <Compile Include="Services\Tact\Domain\TactQueryRequest.cs" />
+    <Compile Include="Services\Tact\TactBagService.cs" />
+    <Compile Include="Services\Tact\TactMainService.cs" />
+    <Compile Include="Services\Tact\TactService.cs" />
+    <Compile Include="Services\Tax\TaxService.cs" />
+    <Compile Include="Services\TCatEtlTax\TCatEtlTaxService.cs" />
+    <Compile Include="Services\TelegramGroup\TelegramGroupService.cs" />
+    <Compile Include="Services\TpctContainerService.cs" />
+    <Compile Include="Services\TransferBagReport\TransferBagReportService.cs" />
+    <Compile Include="Services\UnpackingStatistics\UnpackingStatisticsService.cs" />
+    <Compile Include="Services\UploadService.cs" />
+    <Compile Include="Services\UserContextService.cs" />
+    <Compile Include="Services\UserMaster\Domain\UserMasterDto.cs" />
+    <Compile Include="Services\UserMaster\UserMasterService.cs" />
+    <Compile Include="Services\WorkDayArea\Domain\WorkAreaModel.cs" />
+    <Compile Include="Services\WorkDayArea\Domain\WorkDayAreaDisplayModel.cs" />
+    <Compile Include="Services\WorkDayArea\Domain\WorkDayAreaQueryRequest.cs" />
+    <Compile Include="Services\WorkDayArea\Domain\WorkDayAreaUpdateRequest.cs" />
+    <Compile Include="Services\WorkDayArea\WorkDayAreaService.cs" />
+    <Compile Include="Services\WorkDay\WorkDayService.cs" />
+    <Compile Include="Services\WorkLoad\SeaWorkLoadService.cs" />
+    <Compile Include="Services\WorkLoad\WorkLoadService.cs" />
+    <Compile Include="_BaseService.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Services\CptSeaMainNumber\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Lib\CompanyRegistrationLibrary\CompanyRegistrationLibrary.csproj">
+      <Project>{632fdddc-deb4-4340-9116-cfc71751a59d}</Project>
+      <Name>CompanyRegistrationLibrary</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Lib\TelegramLibrary\TelegramLibrary.csproj">
+      <Project>{032c4f4d-e742-46b2-abd7-fba58d2f52b3}</Project>
+      <Name>TelegramLibrary</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Lib\Spire.License.dll" />
+    <Content Include="Lib\Spire.Pdf.dll" />
+    <Content Include="Lib\Spire.XLS.dll" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

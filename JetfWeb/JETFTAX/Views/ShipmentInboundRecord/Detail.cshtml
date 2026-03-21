@@ -1,0 +1,629 @@
+@{
+    ViewBag.Title = "貨件詳細資料";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .detail-container {
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+        margin-bottom: 20px;
+    }
+
+    .detail-section {
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+        .detail-section:last-child {
+            border-bottom: none;
+        }
+
+    .section-title {
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: #343a40;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 3px solid #007bff;
+        display: inline-block;
+    }
+
+    .detail-row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .detail-label {
+        font-weight: 600;
+        color: #495057;
+        margin-right: 10px;
+        font-size: 1.2rem;
+        white-space: nowrap;
+    }
+
+    .detail-value {
+        color: #212529;
+        word-break: break-word;
+        font-size: 1.2rem;
+    }
+
+    .detail-value-highlight {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #007bff;
+    }
+
+    .badge-custom {
+        padding: 6px 12px;
+        font-size: 1.2rem;
+        border-radius: 4px;
+    }
+
+    .detail-grid {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -10px;
+    }
+
+    .detail-col {
+        flex: 0 0 33.333%;
+        max-width: 33.333%;
+        padding: 0 10px;
+        margin-bottom: 15px;
+    }
+
+    .detail-col-full {
+        flex: 0 0 100%;
+        max-width: 100%;
+        padding: 0 10px;
+        margin-bottom: 15px;
+    }
+
+    .amount-section {
+        background-color: #f8f9fa;
+        border-radius: 6px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    .amount-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+        .amount-row:last-child {
+            border-bottom: none;
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #dc3545;
+        }
+
+    .amount-label {
+        font-weight: 600;
+        color: #495057;
+        font-size: 1.2rem;
+    }
+
+    .amount-value {
+        font-weight: 600;
+        color: #212529;
+        text-align: right;
+        font-size: 1.2rem;
+    }
+
+    .btn-back {
+        margin-top: 20px;
+    }
+
+    .editable-field {
+        cursor: pointer;
+        padding: 2px 8px;
+        border-radius: 3px;
+        transition: background-color 0.2s;
+    }
+
+        .editable-field:hover {
+            background-color: #e9ecef;
+        }
+
+        .editable-field i {
+            margin-left: 5px;
+            color: #007bff;
+        }
+
+    .edit-history-btn {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background-color 0.3s;
+    }
+
+        .edit-history-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .edit-history-btn i {
+            margin-right: 5px;
+        }
+
+    .history-table {
+        width: 100%;
+        margin-top: 10px;
+        border-collapse: collapse;
+    }
+
+        .history-table th {
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+        }
+
+        .history-table td {
+            padding: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .history-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .history-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+</style>
+
+<div ng-controller="ShipmentInboundRecordDetailController" class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="headtype">貨件詳細資料</span>
+                <button class="edit-history-btn" ng-click="showEditHistory()">
+                    <i class="fa fa-history"></i>編輯紀錄
+                </button>
+            </div>
+            <hr />
+
+            <!-- 載入中提示 -->
+            <div ng-show="loading" class="text-center">
+                <i class="fa fa-spinner fa-spin fa-3x"></i>
+                <p>載入中...</p>
+            </div>
+
+            <!-- 錯誤訊息 -->
+            <div ng-show="errorMessage && !loading" class="alert alert-danger">
+                <i class="fa fa-exclamation-triangle mr-2"></i>{{errorMessage}}
+            </div>
+
+            <!-- 詳細資料 -->
+            <div ng-show="data && !loading" class="detail-container">
+                <!-- 基本資料 -->
+                <div class="detail-section">
+                    <h4 class="section-title">
+                        <i class="fa fa-info-circle mr-2"></i>基本資料
+                    </h4>
+
+                    <div class="detail-grid">
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">單號：</div>
+                                <div class="detail-value detail-value-highlight">{{data.TrackingNo}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">進口方式：</div>
+                                <div class="detail-value">
+                                    <span class="badge badge-custom" ng-class="data.DataType == '海運' ? 'badge-primary' : 'badge-info'">
+                                        {{data.DataType}}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">入庫日期：</div>
+                                <div class="detail-value">{{data.InboundDate | customDate}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">客戶：</div>
+                                <div class="detail-value">
+                                    {{data.CustName || data.CustCode}}
+                                    <span ng-if="data.CustCode && data.CustName" class="text-muted">({{data.CustCode}})</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">派件公司：</div>
+                                <div class="detail-value">
+                                    {{data.TransName || data.TransNo}}
+                                    <span ng-if="data.TransNo && data.TransName" class="text-muted">({{data.TransNo}})</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">貨件來源：</div>
+                                <div class="detail-value">
+                                    <span class="badge badge-custom badge-secondary">{{data.SourceTypeName}}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">流水號：</div>
+                                <div class="detail-value">{{data.SeqNo}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">儲位：</div>
+                                <div class="detail-value">
+                                    <span class="badge badge-custom badge-warning">{{data.LocationCode}}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">退件原因：</div>
+                                <div class="detail-value">{{data.ReturnReason}}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 處理資訊 -->
+                <div class="detail-section">
+                    <h4 class="section-title">
+                        <i class="fa fa-cogs mr-2"></i>處理資訊
+                    </h4>
+                    <div class="detail-grid">
+                        <!-- 處理方式、客服處理日期、客服處理人 -->
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">處理方式：</div>
+                                <div class="detail-value">
+                                    <span class="badge badge-custom badge-success">{{data.ProcessTypeName}}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">客服處理日期：</div>
+                                <div class="detail-value">{{data.ProcessTime | customDateTime}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">客服處理人：</div>
+                                <div class="detail-value">{{data.ProcessOpe}}</div>
+                            </div>
+                        </div>
+
+                        <!-- 開新單號重出 (1) 或 暫存資料 (9) -->
+                        <div class="detail-col" ng-if="data.ProcessType == 1 || data.ProcessType == 9">
+                            <div class="detail-row">
+                                <div class="detail-label">重出派件公司：</div>
+                                <div class="detail-value">{{data.ProcessTransName}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col" ng-if="data.ProcessType == 1 || data.ProcessType == 9">
+                            <div class="detail-row">
+                                <div class="detail-label">收件人：</div>
+                                <div class="detail-value">{{data.ProcessImporter}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col" ng-if="data.ProcessType == 1 || data.ProcessType == 9">
+                            <div class="detail-row">
+                                <div class="detail-label">電話：</div>
+                                <div class="detail-value">{{data.ProcessImporterPhone }}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col-full" ng-if="(data.ProcessType == 1 || data.ProcessType == 9) && data.ProcessTransNo != 3">
+                            <div class="detail-row">
+                                <div class="detail-label">宅配地址：</div>
+                                <div class="detail-value">{{data.ProcessImporterAddr}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col" ng-if="(data.ProcessType == 1 || data.ProcessType == 9) && data.ProcessTransNo == 3">
+                            <div class="detail-row">
+                                <div class="detail-label">門市店號：</div>
+                                <div class="detail-value">{{data.StoreCode}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col" ng-if="(data.ProcessType == 1 || data.ProcessType == 9) && data.ProcessTransNo == 3">
+                            <div class="detail-row">
+                                <div class="detail-label">門市名稱：</div>
+                                <div class="detail-value">{{data.StoreName }}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col" ng-if="data.ProcessType == 1 || data.ProcessType == 9">
+                            <div class="detail-row">
+                                <div class="detail-label">重出運費支付方：</div>
+                                <div class="detail-value">{{data.FreightPayerName }}</div>
+                            </div>
+                        </div>
+
+                        <!-- 自提 (4) -->
+                        <div class="detail-col" ng-if="data.ProcessType == 4">
+                            <div class="detail-row">
+                                <div class="detail-label">收件人：</div>
+                                <div class="detail-value">{{data.ProcessImporter}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col" ng-if="data.ProcessType == 4">
+                            <div class="detail-row">
+                                <div class="detail-label">電話：</div>
+                                <div class="detail-value">{{data.ProcessImporterPhone}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col" ng-if="data.ProcessType == 4">
+                            <div class="detail-row">
+                                <div class="detail-label">預計自取日期：</div>
+                                <div class="detail-value">{{data.PickupTime | customDate}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col" ng-if="data.ProcessType == 4">
+                            <div class="detail-row">
+                                <div class="detail-label">車牌號碼：</div>
+                                <div class="detail-value">{{data.CarNo}}</div>
+                            </div>
+                        </div>
+
+                        <!-- 備註 (所有類型都顯示) -->
+                        <div class="detail-col-full">
+                            <div class="detail-row">
+                                <div class="detail-label">備註：</div>
+                                <div class="detail-value">{{data.Remark}}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 出庫資訊 -->
+                <div class="detail-section">
+                    <h4 class="section-title">
+                        <i class="fa fa-truck mr-2"></i>出庫資訊
+                    </h4>
+
+                    <div class="detail-grid">
+                        <div class="detail-col" ng-if="data.OutboundDate">
+                            <div class="detail-row">
+                                <div class="detail-label">出庫日期：</div>
+                                <div class="detail-value">{{data.OutboundDate | customDate}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col" ng-if="data.OutboundTime">
+                            <div class="detail-row">
+                                <div class="detail-label">出庫操作日：</div>
+                                <div class="detail-value">{{data.OutboundTime | customDateTime}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col" ng-if="data.OutboundOpe">
+                            <div class="detail-row">
+                                <div class="detail-label">出庫操作人：</div>
+                                <div class="detail-value">{{data.OutboundOpe}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col" ng-if="data.OutboundTrackingNo">
+                            <div class="detail-row">
+                                <div class="detail-label">重出單號：</div>
+                                <div class="detail-value">
+                                    <span class="badge badge-custom badge-info">{{data.OutboundTrackingNo}}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 倉庫狀態 -->
+                <div class="detail-section">
+                    <h4 class="section-title">
+                        <i class="fa fa-warehouse mr-2"></i>倉庫狀態
+                    </h4>
+
+                    <div class="detail-grid">
+                        <div class="detail-col" ng-if="data.WarehouseProcessType != null">
+                            <div class="detail-row">
+                                <div class="detail-label">倉庫狀態：</div>
+                                <div class="detail-value">
+                                    <span class="badge badge-custom badge-dark">{{data.WarehouseProcessName}}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col" ng-if="data.WarehouseProcessTime">
+                            <div class="detail-row">
+                                <div class="detail-label">倉庫狀態操作日：</div>
+                                <div class="detail-value">{{data.WarehouseProcessTime | customDateTime}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col" ng-if="data.WarehouseProcessOpe">
+                            <div class="detail-row">
+                                <div class="detail-label">倉庫狀態操作人：</div>
+                                <div class="detail-value">{{data.WarehouseProcessOpe}}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 費用資訊 -->
+                <div class="detail-section">
+                    <h4 class="section-title">
+                        <i class="fa fa-dollar-sign mr-2"></i>費用資訊
+                    </h4>
+
+                    <div class="detail-grid" ng-if="data.FreightPayerNo != null">
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">運費支付方：</div>
+                                <div class="detail-value">
+                                    <span class="badge badge-custom badge-primary">{{data.FreightPayerName}}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="detail-grid">
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">到付款：</div>
+                                <div class="detail-value editable-field" ng-click="editAmount('Cod', data.Cod)">
+                                    {{data.Cod | number}} 元
+                                    <i class="fa fa-edit"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">運費：</div>
+                                <div class="detail-value">{{data.FreightFee | number}} 元</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">稅金：</div>
+                                <div class="detail-value editable-field" ng-click="editAmount('Tax', data.Tax)">
+                                    {{data.Tax | number}} 元
+                                    <i class="fa fa-edit"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">報關費：</div>
+                                <div class="detail-value editable-field" ng-click="editAmount('Ccfee', data.Ccfee)">
+                                    {{data.Ccfee | number}} 元
+                                    <i class="fa fa-edit"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">手續費：</div>
+                                <div class="detail-value">{{data.DisplayFee | number}} 元</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col-full">
+                            <div class="amount-section">
+                                <div class="amount-row">
+                                    <span class="amount-label">代收款總金額：</span>
+                                    <span class="amount-value">{{data.TotalAmount | number}} 元</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 編輯金額彈窗 -->
+    <div class="modal fade" id="editAmountModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">編輯 {{editFieldNameText}}</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>請輸入新的金額：</label>
+                        <input type="number" class="form-control" ng-model="newAmount" min="0" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveAmount()">確定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 編輯紀錄彈窗 -->
+    <div class="modal fade" id="editHistoryModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">編輯紀錄</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table class="history-table" ng-if="historyData.length > 0">
+                        <thead>
+                            <tr>
+                                <th>欄位名稱</th>
+                                <th>舊值</th>
+                                <th>新值</th>
+                                <th>編輯時間</th>
+                                <th>編輯人員</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="item in historyData">
+                                <td>{{item.FieldNameText}}</td>
+                                <td>{{item.OldValue}}</td>
+                                <td>{{item.NewValue}}</td>
+                                <td>{{item.EditTime | customDateTime}}</td>
+                                <td>{{item.EditUser}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div ng-if="historyData.length === 0" class="text-center text-muted py-4">
+                        暫無編輯紀錄
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

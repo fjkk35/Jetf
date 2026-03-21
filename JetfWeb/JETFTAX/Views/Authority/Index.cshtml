@@ -1,0 +1,142 @@
+﻿@{
+    ViewBag.Title = "權限";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-app="authorityIndexApp" ng-controller="AuthorityIndexController" class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h3 class="m-0 font-weight-bold text-primary">權限</h3>
+                </div>
+                <div class="card-body">
+                    <!-- 操作按鈕 -->
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-primary" ng-click="showAddModal()">
+                            <i class="fas fa-plus"></i> 新增權限
+                        </button>
+                    </div>
+
+                    <!-- 權限清單 (依權限分類分組顯示) -->
+                    <div ng-repeat="(partnerName, authorities) in groupedAuthorities" class="mb-4">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-folder-open"></i> {{partnerName}}
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th width="120">權限ID</th>
+                                        <th>權限說明</th>
+                                        <th width="100">排序</th>
+                                        <th width="120">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="auth in authorities">
+                                        <td><code>{{auth.Id}}</code></td>
+                                        <td>{{auth.Text}}</td>
+                                        <td class="text-center">{{auth.Sort}}</td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-info" ng-click="showEditModal(auth.Id)">
+                                                <i class="fas fa-edit"></i> 修改
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 無資料時顯示 -->
+                    <div ng-if="authorities.length === 0" class="text-center py-4">
+                        <i class="fas fa-info-circle text-muted"></i> 暫無權限資料
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="authorityModal" tabindex="-1" role="dialog" aria-labelledby="authorityModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="authorityModalLabel">{{modalTitle}}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form ng-submit="saveAuthority()">
+                    <div class="modal-body">
+                        <!-- 權限ID -->
+                        <div class="form-group row">
+                            <label for="authorityId" class="col-sm-2 col-form-label text-right">
+                                權限ID <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="authorityId"
+                                       ng-model="currentAuthority.Id" required maxlength="50"
+                                       placeholder="請輸入權限ID"
+                                       ng-readonly="isEdit">
+                                <small class="form-text text-muted">
+                                    <span ng-if="isEdit">修改時不能變更權限ID</span>
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- 權限說明 -->
+                        <div class="form-group row">
+                            <label for="authorityText" class="col-sm-2 col-form-label text-right">
+                                權限說明 <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" id="authorityText"
+                                       ng-model="currentAuthority.Text" required maxlength="100"
+                                       placeholder="請輸入權限說明">
+                            </div>
+                        </div>
+
+                        <!-- 權限分類 -->
+                        <div class="form-group row">
+                            <label for="partnerId" class="col-sm-2 col-form-label text-right">
+                                權限分類 <span class="text-danger">*</span>
+                            </label>
+                            <div class="col-sm-9">
+                                <select class="form-control" id="partnerId"
+                                        ng-model="currentAuthority.PartnerId" required>
+                                    <option value="">請選擇權限分類</option>
+                                    <option ng-repeat="option in partnerOptions" value="{{option.Value}}">
+                                        {{option.Text}}
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 排序 -->
+                        <div class="form-group row">
+                            <label for="authoritySort" class="col-sm-2 col-form-label text-right">
+                                排序
+                            </label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" id="authoritySort"
+                                       ng-model="currentAuthority.Sort" min="0" max="9999"
+                                       placeholder="數字越小排序越前面">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary" ng-disabled="saving">
+                            <span ng-if="saving">
+                                <i class="fas fa-spinner fa-spin"></i> 處理中...
+                            </span>
+                            <span ng-if="!saving">儲存</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

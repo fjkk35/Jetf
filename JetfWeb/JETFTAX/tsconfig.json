@@ -1,0 +1,32 @@
+﻿{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "target": "ES5",
+    "module": "none",
+    "lib": ["ES5", "ES2017", "DOM"],
+    "strict": false,
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./Scripts/ng-controllers",
+    "rootDir": "./Scripts/ng-controllers",
+    "sourceMap": false,
+    "declaration": false,
+    "allowJs": false,
+    "checkJs": false,
+    "noEmitOnError": true,
+    "types": ["angular"]
+  },
+  "include": [
+    "Scripts/ng-controllers/**/*.ts",
+    "Scripts/types/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "Scripts/dist",
+    "Scripts/vendor",
+    "Scripts/lib",
+    "Scripts/DataTables"
+  ]
+}

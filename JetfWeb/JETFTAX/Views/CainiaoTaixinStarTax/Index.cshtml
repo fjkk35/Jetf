@@ -1,0 +1,152 @@
+﻿@model JETFTAX.Models.CainiaoTaixinStarTax.CainiaoTaixinStarTaxViewModel
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">菜鳥空快超峰稅金</span>
+<hr />
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<form id="DownloadFileForm" action="@Url.Action("Download", "CainiaoTaixinStarTax")" method="post" enctype="multipart/form-data" class="containertype">
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.StartDate)
+        @Html.TextBoxFor(m => m.StartDate, new { @class = "form-control" })~
+        @Html.TextBoxFor(m => m.EndDate, new { @class = "form-control" })
+    </div>
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.DateTimeList)
+        @Html.DropDownListFor(m => m.DateTimeList, Model.DateTimeList, new { @class = "form-control" })
+    </div>
+    <div id="btntDownload" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem; "><i class="fas fa-download"></i> 下載</div>
+</form>
+
+
+<div class="loader loader-bar" data-rounded data-text="下載中"></div>
+
+
+@{
+    <script>
+        $('#collapseUpload').addClass("show");
+        $('#CainiaoTaixinStarTax').addClass("active");
+
+        $('#DateTimeList').change(function () {
+            let time = new Date();
+            let startDate, endDate;
+            let val = $('#DateTimeList').val();
+
+            switch (val) {
+                case "1":
+                    endDate = {
+                        year: time.getFullYear(),
+                        month: (time.getMonth() + 1).toString().padStart(2, '0'),
+                        date: time.getDate().toString().padStart(2, '0'),
+                        hour: '08',
+                        minute: '00',
+                        second: '00',
+                    };
+
+                    time.setDate(time.getDate() - 1);
+                    startDate = {
+                        year: time.getFullYear(),
+                        month: (time.getMonth() + 1).toString().padStart(2, '0'),
+                        date: time.getDate().toString().padStart(2, '0'),
+                        hour: '22',
+                        minute: '00',
+                        second: '00',
+                    };
+                    break;
+                case "2":
+                    startDate = {
+                        year: time.getFullYear(),
+                        month: (time.getMonth() + 1).toString().padStart(2, '0'),
+                        date: time.getDate().toString().padStart(2, '0'),
+                        hour: '08',
+                        minute: '00',
+                        second: '00',
+                    };
+
+                    endDate = {
+                        year: time.getFullYear(),
+                        month: (time.getMonth() + 1).toString().padStart(2, '0'),
+                        date: time.getDate().toString().padStart(2, '0'),
+                        hour: '16',
+                        minute: '00',
+                        second: '00',
+                    };
+                    break;
+                case "3":
+                    startDate = {
+                        year: time.getFullYear(),
+                        month: (time.getMonth() + 1).toString().padStart(2, '0'),
+                        date: time.getDate().toString().padStart(2, '0'),
+                        hour: '21',
+                        minute: '00',
+                        second: '00',
+                    };
+
+                    endDate = {
+                        year: time.getFullYear(),
+                        month: (time.getMonth() + 1).toString().padStart(2, '0'),
+                        date: time.getDate().toString().padStart(2, '0'),
+                        hour: '22',
+                        minute: '00',
+                        second: '00',
+                    };
+                    break;
+            }
+
+            $('#StartDate').val(`${startDate.year}-${startDate.month}-${startDate.date} ${startDate.hour}:${startDate.minute}:${startDate.second}`);
+            $('#EndDate').val(`${endDate.year}-${endDate.month}-${endDate.date} ${endDate.hour}:${endDate.minute}:${endDate.second}`);
+        });
+
+        //日期
+        $('#StartDate').click(function () {
+            WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' });
+        });
+        $('#EndDate').click(function () {
+            WdatePicker({ dateFmt: 'yyyy-MM-dd HH:mm:ss' });
+        });
+
+
+        $('#btntDownload').click(function () {
+            $('.loader').addClass("is-active");
+
+            var postData = new FormData($('#DownloadFileForm')[0]);
+            $.ajax({
+                type: "POST",
+                url: Router.action('CainiaoTaixinStarTax', 'Download'),
+                data: postData,
+                cache: false,
+                dataType: 'json',
+                processData: false,
+                //async: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    }
+                    else {
+                        if (data.msg != "") {
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                            $('.loader').removeClass("is-active");
+                            return;
+                        }
+                        else if (data.fileName != "") {
+                            var path = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid
+                                + '&filename=' + data.fileName;
+                            //window.location = path;
+                            window.open(path);
+                        }
+                    }
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        })
+
+    </script>
+
+}

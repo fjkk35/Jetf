@@ -1,0 +1,127 @@
+﻿@model JETFTAX.Models.WorkDay.WorkDayViewModel
+@using Service.Extensions;
+@using Service.EnumTax;
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    table tbody tr.color-pink {
+        background-color: rgba(255,0,255,0.1);
+    }
+
+    table tr {
+        font-weight: bold;
+    }
+
+</style>
+
+@{ 
+    var authorities = Session["user_auth"] as List<string> ?? new List<string>();
+    var workDay = (authorities.IndexOf(Authority.WorkDay.ToString()) > -1) ? "visible" : "hidden";
+}
+
+<span class="headtype">工作天</span>
+<hr />
+
+
+<form id="DownloadFileForm" action="@Url.Action("Index", "WorkDay")" method="post" enctype="multipart/form-data" class="containertype">
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.StartDate)
+        @Html.TextBoxFor(m => m.StartDate, new { @class = "form-control" })~
+        @Html.TextBoxFor(m => m.EndDate, new { @class = "form-control" })
+        <input type="submit" class="btn btn-success" value="查詢" />
+    </div>
+  
+</form>
+
+<div class="col-8">
+    <table id="table" class="dataTable no-footer dtr-column" border="1">
+
+        @if (Model.DateList != null)
+        {
+            <tr>
+                <th>日期</th>
+                <th>類別</th>
+                <th class="@workDay">修改</th>
+            </tr>
+            foreach (var r in Model.DateList)
+            {
+
+                var pink = r.DateType == DateType.Holiday ? "color-pink" : "";
+                var isWorkDay = r.DateType == DateType.WorkDay ? "hidden" : "visible";
+                var isHoliday = r.DateType == DateType.Holiday ? "hidden" : "visible";
+
+                <tr class="@pink" data-date="@r.Date">
+                    <td>@Convert.ToDateTime(r.Date).ToString("yyyy-MM-dd (ddd)")</td>
+                    <td>@r.DateType.ToDescription()</td>
+                    <td class="@workDay">
+                        <button class="workDay @isWorkDay" onclick="updateType('@r.Date','WorkDay')">工作日</button>
+                        <button class="holiday @isHoliday" onclick="updateType('@r.Date','Holiday')">假　日</button>
+                    </td>
+                </tr>
+            }
+        }
+    </table>
+</div>
+
+
+<script>
+    $('#collapseSearch').addClass("show");
+    $('#WorkDay').addClass("active");
+
+    //日期
+    $('#StartDate').click(function () {
+        WdatePicker({ dateFmt: 'yyyy-MM-dd' });
+    });
+
+    $('#EndDate').click(function () {
+        WdatePicker({ dateFmt: 'yyyy-MM-dd' });
+    });
+
+
+    function updateType(date,type)
+    {
+        $.ajax({
+            type: "POST",
+            url: Router.action('WorkDay', 'UpdateType'),
+            data: { 'date': date, 'type': type}, // serializes the form's elements.
+            success: function (data) {
+                if (data.status != "success") {
+                    swal({
+                        title: data.msg,
+                        icon: "error",
+                    });
+                    return;
+                }
+
+                let tr = $('tr[data-date="' + date + '"]');
+
+                if (type == "Holiday"){
+                    tr.addClass('color-pink');
+                    tr.find('td:eq(1)').text("假日");
+
+                    tr.find('.workDay').removeClass('hidden');
+                    tr.find('.holiday').removeClass('visible').addClass('hidden');
+                }
+
+                if (type == "WorkDay") {
+                    tr.removeClass('color-pink');
+                    tr.find('td:eq(1)').text("工作天");
+
+                    tr.find('.workDay').removeClass('visible').addClass('hidden');
+                    tr.find('.holiday').removeClass('hidden');
+                }
+
+                swal({
+                    title: "更新成功",
+                    icon: "success",
+                });
+            }
+        });
+
+    }
+
+</script>

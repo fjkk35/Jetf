@@ -1,0 +1,271 @@
+﻿@model JETFTAX.Models.DownloadEtlViewModel
+@{
+    ViewBag.Title = "DownloadEtl";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">物流代收檔下載-空運</span>
+<hr />
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<form id="DownloadFileForm" action="@Url.Action("EtlExcel", "Download")" method="post" enctype="multipart/form-data" class="containertype">
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.date)
+        @Html.TextBoxFor(m => m.date, new { @class = "form-control" })
+    </div>
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.ddlTimeBetweenList)
+        @Html.DropDownListFor(m => m.timeBetween, Model.ddlTimeBetweenList, new { @class = "form-control" })
+        @Html.TextBoxFor(m => m.sTime, new { @maxlength = 4, @class = "form-control" })－
+        @Html.TextBoxFor(m => m.eTime, new { @maxlength = 4, @class = "form-control" })
+    </div>
+    @Html.HiddenFor(m => m.company)
+    <div id="btntDownload" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem; "><i class="fas fa-download"></i> 下載</div>
+    <div class="loader loader-bar" data-rounded data-text="檔案下載中"></div>
+</form>
+@{
+    <script>
+        $('#collapseUpload').addClass("show");
+        $('#DownloadEtl').addClass("active");
+
+        //日期
+        $('#date').click(function () {
+            WdatePicker({ dateFmt: 'yyyy-MM-dd' });
+        });
+
+        $('#timeBetween').change(function () {
+            var timeBetween = $('#timeBetween').val();
+            if (timeBetween == "1") {
+                $('#sTime').val('2200');
+                $('#eTime').val('0800');
+            }
+            else if (timeBetween == "2") {
+                $('#sTime').val('0800');
+                $('#eTime').val('1600');
+            }
+            else if (timeBetween == "3") {
+                $('#sTime').val('2100');
+                $('#eTime').val('2200');
+            }
+        })
+
+        $('#timeBetween').change();
+
+        $('#btntDownload').click(function () {
+            var sTime = $('#sTime').val();
+            var eTime = $('#eTime').val();
+            if (sTime.length != 4 || eTime.length != 4) {
+                swal({
+                    title: "時間區間錯誤，請確認",
+                    icon: "error"
+                });
+                return;
+            }
+            $('.loader').addClass("is-active");
+
+            var postData = new FormData($('#DownloadFileForm')[0]);
+            var result = true;
+            $.ajax({
+                type: "POST",
+                url: Router.action('Download', 'UploadEtl'),
+                data: postData,
+                cache: false,
+                dataType: 'json',
+                processData: false,
+                //async: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    }
+                    else {
+                        if (data.msg != "") {
+                            result = false;
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                            $('.loader').removeClass("is-active");
+                            return;
+                        }
+                    }
+
+                }
+            }).then(function () {
+                if (result == true) {
+                    DownloadFile();
+                }
+            })
+        })
+
+        function DownloadFile() {
+            $("#company").val("新竹物流");
+            var postData = new FormData($('#DownloadFileForm')[0]);
+            $.ajax({
+                type: "POST",
+                url: Router.action('Download', 'EtlExcel'),
+                data: postData,
+                cache: false,
+                dataType: 'json',
+                processData: false,
+                //async: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    }
+                    else {
+                        if (data.msg != "") {
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                            $('.loader').removeClass("is-active");
+                            return;
+                        }
+                        else if (data.fileName != "") {
+                            var path = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid
+                                + '&filename=' + data.fileName;
+                            //window.location = path;
+                            window.open(path);
+                        }
+                    }
+                }
+            }).then(function () {
+                    $("#company").val('新瑞宅配');
+                    var postData = new FormData($('#DownloadFileForm')[0]);
+                    $.ajax({
+                        type: "POST",
+                        url: Router.action('Download', 'EtlExcel'),
+                        data: postData,
+                        cache: false,
+                        dataType: 'json',
+                        processData: false,
+                        //async: false,
+                        contentType: false,
+                        success: function (data) {
+                            if (data.Redirect) {
+                                window.location = Router.action('Account', 'Login');
+                            }
+                            else {
+                                if (data.msg != "") {
+                                    swal({
+                                        title: data.msg,
+                                        icon: "error"
+                                    });
+                                }
+                                else if (data.fileName != "") {
+                                    var path = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid
+                                        + '&filename=' + data.fileName;
+                                    //window.location = path;
+                                    window.open(path);
+                                   
+                                }
+                            }
+                        }
+                })
+            }).then(function () {
+                $("#company").val('圓通自取');
+                var postData = new FormData($('#DownloadFileForm')[0]);
+                $.ajax({
+                    type: "POST",
+                    url: Router.action('Download', 'EtlExcel'),
+                    data: postData,
+                    cache: false,
+                    dataType: 'json',
+                    processData: false,
+                    //async: false,
+                    contentType: false,
+                    success: function (data) {
+                        if (data.Redirect) {
+                            window.location = Router.action('Account', 'Login');
+                        }
+                        else {
+                            if (data.msg != "") {
+                                swal({
+                                    title: data.msg,
+                                    icon: "error"
+                                });
+                            }
+                            else if (data.fileName != "") {
+                                var path = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid
+                                    + '&filename=' + data.fileName;
+                                //window.location = path;
+                                window.open(path);
+                             
+                            }
+                        }
+                    }
+                })
+            }).then(function () {
+                    $("#company").val('新竹物流');
+                    var postData = new FormData($('#DownloadFileForm')[0]);
+                    $.ajax({
+                        type: "POST",
+                        url: Router.action('Download', 'EtlSpecialDExcel'),
+                        data: postData,
+                        cache: false,
+                        dataType: 'json',
+                        processData: false,
+                        //async: false,
+                        contentType: false,
+                        success: function (data) {
+                            if (data.Redirect) {
+                                window.location = Router.action('Account', 'Login');
+                            }
+                            else {
+                                if (data.msg != "") {
+                                    swal({
+                                        title: data.msg,
+                                        icon: "error"
+                                    });
+                                }
+                                else if (data.fileName != "") {
+                                    var path = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid
+                                        + '&filename=' + data.fileName;
+                                    //window.location = path;
+                                    window.open(path);
+                                  
+                                }
+                            }
+                        }
+                    }).then(function () {
+                        $('.loader').removeClass("is-active");
+                    });
+            }).then(function () {
+                $.ajax({
+                    type: "POST",
+                    url: Router.action('Download', 'EtlErrorExcel'),
+                    data: postData,
+                    cache: false,
+                    dataType: 'json',
+                    processData: false,
+                    //async: false,
+                    contentType: false,
+                    success: function (data) {
+                        if (data.Redirect) {
+                            window.location = Router.action('Account', 'Login');
+                        }
+                        else {
+                            if (data.msg != "") {
+                                swal({
+                                    title: data.msg,
+                                    icon: "error"
+                                });
+                            }
+                            else if (data.fileName != "") {
+                                var path = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid
+                                    + '&filename=' + data.fileName;
+                                //window.location = path;
+                                window.open(path);
+
+                            }
+                        }
+                    }
+                }).then(function () {
+                    $('.loader').removeClass("is-active");
+                })
+            })
+        }
+    </script>
+
+}

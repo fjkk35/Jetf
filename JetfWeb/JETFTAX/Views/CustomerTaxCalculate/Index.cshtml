@@ -1,0 +1,199 @@
+﻿@{
+    ViewBag.Title = "客戶稅金計算";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">客戶稅金計算</span>
+<hr />
+
+<div ng-controller="CustomerTaxCalculateController">
+    <!-- 查詢條件區域 -->
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <div class="row mb-3 align-items-center">
+            <!-- 稅金時間選擇 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label class="col-lg-3 col-form-label text-right">稅金時間</label>
+                <div class="col-lg-9">
+                    <select class="form-control"
+                            ng-model="selectedTaxTime"
+                            ng-options="taxTime.Id as taxTime.TaxTime for taxTime in taxTimes track by taxTime.Id">
+                        <option value="">請選擇稅金時間</option>
+                    </select>
+                </div>
+            </div>
+            <!-- 日期選擇 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label class="col-lg-3 col-form-label text-right">選擇日期</label>
+                <div class="col-lg-3">
+                    <input type="text"
+                           class="datepicker-input form-control"
+                           ng-model="selectedDate"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="datePopup.opened"
+                           ng-click="openDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇日期" />
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <button type="button"
+                        class="btn btn-success"
+                        style="font-size: 1.2rem;"
+                        ng-click="exportExcel()"
+                        ng-disabled="!selectedTaxTime || !selectedDate || isExporting">
+                    <i class="fas fa-file-export" ng-hide="isExporting"></i>
+                    <i class="fas fa-spinner fa-spin" ng-show="isExporting"></i>
+                    {{isExporting ? '匯出中...' : '匯出 Excel'}}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 客戶稅金時間設定顯示區域 -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-header">
+                    <h4 class="panel-title" style="padding: 15px 20px; margin: 0; border-bottom: 1px solid #ddd; background-color: #f5f5f5;">
+                        <i class="fas fa-users"></i> 客戶稅金時間設定
+                    </h4>
+                </div>
+                <div class="panel-body">
+                    <!-- 載入指示器 -->
+                    <div ng-show="loadingSettings" class="text-center" style="padding: 50px;">
+                        <i class="fa fa-spinner fa-spin fa-2x"></i>
+                        <p>載入中...</p>
+                    </div>
+
+                    <!-- 設定結果表格 -->
+                    <div ng-hide="loadingSettings">
+                        <div ng-if="customerSettings.length === 0" class="alert alert-info">
+                            <i class="fa fa-info-circle"></i> 目前沒有任何客戶稅金時間設定
+                        </div>
+                        
+                        <div ng-if="customerSettings.length > 0" class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr style="background-color: #f8f9fa;">
+                                        <th class="text-center" style="width: 120px;">客戶代號</th>
+                                        <th class="text-center" style="width: 200px;">客戶名稱</th>
+                                        <th class="text-center" ng-repeat="taxTime in taxTimes" style="width: 80px;">{{taxTime.TaxTime}}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="setting in customerSettings">
+                                        <td style="font-weight: 500;">{{setting.Cust_Code}}</td>
+                                        <td>{{setting.Cust_Name}}</td>
+                                        <td class="text-center" ng-repeat="taxTime in taxTimes">
+                                            <span ng-if="setting.TaxTimeSettings[taxTime.TaxTime]" class="text-success">
+                                                <i class="fa fa-check-circle" style="font-size: 16px;"></i>
+                                            </span>
+                                            <span ng-if="!setting.TaxTimeSettings[taxTime.TaxTime]" class="text-muted">
+                                                <i class="fa fa-minus-circle" style="font-size: 14px;"></i>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: box-shadow 0.15s ease-in-out;
+    }
+
+    .form-group.row {
+        margin-bottom: 0;
+    }
+
+    .col-form-label {
+        padding-top: 7px;
+        font-weight: 500;
+        color: #495057;
+    }
+
+    .form-control {
+        border-radius: 4px;
+        border: 1px solid #ced4da;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+        .form-control:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+    .alert {
+        border-radius: 6px;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+        .alert i {
+            margin-right: 8px;
+        }
+
+    .panel-default {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .panel-title {
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th {
+        font-weight: 600;
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        vertical-align: middle;
+    }
+
+    .table td {
+        vertical-align: middle;
+        padding: 12px 8px;
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(0,0,0,.02);
+    }
+
+    .badge {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+
+    .text-success i {
+        color: #28a745;
+    }
+
+    .text-muted i {
+        color: #6c757d;
+    }
+
+    .fa-check-circle:before {
+        content: "\f058";
+    }
+
+    .fa-minus-circle:before {
+        content: "\f056";
+    }
+</style>
+

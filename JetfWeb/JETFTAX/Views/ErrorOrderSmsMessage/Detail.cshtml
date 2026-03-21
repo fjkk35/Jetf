@@ -1,0 +1,20 @@
+﻿@model JETFTAX.Models.ErrorOrderSmsMessage.ErrorOrderSmsMessageDetailViewModel
+
+@{
+    ViewBag.Title = "Detail";
+}
+
+<div class="col-12 mb-3">
+    <label for="smsTitle" class="form-label col-2">簡訊名稱：</label>
+    @Html.TextBoxFor(m => m.SmsMessage.Name, new { @class = "form-control col-4" })
+</div>
+<div class="col-12 mb-3">
+    <label for="smsContent" class="form-label col-2">簡訊內容：</label>
+    @Html.TextAreaFor(m => m.SmsMessage.Content, new { @style = "height:100px", @class = "form-control col-6" })
+</div>
+<div class="col-12 mb-3">
+    <button id="btntSearch" class="btn btn-primary  col-2" onclick="editSms('@Model.SmsMessage.Id')" style="font-size: 1.2rem;">
+        <i class="fas fa-edit"></i> 修改
+    </button>
+</div>
+

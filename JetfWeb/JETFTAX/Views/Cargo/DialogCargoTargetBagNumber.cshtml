@@ -1,0 +1,53 @@
+﻿@model JETFTAX.Models.Cargo.TargetBagNumberViewModel
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>DialogCargoTargetBagNumber</title>
+</head>
+<body>
+    <table>
+        <thead>
+            <tr>
+                <th colspan="4" class="tablesort">多袋明細</th>
+            </tr>
+        </thead>
+        <tbody class="deliverycontent">
+            <tr>
+                <td>通關袋號</td>
+                <td>袋號</td>
+                <td>進倉時間</td>
+                <td>出倉時間</td>
+            </tr>
+            @{
+                if (Model.List != null)
+                {
+                    for (int i = 0; i < Model.List.Count; i++)
+                    {
+                        <tr>
+                            <td>@Model.List[i].TargetCode</td>
+                            <td>@Model.List[i].SourceCode</td>
+                            <td>@Model.List[i].SignInTime</td>
+                            <td>@Model.List[i].SignOutTime</td>
+                        </tr>
+                    }
+
+                    if (Model.List.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="2" style="text-align:center">無資料</td>
+                        </tr>
+                    }
+                }
+
+            }
+        </tbody>
+    </table>
+</body>
+</html>

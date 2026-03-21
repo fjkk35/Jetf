@@ -1,0 +1,92 @@
+﻿
+@{
+    ViewBag.Title = "SearchCustomer";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">轉檔查詢</span>
+<hr />
+<div class="col-12 col-md-12 col-sm-12">
+    <table id="customerTable" style="width:100%;">
+        <thead>
+            <tr style="background-color: #FFF;">
+                <th>名稱</th>
+                <th>開始時間</th>
+                <th>結束時間</th>
+                <th>耗時</th>
+                <th>執行結果</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+        </tfoot>
+    </table>
+</div>
+
+
+<script>
+    $('#collapseLine').addClass("show");
+    $('#SearchWork').addClass("active");
+
+    $(function () {
+        getLogWorkList();
+    });
+
+    function getLogWorkList() {
+        $.ajax({
+            url: Router.action('Cargo', 'GetLogWork'),
+            type: "POST",   //用POST的方式
+            dataType: "json",   //response的資料格式
+            //data: { "data": JSON.stringify(obj) },
+            //async: false,
+            success: function (response) {
+                let data = JSON.parse(response);
+                //console.log(response);
+                //datatable更多Responsive用法請參考
+                //https://datatables.net/extensions/responsive/examples/
+
+                //此設定參考於這篇
+                //datatable套件參考網址
+                //https://datatables.net/extensions/responsive/examples/child-rows/right-column.html
+                $('#customerTable').DataTable({
+                    bSort: false,
+                    searching: false,
+                    paging: false,
+                    language: {
+                        "url": "../Scripts/DataTables/Chinese-traditional.json",
+                    },
+                    destroy: true,  //Cannot reinitialise DataTable,解决重新載入問題
+                    data: data,
+                    responsive: {
+                        details: {
+                            type: 'column',
+                            target: -1
+                        }
+                    },
+                    columns: [
+                          { "data": "WorkName" },
+                          { "data": "Format_StartTime" },
+                          { "data": "Format_EndTime" },
+                          { "data": "Total" },
+                          { "data": "Result" },
+                          { "defaultContent": "" }
+                    ],
+                    columnDefs: [{
+                        className: 'control',
+                        orderable: false,
+                        targets: -1
+                    },
+                    {
+                        visible: false,
+                        searchable: false
+                    }
+                    ]
+                });
+                new $.fn.dataTable.FixedHeader($('#customerTable').DataTable());
+            }
+        });
+    }
+
+
+</script>

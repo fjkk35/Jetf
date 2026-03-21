@@ -1,0 +1,122 @@
+/* 貨況查詢頁面樣式 */
+
+.search-section {
+    background: #fff;
+    padding: 20px;
+  margin-bottom: 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.search-row {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+ flex-wrap: wrap;
+}
+
+.search-row .form-group {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+}
+
+.search-row .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.search-row .form-group select,
+.search-row .form-group input {
+    min-width: 200px;
+}
+
+.search-input-group {
+  flex: 1 1 300px;
+}
+
+.button-group {
+ display: flex;
+    gap: 10px;
+}
+
+.shortcut-hint {
+margin-top: 10px;
+    color: #dc3545;
+    font-size: 14px;
+}
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+.table-container {
+    background: #fff;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow-x: auto;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.table tbody td {
+    vertical-align: middle;
+    text-align: center;
+}
+
+.no-data-message {
+ text-align: center;
+    padding: 40px;
+    color: #6c757d;
+  font-size: 16px;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.no-data-message i {
+  font-size: 24px;
+    margin-right: 10px;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .search-row {
+        flex-direction: column;
+    }
+
+    .search-row .form-group {
+        width: 100%;
+    }
+
+    .search-row .form-group select,
+    .search-row .form-group input {
+        width: 100%;
+        min-width: auto;
+  }
+
+    .button-group {
+        width: 100%;
+    }
+
+    .button-group button {
+        flex: 1;
+    }
+}

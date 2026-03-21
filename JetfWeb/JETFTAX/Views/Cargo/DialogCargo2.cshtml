@@ -1,0 +1,495 @@
+﻿@model JETFTAX.Models.DialogCargoViewModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>DialogCargo2</title>
+</head>
+<body>
+    @Html.HiddenFor(o => o.Id)
+    @*@Html.HiddenFor(o => o.Cust_Id)
+        @Html.HiddenFor(o => o.Cust_Name)
+        @Html.HiddenFor(o => o.Main_Number)
+        @Html.HiddenFor(o => o.Bag_Number)*@
+    @Html.HiddenFor(o => o.Dlv_Inv)
+    @*@Html.HiddenFor(o => o.In_Datetime)
+        @Html.HiddenFor(o => o.Recipient)
+        @Html.HiddenFor(o => o.Recphone)*@
+
+    <table>
+        <thead>
+            <tr>
+                <th class="tablesort" colspan="11" style="padding: 0.3rem 0">
+                    <div class="btn btn-success" onclick="showDialogLogCargoStatus('@Model.Dlv_Inv')">
+                        <i class="fas fa-search"> 查詢紀錄</i>
+                    </div>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.ETA)</td>
+                <td>@Model.ETA</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.GW)</td>
+                <td>@Model.GW</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.PIECE)</td>
+                <td colspan="5">@Model.PIECE</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.Out_Date)</td>
+                <td>@Model.Out_Date</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Source)</td>
+                <td>@Model.Source</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Type)</td>
+                <td colspan="5">@Model.Type</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.Main_Number)</td>
+                <td>@Model.Main_Number</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Bag_Number)</td>
+                <td><span onclick="showDialogCargoTargetBagNumber('@Model.Bag_Number')" style="color: blue; cursor: pointer;margin-right:10px">@Model.Bag_Number</span><button onclick="showDialogShenzhenCargo('@Model.Bag_Number')">速派新遞貨號</button></td>
+                <td class="tabletitle">
+                    @Html.LabelFor(o => o.Tax_Number)
+                </td>
+                @*<td colspan="5">@Model.Tax_Number</td>*@
+                <td colspan="5">
+                    @for (int i = 0; i < Model.TaxNumberList.Count; i++)
+                    {
+                        <a href="~/Cargo/GetTaxNumberPdf?taxNumber=@Model.TaxNumberList[i].TaxNumber" target="_blank">@Model.TaxNumberList[i].TaxNumber</a>
+                        <br />
+                    }
+                </td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.Cust_Name)</td>
+                <td>@Model.Cust_Name</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Trans_Name)</td>
+                <td>@Model.Trans_Name</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Deliveryno)</td>
+                @*<td colspan="5">@Model.Deliveryno</td>*@
+                <td colspan="5"><a href="~/Cargo/CargoSignReceipt?cargoNumber=@Model.Deliveryno" target="_blank">@Model.Deliveryno</a></td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.TrackingNo)</td>
+                @*分提單號*@
+                <td><span onclick="showDialogCargoTargetTrackingNo('@Model.TrackingNo')" style="color: blue; cursor: pointer;margin-right:10px">@Model.TrackingNo</span></td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Trans_Name_New)</td>
+                <td>@Model.Trans_Name_New</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Express_No)</td>
+                <td colspan="5">@Model.Express_No</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.Recipient)</td>
+                <td>@Model.Recipient</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Recphone)</td>
+                <td>@Model.Recphone</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Recaddress)</td>
+                <td colspan="5" style="max-width:5rem;">@Model.Recaddress</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.Field_X)</td>
+                <td>@Model.Field_X</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Order_No)</td>
+                <td>@Model.Order_No</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.CC)</td>
+                <td colspan="5">@Model.CC</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.Status)</td>
+                <td>@Model.Status</td>
+            </tr>
+            <tr>
+                <td class="tablesort" colspan="6">清關進度</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.In_Datetime)</td>
+                <td colspan="1">@Model.In_Datetime</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Out_Datetime)</td>
+                <td colspan="3">@Model.Out_Datetime</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.ScanCargoUploadTime)</td>
+                <td colspan="1">@Model.ScanCargoUploadTime</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.ScanCargoUploadOpe)</td>
+                <td>@Model.ScanCargoUploadOpe</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.ErrorReason)</td>
+                <td>@Model.ErrorReason</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.ScanCargoTransName)</td>
+                <td colspan="1">@Model.ScanCargoTransName</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.ScanCargoCarNo)</td>
+                <td colspan="3">@Model.ScanCargoCarNo</td>
+            </tr>
+            <tr class="tablesort">
+                <td>@Html.LabelFor(o => o.Include_Tax)</td>
+                <td colspan="5">@Model.Include_Tax</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.Tax1)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.Tax1</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Tax2)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.Tax2</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.TotalTax)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.TotalTax</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.CCFee)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.CCFee</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Fee)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.Fee</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.Cod)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.Cod</td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.TransCod)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.TransCod</td>
+                <td class="tabletitle">@Html.LabelFor(o => o.CustomerCod)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.CustomerCod</td>
+                <td class="tabletitle"></td>
+                <td style="text-align:right;padding-right:0.5rem"></td>
+            </tr>
+            <tr>
+                <td class="tabletitle">@Html.LabelFor(o => o.To_Dlv_Cod)</td>
+                <td style="text-align:right;padding-right:0.5rem">@Model.To_Dlv_Cod</td>
+                <td class="tabletitle"></td>
+                <td></td>
+                <td class="tabletitle"></td>
+                <td></td>
+            </tr>
+            <tr>
+                <th colspan="5" class="tablesort">
+                    處置說明
+                    <div class="btn btn-primary" onclick="showDialogProcess()">
+                        <i class="fas fa-plus"> 新增</i>
+                    </div>
+                </th>
+                <th colspan="1" class="tablesort">
+                    <div class="btn btn-primary" onclick="FinishProcess()">
+                        <i class="fa fa-check"> 處置說明結案</i>
+                    </div>
+                </th>
+            </tr>
+        </tbody>
+    </table>
+
+
+    <table id="processTable" style="width:100%">
+        <thead>
+            <tr>
+                <th>分類</th>
+                <th>處置說明</th>
+                <th>檔案</th>
+                <th>人員</th>
+                <th>時間</th>
+                <th>結案</th>
+                <th>結案人員</th>
+                <th>刪除</th>
+            </tr>
+        </thead>
+        <tbody class="deliverycontent"></tbody>
+        <tfoot>
+        </tfoot>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th colspan="2" class="tablesort">配送進度</th>
+            </tr>
+        </thead>
+        <tbody class="deliverycontent">
+            <tr>
+                <td>作業時間</td>
+                <td>配送狀態</td>
+            </tr>
+            @{
+                if (Model.DialogCargoList != null && Model.DialogCargoList.Count > 0)
+                {
+                    for (int i = 0; i < Model.DialogCargoList.Count; i++)
+                    {
+                        <tr>
+                            <td>@Model.DialogCargoList[i].tran_modify_time</td>
+                            <td>@Model.DialogCargoList[i].tran_status</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="2" style="text-align:center">無配送狀態</td></tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <!-- modal placeholder-->
+    <div id='myModal2' class='modal fade in'>
+        <div class="modal-dialog">
+            <div class="modal-content" style="height:50rem">
+                <b class="item-close" onclick="$('#myModal2').modal('hide');">x</b>
+                <div id='myModalContent2'></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        var getProcessList;
+        $(function () {
+            getProcessList =
+                $('#processTable').DataTable({
+                    "processing": true,
+                    "serverSide": true,
+                    bInfo: false, //顯示第 X 至 XX 項結果，共 XX 項
+                    //pageLength: 10,
+                    //lengthMenu: [10, 25, 50, 100, 200],
+                    bSort: false,
+                    searching: false,
+                    paging: false,
+                    //searchDelay: 500, //延遲搜尋
+                    "ajax": {
+                        "url": Router.action('Cargo', 'GetProcess'),
+                        "data": function (data) {
+                            //    var obj = new Object();
+                            //    obj.invoice = $('#invoice').val().trim();
+                            //obj.endDate = $('#endDate').val();
+                            //obj.custno = $('#custno').val();
+                            //obj.itemno = $('#itemno').val();
+                            //obj.draw = data.draw;
+                            //obj.start = data.start;
+                            //obj.length = data.length;
+                            //obj.order = data.order[0].dir; //升序或降序：隨滑鼠點擊發生變化
+                            ////obj.sort = data.order[0].column == "2" ? "itemno" : data.order[0].column == "4" ? "ikindname" : "";//排序欄位
+                            //obj.search = data.search.value;
+                            return $.extend({}, {}, {
+                                data: $('#Dlv_Inv').val(),
+                            })
+                        },
+                        dataSrc: function (data) {
+                            return JSON.parse(data.data); //指定返回資料列的位置，該資料列為陣列形式
+                        }
+                    },
+                    language: {
+                        "url": "../Scripts/DataTables/Chinese-traditional.json",
+                    },
+                    //destroy: true,  //Cannot reinitialise DataTable,解决重新載入問題
+                    //data: data,
+                    //responsive: {
+                    //    details: {
+                    //        display: $.fn.dataTable.Responsive.display.modal({
+                    //            header: function (row) {
+                    //                var data = row.data();
+                    //                return '明細';
+                    //            }
+                    //        }),
+                    //        renderer: $.fn.dataTable.Responsive.renderer.tableAll({
+                    //            tableClass: 'ui table'
+                    //        })
+                    //    }
+                    //},
+                    columns: [
+                        { "data": "PROCESS_TYPE" },
+                        { "data": "REMARK" },
+                        {
+                            //參考https://dotblogs.com.tw/shadow/2018/04/03/065712
+                            "data": "FILENAME",//資料行繫結屬性
+                            orderable: false, // 禁用排序
+                            render: function (data, type, row, meta) {
+                                //row指的是資料列物件 data變數相等於row.sysid
+                                var filePath = Router.action('Cargo', 'DownloadFile') + "?filePath=" + row.FILEPATH + "&fileName=" + row.FILENAME
+                                return "<a href='" + filePath + "' target='_blank' target='main'>" + data + "</a>";
+                            }
+                        },
+                        { "data": "USER_NAME" },
+                        { "data": "FormatCrtDateTime" },
+                        { "data": "FINISH" },
+                        { "data": "FINISH_USER_NAME" },
+                        {
+                            //參考https://dotblogs.com.tw/shadow/2018/04/03/065712
+                            "data": "ID",//資料行繫結屬性
+                            orderable: false, // 禁用排序
+                            render: function (data, type, row, meta) {
+                                //row指的是資料列物件 data變數相等於row.sysid
+                                return "<input type='button' value='刪除' onclick=DeleteProcess('" + data + "',this) />";
+                            }
+                        },
+                    ],
+                    columnDefs: [{
+                        className: 'control',
+                        orderable: false,
+                        targets: -1
+                    },
+                    {
+                        //targets: [0], //隱藏欄位
+                        visible: false,
+                        searchable: false
+                    }
+                    ]
+                });
+        });
+
+
+        function showDialogLogCargoStatus(dlv_inv) {
+            $('#myModalContent2').load(Router.action('Cargo', 'DialogLogCargoStatus') + "?dlv_inv=" + dlv_inv, function () {
+                $('#myModal2').modal({
+                    /*backdrop: 'static',*/
+                    keyboard: true
+                }, 'show');
+            });
+            return false;
+        }
+
+        //通關袋號
+        function showDialogCargoTargetBagNumber(bagNumber) {
+            $('#myModalContent2').load(Router.action('Cargo', 'DialogCargoTargetBagNumber') + "?bagNumber=" + bagNumber, function () {
+                $('#myModal2').modal({
+                    /*backdrop: 'static',*/
+                    keyboard: true
+                }, 'show');
+            });
+            return false;
+        }
+
+        //通關袋號-分提單號
+        function showDialogCargoTargetTrackingNo(bagNumber) {
+            $('#myModalContent2').load(Router.action('Cargo', 'DialogCargoTargetTrackingNo') + "?bagNumber=" + bagNumber, function () {
+                $('#myModal2').modal({
+                    /*backdrop: 'static',*/
+                    keyboard: true
+                }, 'show');
+            });
+            return false;
+        }
+
+        //速派新遞貨號
+        function showDialogShenzhenCargo(bagNumber) {
+            $('#myModalContent2').load(Router.action('Cargo', 'DialogShenzhenCargo') + "?bagNumber=" + bagNumber, function () {
+                $('#myModal2').modal({
+                    /*backdrop: 'static',*/
+                    keyboard: true
+                }, 'show');
+            });
+            return false;
+        }
+
+        function showDialogProcess() {
+            $('#myModalContent2').load(Router.action('Cargo', 'DialogProcess'), function () {
+                $('#myModal2').modal({
+                    /*backdrop: 'static',*/
+                    keyboard: true
+                }, 'show');
+            });
+
+            return false;
+        }
+
+
+
+        function DeleteProcess(id, tr) {
+            var row = $(tr).closest("tr");
+            var remark = row.find("td:eq(0)").text();
+            swal({
+                title: "刪除處置說明：" + remark,
+                icon: "warning",
+                buttons: {
+                    Btn: false,
+                    cancel: {
+                        text: "取消",
+                        visible: true
+                    },
+                    confirm: {
+                        text: "確定",
+                        visible: true
+                    }
+                }
+            }).then((value) => {
+                if (value) {
+                    $.ajax({
+                        type: "POST",
+                        url: Router.action('Cargo', 'DeleteProcess'),
+                        data: { "id": id },
+                        dataType: 'json',
+                        //async: false,
+                        //contentType: false,
+                        success: function (data) {
+                            if (data.Redirect) {
+                                window.location = Router.action('Account', 'Login');
+                            }
+                            else {
+                                if (data.status == "success") {
+                                    swal({
+                                        title: data.msg,
+                                        icon: "success",
+                                    });
+                                    //載入處置說明資料
+                                    getProcessList.draw();
+                                }
+                                else {
+                                    swal({
+                                        title: data.msg,
+                                        icon: "error"
+                                    });
+                                }
+                            }
+                        }
+                    })
+                }
+            });
+        }
+
+        function FinishProcess() {
+            swal({
+                title: "處置說明結案",
+                icon: "warning",
+                buttons: {
+                    Btn: false,
+                    cancel: {
+                        text: "取消",
+                        visible: true
+                    },
+                    confirm: {
+                        text: "確定",
+                        visible: true
+                    }
+                }
+            }).then((value) => {
+                if (value) {
+                    var dlv_inv = $('#Dlv_Inv').val();
+                    $.ajax({
+                        type: "POST",
+                        url: Router.action('Cargo', 'FinishProcess'),
+                        data: { "dlv_inv": dlv_inv },
+                        dataType: 'json',
+                        //async: false,
+                        //contentType: false,
+                        success: function (data) {
+                            if (data.Redirect) {
+                                window.location = Router.action('Account', 'Login');
+                            }
+                            else {
+                                if (data.status == "success") {
+                                    swal({
+                                        title: data.msg,
+                                        icon: "success",
+                                    });
+                                    //載入處置說明資料
+                                    getProcessList.draw();
+                                }
+                                else {
+                                    swal({
+                                        title: data.msg,
+                                        icon: "error"
+                                    });
+                                }
+                            }
+                        }
+                    })
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

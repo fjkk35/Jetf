@@ -1,0 +1,105 @@
+﻿@{
+    ViewBag.Title = "Accs關貿空運查詢";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="AccsShopeeController">
+    <span class="headtype">Accs關貿空運查詢</span>
+    <hr />
+
+    <!-- 登入區域 -->
+    <div class="card bg-light rounded p-4 mb-4" style="border:none" ng-show="!isLoggedIn">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="form-group row">
+                    <label for="userId" class="col-lg-3 col-form-label">帳號</label>
+                    <div class="col-lg-9">
+                        <input type="text"
+                               id="userId"
+                               class="form-control"
+                               ng-model="loginForm.userId" />
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <label for="userWd" class="col-lg-3 col-form-label">密碼</label>
+                    <div class="col-lg-9">
+                        <input type="password"
+                               id="userWd"
+                               class="form-control"
+                               ng-model="loginForm.userWd" />
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="userWd" class="col-lg-3 col-form-label">驗證碼</label>
+                    <div class="col-lg-9">
+                        <input type="text"
+                               id="verifyCode"
+                               class="form-control"
+                               placeholder="請輸入驗證碼"
+                               ng-model="loginForm.verifyCode"
+                               ng-keypress="$event.keyCode == 13 && login()"
+                               ng-disabled="loading" />
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label class="col-lg-3 col-form-label">驗證碼圖片</label>
+                    <div class="col-lg-9">
+                        <img ng-src="{{verifyCodeImage}}"
+                             alt="驗證碼"
+                             style="border: 1px solid #ddd; padding: 5px; background: white; cursor: pointer;"
+                             ng-click="refreshVerifyCode()"
+                             ng-if="verifyCodeImage" />
+                        <span ng-if="!verifyCodeImage && !loading">載入中...</span>
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-lg-9 offset-lg-3">
+                        <button type="button"
+                                class="btn btn-primary btn-lg"
+                                ng-click="login()"
+                                ng-disabled="loading">
+                            <i class="fas fa-sign-in-alt"></i> 登入
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查詢區域 -->
+    <div class="card bg-light rounded p-4 mb-4" style="border:none" ng-show="isLoggedIn">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">查詢空運資料</h5>
+        </div>
+        
+        <div class="form-group">
+            <textarea id="mawbNumbers" 
+                      class="form-control" 
+                      rows="8" 
+                      ng-model="queryForm.mawbNumbers"
+                      ng-disabled="loading"></textarea>
+        </div>
+
+        <div>
+            <button type="button" 
+                    class="btn btn-success mr-2" 
+                    style="font-size: 1.2rem;" 
+                    ng-click="exportExcel()"
+                    ng-disabled="loading">
+                <i class="fas fa-file-excel"></i> 匯出
+            </button>
+            <button type="button" 
+                    class="btn btn-secondary" 
+                    style="font-size: 1.2rem;" 
+                    ng-click="clearResults()">
+                <i class="fas fa-eraser"></i> 清除
+            </button>
+        </div>
+    </div>
+
+    <!-- 載入指示器 -->
+    <div class="loader loader-bar" ng-class="{'is-active': loading}" data-rounded data-text="處理中"></div>
+</div>
+

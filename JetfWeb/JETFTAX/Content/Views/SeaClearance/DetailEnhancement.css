@@ -1,0 +1,115 @@
+/* 增強授權表單歷史記錄表格的固定表頭效果 */
+
+/* 基礎固定表頭設定 */
+.authorization-history-table thead th {
+    position: -webkit-sticky !important; /* Safari 支援 */
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+    background-color: #f8f9fa !important;
+    background-clip: padding-box !important;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2) !important;
+    border-top: 1px solid #dee2e6 !important;
+}
+
+/* 容器設定 */
+.authorization-history-section {
+    position: relative !important;
+    overflow: auto !important;
+    /* 使用 CSS containment 來優化性能 */
+    contain: layout style paint;
+}
+
+/* 表格設定 */
+.authorization-history-table {
+    position: relative !important;
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+}
+
+/* Modal 內的特別設定 */
+.modal-body .authorization-history-section {
+    position: relative !important;
+    overflow: auto !important;
+    max-height: 300px !important;
+}
+
+.modal-body .authorization-history-table thead th {
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 25 !important;
+    background-color: #f8f9fa !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* 修正可能的滾動問題 */
+.authorization-history-section::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.authorization-history-section::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.authorization-history-section::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.authorization-history-section::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 針對不同瀏覽器的兼容性設定 */
+@supports (position: sticky) {
+    .authorization-history-table thead th {
+        position: sticky;
+        top: 0;
+    }
+}
+
+/* Firefox 特別設定 */
+@-moz-document url-prefix() {
+    .authorization-history-table thead th {
+        position: -moz-sticky;
+        position: sticky;
+        top: 0;
+        background: #f8f9fa;
+    }
+}
+
+/* Edge/IE 備用方案 */
+.authorization-history-table thead th {
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* 確保表格內容不會被表頭遮擋 */
+.authorization-history-table tbody tr:first-child td {
+    border-top: none;
+}
+
+/* 增強視覺效果 */
+.authorization-history-table thead th {
+    font-weight: 600;
+    color: #495057;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .authorization-history-section {
+        max-height: 250px;
+    }
+    
+    .modal-body .authorization-history-section {
+        max-height: 200px;
+    }
+}

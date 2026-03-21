@@ -1,0 +1,85 @@
+﻿@model JETFTAX.Models.SeaUnreceivedOrder.SeaUnreceivedOrderViewModel
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">海快未收單明細</span>
+<hr />
+
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<form id="DownloadFileForm" action="@Url.Action("", "")" method="post" enctype="multipart/form-data" class="containertype">
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.DataTypeList)
+        @Html.DropDownListFor(m => m.DataType, Model.DataTypeList, new { @class = "form-control" })
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <div>
+            @Html.TextAreaFor(m => m.MainNumber, new { @class = "form-control", style = "height: 300px;" })
+        </div>
+    </div>
+    <div id="btntDownloadFile" type="button" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem;"><i class="fas fa-download"></i> 下載</div>
+
+    <div class="loader loader-bar" data-rounded data-text="檔案下載中"></div>
+</form>
+
+@{
+    <script>
+        $('#collapseSeaWork').addClass("show");
+        $('#SeaUnreceivedOrder').addClass("active");
+
+        $('#btntDownloadFile').click(function () {
+            let mainNumber = $('#MainNumber').val();
+            if (mainNumber == "") {
+                swal({
+                    title: "請輸入資料",
+                    icon: "error"
+                });
+                return;
+            }
+
+            $('.loader').addClass("is-active");
+
+            var postData = new FormData($('#DownloadFileForm')[0]);
+            $.ajax({
+                type: "POST",
+                url: Router.action('SeaUnreceivedOrder', 'GetExcel'),
+                data: postData,
+                cache: false,
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    }
+                    else {
+                        if (data.msg != "") {
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                        }
+                        else if (data.fileName != "") {
+                            var path = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid
+                                + '&filename=' + data.fileName;
+
+                            var link = document.createElement('a');
+                            link.href = path;
+                            link.download = data.fileName;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        }
+                    }
+                    file.outerHTML = file.outerHTML; //重置了file的outerHTML
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        })
+
+    </script>
+
+}

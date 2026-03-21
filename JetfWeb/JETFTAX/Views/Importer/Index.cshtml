@@ -1,0 +1,159 @@
+﻿@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    #table tbody tr:hover {
+        background-color: #e6ffe6;
+        cursor: pointer;
+    }
+</style>
+
+<script type="text/x-jquery-tmpl" id="importerTmpl">
+    <tr>
+        <td class="text-sm-right">${PhoneOrId}</td>
+        <td class="text-sm-right">${E_Importer}</td>
+    </tr>
+</script>
+
+<span class="headtype">申報人查詢</span>
+<hr />
+
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<form id="DownloadFileForm" action="@Url.Action("", "")" method="post" enctype="multipart/form-data" class="containertype">
+    <div>
+        <label style="margin:0.5rem;">查詢資料:</label>
+        <select id="searchType" style="width:100px">
+            <option selected value="Phone">手機</option>
+            <option value="ImporterId">身份證</option>
+        </select>
+    </div>
+    <div style="margin:0.5rem;">
+        <div style="padding-right:2rem;float:left;">
+            <div>
+                <textarea id="txtPhoneOrId" style="height:300px"></textarea>
+            </div>
+        </div>
+        <div>
+            <div id="btntSearch" class="btn btn-success" style="font-size: 1.2rem;"><i class="fas fa-search"></i> 查詢</div>
+            <div id="btnExport" class="btn btn-primary" style="font-size: 1.2rem; margin-left: 10px;"><i class="fas fa-download"></i> 匯出Excel</div>
+        </div>
+    </div>
+
+    <div class="loader loader-bar" data-rounded data-text="執行中"></div>
+</form>
+
+<div class="col-5">
+    <table id="table" style="color:black;" hidden class="dataTable no-footer dtr-column" border="1">
+        <thead>
+            <tr>
+                <th>手機或Id</th>
+                <th>申報人</th>
+            </tr>
+        </thead>
+        <tbody id="tbody">
+        </tbody>
+    </table>
+</div>
+
+@{
+    <script>
+        $('#collapseSearch').addClass("show");
+        $('#Importer').addClass("active");
+
+        var searchResults = []; // 儲存查詢結果
+
+        $("#btntSearch").click(function () {
+            let phoneOrId = $('#txtPhoneOrId').val();
+            if (phoneOrId == "") {
+                swal({
+                    title: "請輸入資料",
+                    icon: "error"
+                });
+                return;
+            }
+
+            $('.loader').addClass("is-active");
+
+            $.ajax({
+                type: "POST",
+                url: Router.action('Importer', 'Search'),
+                data: {
+                    "type": $('#searchType').val(),
+                    "phoneOrId": phoneOrId
+                },
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    }
+
+                    if (data.msg != "") {
+                        swal({
+                            title: data.msg,
+                            icon: "error"
+                        });
+                        return;
+                    }
+                    
+                    $('#table').removeAttr('hidden');
+                    
+                    // 儲存查詢結果
+                    searchResults = data.ReturnObject || [];
+                    
+                    $('#tbody').empty();
+                    $('#importerTmpl').tmpl(searchResults).appendTo('#tbody');
+                    $('#txtPhoneOrId').val('');
+                },
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        });
+
+        // 匯出Excel功能 - 可以直接匯出，不需要先查詢
+        $("#btnExport").click(function () {
+            let phoneOrId = $('#txtPhoneOrId').val();
+            if (phoneOrId == "") {
+                swal({
+                    title: "請輸入要匯出的資料",
+                    icon: "error"
+                });
+                return;
+            }
+
+            $('.loader').addClass("is-active");
+
+            $.ajax({
+                type: "POST",
+                url: Router.action('Importer', 'ExportExcel'),
+                data: {
+                    "type": $('#searchType').val(),
+                    "phoneOrId": phoneOrId
+                },
+                success: function (response) {
+                    if (response.success) {
+                        // 使用與DownloadController相同的下載方式
+                        window.location = Router.action('Download', 'DownloadFile') + 
+                            '?fileGuid=' + response.fileGuid + 
+                            '&fileName=' + encodeURIComponent(response.fileName);
+
+                        $('#txtPhoneOrId').val('');
+                    } else {
+                        swal({
+                            title: response.message || "匯出失敗",
+                            icon: "error"
+                        });
+                    }
+                },
+                error: function () {
+                    swal({
+                        title: "匯出時發生錯誤",
+                        icon: "error"
+                    });
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        });
+    </script>
+}

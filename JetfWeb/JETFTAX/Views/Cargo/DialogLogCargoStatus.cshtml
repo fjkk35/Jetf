@@ -1,0 +1,45 @@
+﻿@model JETFTAX.Models.DialogLogCargoStatusViewModel
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>DialogLogCargoStatus</title>
+</head>
+<body>
+    <table>
+        <thead>
+            <tr>
+                <th colspan="4" class="tablesort">查詢紀錄</th>
+            </tr>
+        </thead>
+        <tbody class="deliverycontent">
+            <tr>
+                <td>貨號</td>
+                <td>查詢時間</td>
+                <td>查詢人員</td>
+                <td>查詢IP</td>
+            </tr>
+            @{
+                if (Model.DialogLogCargoStatusList != null )
+                {
+                    for (int i = 0; i < Model.DialogLogCargoStatusList.Count; i++)
+                    {
+                        <tr>
+                            <td>@Model.DialogLogCargoStatusList[i].Dlv_Inv</td>
+                            <td>@Model.DialogLogCargoStatusList[i].Search_Time</td>
+                            <td>@Model.DialogLogCargoStatusList[i].User_Id</td>
+                            <td>@Model.DialogLogCargoStatusList[i].User_Ip</td>
+                        </tr>
+                    }
+                }
+            }
+        </tbody>
+    </table>
+</body>
+</html>

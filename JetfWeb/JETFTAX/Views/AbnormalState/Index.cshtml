@@ -1,0 +1,517 @@
+﻿@{
+    ViewBag.Title = "異常狀態";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">異常狀態</span>
+<hr />
+
+<div ng-controller="AbnormalStateManagementController">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 異常狀態管理區域 -->
+            <div class="col-md-6">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4 class="panel-title">異常狀態管理</h4>
+                        <div class="panel-actions">
+                            <button type="button" 
+                                    class="btn btn-success btn-sm" 
+                                    ng-click="showAbnormalStateModal('add')">
+                                <i class="fas fa-plus"></i> 新增異常狀態
+                            </button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="alert alert-info">
+                            <i class="fa fa-info-circle"></i>
+                            可以直接點擊並拖曳任一行來調整異常狀態的排序
+                        </div>
+
+                        <!-- 載入指示器 -->
+                        <div ng-show="loadingAbnormalStates" class="text-center">
+                            <i class="fa fa-spinner fa-spin fa-2x"></i>
+                            <p>載入中...</p>
+                        </div>
+
+                        <!-- 異常狀態表格 -->
+                        <div ng-hide="loadingAbnormalStates" class="abnormal-state-table">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th width="80" class="text-center">排序</th>
+                                        <th>異常狀態名稱</th>
+                                        <th width="80" class="text-center">詳細數</th>
+                                        <th width="100" class="text-center">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody ui-sortable="abnormalStateSortableOptions" ng-model="abnormalStates">
+                                    <tr ng-repeat="abnormalState in abnormalStates" 
+                                        class="sortable-row"
+                                        ng-class="{'selected': selectedAbnormalState && selectedAbnormalState.Id === abnormalState.Id}"
+                                        ng-click="selectAbnormalState(abnormalState)">
+                                        <td class="text-center sort-cell">
+                                            <i class="fa fa-bars drag-handle" title="拖曳以重新排序"></i>
+                                            <span class="sort-number">{{abnormalState.Sort}}</span>
+                                        </td>
+                                        <td class="abnormal-state-name-cell">
+                                            <span class="abnormal-state-name">{{abnormalState.AbnormalStateName}}</span>
+                                        </td>
+                                        <td class="text-center detail-count-cell">
+                                            <span class="badge badge-info">{{abnormalState.AbnormalStateDetails ? abnormalState.AbnormalStateDetails.length : 0}}</span>
+                                        </td>
+                                        <td class="text-center action-cell">
+                                            <button class="btn btn-xs btn-primary" 
+                                                    ng-click="showAbnormalStateModal('edit', abnormalState); $event.stopPropagation()"
+                                                    title="編輯異常狀態">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- 空資料提示 -->
+                            <div ng-if="abnormalStates.length === 0" class="no-data">
+                                <i class="fa fa-list fa-3x text-muted"></i>
+                                <p class="text-muted">目前沒有異常狀態資料</p>
+                                <button type="button" class="btn btn-primary" ng-click="showAbnormalStateModal('add')">
+                                    <i class="fa fa-plus"></i> 立即新增
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 異常狀態詳細管理區域 -->
+            <div class="col-md-6">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4 class="panel-title">
+                            異常狀態詳細管理
+                            <span ng-if="selectedAbnormalState" class="text-muted">- {{selectedAbnormalState.AbnormalStateName}}</span>
+                        </h4>
+                        <div class="panel-actions">
+                            <button type="button" 
+                                    class="btn btn-success btn-sm" 
+                                    ng-click="showAbnormalStateDetailModal('add')"
+                                    ng-disabled="!selectedAbnormalState">
+                                <i class="fas fa-plus"></i> 新增異常狀態詳細
+                            </button>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <!-- 提示訊息 -->
+                        <div ng-if="!selectedAbnormalState" class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            請先選擇左側的異常狀態，再管理該異常狀態的詳細資料
+                        </div>
+
+                        <!-- 拖曳提示 -->
+                        <div ng-if="selectedAbnormalState" class="alert alert-info">
+                            <i class="fa fa-info-circle"></i>
+                            可以直接點擊並拖曳任一行來調整異常狀態詳細的排序
+                        </div>
+
+                        <!-- 載入指示器 -->
+                        <div ng-show="loadingAbnormalStateDetails" class="text-center">
+                            <i class="fa fa-spinner fa-spin fa-2x"></i>
+                            <p>載入中...</p>
+                        </div>
+
+                        <!-- 異常狀態詳細表格 -->
+                        <div ng-if="selectedAbnormalState" ng-hide="loadingAbnormalStateDetails" class="abnormal-state-detail-table">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th width="80" class="text-center">排序</th>
+                                        <th>異常狀態詳細名稱</th>
+                                        <th width="100" class="text-center">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody ui-sortable="abnormalStateDetailSortableOptions" ng-model="abnormalStateDetails">
+                                    <tr ng-repeat="detail in abnormalStateDetails" class="sortable-row">
+                                        <td class="text-center sort-cell">
+                                            <i class="fa fa-bars drag-handle" title="拖曳以重新排序"></i>
+                                            <span class="sort-number">{{detail.Sort}}</span>
+                                        </td>
+                                        <td class="detail-name-cell">
+                                            <span class="detail-name">{{detail.AbnormalStateDetailName}}</span>
+                                        </td>
+                                        <td class="text-center action-cell">
+                                            <button class="btn btn-xs btn-primary" 
+                                                    ng-click="showAbnormalStateDetailModal('edit', detail)"
+                                                    title="編輯異常狀態詳細">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- 空資料提示 -->
+                            <div ng-if="abnormalStateDetails.length === 0" class="no-data">
+                                <i class="fa fa-list fa-3x text-muted"></i>
+                                <p class="text-muted">此異常狀態尚未建立任何詳細資料</p>
+                                <button type="button" class="btn btn-primary" ng-click="showAbnormalStateDetailModal('add')">
+                                    <i class="fa fa-plus"></i> 立即新增
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 異常狀態 Modal -->
+    <div class="modal fade" id="abnormalStateModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">{{abnormalStateModalMode === 'add' ? '新增異常狀態' : '編輯異常狀態'}}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="abnormalStateName" class="form-label required">異常狀態名稱</label>
+                        <input type="text" 
+                               id="abnormalStateName"
+                               class="form-control" 
+                               ng-model="abnormalStateForm.AbnormalStateName" 
+                               placeholder="請輸入異常狀態名稱"
+                               maxlength="100">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" 
+                            class="btn btn-primary" 
+                            ng-click="saveAbnormalState()"
+                            ng-disabled="!abnormalStateForm.AbnormalStateName || saving">
+                        <span ng-show="saving">
+                            <i class="fa fa-spinner fa-spin"></i> 儲存中...
+                        </span>
+                        <span ng-hide="saving">
+                            <i class="fa fa-save"></i> 儲存
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 異常狀態詳細 Modal -->
+    <div class="modal fade" id="abnormalStateDetailModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">{{abnormalStateDetailModalMode === 'add' ? '新增異常狀態詳細' : '編輯異常狀態詳細'}}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">所屬異常狀態</label>
+                        <p class="form-control-static">{{selectedAbnormalState ? selectedAbnormalState.AbnormalStateName : ''}}</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="abnormalStateDetailName" class="form-label required">異常狀態詳細名稱</label>
+                        <input type="text" 
+                               id="abnormalStateDetailName"
+                               class="form-control" 
+                               ng-model="abnormalStateDetailForm.AbnormalStateDetailName" 
+                               placeholder="請輸入異常狀態詳細名稱"
+                               maxlength="100">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" 
+                            class="btn btn-primary" 
+                            ng-click="saveAbnormalStateDetail()"
+                            ng-disabled="!abnormalStateDetailForm.AbnormalStateDetailName || saving">
+                        <span ng-show="saving">
+                            <i class="fa fa-spinner fa-spin"></i> 儲存中...
+                        </span>
+                        <span ng-hide="saving">
+                            <i class="fa fa-save"></i> 儲存
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .panel {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 1px 1px rgba(0,0,0,.05);
+        margin-bottom: 20px;
+    }
+
+    .panel-heading {
+        position: relative;
+        background-color: #f5f5f5;
+        border-bottom: 1px solid #ddd;
+        padding: 10px 15px;
+        border-radius: 4px 4px 0 0;
+        min-height: 50px; /* 確保有足夠高度顯示按鈕 */
+    }
+
+    .panel-title {
+        margin: 0;
+        font-size: 16px;
+        color: inherit;
+        padding-right: 120px; /* 為右側按鈕留出空間 */
+    }
+
+    .panel-actions {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%); /* 垂直置中 */
+        z-index: 10; /* 確保按鈕在最上層 */
+    }
+
+    .panel-body {
+        padding: 15px;
+    }
+
+    .abnormal-state-table, .abnormal-state-detail-table {
+        overflow-x: auto;
+    }
+
+    /* 表格拖曳樣式 - 參考 ApprovalCategory */
+    .table > tbody > tr.sortable-row {
+        cursor: move;
+        user-select: none;
+        transition: all 0.2s ease;
+    }
+
+    .table > tbody > tr.sortable-row:hover {
+        background-color: #f8f9fa;
+    }
+
+    .table > tbody > tr.sortable-row.selected {
+        background-color: #e3f2fd;
+    }
+
+    .table > tbody > tr.ui-sortable-helper {
+        background-color: #fff !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        /* 移除 transform: rotate 讓tr不會斜斜的 */
+        z-index: 1000;
+        opacity: 0.9;
+        border: 2px solid #007bff;
+    }
+
+    .ui-sortable-placeholder {
+        background-color: #e3f2fd !important;
+        border: 2px dashed #2196f3 !important;
+        visibility: visible !important;
+        height: 45px;
+    }
+
+    .ui-sortable-placeholder td {
+        border: none !important;
+        background: transparent !important;
+    }
+
+    .sort-cell {
+        vertical-align: middle;
+        padding: 8px !important;
+    }
+
+    .drag-handle {
+        color: #999;
+        margin-right: 8px;
+        font-size: 14px;
+        cursor: move;
+    }
+
+    .drag-handle:hover {
+        color: #666;
+    }
+
+    .sort-number {
+        font-weight: 500;
+        color: #666;
+    }
+
+    .abnormal-state-name-cell, .detail-name-cell {
+        vertical-align: middle;
+    }
+
+    .abnormal-state-name, .detail-name {
+        font-size: 15px;
+        font-weight: 500;
+    }
+
+    .detail-count-cell {
+        vertical-align: middle;
+    }
+
+    .action-cell {
+        vertical-align: middle;
+    }
+
+    .action-cell button {
+        pointer-events: auto;
+        position: relative;
+        z-index: 10;
+        margin: 0 2px;
+    }
+
+    /* 拖曳時禁用按鈕 */
+    .ui-sortable-helper .action-cell {
+        pointer-events: none;
+    }
+
+    .badge {
+        background-color: #17a2b8;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+    }
+
+    .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+    }
+
+    .alert-info {
+        color: #31708f;
+        background-color: #d9edf7;
+        border-color: #bce8f1;
+    }
+
+    .form-control-static {
+        padding-top: 7px;
+        padding-bottom: 7px;
+        margin-bottom: 0;
+        min-height: 34px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding-left: 12px;
+    }
+
+    .required:after {
+        content: " *";
+        color: red;
+    }
+
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 5px;
+    }
+
+    .text-danger {
+        color: #d9534f;
+    }
+
+    .text-muted {
+        color: #777;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 6px 12px;
+        margin-bottom: 0;
+        font-size: 14px;
+        font-weight: normal;
+        line-height: 1.42857143;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: middle;
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        color: #fff;
+        background-color: #337ab7;
+        border-color: #2e6da4;
+    }
+
+    .btn-primary:hover {
+        background-color: #286090;
+        border-color: #204d74;
+    }
+
+    .btn-success {
+        color: #fff;
+        background-color: #5cb85c;
+        border-color: #4cae4c;
+    }
+
+    .btn-success:hover {
+        background-color: #449d44;
+        border-color: #398439;
+    }
+
+    .btn-danger {
+        color: #fff;
+        background-color: #d9534f;
+        border-color: #d43f3a;
+    }
+
+    .btn-danger:hover {
+        background-color: #c9302c;
+        border-color: #ac2925;
+    }
+
+    .btn-secondary {
+        color: #333;
+        background-color: #fff;
+        border-color: #ccc;
+    }
+
+    .btn-secondary:hover {
+        background-color: #e6e6e6;
+        border-color: #adadad;
+    }
+
+    .btn:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+    }
+
+    .btn-sm {
+        padding: 5px 10px;
+        font-size: 12px;
+        line-height: 1.5;
+        border-radius: 3px;
+    }
+
+    .btn-xs {
+        padding: 1px 5px;
+        font-size: 12px;
+        line-height: 1.5;
+        border-radius: 3px;
+    }
+</style>
+
+<script>
+    $('#collapseSeaClearance').addClass("show");
+    $('#AbnormalState').addClass("active");
+</script>
+

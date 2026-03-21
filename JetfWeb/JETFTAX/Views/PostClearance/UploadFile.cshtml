@@ -1,0 +1,108 @@
+﻿@model JETFTAX.Models.PostClearance.PostClearanceViewModel
+@{
+    ViewBag.Title = "UploadFile";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">上傳後段報關費用</span>
+<hr />
+
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<form id="UploadFileForm" action="@Url.Action("UploadFile", "PostClearance")" method="post" enctype="multipart/form-data" class="containertype">
+    <div class="col-lg-12" style="margin-bottom:0.5rem;">
+        @Html.LabelFor(m => m.DataDate)
+        @Html.TextBoxFor(m => m.DataDate, new { @class = "form-control" })
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <input type="file" name="file" id="fileTax" />
+    </div>
+    <div class="col-lg-12" style="margin:0.5rem 0;">
+        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\上傳後段報關費用_範例.xlsx&fileName=上傳後段報關費用_範例.xlsx' target='_blank'>下載範例</a>
+    </div>
+    <div id="btntUploadFile" type="button" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem;"><i class="fas fa-upload"></i> 上傳</div>
+
+    <div class="loader loader-bar" data-rounded data-text="檔案上傳中"></div>
+</form>
+
+@{
+    <script>
+
+        $('#collapseWorkLoad').addClass("show");
+        $('#PostClearanceUploadFile').addClass("active");
+
+        //日期
+        $('#DataDate').click(function () {
+            WdatePicker({ dateFmt: 'yyyy-MM-dd' });
+        });
+
+        $('#btntUploadFile').click(function () {
+            $('.loader').addClass("is-active");
+
+            var file = document.getElementById('fileTax');
+            var postData = new FormData($('#UploadFileForm')[0]);
+            $.ajax({
+                type: "POST",
+                url: Router.action('PostClearance', 'UploadFile'),
+                data: postData,
+                cache: false,
+                dataType: 'json',
+                processData: false,
+                //async: false,
+                contentType: false,
+                success: function (data) {
+                    if (data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                    }
+                    else {
+                        if (data.status == "success") {
+                            //swal({
+                            //    title: data.msg,
+                            //    icon: "success"
+                            //});
+                            var obj = new Object();
+                            obj.upload_time = data.msg.split('︿')[0];
+                            obj.upload_ope = data.msg.split('︿')[1];
+                            $.ajax({
+                                type: "POST",
+                                url: Router.action('PostClearance', 'PostClearanceExcel'),
+                                data: JSON.stringify(obj),
+                                dataType: 'json',
+                                contentType: 'application/json; charset=UTF-8',
+                                success: function (data) {
+                                    if (data.Redirect) {
+                                        window.location = Router.action('Account', 'Login');
+                                    }
+                                    else {
+                                        if (data.msg != "") {
+                                            swal({
+                                                title: data.msg,
+                                                icon: "error"
+                                            });
+                                        }
+                                        else if (data.fileName != "") {
+                                            var path = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid
+                                                + '&filename=' + data.fileName;
+                                            //window.location = path;
+                                            window.open(path);
+
+                                        }
+                                    }
+                                }
+                            })
+                        }
+                        else {
+                            //顯示錯誤資訊
+                            swal({
+                                title: data.msg,
+                                icon: "error"
+                            });
+                        }
+                        file.outerHTML = file.outerHTML; //重置了file的outerHTML
+                    }
+                }
+            }).then(function () {
+                $('.loader').removeClass("is-active");
+            });
+        })
+    </script>
+}

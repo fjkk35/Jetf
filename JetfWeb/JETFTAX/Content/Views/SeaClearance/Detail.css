@@ -1,0 +1,1058 @@
+﻿/* 使用護眼的柔和色調，適合長時間閱讀 */
+#detail {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    background: #fafbfc; /* 主底色：淡灰白 */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    font-size: 1rem;
+    table-layout: fixed; /* 固定表格佈局，防止內容撐開欄位 */
+}
+
+    #detail th, #detail td {
+        border: 1px solid #dfe3e8;
+        padding: 0.6rem 0.8rem;
+        text-align: left;
+        word-wrap: break-word; /* 允許長文字換行 */
+        overflow-wrap: break-word; /* 強制換行 */
+        word-break: break-word; /* 在需要時斷字 */
+        vertical-align: top; /* 垂直對齊到頂部 */
+    }
+
+    #detail th {
+        background: #f1f3f5; /* 第二色：淡灰色 */
+        color: #495057;
+        font-weight: 600;
+        letter-spacing: 1px;
+    }
+
+    #detail tr:nth-child(even) {
+        background: #fafbfc;
+    }
+
+    #detail tr:nth-child(odd) {
+        background: #f1f3f5;
+    }
+
+/* 移除固定表格佈局的寬度限制，改用 colgroup 控制 */
+.tabletitle {
+    background: #f1f3f5;
+    color: #495057;
+    font-weight: bold;
+    text-align: right;
+    padding-right: 1rem;
+    min-width: 60px; /* 保留最小寬度 */
+    /* 移除原本的 width: 12.5% */
+}
+
+/* 移除內容欄位的寬度限制 */
+#detailBody td:not(.tabletitle) {
+    min-width: 80px; /* 保留最小寬度 */
+    /* 移除原本的寬度設定 */
+}
+
+/* 編輯相關樣式 */
+.editable-field-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: space-between; /* 讓內容分散對齊，編輯按鈕會自動靠右 */
+    width: 100%;
+    min-height: 30px; /* 確保容器有最小高度 */
+}
+
+.editable-field {
+    flex: 1;
+    min-height: 20px;
+    padding: 2px 4px;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+    background-color: transparent;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: calc(100% - 60px); /* 為編輯按鈕預留空間 */
+}
+
+    .editable-field.editing {
+        background-color: #fff;
+        border-color: #007bff;
+    }
+
+.edit-btn {
+    padding: 2px 6px;
+    border: 1px solid #007bff;
+    border-radius: 3px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex-shrink: 0; /* 防止按鈕被壓縮 */
+    margin-left: auto; /* 確保按鈕靠右 */
+    min-width: 50px; /* 確保按鈕最小寬度 */
+}
+
+    .edit-btn.is-disabled,
+    .edit-btn:disabled {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #fff;
+        cursor: not-allowed;
+        opacity: 0.65;
+    }
+
+    .edit-btn:hover {
+        background-color: #0056b3;
+        border-color: #0056b3;
+    }
+
+    .edit-btn.is-disabled:hover,
+    .edit-btn:disabled:hover {
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+
+    .edit-btn i {
+        font-size: 10px;
+    }
+
+.btn-success {
+    padding: 2px 6px;
+    border: 1px solid #28a745;
+    border-radius: 3px;
+    background-color: #28a745;
+    color: white;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: auto;
+    min-width: 50px;
+}
+
+    .btn-success:hover {
+        background-color: #218838;
+        border-color: #218838;
+    }
+
+    .btn-success:disabled {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #fff;
+        cursor: not-allowed;
+        opacity: 0.65;
+    }
+
+    .btn-success i {
+        font-size: 10px;
+    }
+
+.edit-dropdown {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid #007bff;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.edit-buttons, .date-edit-buttons {
+    margin-top: 5px;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap; /* 允許按鈕換行 */
+}
+
+    .edit-buttons button, .date-edit-buttons button {
+        padding: 2px 8px;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+
+.btn-save, .date-btn-save {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-cancel, .date-btn-cancel {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+.date-btn-clear {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+/* 編輯紀錄按鈕樣式 */
+.edit-history-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #17a2b8;
+    border-radius: 4px;
+    background-color: #17a2b8;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+    .edit-history-btn:hover {
+        background-color: #138496;
+        border-color: #138496;
+    }
+
+    .edit-history-btn i {
+        margin-right: 0.5rem;
+    }
+
+    /* 聯繫人信箱顯示樣式 */
+    .contact-email-display {
+        flex: 1;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        max-width: calc(100% - 60px); /* 為編輯按鈕預留空間 */
+    }
+
+    .show-more-btn, .show-less-btn {
+        background: none;
+        border: none;
+        color: #007bff;
+        cursor: pointer;
+        font-size: 12px;
+        padding: 0;
+        margin-left: 5px;
+        text-decoration: underline;
+        transition: color 0.3s ease;
+    }
+
+        .show-more-btn:hover, .show-less-btn:hover {
+            color: #0056b3;
+            text-decoration: none;
+        }
+
+    /* 簽審類別樣式 */
+    .approval-category-container {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        margin: 0; /* 移除 row 的負邊距影響 */
+    }
+
+    .approval-category-item {
+        display: inline-flex; /* 改為 inline-flex */
+        align-items: center;
+        padding: 0.5rem;
+        margin: 0.25rem; /* 調整邊距 */
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        background-color: #fff;
+        transition: all 0.2s ease;
+        min-height: 40px; /* 確保統一高度 */
+        white-space: nowrap; /* 防止文字換行 */
+    }
+
+        .approval-category-item:hover {
+            background-color: #f8f9fa;
+            border-color: #007bff;
+        }
+
+    .approval-category-checkbox {
+        margin-right: 0.5rem;
+        margin-left: 0.25rem;
+        transform: scale(1.1);
+        flex-shrink: 0; /* 防止 checkbox 被壓縮 */
+    }
+
+    .approval-category-label {
+        font-size: 0.85rem;
+        color: #495057;
+        cursor: pointer;
+        user-select: none;
+        line-height: 1.2;
+        margin: 0; /* 移除預設 margin */
+        white-space: nowrap; /* 防止文字換行 */
+    }
+
+        .approval-category-label:hover {
+            color: #007bff;
+        }
+
+    .selected-categories-display {
+        min-height: 1.5rem;
+        padding: 0.25rem 0;
+        color: #495057;
+        font-size: 0.9rem;
+        flex: 1; /* 讓內容佔據可用空間 */
+        max-width: calc(100% - 60px); /* 為編輯按鈕預留空間 */
+        overflow: hidden; /* 防止溢出 */
+    }
+
+
+    .category-tag {
+        background-color: #e3f2fd;
+        color: #1976d2;
+        padding: 0.25rem 0.5rem;
+        margin: 0.3rem 0.125rem; /* 上下間距從 0.125rem 增加到 0.3rem */
+        border-radius: 12px;
+        font-size: 0.8rem;
+        border: 1px solid #bbdefb;
+        display: inline-block; /* 確保標籤能夠正確換行 */
+        line-height: 1.4; /* 增加行高以改善換行時的視覺效果 */
+        word-break: keep-all; /* 避免標籤文字被斷開 */
+    }
+
+    p.category-tag {
+        display: inline-block; /* 改為 inline-block */
+        margin: 0.125rem 0.25rem; /* 調整間距 */
+    }
+
+    .date-display {
+        min-height: 1.2rem;
+        padding: 0.25rem 0;
+        color: #495057;
+        word-wrap: break-word;
+    }
+
+    .date-empty {
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    /* Angular UI Bootstrap 日期選擇器樣式 */
+    .datepicker-container {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+
+    .datepicker-input {
+        width: 100%;
+        padding: 4px 8px;
+        border: 1px solid #007bff;
+        border-radius: 4px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    .date-edit-container {
+        width: 100%;
+    }
+
+    /* 日期選擇器彈出視窗樣式 */
+    .uib-datepicker-popup {
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-shadow: 0 6px 12px rgba(0,0,0,.175);
+    }
+
+    .uib-datepicker {
+        background: transparent;
+    }
+
+        .uib-datepicker table {
+            width: 100%;
+            margin: 0;
+        }
+
+        .uib-datepicker .btn {
+            border: none;
+            background: transparent;
+            padding: 5px;
+        }
+
+            .uib-datepicker .btn:hover {
+                background-color: #f5f5f5;
+            }
+
+            .uib-datepicker .btn:active {
+                background-color: #337ab7;
+                color: white;
+            }
+
+        .uib-datepicker .text-muted {
+            color: #999;
+        }
+
+    /* Modal 相關樣式 */
+    .modal-dialog {
+        position: relative;
+        width: auto;
+        margin: 1.75rem auto;
+    }
+
+        .modal-dialog.modal-lg {
+            max-width: 1200px; /* 從 800px 增加到 1200px */
+        }
+
+    .modal-content {
+        position: relative;
+        background-color: #fff;
+        border: 1px solid rgba(0, 0, 0, 0.2);
+        border-radius: 0.375rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        outline: 0;
+    }
+
+    .modal-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 0.375rem 0.375rem 0 0;
+    }
+
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #495057;
+        margin: 0;
+    }
+
+    .item-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #aaa;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .item-close:hover {
+            color: #000;
+        }
+
+    .modal-body {
+        padding: 1.5rem;
+        position: relative;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        border-radius: 0 0 0.375rem 0.375rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        box-sizing: border-box;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-primary:disabled {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: #fff;
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+
+    /* 編輯紀錄表格樣式 */
+    .edit-history-table-container {
+        max-height: 500px; /* 從 400px 增加到 500px */
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+    }
+
+    .edit-history-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+
+        .edit-history-table th,
+        .edit-history-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            word-wrap: break-word; /* 允許長文字換行 */
+            word-break: break-word; /* 強制換行長單字 */
+            white-space: normal; /* 允許正常的文字換行 */
+            vertical-align: top; /* 垂直對齊到頂部 */
+        }
+
+        .edit-history-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            border-top: 1px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .edit-history-table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+    .no-history-message {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    /* 確保在有滾動條時表格佈局正確 */
+    .edit-history-table-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .edit-history-table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .edit-history-table-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+
+        .edit-history-table-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+    /* ==================== 備註相關樣式 ==================== */
+
+    .remark-container {
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        width: 100%;
+    }
+
+    .remark-input-section {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        margin-bottom: 1.5rem;
+    }
+
+    .remark-textarea {
+        flex: 1;
+        min-height: 80px;
+        padding: 0.75rem;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        font-family: inherit;
+        resize: vertical;
+    }
+
+        .remark-textarea:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+    .remark-add-btn {
+        flex-shrink: 0;
+        align-self: flex-end;
+        padding: 0.5rem 1rem;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+        .remark-add-btn:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        .remark-add-btn:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+
+        .remark-add-btn i {
+            margin-right: 0.25rem;
+        }
+
+    .remark-history-section {
+        margin-top: 1rem;
+    }
+
+    .remark-history-title {
+        color: #495057;
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #007bff;
+    }
+
+    .remark-history-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+        .remark-history-table th,
+        .remark-history-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        .remark-history-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .remark-history-table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .remark-history-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+    .remark-content {
+        white-space: pre-wrap;
+        word-break: break-word;
+        line-height: 1.5;
+    }
+
+    .no-remarks-message {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        margin-top: 1rem;
+    }
+
+        .no-remarks-message i {
+            margin-right: 0.5rem;
+            color: #17a2b8;
+        }
+
+    /* 授權表單顯示樣式 */
+    .selected-forms-display {
+        min-height: 1.5rem;
+        padding: 0.25rem 0;
+        color: #495057;
+        font-size: 0.9rem;
+    }
+
+    /* 授權表單歷史記錄樣式 */
+    .authorization-history-section {
+        margin-top: 2rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+        max-height: 400px;
+        overflow-y: auto;
+        position: relative; /* 為固定表頭提供定位基礎 */
+    }
+
+    .history-title {
+        color: #495057;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #007bff;
+        position: sticky;
+        top: 0;
+        background: #f8f9fa;
+        z-index: 1;
+    }
+
+    .authorization-history-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+        .authorization-history-table th,
+        .authorization-history-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: top;
+            word-wrap: break-word;
+            max-width: 0;
+        }
+
+        .authorization-history-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 2; /* 確保表頭在最上層 */
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1); /* 增加陰影效果 */
+        }
+
+        .authorization-history-table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .authorization-history-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+    /* Modal 內的歷史記錄表格特殊樣式 */
+    .modal-body .authorization-history-section {
+        margin-top: 1.5rem;
+        max-height: 300px;
+    }
+
+    /* 確保滾動容器內的固定表頭效果 */
+    .modal-body .authorization-history-table th {
+        position: sticky;
+        top: 0;
+        z-index: 3; /* Modal 內的表頭 z-index 更高 */
+        background: #f8f9fa;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 步驟管理樣式 */
+    .step-management-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        width: 100%;
+    }
+
+    .step-selection {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+        .step-selection .form-group {
+            flex: 1;
+            margin-bottom: 0;
+            min-width: 200px;
+        }
+
+    .step-confirm-btn {
+        flex-shrink: 0;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        white-space: nowrap;
+    }
+
+    .current-step-display {
+        padding: 0.75rem;
+        background-color: #e3f2fd;
+        border: 1px solid #bbdefb;
+        border-radius: 4px;
+        margin-top: 0.5rem;
+    }
+
+    .current-step-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .step-label {
+        font-weight: 600;
+        color: #1976d2;
+    }
+
+    .step-name {
+        font-weight: 500;
+        color: #1976d2;
+    }
+
+    .step-date {
+        color: #666;
+        font-size: 0.875rem;
+    }
+
+    .btn-info {
+        background-color: #17a2b8;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+        .btn-info:hover {
+            background-color: #138496;
+        }
+
+    .btn-xs {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        line-height: 1;
+        border-radius: 0.2rem;
+    }
+
+    /* 步驟詳細選擇樣式 */
+    .step-detail-container {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 1rem;
+        background-color: #f8f9fa;
+    }
+
+    .step-detail-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        background-color: #fff;
+        transition: all 0.2s ease;
+        min-height: 40px;
+    }
+
+        .step-detail-item:hover {
+            background-color: #f8f9fa;
+            border-color: #007bff;
+        }
+
+    .step-detail-checkbox, .step-detail-radio {
+        margin-right: 0.5rem;
+        margin-left: 0.25rem;
+        transform: scale(1.1);
+        flex-shrink: 0;
+        cursor: pointer;
+    }
+
+    .step-detail-radio {
+        width: 16px;
+        height: 16px;
+    }
+
+    .step-detail-label {
+        font-size: 0.9rem;
+        color: #495057;
+        cursor: pointer;
+        user-select: none;
+        flex: 1;
+        line-height: 1.2;
+        word-break: break-word;
+        margin: 0;
+    }
+
+        .step-detail-label:hover {
+            color: #007bff;
+        }
+
+    .no-step-details {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+    }
+
+    /* 步驟歷史記錄表格樣式 */
+    .step-history-table-container {
+        max-height: 500px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        position: relative;
+    }
+
+    .step-history-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+
+        .step-history-table th,
+        .step-history-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            word-wrap: break-word;
+            word-break: break-word;
+            white-space: normal;
+            vertical-align: top;
+        }
+
+        .step-history-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            border-top: 1px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .step-history-table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+    /* 步驟詳細標籤樣式 */
+    .step-detail-tag {
+        background-color: #e8f5e8;
+        color: #155724;
+        padding: 0.25rem 0.5rem;
+        margin: 0.125rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        border: 1px solid #c3e6c3;
+        display: inline-block;
+        line-height: 1.4;
+        word-break: keep-all;
+    }
+
+    /* 確保滾動條樣式 */
+    .step-history-table-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .step-history-table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .step-history-table-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+
+        .step-history-table-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    /* GB 資料表格樣式 */
+    .gb-data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 0.5rem;
+        background: #fff;
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+        .gb-data-table th,
+        .gb-data-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        .gb-data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .gb-data-table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .gb-data-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+    /* Larger checkbox for Customs Hold */
+    .customs-hold-checkbox {
+        width: 15px;
+        height: 15px;
+        transform: scale(1.2); /* fallback for browsers */
+        -webkit-transform: scale(1.2);
+        margin-right: 0.5rem;
+        vertical-align: middle;
+    }
+
+    /* Ensure labels align nicely with the larger checkbox */
+    .editable-field-container label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }

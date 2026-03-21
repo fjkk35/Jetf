@@ -1,0 +1,605 @@
+﻿@{
+    ViewBag.Title = "貨件回倉處理";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="ShipmentInboundProcessController">
+    <span class="headtype">貨件回倉處理</span>
+    <hr />
+
+    <!-- 查詢條件區域 -->
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <div class="row mb-3 align-items-center">
+            <!-- 進口方式 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="dataTypeOption" class="col-lg-4 col-form-label text-right">進口方式</label>
+                <div class="col-lg-8">
+                    <select id="dataTypeOption"
+                            class="form-control"
+                            ng-model="searchForm.dataType">
+                        <option value="">全部</option>
+                        <option ng-repeat="type in dataTypes" value="{{type.Value}}">{{type.Text}}</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 入庫日期(起) -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="inboundDateStart" class="col-lg-4 col-form-label text-right">入庫日期(起)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="inboundDateStart"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.inboundDateStart"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="startDatePopup.opened"
+                           ng-click="openStartDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇開始日期" />
+                </div>
+            </div>
+
+            <!-- 入庫日期(迄) -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="inboundDateEnd" class="col-lg-4 col-form-label text-right">入庫日期(迄)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="inboundDateEnd"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.inboundDateEnd"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="endDatePopup.opened"
+                           ng-click="openEndDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇結束日期" />
+                </div>
+            </div>
+
+            <!-- 客戶 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="custCodeOption" class="col-lg-4 col-form-label text-right">客戶</label>
+                <div class="col-lg-8">
+                    <customer-multi-select select-all="customerSelectAll"
+                                           selected-cust-codes="selectedCustCodes"
+                                           display-text="customerDisplayText"
+                                           display-full-text="customerDisplayFullText">
+                    </customer-multi-select>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+            <!-- 貨物來源 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="sourceTypeOption" class="col-lg-4 col-form-label text-right">貨物來源</label>
+                <div class="col-lg-8">
+                    <select id="sourceTypeOption"
+                            class="form-control"
+                            ng-model="searchForm.sourceType">
+                        <option value="">全部</option>
+                        <option ng-repeat="source in sourceTypeList" value="{{source.Value}}">{{source.Text}}</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 單號 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="trackingNoInput" class="col-lg-4 col-form-label text-right">單號</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="trackingNoInput"
+                           class="form-control"
+                           ng-model="searchForm.trackingNo"
+                           placeholder="請輸入單號" />
+                </div>
+            </div>
+
+            <!-- 結案 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="isClosedOption" class="col-lg-4 col-form-label text-right">結案</label>
+                <div class="col-lg-8">
+                    <select id="isClosedOption"
+                            class="form-control"
+                            ng-model="searchForm.isClosed">
+                        <option value="">全部</option>
+                        <option value="true">是</option>
+                        <option value="false">否</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 按鈕區 -->
+        <div class="row">
+            <div class="col-lg-12 text-right">
+                <button type="button"
+                        class="btn btn-primary"
+                        ng-click="search()"
+                        ng-disabled="loading">
+                    <i class="fa fa-search"></i> 查詢
+                </button>
+                <button type="button"
+                        class="btn btn-secondary ml-2"
+                        ng-click="clearSearch()"
+                        ng-disabled="loading">
+                    <i class="fa fa-eraser"></i> 清除
+                </button>
+                <button type="button"
+                        class="btn btn-info ml-2"
+                        ng-click="openBatchUploadModal()"
+                        ng-disabled="loading || uploading">
+                    <i class="fa fa-upload"></i> 批量上傳處理方式
+                </button>
+                <button type="button"
+                        class="btn btn-warning ml-2"
+                        ng-click="openBatchUploadReturnReasonModal()"
+                        ng-disabled="loading || uploadingReturnReason">
+                    <i class="fa fa-upload"></i> 批量上傳退件原因
+                </button>
+                <button type="button"
+                        class="btn btn-success ml-2"
+                        ng-click="exportExcel()"
+                        ng-disabled="exporting || loading">
+                    <i class="fa" ng-class="{'fa-spinner fa-spin': exporting, 'fa-download': !exporting}"></i>
+                    {{exporting ? '匯出中...' : '下載Excel'}}
+                </button>
+            </div>
+        </div>
+    </div>
+    <hr />
+
+    <!-- 批量上傳處理方式 Modal -->
+    <div class="modal fade" id="batchUploadModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">批量上傳處理方式</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <input type="file" class="form-control" id="batchUploadFile" accept=".xlsx" />
+                    </div>
+                    <div class="mb-3">
+                        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\批量上傳處理方式_範例.xlsx&fileName=批量上傳處理方式_範例.xlsx' target='_blank'>下載範例</a>
+                    </div>
+                    <div ng-show="uploadResult" class="mt-3">
+                        <div class="alert" ng-class="{'alert-success': uploadResult.status === 'success', 'alert-danger': uploadResult.status === 'error'}">
+                            {{uploadResult.msg}}
+                        </div>
+                    </div>
+                    <div class="mt-3" ng-if="uploadErrors && uploadErrors.length > 0">
+                        <h5>驗證失敗明細</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>單號</th>
+                                        <th style="width: 180px;">處理方式</th>
+                                        <th style="width: 140px;">欄位名稱</th>
+                                        <th>失敗原因</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="e in uploadErrors">
+                                        <td>{{e.TrackingNo}}</td>
+                                        <td>{{e.ProcessTypeText}}</td>
+                                        <td>{{e.FieldName}}</td>
+                                        <td class="text-danger">{{e.Reason}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-disabled="uploading">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="uploadBatchExcel()" ng-disabled="uploading">
+                        <i class="fa fa-spinner fa-spin" ng-show="uploading"></i>
+                        {{uploading ? '上傳中...' : '上傳'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量上傳退件原因 Modal -->
+    <div class="modal fade" id="batchUploadReturnReasonModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">批量上傳退件原因</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <input type="file" class="form-control" id="batchUploadReturnReasonFile" accept=".xlsx" />
+                    </div>
+                    <div class="mb-3">
+                        <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\批量上傳退件原因_範例.xlsx&fileName=批量上傳退件原因_範例.xlsx' target='_blank'>下載範例</a>
+                    </div>
+                    <div ng-show="uploadReturnReasonResult" class="mt-3">
+                        <div class="alert" ng-class="{'alert-success': uploadReturnReasonResult.status === 'success', 'alert-danger': uploadReturnReasonResult.status === 'error'}">
+                            {{uploadReturnReasonResult.msg}}
+                        </div>
+                    </div>
+
+                    <div class="mt-3" ng-if="uploadReturnReasonErrors && uploadReturnReasonErrors.length > 0">
+                        <h5>驗證失敗明細</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>單號</th>
+                                        <th style="width: 140px;">欄位名稱</th>
+                                        <th>失敗原因</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="e in uploadReturnReasonErrors">
+                                        <td>{{e.TrackingNo}}</td>
+                                        <td>{{e.FieldName}}</td>
+                                        <td class="text-danger">{{e.Reason}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-disabled="uploadingReturnReason">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="uploadBatchReturnReasonExcel()" ng-disabled="uploadingReturnReason">
+                        <i class="fa fa-spinner fa-spin" ng-show="uploadingReturnReason"></i>
+                        {{uploadingReturnReason ? '上傳中...' : '上傳'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 載入中提示 -->
+    <div ng-show="loading" class="text-center">
+        <i class="fa fa-spinner fa-spin fa-3x"></i>
+        <p>載入中...</p>
+    </div>
+
+    <!-- 查詢結果區域 -->
+    <div ng-show="isSearched && !loading">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <!-- 每頁顯示筆數 -->
+                    <div class="row mb-2">
+                        <div class="col-lg-6">
+                            <div class="form-inline">
+                                <label class="mr-2">每頁顯示</label>
+                                <select class="form-control"
+                                        ng-model="pageSize"
+                                        ng-change="changePageSize()">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <label class="ml-2">筆</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 text-right">
+                            <span>{{recordsInfo}}</span>
+                        </div>
+                    </div>
+
+                    <!-- 資料表格 -->
+                    <div class="table-responsive mt-3">
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>序號</th>
+                                    <th>入庫日期</th>
+                                    <th>進口方式</th>
+                                    <th>客戶</th>
+                                    <th>派件公司</th>
+                                    <th>單號</th>
+                                    <th>貨件來源</th>
+                                    <th>退件原因</th>
+                                    <th style="width: 200px;">處理方式</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-if="data.length === 0">
+                                    <td colspan="9" class="text-center">查無資料</td>
+                                </tr>
+                                <tr ng-repeat="item in data">
+                                    <td>{{(currentPage - 1) * pageSize + $index + 1}}</td>
+                                    <td>{{item.InboundDate | customDate}}</td>
+                                    <td>{{item.DataType}}</td>
+                                    <td>{{item.CustName}}</td>
+                                    <td>{{item.TransName}}</td>
+                                    <td>
+                                        <a href="~/ShipmentInboundRecord/Detail?id={{item.Id}}"
+                                           target="_blank">
+                                            {{item.TrackingNo}}
+                                        </a>
+                                    </td>
+                                    <td>{{item.SourceTypeName}}</td>
+                                    <td style="min-width: 200px;">
+                                        <div ng-if="!item.editingReturnReason" class="d-flex align-items-center">
+                                            <span class="flex-grow-1" style="margin-right: 5px;">{{item.ReturnReason || ''}}</span>
+                                            <button class="btn btn-sm btn-primary" 
+                                                    ng-click="startEditReturnReason(item)"
+                                                    title="編輯退件原因">
+                                                <i class="fa fa-edit"></i>
+                                            </button>
+                                        </div>
+                                        <div ng-if="item.editingReturnReason" class="input-group input-group-sm">
+                                            <input type="text" 
+                                                   class="form-control form-control-sm" 
+                                                   ng-model="item.tempReturnReason" 
+                                                   ng-keydown="$event.keyCode === 13 && saveReturnReason(item)"
+                                                   placeholder="請輸入退件原因" />
+                                            <div class="input-group-append">
+                                                <button class="btn btn-sm btn-success" 
+                                                        ng-click="saveReturnReason(item)" 
+                                                        ng-disabled="item.savingReturnReason"
+                                                        title="儲存">
+                                                    <i class="fa fa-check"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-secondary" 
+                                                        ng-click="cancelEditReturnReason(item)"
+                                                        title="取消">
+                                                    <i class="fa fa-times"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button ng-if="item.ProcessType"
+                                                class="btn btn-sm btn-info"
+                                                ng-click="viewProcessDetail(item)">
+                                            {{item.ProcessTypeName}}
+                                        </button>
+                                        <select ng-if="!item.ProcessType"
+                                                class="form-control form-control-sm"
+                                                ng-model="item.selectedProcessType"
+                                                ng-change="openProcessModal(item)">
+                                            <option value="">請選擇</option>
+                                            <option ng-repeat="type in processTypeList" value="{{type.Value}}">{{type.Text}}</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分頁控制 -->
+                    <div class="row" ng-show="totalPages > 1">
+                        <div class="col-lg-12">
+                            <nav>
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item" ng-class="{disabled: currentPage === 1}">
+                                        <a class="page-link" href="javascript:void(0)" ng-click="previousPage()">上一頁</a>
+                                    </li>
+                                    <li class="page-item"
+                                        ng-repeat="page in getPages()"
+                                        ng-class="{active: page === currentPage}">
+                                        <a class="page-link" href="javascript:void(0)" ng-click="changePage(page)">{{page}}</a>
+                                    </li>
+                                    <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
+                                        <a class="page-link" href="javascript:void(0)" ng-click="nextPage()">下一頁</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 處理方式 Modal -->
+    <div class="modal fade" id="processModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{modalTitle}}</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- 單號顯示 -->
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">單號</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" ng-model="processForm.trackingNo" readonly />
+                        </div>
+                    </div>
+                    
+                    <!-- 處理方式選擇 -->
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">處理方式 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <select class="form-control"
+                                    ng-model="processForm.processType"
+                                    ng-change="onProcessTypeChange()"
+                                    ng-disabled="isViewMode">
+                                <option value="">請選擇</option>
+                                <option ng-repeat="type in processTypeList" ng-value="type.Value">{{type.Text}}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <hr />
+
+                    <!-- 開新單號重出、暫存資料 -->
+                    <div ng-if="processForm.processType == 1 || processForm.processType == 9">
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">重出派件公司 <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <select class="form-control" ng-model="processForm.processTransNo" ng-change="onProcessTransNoChange()">
+                                    <option value="">請選擇</option>
+                                    <option ng-repeat="trans in processTransNoList" ng-value="trans.Value">{{trans.Text}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">收件人</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.processImporter" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">電話</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.processImporterPhone" />
+                            </div>
+                        </div>
+                        <div class="form-group row" ng-if="processForm.processTransNo != 3">
+                            <label class="col-sm-3 col-form-label">宅配地址</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.processImporterAddr" />
+                            </div>
+                        </div>
+                        <div class="form-group row" ng-if="processForm.processTransNo == 3">
+                            <label class="col-sm-3 col-form-label">門市店號</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.storeCode" />
+                            </div>
+                        </div>
+                        <div class="form-group row" ng-if="processForm.processTransNo == 3">
+                            <label class="col-sm-3 col-form-label">門市名稱</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.storeName" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">稅金</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.tax" ng-change="calcFee()" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">報關費</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.ccfee" ng-change="calcFee()" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">到付款</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.cod" ng-change="calcFee()" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">重出運費支付方</label>
+                            <div class="col-sm-9">
+                                <select class="form-control" ng-model="processForm.freightPayerNo" ng-change="onFreightPayerNoChange()">
+                                    <option value="">請選擇</option>
+                                    <option ng-repeat="payer in freightPayerNoList" ng-value="payer.Value">{{payer.Text}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">重出運費</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.freightFee" readonly />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">手續費</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.fee" readonly />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">備註</label>
+                            <div class="col-sm-9">
+                                <textarea class="form-control" ng-model="processForm.remark" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 原單轉出、退回現場、銷毀、加入退運清單、開箱確認內容物狀況、確認外箱面單 -->
+                    <div ng-if="[2,3,5,6,7,8].indexOf(processForm.processType) > -1">
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">備註</label>
+                            <div class="col-sm-9">
+                                <textarea class="form-control" ng-model="processForm.remark" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 自提 -->
+                    <div ng-if="processForm.processType == 4">
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">收件人</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.processImporter" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">電話</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.processImporterPhone" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">稅金</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.tax" ng-change="calcFee()" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">預計自取日期</label>
+                            <div class="col-sm-9">
+                                <input type="text"
+                                       class="datepicker-input form-control"
+                                       ng-model="processForm.pickupTime"
+                                       uib-datepicker-popup="yyyy-MM-dd"
+                                       datepicker-options="dateOptions"
+                                       is-open="pickupTimePopup.opened"
+                                       ng-click="openPickupTimePopup()"
+                                       close-text="關閉"
+                                       current-text="今天"
+                                       show-button-bar="false"
+                                       readonly
+                                       placeholder="請選擇預計自取時間" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">車牌號碼</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.carNo" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">備註</label>
+                            <div class="col-sm-9">
+                                <textarea class="form-control" ng-model="processForm.remark" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveProcess()" ng-disabled="saving">
+                        <i class="fa fa-spinner fa-spin" ng-show="saving"></i>
+                        {{saving ? '儲存中...' : '確定'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

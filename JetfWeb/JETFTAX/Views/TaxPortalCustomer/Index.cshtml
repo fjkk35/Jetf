@@ -1,0 +1,379 @@
+﻿@{
+    ViewBag.Title = "稅金單客戶查詢";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="TaxPortalCustomerController" class="container-fluid">
+    <span class="headtype">稅金單客戶查詢</span>
+    <hr />
+
+    <div class="row" ng-if="credentialResult && credentialResult.Password">
+        <div class="col-md-12">
+            <div class="alert alert-success tax-portal-alert">
+                <strong>{{ credentialResult.Mode === 'create' ? '新增成功' : '重設密碼成功' }}</strong>
+                <span class="tax-portal-alert-text">帳號：{{ credentialResult.UserName }}</span>
+                <span class="tax-portal-alert-text">密碼：{{ credentialResult.Password }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <div class="tax-portal-toolbar">
+                        <h3 class="panel-title">帳號查詢</h3>
+                        <button type="button" class="btn btn-primary" ng-click="openCreateModal()" ng-disabled="loadingCustomers">
+                            <i class="fa fa-plus"></i>
+                            新增帳號
+                        </button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="row">
+                        <div class="col-sm-8">
+                            <input type="text" class="form-control" ng-model="searchForm.UserName" placeholder="請輸入帳號" />
+                        </div>
+                        <div class="col-sm-4 text-right">
+                            <button type="button" class="btn btn-primary" ng-click="searchUsers()" ng-disabled="searching">
+                                <i class="fa fa-search"></i>
+                                {{ searching ? '查詢中...' : '查詢' }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="tax-portal-table-wrapper">
+                        <div class="text-center" ng-show="searching">
+                            <i class="fa fa-spinner fa-spin fa-2x"></i>
+                            <p>查詢中...</p>
+                        </div>
+
+                        <div class="alert alert-info" ng-if="!searching && userList.length === 0">
+                            查無資料
+                        </div>
+
+                        <div class="table-responsive" ng-if="!searching && userList.length > 0">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center tax-portal-col-user">帳號</th>
+                                        <th class="text-center">客戶</th>
+                                        <th class="text-center tax-portal-col-memo">備註</th>
+                                        <th class="text-center tax-portal-col-action">修改</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="item in userList track by item.Id">
+                                        <td>{{ item.UserName }}</td>
+                                        <td>
+                                            <div>{{ item.CustomerSummary || '-' }}</div>
+                                            <div class="text-muted" ng-if="item.CustomerCount > 0">共 {{ item.CustomerCount }} 筆</div>
+                                        </td>
+                                        <td>{{ item.Memo || '-' }}</td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-warning btn-sm" ng-click="openEditModal(item)">
+                                                <i class="fa fa-edit"></i>
+                                                修改
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="taxPortalCustomerModal" tabindex="-1" role="dialog" aria-labelledby="taxPortalCustomerModalLabel">
+        <div class="modal-dialog tax-portal-modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header modal-header-flex">
+                    <h4 class="modal-title" id="taxPortalCustomerModalLabel">{{ modalMode === 'create' ? '新增稅金單查詢客戶' : '修改稅金單查詢客戶' }}</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center" ng-show="loadingDetail">
+                        <i class="fa fa-spinner fa-spin fa-2x"></i>
+                        <p>載入中...</p>
+                    </div>
+
+                    <form class="form-horizontal" ng-hide="loadingDetail && modalMode === 'edit'">
+                        <div ng-if="modalMode === 'create'">
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">帳號</label>
+                                <div class="col-sm-10">
+                                    <input type="text" class="form-control" ng-model="createForm.UserName" maxlength="50" placeholder="請輸入帳號" />
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">備註</label>
+                                <div class="col-sm-10">
+                                    <textarea class="form-control" ng-model="createForm.Memo" rows="3" placeholder="請輸入備註"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="col-sm-2 control-label">客戶</label>
+                                <div class="col-sm-10">
+                                    <div class="help-block">請依群組選擇可查詢客戶，目前已選擇 {{ getSelectedCount(createSelectionMap) }} 筆。</div>
+
+                                    <div class="tax-portal-group-panel">
+                                        <div class="tax-portal-group-header">海運</div>
+                                        <div class="tax-portal-customer-list modal-list tax-portal-customer-grid">
+                                            <label class="checkbox-inline tax-portal-checkbox" ng-repeat="customer in customerGroups.SeaCustomers track by (customer.CustCode + '_' + $index)">
+                                                <input type="checkbox" ng-model="createSelectionMap[customer.CustCode]" />
+                                                <span>{{ customer.CustCode }} - {{ customer.CustName }}</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="tax-portal-group-panel">
+                                        <div class="tax-portal-group-header">空運</div>
+                                        <div class="tax-portal-customer-list modal-list tax-portal-customer-grid">
+                                            <label class="checkbox-inline tax-portal-checkbox" ng-repeat="customer in customerGroups.AirCustomers track by (customer.CustCode + '_' + $index)">
+                                                <input type="checkbox" ng-model="createSelectionMap[customer.CustCode]" />
+                                                <span>{{ customer.CustCode }} - {{ customer.CustName }}</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div ng-if="modalMode === 'edit'">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">帳號</label>
+                            <div class="col-sm-10">
+                                <input type="text" class="form-control" ng-model="editForm.UserName" readonly="readonly" />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">備註</label>
+                            <div class="col-sm-10">
+                                <textarea class="form-control" ng-model="editForm.Memo" rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">客戶</label>
+                            <div class="col-sm-10">
+                                <div class="help-block">請依群組調整可查詢客戶，目前已選擇 {{ getSelectedCount(editSelectionMap) }} 筆。</div>
+
+                                <div class="tax-portal-group-panel">
+                                    <div class="tax-portal-group-header">海運</div>
+                                    <div class="tax-portal-customer-list modal-list tax-portal-customer-grid">
+                                        <label class="checkbox-inline tax-portal-checkbox" ng-repeat="customer in customerGroups.SeaCustomers track by (customer.CustCode + '_' + $index)">
+                                            <input type="checkbox" ng-model="editSelectionMap[customer.CustCode]" />
+                                            <span>{{ customer.CustCode }} - {{ customer.CustName }}</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="tax-portal-group-panel">
+                                    <div class="tax-portal-group-header">空運</div>
+                                    <div class="tax-portal-customer-list modal-list tax-portal-customer-grid">
+                                        <label class="checkbox-inline tax-portal-checkbox" ng-repeat="customer in customerGroups.AirCustomers track by (customer.CustCode + '_' + $index)">
+                                            <input type="checkbox" ng-model="editSelectionMap[customer.CustCode]" />
+                                            <span>{{ customer.CustCode }} - {{ customer.CustName }}</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">密碼</label>
+                            <div class="col-sm-10">
+                                <div class="tax-portal-password-row">
+                                    <button type="button" class="btn btn-info" ng-click="generatePassword()" ng-disabled="generatingPassword || updating">
+                                        <i class="fa fa-key"></i>
+                                        {{ generatingPassword ? '產生中...' : '重設密碼' }}
+                                    </button>
+                                    <input type="text" class="form-control tax-portal-password-input" ng-model="editForm.NewPassword" readonly="readonly" placeholder="點選重設密碼後顯示新密碼" />
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" ng-if="modalMode === 'create'" ng-click="createUser()" ng-disabled="creating || loadingCustomers">
+                        <i class="fa fa-spinner fa-spin" ng-show="creating"></i>
+                        {{ creating ? '新增中...' : '新增帳號' }}
+                    </button>
+                    <button type="button" class="btn btn-primary" ng-if="modalMode === 'edit'" ng-click="updateUser()" ng-disabled="updating || loadingDetail">
+                        <i class="fa fa-spinner fa-spin" ng-show="updating"></i>
+                        {{ updating ? '儲存中...' : '儲存' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .tax-portal-alert {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .tax-portal-alert-text {
+        display: inline-block;
+    }
+
+    .tax-portal-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .tax-portal-group-panel {
+        border: 1px solid #d9edf7;
+        border-radius: 4px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+
+    .tax-portal-group-header {
+        background-color: #eef7fb;
+        color: #31708f;
+        font-weight: 600;
+        padding: 8px 12px;
+    }
+
+    .tax-portal-customer-list {
+        max-height: 180px;
+        overflow-y: auto;
+        padding: 10px 12px;
+        background-color: #fff;
+    }
+
+    .tax-portal-customer-list.modal-list {
+        max-height: 220px;
+    }
+
+    .tax-portal-customer-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px 14px;
+    }
+
+    .tax-portal-checkbox {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        margin: 0;
+        padding-left: 0;
+        white-space: normal;
+        min-width: 0;
+    }
+
+    .tax-portal-checkbox input {
+        margin: 3px 0 0 0;
+        flex: 0 0 auto;
+    }
+
+    .tax-portal-checkbox span {
+        display: block;
+        min-width: 0;
+        word-break: break-word;
+    }
+
+    .tax-portal-table-wrapper {
+        margin-top: 16px;
+    }
+
+    .tax-portal-col-user {
+        width: 140px;
+    }
+
+    .tax-portal-col-memo {
+        width: 180px;
+    }
+
+    .tax-portal-col-action {
+        width: 100px;
+    }
+
+    .tax-portal-password-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .tax-portal-password-input {
+        flex: 1;
+    }
+
+    .tax-portal-modal-dialog {
+        width: 80%;
+        max-width: 1400px;
+    }
+
+    .modal-header-flex {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px 20px;
+        border-bottom: 1px solid #e5e5e5;
+    }
+
+    .modal-header-flex .modal-title {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 500;
+        color: #666;
+    }
+
+    .modal-header-flex .close {
+        font-size: 28px;
+        font-weight: 400;
+        color: #888;
+        opacity: 1;
+        margin-left: 20px;
+        margin-right: 0;
+        outline: none;
+    }
+
+    .modal-header-flex .close:hover {
+        color: #333;
+        opacity: 1;
+    }
+
+    @@media (max-width: 767px) {
+        .tax-portal-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .tax-portal-customer-grid {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+
+        .tax-portal-password-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .tax-portal-modal-dialog {
+            width: auto;
+            margin: 10px;
+        }
+    }
+
+    @@media (min-width: 768px) and (max-width: 1199px) {
+        .tax-portal-customer-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+</style>

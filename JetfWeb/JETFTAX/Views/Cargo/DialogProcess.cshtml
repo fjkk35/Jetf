@@ -1,0 +1,100 @@
+﻿@model JETFTAX.Models.DialogProcessViewModel
+@{
+    Layout = null;
+}
+
+<h2>新增處置說明</h2>
+<hr />
+<form id="UploadFileForm" action="@Url.Action("", "")" method="post" enctype="multipart/form-data" class="containertype">
+    <div style="margin-bottom:0.5rem;">
+        @Html.HiddenFor(m => m.P_MId)
+        @*@Html.HiddenFor(m=> m.P_Cust_Id)
+        @Html.HiddenFor(m => m.P_Customer)
+        @Html.HiddenFor(m => m.P_MainNumber)
+        @Html.HiddenFor(m => m.P_Bl_No)*@
+        @Html.HiddenFor(m => m.P_Dlv_Inv)
+        @*@Html.HiddenFor(m => m.P_Sign_In_Time)
+        @Html.HiddenFor(m => m.P_Recipient)
+        @Html.HiddenFor(m => m.P_Recphone)*@
+
+        <div class="col-lg-12">
+            @Html.LabelFor(m => m.P_Type)
+            <div class="radio-rdoSearchType">
+                <input type="radio" id="rdoCargoStatus" name="P_Type" value="1" checked="checked">
+                <label for="rdoCargoStatus"></label>貨況
+            </div>
+            <div class="radio-rdoSearchType">
+                <input type="radio" id="rdoStopCargo" name="P_Type" value="2">
+                <label for="rdoStopCargo"></label>退運
+            </div>
+            <div class="radio-rdoSearchType">
+                <input type="radio" id="rdoErrorOrder" name="P_Type" value="3">
+                <label for="rdoErrorOrder"></label>錯單公司名義收單
+            </div>
+        </div>
+        <div class="col-lg-12">
+            @Html.LabelFor(m => m.P_Remark)
+            @Html.TextAreaFor(m => m.P_Remark, new { @class = "form-control", @style = "height:10rem;width:40rem;font-size:1.5em" })
+        </div>
+        </div>
+        <div class="col-lg-12" style="margin:0.5rem 0;">
+            <input type="file" name="file" id="fileTax" />
+        </div>
+        <div id="btntUploadFile" type="button" class="btn btn-primary confirmbtn col-lg-3" style="font-size: 1.2rem;"><i class="fas fa-upload"></i> 新增</div>
+
+        <script>
+            //載入資料
+            $('#P_MId').val($('#Id').val());
+            //$('#P_Cust_Id').val($('#Cust_Id').val());
+            //$('#P_Customer').val($('#Cust_Name').val());
+            //$('#P_MainNumber').val($('#Main_Number').val());
+            //$('#P_Bl_No').val($('#Bag_Number').val());
+
+            $('#P_Dlv_Inv').val($('#Dlv_Inv').val());
+            //$('#P_Sign_In_Time').val($('#In_Datetime').val());
+            //$('#P_Recipient').val($('#Recipient').val());
+            //$('#P_Recphone').val($('#Recphone').val());
+
+
+            $('#btntUploadFile').click(function () {
+                var file = document.getElementById('fileTax');
+                var postData = new FormData($('#UploadFileForm')[0]);
+                $.ajax({
+                    type: "POST",
+                    url: Router.action('Cargo', 'UploadFileProcess'),
+                    data: postData,
+                    cache: false,
+                    dataType: 'json',
+                    processData: false,
+                    //async: false,
+                    contentType: false,
+                    success: function (data) {
+                        if (data.Redirect) {
+                            window.location = Router.action('Account', 'Login');
+                        }
+                        else {
+                            if (data.status == "success") {
+                                swal({
+                                    title: data.msg,
+                                    icon: "success"
+                                });
+                                $('#myModal2').modal('hide');
+                                //載入處置說明資料
+                                getProcessList.draw();
+                            }
+                            else {
+                                //顯示錯誤資訊
+                                swal({
+                                    title: data.msg,
+                                    icon: "error"
+                                });
+                            }
+                            //file.outerHTML = file.outerHTML; //重置了file的outerHTML
+                        }
+                    }
+                }).then(function () {
+                    //$('.loader').removeClass("is-active");
+                });
+            })
+        </script>
+</form>
