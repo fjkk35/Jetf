@@ -591,6 +591,10 @@
     <Compile Include="Services\SjlBatchImport\Domain\SjlShippingDataModel.cs" />
     <Compile Include="Services\SjlBatchImport\Domain\SjlShippingDataUploadModel.cs" />
     <Compile Include="Services\SjlBatchImport\SjlBatchImportService.cs" />
+    <Compile Include="Services\SjlBilling\Domain\SjlBillingExportRowModel.cs" />
+    <Compile Include="Services\SjlBilling\Domain\SjlBillingQueryRequest.cs" />
+    <Compile Include="Services\SjlBilling\Domain\SjlBillingQueryRowModel.cs" />
+    <Compile Include="Services\SjlBilling\SjlBillingService.cs" />
     <Compile Include="Services\Step\StepService.cs" />
     <Compile Include="Services\Tact\Domain\TactBagNoModel.cs" />
     <Compile Include="Services\Tact\Domain\TactBagQueryRequest.cs" />

@@ -1,0 +1,100 @@
+﻿@{
+    ViewBag.Title = "捷利帳單";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="SjlBillingController">
+    <span class="headtype">捷利帳單</span>
+    <hr />
+
+    <div class="containertype">
+        <style>
+            .containertype .form-label {
+                padding-right: 10px;
+                align-items: center;
+                justify-content: right;
+                display: flex;
+                font-size: 1.2rem;
+            }
+
+            .containertype .form-group {
+                margin-bottom: 0.75rem;
+            }
+
+            .containertype .control-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .containertype .control-row .form-control {
+                max-width: 220px;
+            }
+        </style>
+
+        <div class="form-group row">
+            <label class="col-lg-1 form-label">日期起</label>
+            <div class="col-lg-11 control-row">
+                <input type="text"
+                       class="datepicker-input form-control"
+                       ng-model="searchData.startDate"
+                       uib-datepicker-popup="yyyy-MM-dd"
+                       datepicker-options="dateOptions"
+                       is-open="startDatePopup.opened"
+                       ng-click="openStartDatePopup()"
+                       close-text="關閉"
+                       current-text="今天"
+                       show-button-bar="false"
+                       readonly
+                       placeholder="請選擇開始日期" />
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label class="col-lg-1 form-label">日期迄</label>
+            <div class="col-lg-11 control-row">
+                <input type="text"
+                       class="datepicker-input form-control"
+                       ng-model="searchData.endDate"
+                       uib-datepicker-popup="yyyy-MM-dd"
+                       datepicker-options="dateOptions"
+                       is-open="endDatePopup.opened"
+                       ng-click="openEndDatePopup()"
+                       close-text="關閉"
+                       current-text="今天"
+                       show-button-bar="false"
+                       readonly
+                       placeholder="請選擇結束日期" />
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label class="col-lg-1 form-label">派件公司</label>
+            <div class="col-lg-11 control-row">
+                <select class="form-control" ng-model="searchData.transName">
+                    <option value="">請選擇派件公司</option>
+                    <option value="大榮">大榮</option>
+                    <option value="捷通">捷通</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <div class="col-lg-1"></div>
+            <div class="col-lg-3">
+                <button type="button"
+                        class="btn btn-primary confirmbtn"
+                        style="font-size:1.2rem; width:100%;"
+                        ng-click="downloadExcel()"
+                        ng-disabled="downloading">
+                    <i class="fas fa-download" ng-hide="downloading"></i>
+                    <i class="fas fa-spinner fa-spin" ng-show="downloading"></i>
+                    {{downloading ? '下載中...' : '下載 Excel'}}
+                </button>
+            </div>
+        </div>
+
+        <div class="loader loader-bar" ng-class="{'is-active': downloading}" data-rounded data-text="檔案下載中"></div>
+    </div>
+</div>

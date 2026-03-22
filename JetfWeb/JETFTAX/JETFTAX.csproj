@@ -334,6 +334,7 @@
     <Compile Include="Controllers\ShipmentOutboundBatchImportController.cs" />
     <Compile Include="Controllers\ShipmentOutboundBatchImportRevokeController.cs" />
     <Compile Include="Controllers\SjlBatchImportController.cs" />
+    <Compile Include="Controllers\SjlBillingController.cs" />
     <Compile Include="Controllers\StepController.cs" />
     <Compile Include="Controllers\TactController.cs" />
     <Compile Include="Controllers\TCatEtlTaxController.cs" />
@@ -814,6 +815,7 @@
     <Content Include="Scripts\ng-controllers\ShipmentOutboundBatchImportRevoke\ShipmentOutboundBatchImportRevoke.js" />
     <Content Include="Scripts\ng-controllers\ShipmentOutboundBatchImport\ShipmentOutboundBatchImport.js" />
     <Content Include="Scripts\ng-controllers\SjlBatchImport\SjlBatchImport.js" />
+    <Content Include="Scripts\ng-controllers\SjlBilling\SjlBilling.js" />
     <Content Include="Scripts\ng-controllers\Tact\Tact.js" />
     <Content Include="Scripts\ng-controllers\WorkDayArea\WorkDayArea.js" />
     <Content Include="Scripts\_Layout.js" />
@@ -2904,6 +2906,7 @@
     <Content Include="Views\DeliveryAssistant\Index.cshtml" />
     <Content Include="Views\MainTaxSearch\Index.cshtml" />
     <Content Include="Views\SjlBatchImport\Index.cshtml" />
+    <Content Include="Views\SjlBilling\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Lib\TelegramLibrary\TelegramLibrary.csproj">
@@ -2923,6 +2926,7 @@
     <None Include="tsconfig.json" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaClearance\SeaClearance.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaClearance\SeaClearanceDetail.ts" />
+    <TypeScriptCompile Include="Scripts\ng-controllers\SjlBilling\SjlBilling.ts" />
     <TypeScriptCompile Include="Scripts\types\global.d.ts" />
   </ItemGroup>
   <PropertyGroup>

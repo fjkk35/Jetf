@@ -1,0 +1,10 @@
+root = true
+
+[*.{cs,cshtml,js,ts,json,md,config,xml,yaml,yml,sln,csproj,props,targets}]
+charset = utf-8-bom
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.md]
+trim_trailing_whitespace = false

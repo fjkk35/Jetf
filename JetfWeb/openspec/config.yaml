@@ -1,0 +1,20 @@
+schema: spec-driven
+
+context: |
+  Tech stack: ASP.NET MVC 5, Angular.js, TypeScript, Dapper, NPOI
+  Frontend convention: Angular.js controller files are placed under JETFTAX/Scripts/ng-controllers/{feature}/{feature}.js
+  Menu definition: JETFTAX/Scripts/_Layout.js
+  View convention: MVC Razor views under JETFTAX/Views/{Feature}/Index.cshtml
+  Service convention: Service/Services/{Feature}/{Feature}Service.cs with models under Domain/
+  Export convention: Use NPOI for Excel generation
+
+rules:
+  proposal:
+    - 使用中文撰寫
+    - 需說明頁面位置、查詢條件與匯出目標
+  design:
+    - 需明確描述查詢 SQL、欄位對應與計價規則
+  tasks:
+    - 以尚未執行的工作清單描述
+  specs:
+    - 以 Requirement 與 Scenario 描述可驗證行為

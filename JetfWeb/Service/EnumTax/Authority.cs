@@ -504,6 +504,11 @@ namespace Service.EnumTax
         SjlBatchImport,
 
         /// <summary>
+        /// 捷利帳單
+        /// </summary>
+        SjlBilling,
+
+        /// <summary>
         /// 7-5稅金單客戶查詢
         /// </summary>
         TaxPortalCustomer,

@@ -154,6 +154,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
         {
             id: 'jetft', title: '捷穩通', icon: 'fas fa-fw fa-search', children: [
                 { id: 'SjlBatchImport', text: '捷利托運資料上傳', url: '~/SjlBatchImport/Index', auth: ['SjlBatchImport'] },
+                { id: 'SjlBilling', text: '捷利帳單', url: '~/SjlBilling/Index', auth: ['SjlBilling'] },
             ]
         },
         {
