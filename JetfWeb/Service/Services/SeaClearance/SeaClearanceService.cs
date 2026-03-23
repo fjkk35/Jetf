@@ -509,17 +509,20 @@ namespace Service.Services.SeaClearance
                     return new ResopnseModel("找不到指定資料");
                 }
 
-                if (string.IsNullOrEmpty(detail.MainNumber) || string.IsNullOrEmpty(detail.TrackingNo) || string.IsNullOrEmpty(detail.MftNo))
+                // 先確認掛號是否存在；若明細本身沒有，則嘗試依主號回查並回寫資料表。
+                var mftNo = GetMftNo(detail);
+                if (string.IsNullOrWhiteSpace(mftNo))
                 {
-                    return new ResopnseModel("主號、分提單號碼或艙單號碼為空");
+                    return new ResopnseModel("掛號為空");
                 }
 
+                // 取得掛號後再呼叫 CPT 查詢最新艙單到港日。
                 var parameters = new Dictionary<string, string>
                 {
                     { "tab1.currentPage", "1" },
                     { "tab1.rowNum", "10" },
                     { "tab1.hideDeclNo", "" },
-                    { "tab1.vslRegNo", detail.MftNo },
+                    { "tab1.vslRegNo", mftNo },
                     { "tab1.mftNo", "" },
                     { "choice", "B" },
                     { "tab1.mawb", detail.MainNumber },
@@ -534,7 +537,7 @@ namespace Service.Services.SeaClearance
                     return new ResopnseModel("查無艙單到港日");
                 }
 
-                //艙單到港日相同，無須更新
+                // 艙單到港日相同時不重複更新，只回傳目前畫面需要的資料。
                 if (detail.ImportDate == importDate)
                 {
                     return new ResopnseModel
@@ -550,6 +553,7 @@ namespace Service.Services.SeaClearance
                     };
                 }
 
+                // 寫回最新艙單到港日後，重新計算相關截止日與滯報費。
                 var updateSql = @"
                     update [jetf].[dbo].SeaClearanceDetail 
                     set ImportDate=@ImportDate
@@ -580,6 +584,48 @@ namespace Service.Services.SeaClearance
             {
                 return new ResopnseModel(ex.Message);
             }
+        }
+
+        /// <summary>
+        /// 確保明細有可用掛號；若明細尚未帶入，則依主號回查並回寫資料表。
+        /// </summary>
+        /// <returns>可用掛號；若查無資料則回傳 null。</returns>
+        private string GetMftNo(SeaClearanceDetailQueryModel detail)
+        {
+            if (!string.IsNullOrWhiteSpace(detail.MftNo))
+            {
+                return detail.MftNo;
+            }
+
+            // 明細沒有掛號時，改從與法主檔依主號回查第一筆掛號。
+            var mftNo = conn.QueryFirstOrDefault<string>(@"
+                select top 1 FIELD_A as MftNo
+                from DATA_CENTER.dbo.CES_MAIN_ORDER
+                where MAIN_NUMBER = @MainNumber
+            ", new
+            {
+                MainNumber = detail.MainNumber
+            });
+
+            if (string.IsNullOrWhiteSpace(mftNo))
+            {
+                return null;
+            }
+
+            // 查到掛號後同步回寫 SeaClearanceDetail，避免後續流程重複查詢。
+            conn.Execute(@"
+                update [jetf].[dbo].[SeaClearanceDetail]
+                set MftNo = @MftNo
+                where Id = @Id
+            ", new
+            {
+                Id = detail.Id,
+                MftNo = mftNo
+            });
+
+            detail.MftNo = mftNo;
+
+            return mftNo;
         }
 
         /// <summary>

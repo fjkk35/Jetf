@@ -114,7 +114,8 @@
                     <div class="editable-field-container">
                         <span>{{detailData.ImportDate | formatDateStr}}</span>
                         <button class="btn-success"
-                                ng-click="updateImportDate()">
+                                ng-click="updateImportDate()"
+                                ng-disabled="isUpdatingImportDate">
                             <i class="fas fa-sync-alt"></i> 更新
                         </button>
                     </div>
@@ -132,7 +133,8 @@
                     <div class="editable-field-container">
                         <span>{{detailData.SeaOrderOriginals[0].Eta | customDate}}</span>
                         <button class="btn-success"
-                                ng-click="updateEta()">
+                                ng-click="updateEta()"
+                                ng-disabled="isUpdatingEta">
                             <i class="fas fa-sync-alt"></i> 更新
                         </button>
                     </div>

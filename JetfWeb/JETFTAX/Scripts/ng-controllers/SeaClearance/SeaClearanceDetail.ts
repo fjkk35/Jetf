@@ -138,6 +138,8 @@ interface SeaClearanceDetailScope extends ng.IScope {
     currentAuthFormType: number;
     dateOptions: any;
     datePopup: Record<string, boolean>;
+    isUpdatingEta: boolean;
+    isUpdatingImportDate: boolean;
     [key: string]: any;
 }
 
