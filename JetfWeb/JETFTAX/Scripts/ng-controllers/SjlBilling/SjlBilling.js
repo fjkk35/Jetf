@@ -1,4 +1,4 @@
-﻿mainApp.controller('SjlBillingController', ['$scope', '$http', function ($scope, $http) {
+mainApp.controller('SjlBillingController', ['$scope', '$http', function ($scope, $http) {
         $scope.downloading = false;
         $scope.startDatePopup = { opened: false };
         $scope.endDatePopup = { opened: false };

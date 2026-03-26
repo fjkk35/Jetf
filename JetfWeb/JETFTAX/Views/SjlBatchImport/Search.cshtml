@@ -1,0 +1,188 @@
+﻿@{
+    ViewBag.Title = "捷利托運資料查詢";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="SjlBatchImportSearchController">
+    <span class="headtype">捷利托運資料查詢</span>
+    <hr />
+
+    <div class="containertype">
+        <style>
+            .containertype .control-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .containertype .control-row .form-control {
+                max-width: 220px;
+            }
+
+            .containertype .search-toolbar {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-wrap: wrap;
+                margin-bottom: 15px;
+            }
+
+            .containertype .search-toolbar .toolbar-label {
+                margin: 0;
+                font-size: 1.1rem;
+            }
+
+            .containertype .table td,
+            .containertype .table th {
+                vertical-align: middle;
+                white-space: nowrap;
+            }
+
+            .containertype .pagination-summary {
+                margin: 10px 0;
+            }
+
+            .containertype #pagination-twbs {
+                display: flex;
+                justify-content: center;
+                margin-top: 15px;
+            }
+
+            .containertype #pagination-twbs .pagination {
+                display: flex;
+                justify-content: center;
+                width: 100%;
+            }
+        </style>
+
+        <div class="search-toolbar">
+            <label class="toolbar-label">日期起</label>
+            <input type="text"
+                   class="datepicker-input form-control"
+                   ng-model="searchParams.startDate"
+                   uib-datepicker-popup="yyyy-MM-dd"
+                   datepicker-options="dateOptions"
+                   is-open="startDatePopup.opened"
+                   ng-click="openStartDatePopup()"
+                   close-text="關閉"
+                   current-text="今天"
+                   show-button-bar="false"
+                   readonly
+                   placeholder="請選擇開始日期" />
+            <label class="toolbar-label">日期迄</label>
+                <input type="text"
+                       class="datepicker-input form-control"
+                       ng-model="searchParams.endDate"
+                       uib-datepicker-popup="yyyy-MM-dd"
+                       datepicker-options="dateOptions"
+                       is-open="endDatePopup.opened"
+                       ng-click="openEndDatePopup()"
+                       close-text="關閉"
+                       current-text="今天"
+                       show-button-bar="false"
+                       readonly
+                       placeholder="請選擇結束日期" />
+            <label class="toolbar-label">運送編號</label>
+            <input type="text" class="form-control" ng-model="searchParams.jetfSerial" placeholder="請輸入運送編號" />
+            <button type="button" class="btn btn-primary confirmbtn" ng-click="performSearch()" ng-disabled="loading">
+                <i class="fas fa-search"></i> 查詢
+            </button>
+            <button type="button" class="btn btn-warning" ng-click="clearSearch()" ng-disabled="loading">
+                <i class="fas fa-undo"></i> 清除
+            </button>
+        </div>
+
+        <div class="loader loader-bar" ng-class="{'is-active': loading}" data-rounded data-text="資料查詢中"></div>
+
+        <div class="row" style="margin: 15px 0;" ng-if="isSearched">
+            <div class="col-lg-6 pagination-summary">{{ getRecordsInfo() }}</div>
+            <div class="col-lg-6 text-right">
+                <label>每頁筆數</label>
+                <select class="form-control" style="display:inline-block; width:100px;" ng-model="pageSize" ng-change="changePageSize()" ng-options="size for size in pageSizeOptions"></select>
+            </div>
+        </div>
+
+        <div class="table-responsive" ng-if="isSearched">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>運送編號</th>
+                        <th>單據編號</th>
+                        <th>編號</th>
+                        <th>收件人</th>
+                        <th>派送日</th>
+                        <th>其他費用</th>
+                        <th>代收</th>
+                        <th>地址</th>
+                        <th>品名</th>
+                        <th>件數</th>
+                        <th>材積</th>
+                        <th>重量</th>
+                        <th>收件人電話</th>
+                        <th>派件公司</th>
+                        <th>建立時間</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-if="dataList.length === 0">
+                        <td colspan="16" class="text-center">查無資料</td>
+                    </tr>
+                    <tr ng-repeat="item in dataList">
+                        <td>{{ item.JetfSerial }}</td>
+                        <td>{{ item.BagNumber }}</td>
+                        <td>{{ item.Seq }}</td>
+                        <td>{{ item.Importer }}</td>
+                        <td>{{ item.DeliveryDate | date:'yyyy/MM/dd' }}</td>
+                        <td>{{ item.OtherFee }}</td>
+                        <td>{{ item.Cod }}</td>
+                        <td style="white-space: normal; min-width: 240px;">{{ item.ImporterAddr }}</td>
+                        <td style="white-space: normal; min-width: 180px;">{{ item.ItemName }}</td>
+                        <td>{{ item.Qty }}</td>
+                        <td>{{ item.Volume }}</td>
+                        <td>{{ item.Gw }}</td>
+                        <td>{{ item.ImporterPhone }}</td>
+                        <td>{{ item.TransName }}</td>
+                        <td>{{ item.CreatedTime | customDateTime}}</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-primary" ng-click="showEditTransNameModal(item)">修改</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="pagination-twbs"></div>
+    </div>
+
+    <div class="modal fade" id="transNameModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">修改派件公司</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>運送編號</label>
+                        <input type="text" class="form-control" ng-model="editingItem.JetfSerial" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label>派件公司</label>
+                        <select class="form-control" ng-model="editModel.transName">
+                            <option value="">請選擇派件公司</option>
+                            <option value="大榮">大榮</option>
+                            <option value="捷通">捷通</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="savingTransName">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveTransName()" ng-disabled="savingTransName">
+                        {{ savingTransName ? '儲存中...' : '儲存' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

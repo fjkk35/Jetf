@@ -1246,7 +1246,6 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             if ($scope.isUpdatingImportDate) {
                 return;
             }
-
             if (!$scope.detailData || !$scope.detailData.Id) {
                 swal({
                     title: "錯誤",

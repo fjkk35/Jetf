@@ -88,6 +88,146 @@ namespace Service.Services.SjlBatchImport
         }
 
         /// <summary>
+        /// 查詢捷利托運資料。
+        /// </summary>
+        public SjlBatchImportSearchResponse GetSearchData(SjlBatchImportSearchRequest request)
+        {
+            var parameters = BuildSearchParameters(request);
+            const string sql = @"
+SELECT COUNT(1)
+FROM [jetf].[dbo].[SjlShippingData]
+WHERE (@StartDate IS NULL OR [CreatedTime] >= @StartDate)
+  AND (@EndDate IS NULL OR [CreatedTime] < @EndDate)
+    AND (@JetfSerial = '' OR [JetfSerial] = @JetfSerial);
+
+SELECT
+    [Id],
+    [JetfSerial],
+    [BagNumber],
+    [Seq],
+    [Importer],
+    [DeliveryDate],
+    [OtherFee],
+    [Cod],
+    [ImporterAddr],
+    [ItemName],
+    [Qty],
+    [Volume],
+    [Gw],
+    [ImporterPhone],
+    [TransName],
+    [CreatedTime]
+FROM [jetf].[dbo].[SjlShippingData]
+WHERE (@StartDate IS NULL OR [CreatedTime] >= @StartDate)
+  AND (@EndDate IS NULL OR [CreatedTime] < @EndDate)
+    AND (@JetfSerial = '' OR [JetfSerial] = @JetfSerial)
+ORDER BY [CreatedTime] DESC, [Id] DESC
+OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+            using (var query = conn.QueryMultiple(sql, parameters))
+            {
+                return new SjlBatchImportSearchResponse
+                {
+                    TotalCount = query.ReadFirst<int>(),
+                    Data = query.Read<SjlShippingDataSearchModel>().ToList()
+                };
+            }
+        }
+
+        /// <summary>
+        /// 修改派件公司並寫入歷史資料。
+        /// </summary>
+        public ResopnseModel UpdateTransName(SjlShippingDataUpdateTransNameRequest request)
+        {
+            if (request == null || request.SjlShippingDataId <= 0)
+            {
+                return new ResopnseModel("資料不存在");
+            }
+
+            var newTransName = NullIfEmpty(request.TransName);
+            if (newTransName != "大榮" && newTransName != "捷通")
+            {
+                return new ResopnseModel("派件公司僅能為大榮或捷通");
+            }
+
+            var userId = GetUserId();
+
+            using (var connection = new SqlConnection(conn.ConnectionString))
+            {
+                connection.Open();
+
+                using (var transaction = connection.BeginTransaction())
+                {
+                    try
+                    {
+                        var currentData = connection.QueryFirstOrDefault<SjlShippingDataSearchModel>(@"
+SELECT [Id], [TransName]
+FROM [jetf].[dbo].[SjlShippingData]
+WHERE [Id] = @Id", new
+                        {
+                            Id = request.SjlShippingDataId
+                        }, transaction);
+
+                        if (currentData == null)
+                        {
+                            transaction.Rollback();
+                            return new ResopnseModel("查無資料");
+                        }
+
+                        var oldTransName = NullIfEmpty(currentData.TransName);
+                        if (string.Equals(oldTransName, newTransName, StringComparison.Ordinal))
+                        {
+                            transaction.Rollback();
+                            return new ResopnseModel("派件公司未異動，不需修改");
+                        }
+
+                        connection.Execute(@"
+UPDATE [jetf].[dbo].[SjlShippingData]
+SET [TransName] = @TransName,
+    [UpdatedOpe] = @UpdatedOpe,
+    [UpdatedTime] = GETDATE()
+WHERE [Id] = @Id", new
+                        {
+                            Id = request.SjlShippingDataId,
+                            TransName = newTransName,
+                            UpdatedOpe = userId
+                        }, transaction);
+
+                        connection.Execute(@"
+INSERT INTO [jetf].[dbo].[SjlShippingDataTransNameHistory]
+([SjlShippingDataId], [OldTransName], [NewTransName], [CreatedOpe], [CreatedTime])
+VALUES
+(@SjlShippingDataId, @OldTransName, @NewTransName, @CreatedOpe, GETDATE())", new
+                        {
+                            SjlShippingDataId = request.SjlShippingDataId,
+                            OldTransName = oldTransName,
+                            NewTransName = newTransName,
+                            CreatedOpe = userId
+                        }, transaction);
+
+                        transaction.Commit();
+
+                        return new ResopnseModel
+                        {
+                            status = Status.success,
+                            msg = "修改成功",
+                            ReturnObject = new
+                            {
+                                Id = request.SjlShippingDataId,
+                                TransName = newTransName
+                            }
+                        };
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        return new ResopnseModel($"修改失敗：{ex.Message}");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// 讀取 Excel 檔案。
         /// </summary>
         private List<SjlShippingDataUploadModel> ReadExcelFile(string filePath)
@@ -487,6 +627,53 @@ VALUES
         private string NullIfEmpty(string text)
         {
             return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+        }
+
+        /// <summary>
+        /// 建立查詢參數與分頁資訊。
+        /// </summary>
+        private DynamicParameters BuildSearchParameters(SjlBatchImportSearchRequest request)
+        {
+            request = request ?? new SjlBatchImportSearchRequest();
+
+            DateTime startDate;
+            DateTime endDate;
+            DateTime? startDateValue = null;
+            DateTime? endDateValue = null;
+
+            if (!string.IsNullOrWhiteSpace(request.StartDate))
+            {
+                if (!DateTime.TryParse(request.StartDate, out startDate))
+                {
+                    throw new Exception("日期起格式不正確");
+                }
+                startDateValue = startDate.Date;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.EndDate))
+            {
+                if (!DateTime.TryParse(request.EndDate, out endDate))
+                {
+                    throw new Exception("日期迄格式不正確");
+                }
+                endDateValue = endDate.Date.AddDays(1);
+            }
+
+            if (startDateValue.HasValue && endDateValue.HasValue && startDateValue.Value >= endDateValue.Value)
+            {
+                throw new Exception("日期起不可大於日期迄");
+            }
+
+            var page = request.Page <= 0 ? 1 : request.Page;
+            var pageSize = request.PageSize <= 0 ? 10 : request.PageSize;
+
+            var parameters = new DynamicParameters();
+            parameters.Add("StartDate", startDateValue);
+            parameters.Add("EndDate", endDateValue);
+            parameters.Add("JetfSerial", string.IsNullOrWhiteSpace(request.JetfSerial) ? string.Empty : request.JetfSerial.Trim());
+            parameters.Add("Offset", (page - 1) * pageSize);
+            parameters.Add("PageSize", pageSize);
+            return parameters;
         }
     }
 }

@@ -588,7 +588,11 @@
     <Compile Include="Services\ShipmentOutboundBatchImport\Domain\ShipmentOutboundModel.cs" />
     <Compile Include="Services\ShipmentOutboundBatchImport\ShipmentOutboundBatchImportService.cs" />
     <Compile Include="Services\SjlBatchImport\Domain\SjlBatchImportQueryRequest.cs" />
+    <Compile Include="Services\SjlBatchImport\Domain\SjlBatchImportSearchRequest.cs" />
+    <Compile Include="Services\SjlBatchImport\Domain\SjlBatchImportSearchResponse.cs" />
     <Compile Include="Services\SjlBatchImport\Domain\SjlShippingDataModel.cs" />
+    <Compile Include="Services\SjlBatchImport\Domain\SjlShippingDataSearchModel.cs" />
+    <Compile Include="Services\SjlBatchImport\Domain\SjlShippingDataUpdateTransNameRequest.cs" />
     <Compile Include="Services\SjlBatchImport\Domain\SjlShippingDataUploadModel.cs" />
     <Compile Include="Services\SjlBatchImport\SjlBatchImportService.cs" />
     <Compile Include="Services\SjlBilling\Domain\SjlBillingExportRowModel.cs" />

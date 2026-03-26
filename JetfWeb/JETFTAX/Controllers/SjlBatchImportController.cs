@@ -25,6 +25,12 @@ namespace JETFTAX.Controllers
             return View();
         }
 
+        [UserAuthorize(Authority.SjlBatchImport)]
+        public ActionResult Search()
+        {
+            return View();
+        }
+
         /// <summary>
         /// 上傳捷利托運資料。
         /// </summary>
@@ -63,6 +69,43 @@ namespace JETFTAX.Controllers
             }
 
             return Json(resopnseModel);
+        }
+
+        [HttpPost]
+        [UserAuthorize(Authority.SjlBatchImport)]
+        public JsonResult SearchData(Service.Services.SjlBatchImport.Domain.SjlBatchImportSearchRequest request)
+        {
+            try
+            {
+                var result = _sjlBatchImportService.GetSearchData(request);
+                return Json(new
+                {
+                    Data = result.Data,
+                    TotalCount = result.TotalCount
+                }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    error = ex.Message
+                }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        [HttpPost]
+        [UserAuthorize(Authority.SjlBatchImport)]
+        public JsonResult UpdateTransName(Service.Services.SjlBatchImport.Domain.SjlShippingDataUpdateTransNameRequest request)
+        {
+            try
+            {
+                var result = _sjlBatchImportService.UpdateTransName(request);
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                return Json(new ResopnseModel(ex.Message));
+            }
         }
     }
 }
