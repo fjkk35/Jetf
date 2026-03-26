@@ -345,7 +345,7 @@ mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', func
         return dateValue.getFullYear() + '-' + month + '-' + day;
     }
 
-    function destroyPagination($pagination: JQuery<HTMLElement>): void {
+    function destroyPagination($pagination: any): void {
         if ($pagination.data('twbs-pagination')) {
             try {
                 $pagination.twbsPagination('destroy');

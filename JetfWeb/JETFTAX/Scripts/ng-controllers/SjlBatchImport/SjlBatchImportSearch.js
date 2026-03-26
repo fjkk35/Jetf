@@ -1,4 +1,4 @@
-﻿mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', function ($scope, $timeout) {
+mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', function ($scope, $timeout) {
         $scope.searchParams = {
             startDate: null,
             endDate: null,
@@ -71,11 +71,9 @@
                         $scope.dataList = response.Data || [];
                         $scope.totalCount = response.TotalCount || 0;
                         $scope.totalPages = Math.ceil($scope.totalCount / $scope.pageSize);
-
                         if ($scope.paginationRenderPromise) {
                             $timeout.cancel($scope.paginationRenderPromise);
                         }
-
                         $scope.paginationRenderPromise = $timeout(function () {
                             $scope.initPagination();
                             $scope.paginationRenderPromise = null;
@@ -152,12 +150,10 @@
             $scope.currentPage = 1;
             $scope.totalCount = 0;
             $scope.totalPages = 0;
-
             if ($scope.paginationRenderPromise) {
                 $timeout.cancel($scope.paginationRenderPromise);
                 $scope.paginationRenderPromise = null;
             }
-
             destroyPagination($('#pagination-twbs'));
         };
         $scope.showEditTransNameModal = function (item) {
