@@ -20,15 +20,32 @@
 - **THEN** 系統不執行下載
 - **AND** 畫面顯示日期區間錯誤訊息
 
-### Requirement: 系統必須依清關日期與派件公司查詢捷利帳單資料
-系統 MUST 依 request.日期起、request.日期迄與 request.派件公司查詢捷利帳單資料。查詢 MUST 以 DATA_CENTER.dbo.CLEARANCE_INFO.SIGN_OUT_TIME 作為日期範圍條件，且 request.日期迄 MUST 轉換為加 1 天後的小於條件。系統 MUST 排除 DATA_TYPE 為 FTZ 與 TACT 的資料，並以 DATA_CENTER.dbo.SEA_ORDER_ORIGINAL.TRANS_NAME 過濾派件公司，再以 jetf.dbo.SjlShippingData 補齊收件與計價欄位。
+### Requirement: 系統必須依清關日期與有效派件公司查詢捷利帳單資料
+系統 MUST 依 request.日期起、request.日期迄與 request.派件公司查詢捷利帳單資料。查詢 MUST 以 DATA_CENTER.dbo.CLEARANCE_INFO.SIGN_OUT_TIME 作為日期範圍條件，且 request.日期迄 MUST 轉換為加 1 天後的小於條件。系統 MUST 排除 DATA_TYPE 為 FTZ 與 TACT 的資料，並先一次查出大榮與捷通資料，再以有效派件公司篩選，最後以 jetf.dbo.SjlShippingData 補齊收件與計價欄位。
 
 #### Scenario: 依條件查出符合資料
 - **GIVEN** CLEARANCE_INFO、SEA_ORDER_ORIGINAL 與 SjlShippingData 中存在符合條件資料
 - **WHEN** 使用者輸入日期起、日期迄與派件公司後執行下載
 - **THEN** 系統以 SIGN_OUT_TIME 大於等於日期起且小於日期迄加 1 天作為查詢條件
-- **AND** 系統只查出 TRANS_NAME 等於指定派件公司的資料
+- **AND** 系統先查出大榮與捷通資料
+- **AND** 系統以 SjlShippingData.TransName 有值時優先使用該值，否則回退使用 SEA_ORDER_ORIGINAL.OTransName
+- **AND** 系統只保留有效派件公司等於指定派件公司的資料
 - **AND** 系統排除 DATA_TYPE 為 FTZ 與 TACT 的資料
+
+#### Scenario: 有效派件公司使用 SjlShippingData.TransName
+- **GIVEN** 一筆資料的 TransName 為「大榮」且 OTransName 為「捷通」
+- **WHEN** 使用者選擇派件公司為「大榮」
+- **THEN** 系統 MUST 將該筆資料視為「大榮」並匯出
+
+#### Scenario: 有效派件公司回退使用 OTransName
+- **GIVEN** 一筆資料的 TransName 為空白且 OTransName 為「大榮」
+- **WHEN** 使用者選擇派件公司為「大榮」
+- **THEN** 系統 MUST 將該筆資料視為「大榮」並匯出
+
+#### Scenario: 有效派件公司不符指定條件
+- **GIVEN** 一筆資料的 TransName 為「捷通」且 OTransName 為「大榮」
+- **WHEN** 使用者選擇派件公司為「大榮」
+- **THEN** 系統 MUST 不匯出該筆資料
 
 #### Scenario: 查無符合資料
 - **GIVEN** 查詢條件正確
@@ -42,14 +59,32 @@
 #### Scenario: 下載大榮 Excel
 - **GIVEN** 使用者選擇派件公司為大榮
 - **WHEN** 系統產出 Excel
-- **THEN** 欄位順序必須為清關日、運送編號、單據編號、大榮換單號、收件人、代收、其他費用(稅金)、地址、品名、件數、材積、重量、收件人電話、基本運費、超才費、總額
+- **THEN** 欄位順序必須為清關日、運送編號、單據編號、大榮換單號、收件人、其他費用(稅金)、代收、地址、品名、件數、材積、重量、收件人電話、基本運費、超才費、總額
 - **AND** 大榮換單號欄位保持空白
 
 #### Scenario: 下載捷通 Excel
 - **GIVEN** 使用者選擇派件公司為捷通
 - **WHEN** 系統產出 Excel
-- **THEN** 欄位順序必須為資料日期、清關日期、運送編號、單據編號0H4、海運交派日、收件人、代收、稅金、電話、地址、品名、件數、材積、重量（kg）、基本運費、超才費、總額、基本運費、超重費、重量計費、應計價(擇大值)
+- **THEN** 欄位順序必須為資料日期、清關日期、運送編號、單據編號0H4、派送日、收件人、稅金、代收、電話、地址、品名、件數、材積、重量（kg）、基本運費、超才費、總額、基本運費、超重費、重量計費、應計價(擇大值)
 - **AND** 兩個基本運費欄位都必須輸出 55
+- **AND** 資料日期必須取 CreatedTime 並以 yyyy/MM/dd 格式輸出
+- **AND** 派送日必須取 ScanCargoTime，若可解析日期則以 yyyy/MM/dd 格式輸出
+
+### Requirement: 系統必須在 Excel 中提供稅金與彙總頁籤
+系統 MUST 在主表之外，再提供「稅金」與「彙總」兩個頁籤，供營運直接查看稅金明細與每日運費加總。
+
+#### Scenario: 稅金頁籤只顯示有稅金資料
+- **GIVEN** 匯出資料中有多筆 OtherFee 為 0 或大於 0 的資料
+- **WHEN** 系統建立稅金頁籤
+- **THEN** 系統只輸出 OtherFee 大於 0 的資料
+- **AND** 欄位順序必須為運單號、稅金、日期
+
+#### Scenario: 彙總頁籤依日期加總運費
+- **GIVEN** 匯出資料中同一天存在多筆 ChargeAmount
+- **WHEN** 系統建立彙總頁籤
+- **THEN** 系統必須依日期加總 ChargeAmount
+- **AND** 欄位順序必須為日期、運費
+- **AND** 最後一列必須輸出合計
 
 ### Requirement: 系統必須套用超才費與最低收費規則
 系統 MUST 以基本運費 55 計算每筆資料的材積計價，並依材積與地址最低收費規則決定總額。當 Volume 大於 4 時，系統 MUST 以無條件進位計算超過 4 才的數量，每才加收 20 元。系統 MUST 以同一天清關且同地址作為分組基準，若該組所有資料的基本運費加超才費合計低於 300，則 MUST 將分組第一筆總額調整為 300，其餘同組資料總額為 0。

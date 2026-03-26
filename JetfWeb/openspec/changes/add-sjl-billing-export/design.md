@@ -33,7 +33,6 @@
 
 - @StartDate = request.日期起
 - @EndDate = request.日期迄加 1 天，作為小於上限
-- @TRANS_NAME = request.派件公司
 
 ### SQL
 
@@ -46,15 +45,18 @@ with info as (
       and DATA_TYPE not in ('FTZ', 'TACT')
 ),
 Original as (
-    select MAINNUMBER, BL_NO, JETF_SERIAL
+  select MAINNUMBER, BL_NO, JETF_SERIAL, TRANS_NAME as OTransName
     from DATA_CENTER.dbo.SEA_ORDER_ORIGINAL a
-    where TRANS_NAME = @TRANS_NAME
+  where TRANS_NAME in (N'捷通', N'大榮')
 )
 select
     b.SIGN_OUT_TIME,
     MAINNUMBER,
     BL_NO,
     JETF_SERIAL,
+  OTransName,
+  c.TransName,
+  c.CreatedTime,
     c.BagNumber,
     c.Importer,
     c.OtherFee,
@@ -64,10 +66,12 @@ select
     c.Qty,
     c.Volume,
     c.Gw,
-    c.ImporterPhone
+    c.ImporterPhone,
+    e.UploadTime as ScanCargoTime
 from Original a
 join info b on a.MAINNUMBER = b.MAIN_NUMBER and a.BL_NO = b.BAG_NUMBER
 left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial
+  left join jetf.dbo.PdtScanCargoUpload e on a.JETF_SERIAL = e.Data and e.TransNo in (11, 98)
 ```
 
 ### Query Notes
@@ -75,8 +79,12 @@ left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial
 - 查詢範圍以清關日 SIGN_OUT_TIME 為準。
 - 日期迄需轉為隔日零點，避免漏掉日期迄當天資料。
 - 排除 DATA_TYPE 為 FTZ 與 TACT 的資料。
-- 以 SEA_ORDER_ORIGINAL.TRANS_NAME 過濾派件公司。
+- SQL 先一次查出大榮與捷通兩種派件資料。
+- 實際匯出前需先計算有效派件公司：若 SjlShippingData.TransName 有值則使用該值；若為空則回退使用 SEA_ORDER_ORIGINAL.OTransName。
+- 匯出時再以有效派件公司比對 request.派件公司。
 - 以 SjlShippingData 補齊收件人、費用、地址、品名、件數、材積、重量與電話等欄位。
+- CreatedTime 供捷通主表「資料日期」欄位使用。
+- ScanCargoTime 為字串欄位，供捷通主表「派送日」欄位使用；若可解析為日期則統一輸出 yyyy/MM/dd。
 
 ## Calculation Design
 
@@ -118,8 +126,8 @@ left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial
 3. 單據編號 = BL_NO
 4. 大榮換單號 = 空白
 5. 收件人 = Importer
-6. 代收 = Cod
-7. 其他費用(稅金) = OtherFee
+6. 其他費用(稅金) = OtherFee
+7. 代收 = Cod
 8. 地址 = ImporterAddr
 9. 品名 = ItemName
 10. 件數 = Qty
@@ -132,14 +140,14 @@ left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial
 
 ### 捷通欄位
 
-1. 資料日期 = SIGN_OUT_TIME
+1. 資料日期 = CreatedTime，格式 yyyy/MM/dd
 2. 清關日期 = SIGN_OUT_TIME
 3. 運送編號 = JETF_SERIAL
 4. 單據編號0H4 = BL_NO
-5. 海運交派日 = SIGN_OUT_TIME
+5. 派送日 = ScanCargoTime，若可解析日期則格式 yyyy/MM/dd
 6. 收件人 = Importer
-7. 代收 = Cod
-8. 稅金 = OtherFee
+7. 稅金 = OtherFee
+8. 代收 = Cod
 9. 電話 = ImporterPhone
 10. 地址 = ImporterAddr
 11. 品名 = ItemName
@@ -154,6 +162,26 @@ left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial
 20. 重量計費 = 基本運費 + 超重費
 21. 應計價(擇大值) = max(總額, 重量計費)
 
+### 稅金頁籤欄位
+
+1. 運單號 = JETF_SERIAL
+2. 稅金 = OtherFee
+3. 日期 = SIGN_OUT_TIME
+
+補充規則：
+
+- 僅輸出 OtherFee > 0 的資料。
+
+### 彙總頁籤欄位
+
+1. 日期 = SIGN_OUT_TIME
+2. 運費 = ChargeAmount
+
+補充規則：
+
+- 以日期分組加總 ChargeAmount。
+- 最後一列需輸出合計。
+
 ## Backend Design
 
 - Controller
@@ -162,9 +190,9 @@ left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial
   - Download 接收查詢條件並回傳 Excel 檔案。
 - Service
   - 新增 SjlBillingService。
-  - 以 Dapper 執行查詢。
-  - 將查詢結果轉為統一中介模型，再依派件公司映射為對應輸出模型。
-  - 以 NPOI 建立 Excel Workbook。
+  - 以 Dapper 一次查出大榮與捷通資料。
+  - 將查詢結果轉為統一中介模型，先判定有效派件公司，再依 request.派件公司過濾。
+  - 以 NPOI 建立主表、稅金、彙總三個工作表。
 - Domain Model
   - Request Model：開始日期、結束日期、派件公司。
   - Query Row Model：對應 SQL 原始欄位。

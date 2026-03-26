@@ -13,6 +13,16 @@ namespace Service.Services.SjlBilling.Domain
         public DateTime? SignOutTime { get; set; }
 
         /// <summary>
+        /// 捷利資料日期。
+        /// </summary>
+        public DateTime? CreatedTime { get; set; }
+
+        /// <summary>
+        /// 派送日字串。
+        /// </summary>
+        public string ScanCargoTime { get; set; }
+
+        /// <summary>
         /// 運送編號。
         /// </summary>
         public string JetfSerial { get; set; }

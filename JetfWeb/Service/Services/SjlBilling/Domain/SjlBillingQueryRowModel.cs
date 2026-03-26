@@ -28,6 +28,11 @@ namespace Service.Services.SjlBilling.Domain
         public string JetfSerial { get; set; }
 
         /// <summary>
+        /// 原始派件公司。
+        /// </summary>
+        public string OTransName { get; set; }
+
+        /// <summary>
         /// 捷利上傳的單據編號。
         /// </summary>
         public string BagNumber { get; set; }
@@ -36,11 +41,6 @@ namespace Service.Services.SjlBilling.Domain
         /// 收件人。
         /// </summary>
         public string Importer { get; set; }
-
-        /// <summary>
-        /// 其他費用。
-        /// </summary>
-        public decimal? OtherFee { get; set; }
 
         /// <summary>
         /// 代收金額。
@@ -76,5 +76,40 @@ namespace Service.Services.SjlBilling.Domain
         /// 收件人電話。
         /// </summary>
         public string ImporterPhone { get; set; }
+
+        /// <summary>
+        /// 資料日期
+        /// </summary>
+        public DateTime? CreatedTime { get; set; }
+
+        /// <summary>
+        /// 掃貨上車時間
+        /// </summary>
+        public string ScanCargoTime { get; set; }
+
+        /// <summary>
+        /// 捷利資料派件公司。
+        /// </summary>
+        public string TransName { get; set; }
+
+        /// <summary>
+        /// 稅金1
+        /// </summary>
+        public int Tax1 { get; set; }
+
+        /// <summary>
+        /// 稅金2
+        /// </summary>
+        public int Tax2 { get; set; }
+
+        /// <summary>
+        /// 手續費
+        /// </summary>
+        public int Fee { get; set; }
+
+        /// <summary>
+        /// 其他費用(稅金1+稅金2+手續費)
+        /// </summary>
+        public int OtherFee => Tax1 + Tax2 + Fee;
     }
 }

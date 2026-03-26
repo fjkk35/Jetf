@@ -28,15 +28,15 @@ namespace Service.Services.SjlBilling
         {
             // 先做條件驗證與日期邊界處理，再進入資料查詢。
             var validated = ValidateRequest(request);
-            var queryRows = GetQueryRows(validated.Item1, validated.Item2, request.TransName);
+            var queryRows = GetQueryRows(validated.Item1, validated.Item2);
 
-            if (!queryRows.Any())
+            // 先把原始資料轉成可計價的中介模型，再依派件公司輸出對應欄位格式。
+            var exportRows = BuildExportRows(queryRows, request.TransName);
+            if (!exportRows.Any())
             {
                 throw new Exception("查無資料");
             }
 
-            // 先把原始資料轉成可計價的中介模型，再依派件公司輸出對應欄位格式。
-            var exportRows = BuildExportRows(queryRows, request.TransName);
             return CreateWorkbook(exportRows, request.TransName);
         }
 
@@ -89,47 +89,54 @@ namespace Service.Services.SjlBilling
         /// </summary>
         /// <param name="startDate">開始日期。</param>
         /// <param name="endDateExclusive">結束日期隔日。</param>
-        /// <param name="transName">派件公司。</param>
         /// <returns>原始查詢資料。</returns>
-        private List<SjlBillingQueryRowModel> GetQueryRows(DateTime startDate, DateTime endDateExclusive, string transName)
+        private List<SjlBillingQueryRowModel> GetQueryRows(DateTime startDate, DateTime endDateExclusive)
         {
-            const string sql = @"
+            var sql = @"
 with info as (
     select distinct MAIN_NUMBER, BAG_NUMBER, SIGN_OUT_TIME
     from DATA_CENTER.dbo.CLEARANCE_INFO
-    where SIGN_OUT_TIME >= @StartDate
+      where SIGN_OUT_TIME >= @StartDate
       and SIGN_OUT_TIME < @EndDate
       and DATA_TYPE not in ('FTZ', 'TACT')
 ),
 Original as (
-    select MAINNUMBER, BL_NO, JETF_SERIAL
+    select MAINNUMBER, BL_NO, JETF_SERIAL,TRANS_NAME
     from DATA_CENTER.dbo.SEA_ORDER_ORIGINAL
-    where TRANS_NAME = @TRANS_NAME
+    where TRANS_NAME in (N'捷通',N'大榮')  and DESPATCH_NAME in ('CN00060','CN00063')
 )
 select
     b.SIGN_OUT_TIME as SignOutTime,
     a.MAINNUMBER as MainNumber,
     a.BL_NO as BlNo,
     a.JETF_SERIAL as JetfSerial,
+	a.TRANS_NAME as OTransName,
+	c.CreatedTime,
     c.BagNumber,
     c.Importer,
-    c.OtherFee,
     c.Cod,
     c.ImporterAddr,
     c.ItemName,
     c.Qty,
     c.Volume,
     c.Gw,
-    c.ImporterPhone
+    c.ImporterPhone,
+	c.TransName,
+	d.TAX1,
+	d.TAX2,
+	d.FEE,
+	e.UploadTime as ScanCargoTime
 from Original a
 join info b on a.MAINNUMBER = b.MAIN_NUMBER and a.BL_NO = b.BAG_NUMBER
-left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial";
+left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial
+left join [jetf].[dbo].[FEE_MASTER] d on a.JETF_SERIAL=d.DLV_INV and d.Download=1 and d.INCLUDE_TAX ='N'
+left join [jetf].[dbo].[PdtScanCargoUpload] e on a.JETF_SERIAL=e.Data and TransNo in (11,98)
+";
 
             return conn.Query<SjlBillingQueryRowModel>(sql, new
             {
                 StartDate = startDate,
-                EndDate = endDateExclusive,
-                TRANS_NAME = transName
+                EndDate = endDateExclusive
             },commandTimeout:300).ToList();
         }
 
@@ -141,10 +148,14 @@ left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial";
         /// <returns>匯出資料列表。</returns>
         private List<SjlBillingExportRowModel> BuildExportRows(List<SjlBillingQueryRowModel> queryRows, string transName)
         {
+            // SQL 已一次查出大榮與捷通，匯出前再依有效派件公司做最後篩選。
             var exportRows = queryRows
+                .Where(row => GetEffectiveTransName(row) == transName)
                 .Select(row => new SjlBillingExportRowModel
                 {
                     SignOutTime = row.SignOutTime,
+                    CreatedTime = row.CreatedTime,
+                    ScanCargoTime = row.ScanCargoTime,
                     JetfSerial = row.JetfSerial,
                     BlNo = row.BlNo,
                     Importer = row.Importer,
@@ -191,6 +202,19 @@ left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial";
             }
 
             return exportRows;
+        }
+
+        /// <summary>
+        /// 取得實際派件公司；若捷利資料未帶值，則回退使用原始派件公司。
+        /// </summary>
+        private string GetEffectiveTransName(SjlBillingQueryRowModel row)
+        {
+            if (!string.IsNullOrWhiteSpace(row.TransName))
+            {
+                return row.TransName.Trim();
+            }
+
+            return string.IsNullOrWhiteSpace(row.OTransName) ? string.Empty : row.OTransName.Trim();
         }
 
         /// <summary>
@@ -273,25 +297,91 @@ left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial";
         private IWorkbook CreateWorkbook(List<SjlBillingExportRowModel> rows, string transName)
         {
             IWorkbook workbook = new XSSFWorkbook();
-            ISheet sheet = workbook.CreateSheet("捷利帳單");
-
             var defaultStyle = workbook.CreateCellStyle();
 
+            var mainSheet = workbook.CreateSheet("明細");
+            CreateMainSheet(mainSheet, rows, transName, defaultStyle);
+
+            var taxSheet = workbook.CreateSheet("稅金");
+            CreateTaxSheet(taxSheet, rows, defaultStyle);
+
+            var summarySheet = workbook.CreateSheet("彙總");
+            CreateSummarySheet(summarySheet, rows, defaultStyle);
+
+            return workbook;
+        }
+
+        /// <summary>
+        /// 建立主表工作表。
+        /// </summary>
+        private void CreateMainSheet(ISheet sheet, List<SjlBillingExportRowModel> rows, string transName, ICellStyle defaultStyle)
+        {
             IRow headerRow = sheet.CreateRow(0);
             var headers = GetHeaders(transName);
             NpoiCell.CreateHeaderCells(headerRow, headers, defaultStyle);
 
             for (int i = 0; i < rows.Count; i++)
             {
-                // 實際輸出時只在這裡分流大榮與捷通欄位順序。
                 IRow row = sheet.CreateRow(i + 1);
                 WriteRow(row, rows[i], transName, defaultStyle);
             }
 
             sheet.CreateFreezePane(0, 1);
             SetColumnWidths(sheet, transName);
+        }
 
-            return workbook;
+        /// <summary>
+        /// 建立稅金工作表，只顯示稅金大於 0 的資料。
+        /// </summary>
+        private void CreateTaxSheet(ISheet sheet, List<SjlBillingExportRowModel> rows, ICellStyle defaultStyle)
+        {
+            NpoiCell.CreateHeaderCells(sheet.CreateRow(0), new List<string> { "運單號", "稅金", "日期" }, defaultStyle);
+
+            var taxRows = rows.Where(row => (row.OtherFee ?? 0m) > 0m).ToList();
+            for (int i = 0; i < taxRows.Count; i++)
+            {
+                var data = taxRows[i];
+                var row = sheet.CreateRow(i + 1);
+                NpoiCell.CreateCell(row, 0, data.JetfSerial, defaultStyle);
+                NpoiCell.CreateDoubleCell(row, 1, ConvertNullableDecimal(data.OtherFee), defaultStyle);
+                NpoiCell.CreateCell(row, 2, FormatDate(data.SignOutTime, "yyyy/MM/dd"), defaultStyle);
+            }
+
+            sheet.CreateFreezePane(0, 1);
+            SetSheetColumnWidths(sheet, new[] { 18, 12, 14 });
+        }
+
+        /// <summary>
+        /// 建立彙總工作表，依日期加總運費並於最後一列輸出合計。
+        /// </summary>
+        private void CreateSummarySheet(ISheet sheet, List<SjlBillingExportRowModel> rows, ICellStyle defaultStyle)
+        {
+            NpoiCell.CreateHeaderCells(sheet.CreateRow(0), new List<string> { "日期", "運費" }, defaultStyle);
+
+            var summaryRows = rows
+                .GroupBy(row => row.SignOutTime.HasValue ? row.SignOutTime.Value.Date : DateTime.MinValue)
+                .OrderBy(group => group.Key)
+                .Select(group => new
+                {
+                    Date = group.Key,
+                    Amount = group.Sum(row => row.ChargeAmount)
+                })
+                .ToList();
+
+            for (int i = 0; i < summaryRows.Count; i++)
+            {
+                var data = summaryRows[i];
+                var row = sheet.CreateRow(i + 1);
+                NpoiCell.CreateCell(row, 0, data.Date == DateTime.MinValue ? string.Empty : data.Date.ToString("yyyy/MM/dd"), defaultStyle);
+                NpoiCell.CreateDoubleCell(row, 1, Convert.ToDouble(data.Amount), defaultStyle);
+            }
+
+            var totalRow = sheet.CreateRow(summaryRows.Count + 1);
+            NpoiCell.CreateCell(totalRow, 0, "合計", defaultStyle);
+            NpoiCell.CreateDoubleCell(totalRow, 1, Convert.ToDouble(summaryRows.Sum(row => row.Amount)), defaultStyle);
+
+            sheet.CreateFreezePane(0, 1);
+            SetSheetColumnWidths(sheet, new[] { 14, 14 });
         }
 
         /// <summary>
@@ -310,8 +400,8 @@ left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial";
                     "單據編號",
                     "大榮換單號",
                     "收件人",
-                    "代收",
                     "其他費用(稅金)",
+                    "代收",
                     "地址",
                     "品名",
                     "件數",
@@ -330,10 +420,10 @@ left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial";
                 "清關日期",
                 "運送編號",
                 "單據編號0H4",
-                "海運交派日",
+                "派送日",
                 "收件人",
-                "代收",
                 "稅金",
+                "代收",
                 "電話",
                 "地址",
                 "品名",
@@ -357,20 +447,18 @@ left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial";
         /// <param name="data">匯出資料。</param>
         /// <param name="transName">派件公司。</param>
         /// <param name="defaultStyle">通用樣式。</param>
-        /// <param name="intStyle">整數樣式。</param>
-        /// <param name="decimalStyle">小數樣式。</param>
         private void WriteRow(IRow row, SjlBillingExportRowModel data, string transName, ICellStyle defaultStyle)
         {
             if (transName == "大榮")
             {
                 // 大榮只輸出材積計價結果，大榮換單號依規格保留空白。
-                NpoiCell.CreateCell(row, 0, data.SignOutTime.HasValue ? data.SignOutTime.Value.ToString("yyyy-MM-dd") : string.Empty, defaultStyle);
+                NpoiCell.CreateCell(row, 0, FormatDate(data.SignOutTime, "yyyy-MM-dd"), defaultStyle);
                 NpoiCell.CreateCell(row, 1, data.JetfSerial, defaultStyle);
                 NpoiCell.CreateCell(row, 2, data.BlNo, defaultStyle);
                 NpoiCell.CreateCell(row, 3, string.Empty, defaultStyle);
                 NpoiCell.CreateCell(row, 4, data.Importer, defaultStyle);
-                NpoiCell.CreateDoubleCell(row, 5, ConvertNullableDecimal(data.Cod), defaultStyle);
-                NpoiCell.CreateDoubleCell(row, 6, ConvertNullableDecimal(data.OtherFee), defaultStyle);
+                NpoiCell.CreateDoubleCell(row, 5, ConvertNullableDecimal(data.OtherFee), defaultStyle);
+                NpoiCell.CreateDoubleCell(row, 6, ConvertNullableDecimal(data.Cod), defaultStyle);
                 NpoiCell.CreateCell(row, 7, data.ImporterAddr, defaultStyle);
                 NpoiCell.CreateCell(row, 8, data.ItemName, defaultStyle);
                 NpoiCell.CreateIntCell(row, 9, data.Qty, defaultStyle);
@@ -384,14 +472,14 @@ left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial";
             }
 
             // 捷通除了材積計價欄位外，還需補重量計費與擇大值欄位。
-            NpoiCell.CreateCell(row, 0, data.SignOutTime.HasValue ? data.SignOutTime.Value.ToString("yyyy-MM-dd") : string.Empty, defaultStyle);
-            NpoiCell.CreateCell(row, 1, data.SignOutTime.HasValue ? data.SignOutTime.Value.ToString("yyyy-MM-dd") : string.Empty, defaultStyle);
+            NpoiCell.CreateCell(row, 0, FormatDate(data.CreatedTime, "yyyy/MM/dd"), defaultStyle);
+            NpoiCell.CreateCell(row, 1, FormatDate(data.SignOutTime, "yyyy-MM-dd"), defaultStyle);
             NpoiCell.CreateCell(row, 2, data.JetfSerial, defaultStyle);
             NpoiCell.CreateCell(row, 3, data.BlNo, defaultStyle);
-            NpoiCell.CreateCell(row, 4, data.SignOutTime.HasValue ? data.SignOutTime.Value.ToString("yyyy-MM-dd") : string.Empty, defaultStyle);
+            NpoiCell.CreateCell(row, 4, FormatDateString(data.ScanCargoTime), defaultStyle);
             NpoiCell.CreateCell(row, 5, data.Importer, defaultStyle);
-            NpoiCell.CreateDoubleCell(row, 6, ConvertNullableDecimal(data.Cod), defaultStyle);
-            NpoiCell.CreateDoubleCell(row, 7, ConvertNullableDecimal(data.OtherFee), defaultStyle);
+            NpoiCell.CreateDoubleCell(row, 6, ConvertNullableDecimal(data.OtherFee), defaultStyle);
+            NpoiCell.CreateDoubleCell(row, 7, ConvertNullableDecimal(data.Cod), defaultStyle);
             NpoiCell.CreateCell(row, 8, data.ImporterPhone, defaultStyle);
             NpoiCell.CreateCell(row, 9, data.ImporterAddr, defaultStyle);
             NpoiCell.CreateCell(row, 10, data.ItemName, defaultStyle);
@@ -418,10 +506,41 @@ left join jetf.dbo.SjlShippingData c on a.JETF_SERIAL = c.JetfSerial";
                 ? new[] { 14, 18, 18, 16, 16, 10, 16, 32, 22, 10, 12, 12, 18, 12, 12, 12 }
                 : new[] { 14, 14, 18, 18, 14, 16, 10, 12, 16, 32, 22, 10, 12, 12, 12, 12, 12, 12, 12, 12, 14 };
 
+            SetSheetColumnWidths(sheet, widths);
+        }
+
+        /// <summary>
+        /// 統一設定工作表欄寬。
+        /// </summary>
+        private void SetSheetColumnWidths(ISheet sheet, int[] widths)
+        {
+
             for (int i = 0; i < widths.Length; i++)
             {
                 sheet.SetColumnWidth(i, widths[i] * 256);
             }
+        }
+
+        /// <summary>
+        /// 格式化日期欄位。
+        /// </summary>
+        private string FormatDate(DateTime? value, string format)
+        {
+            return value.HasValue ? value.Value.ToString(format) : string.Empty;
+        }
+
+        /// <summary>
+        /// 格式化字串日期；若可解析則轉為 yyyy/MM/dd，否則保留原值。
+        /// </summary>
+        private string FormatDateString(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            DateTime dateValue;
+            return DateTime.TryParse(value, out dateValue) ? dateValue.ToString("yyyy/MM/dd") : value.Trim();
         }
 
         /// <summary>
