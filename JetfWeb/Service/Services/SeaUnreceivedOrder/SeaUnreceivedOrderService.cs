@@ -1123,19 +1123,21 @@ namespace Service.Services.SeaUnreceivedOrder
 
             var result = conn.Query<SeaUnreceivedOrderModel>(sql).ToList();
 
-            //僅錯單B6F比對預委任，代碼為00才將資料顯示至可傳輸明細
-            //有人工上傳異動記錄才顯示至可傳輸明細
-            //有上傳異動資料並且正確姓名為空白資料不要出現
+            //僅錯單B6F比對預委任，代碼為00才將資料顯示至可傳輸明細，並且不能被上傳異動資料
+            //正確姓名有值才顯示至可傳輸明細
             result = result
                 .Where(r =>
                 {
+                    //邏輯2 B6F以外的錯單，只要正確姓名有值就顯示
+                    var isCorrectName = !string.IsNullOrWhiteSpace(r.CorrectImporterName) &&
+                    (r.LastGb353RejReasonCode.Count > 1 || !r.LastGb353RejReasonCode.Contains("B6F"));
+
                     var isUpload = !string.IsNullOrEmpty(r.UploadOpe);
-                    var isCorrectName = !string.IsNullOrWhiteSpace(r.CorrectImporterName);
                     var isB6FSingle = r.Reply_Code == "00"
                                       && r.LastGb353RejReasonCode.Count == 1
                                       && r.LastGb353RejReasonCode.Contains("B6F");
 
-                    return (isUpload && isCorrectName) || (!isUpload && isB6FSingle);
+                    return isCorrectName || (!isUpload && isB6FSingle);
                 })
                 .ToList();
 
