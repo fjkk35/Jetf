@@ -76,9 +76,9 @@ namespace Service.Services.SjlBilling
                 throw new Exception("日期起不可大於日期迄");
             }
 
-            if (request.TransName != "大榮" && request.TransName != "捷通")
+            if (request.TransName != "大榮" && request.TransName != "捷通" && request.TransName != "捷穩通")
             {
-                throw new Exception("派件公司僅支援大榮或捷通");
+                throw new Exception("派件公司僅支援大榮、捷通或捷穩通");
             }
 
             return Tuple.Create(startDate.Date, endDate.Date.AddDays(1));
@@ -103,7 +103,7 @@ with info as (
 Original as (
     select MAINNUMBER, BL_NO, JETF_SERIAL,TRANS_NAME
     from DATA_CENTER.dbo.SEA_ORDER_ORIGINAL
-    where TRANS_NAME in (N'捷通',N'大榮')  and DESPATCH_NAME in ('CN00060','CN00063')
+    where TRANS_NAME in (N'捷通',N'捷穩通',N'大榮')  and DESPATCH_NAME in ('CN00060','CN00063')
 )
 select
     b.SIGN_OUT_TIME as SignOutTime,
@@ -148,9 +148,9 @@ left join [jetf].[dbo].[PdtScanCargoUpload] e on a.JETF_SERIAL=e.Data and TransN
         /// <returns>匯出資料列表。</returns>
         private List<SjlBillingExportRowModel> BuildExportRows(List<SjlBillingQueryRowModel> queryRows, string transName)
         {
-            // SQL 已一次查出大榮與捷通，匯出前再依有效派件公司做最後篩選。
+            // SQL 已一次查出大榮、捷通與捷穩通，匯出前再依派件公司規則做最後篩選。
             var exportRows = queryRows
-                .Where(row => GetEffectiveTransName(row) == transName)
+                .Where(row => ShouldIncludeTransName(GetEffectiveTransName(row), transName))
                 .Select(row => new SjlBillingExportRowModel
                 {
                     SignOutTime = row.SignOutTime,
@@ -196,7 +196,7 @@ left join [jetf].[dbo].[PdtScanCargoUpload] e on a.JETF_SERIAL=e.Data and TransN
             foreach (var row in exportRows)
             {
                 // 若資料因最低收費規則被分攤為 0，捷通的應計價也必須維持 0，不能再回頭取重量計費 55。
-                row.ChargeAmount = transName == "捷通"
+                row.ChargeAmount = IsJtFamilyTransName(transName)
                     ? (row.TotalAmount == 0m ? 0m : Math.Max(row.TotalAmount, row.WeightChargeAmount))
                     : row.TotalAmount;
             }
@@ -215,6 +215,35 @@ left join [jetf].[dbo].[PdtScanCargoUpload] e on a.JETF_SERIAL=e.Data and TransN
             }
 
             return string.IsNullOrWhiteSpace(row.OTransName) ? string.Empty : row.OTransName.Trim();
+        }
+
+        /// <summary>
+        /// 判斷查詢條件是否應包含該派件公司資料。
+        /// </summary>
+        private bool ShouldIncludeTransName(string effectiveTransName, string requestTransName)
+        {
+            if (string.IsNullOrWhiteSpace(effectiveTransName) || string.IsNullOrWhiteSpace(requestTransName))
+            {
+                return false;
+            }
+
+            var normalizedTransName = effectiveTransName.Trim();
+            var normalizedRequest = requestTransName.Trim();
+
+            if (normalizedRequest == "捷通")
+            {
+                return normalizedTransName == "捷通" || normalizedTransName == "捷穩通";
+            }
+
+            return normalizedTransName == normalizedRequest;
+        }
+
+        /// <summary>
+        /// 判斷是否為捷通系派件公司。
+        /// </summary>
+        private bool IsJtFamilyTransName(string transName)
+        {
+            return transName == "捷通" || transName == "捷穩通";
         }
 
         /// <summary>

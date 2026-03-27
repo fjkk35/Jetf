@@ -145,9 +145,9 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
             }
 
             var newTransName = NullIfEmpty(request.TransName);
-            if (newTransName != "大榮" && newTransName != "捷通")
+            if (newTransName != "大榮" && newTransName != "捷通" && newTransName != "捷穩通")
             {
-                return new ResopnseModel("派件公司僅能為大榮或捷通");
+                return new ResopnseModel("派件公司僅能為大榮、捷通或捷穩通");
             }
 
             var userId = GetUserId();
