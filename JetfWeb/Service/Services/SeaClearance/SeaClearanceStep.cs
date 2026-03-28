@@ -507,8 +507,8 @@ namespace Service.Services.SeaClearance
             if (string.IsNullOrEmpty(detail.Post_Entry))
                 missingFields.Add("報關方式");
 
-            if (string.IsNullOrEmpty(detail.Jetf_Serial))
-                missingFields.Add("派件");
+            //if (string.IsNullOrEmpty(detail.Jetf_Serial))
+            //    missingFields.Add("派件");
 
             if (detail.Piece == null)
                 missingFields.Add("件數");
