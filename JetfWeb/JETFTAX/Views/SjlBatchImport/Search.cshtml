@@ -95,11 +95,17 @@
 
         <div class="loader loader-bar" ng-class="{'is-active': loading}" data-rounded data-text="資料查詢中"></div>
 
-        <div class="row" style="margin: 15px 0;" ng-if="isSearched">
+        <div class="row" style="margin: 15px 0;" ng-show="isSearched">
             <div class="col-lg-6 pagination-summary">{{ getRecordsInfo() }}</div>
             <div class="col-lg-6 text-right">
+                <span style="margin-right: 10px;">已勾選 {{ getSelectedCount() }} 筆</span>
+                <button type="button" class="btn btn-primary" ng-click="showBatchEditTransNameModal()" ng-disabled="loading || dataList.length === 0">
+                    批次修改派件公司
+                </button>
                 <label>每頁筆數</label>
-                <select class="form-control" style="display:inline-block; width:100px;" ng-model="pageSize" ng-change="changePageSize()" ng-options="size for size in pageSizeOptions"></select>
+                <select class="form-control" style="display:inline-block; width:100px;" ng-model="pageSize" ng-change="changePageSize()">
+                    <option ng-repeat="size in pageSizeOptions" ng-value="size">{{ size }}</option>
+                </select>
             </div>
         </div>
 
@@ -107,6 +113,9 @@
             <table class="table table-bordered table-hover">
                 <thead>
                     <tr>
+                        <th style="width: 40px; cursor: pointer;" class="text-center" ng-click="toggleSelectAllCurrentPage()">
+                            <input type="checkbox" ng-checked="selectAllCurrentPage" ng-click="$event.stopPropagation(); toggleSelectAllCurrentPage()" ng-disabled="dataList.length === 0" />
+                        </th>
                         <th>運送編號</th>
                         <th>單據編號</th>
                         <th>編號</th>
@@ -127,9 +136,12 @@
                 </thead>
                 <tbody>
                     <tr ng-if="dataList.length === 0">
-                        <td colspan="16" class="text-center">查無資料</td>
+                        <td colspan="17" class="text-center">查無資料</td>
                     </tr>
                     <tr ng-repeat="item in dataList">
+                        <td class="text-center" style="cursor: pointer;" ng-click="toggleItemSelection(item)">
+                            <input type="checkbox" ng-checked="item.IsSelected" ng-click="$event.stopPropagation(); toggleItemSelection(item)" />
+                        </td>
                         <td>{{ item.JetfSerial }}</td>
                         <td>{{ item.BagNumber }}</td>
                         <td>{{ item.Seq }}</td>
@@ -160,12 +172,16 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title">修改派件公司</h4>
+                    <h4 class="modal-title">{{ editingItems.length > 1 ? '批次修改派件公司' : '修改派件公司' }}</h4>
                 </div>
                 <div class="modal-body">
-                    <div class="form-group">
+                    <div class="form-group" ng-if="editingItems.length <= 1">
                         <label>運送編號</label>
                         <input type="text" class="form-control" ng-model="editingItem.JetfSerial" readonly />
+                    </div>
+                    <div class="form-group" ng-if="editingItems.length > 1">
+                        <label>已選筆數</label>
+                        <input type="text" class="form-control" value="{{ editingItems.length }} 筆" readonly />
                     </div>
                     <div class="form-group">
                         <label>派件公司</label>

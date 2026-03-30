@@ -21,6 +21,7 @@ interface SjlShippingDataSearchItem {
     ImporterPhone: string;
     TransName: string;
     CreatedTime: string | null;
+    IsSelected?: boolean;
 }
 
 interface SjlBatchImportSearchResponse {
@@ -33,8 +34,11 @@ interface SjlBatchImportUpdateTransNameResponse {
     status?: string;
     msg?: string;
     ReturnObject?: {
-        Id: number;
+        Id?: number;
+        Ids?: number[];
         TransName: string;
+        UpdatedCount?: number;
+        SkippedCount?: number;
     };
 }
 
@@ -45,9 +49,11 @@ interface SjlBatchImportSearchScope extends ng.IScope {
     loading: boolean;
     savingTransName: boolean;
     editingItem: SjlShippingDataSearchItem | null;
+    editingItems: SjlShippingDataSearchItem[];
     editModel: {
         transName: string;
     };
+    selectAllCurrentPage: boolean;
     currentPage: number;
     pageSize: number;
     totalCount: number;
@@ -64,7 +70,13 @@ interface SjlBatchImportSearchScope extends ng.IScope {
     getRecordsInfo: () => string;
     changePageSize: () => void;
     clearSearch: () => void;
+    getSelectedItems: () => SjlShippingDataSearchItem[];
+    getSelectedCount: () => number;
+    toggleSelectAllCurrentPage: () => void;
+    toggleItemSelection: (item: SjlShippingDataSearchItem) => void;
+    syncSelectAllCurrentPage: () => void;
     showEditTransNameModal: (item: SjlShippingDataSearchItem) => void;
+    showBatchEditTransNameModal: () => void;
     saveTransName: () => void;
     paginationRenderPromise?: ng.IPromise<void> | null;
 }
@@ -81,9 +93,11 @@ mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', func
     $scope.loading = false;
     $scope.savingTransName = false;
     $scope.editingItem = null;
+    $scope.editingItems = [];
     $scope.editModel = {
         transName: ''
     };
+    $scope.selectAllCurrentPage = false;
 
     $scope.currentPage = 1;
     $scope.pageSize = 10;
@@ -126,6 +140,7 @@ mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', func
     };
 
     $scope.loadData = function (): void {
+        $scope.pageSize = normalizePageSize($scope.pageSize);
         $scope.loading = true;
 
         $.ajax({
@@ -151,6 +166,10 @@ mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', func
                     }
 
                     $scope.dataList = response.Data || [];
+                    for (var i = 0; i < $scope.dataList.length; i++) {
+                        $scope.dataList[i].IsSelected = false;
+                    }
+                    $scope.selectAllCurrentPage = false;
                     $scope.totalCount = response.TotalCount || 0;
                     $scope.totalPages = Math.ceil($scope.totalCount / $scope.pageSize);
 
@@ -224,6 +243,7 @@ mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', func
     };
 
     $scope.changePageSize = function (): void {
+        $scope.pageSize = normalizePageSize($scope.pageSize);
         $scope.currentPage = 1;
         if ($scope.isSearched) {
             $scope.loadData();
@@ -238,6 +258,10 @@ mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', func
         };
         $scope.dataList = [];
         $scope.isSearched = false;
+        $scope.selectAllCurrentPage = false;
+        $scope.editingItem = null;
+        $scope.editingItems = [];
+        $scope.editModel.transName = '';
         $scope.currentPage = 1;
         $scope.totalCount = 0;
         $scope.totalPages = 0;
@@ -250,15 +274,84 @@ mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', func
         destroyPagination($('#pagination-twbs'));
     };
 
+    $scope.getSelectedItems = function (): SjlShippingDataSearchItem[] {
+        var selectedItems: SjlShippingDataSearchItem[] = [];
+
+        for (var i = 0; i < $scope.dataList.length; i++) {
+            if ($scope.dataList[i].IsSelected) {
+                selectedItems.push($scope.dataList[i]);
+            }
+        }
+
+        return selectedItems;
+    };
+
+    $scope.getSelectedCount = function (): number {
+        return $scope.getSelectedItems().length;
+    };
+
+    $scope.toggleSelectAllCurrentPage = function (): void {
+        $scope.selectAllCurrentPage = !$scope.selectAllCurrentPage;
+
+        for (var i = 0; i < $scope.dataList.length; i++) {
+            $scope.dataList[i].IsSelected = $scope.selectAllCurrentPage;
+        }
+    };
+
+    $scope.toggleItemSelection = function (item: SjlShippingDataSearchItem): void {
+        item.IsSelected = !item.IsSelected;
+        $scope.syncSelectAllCurrentPage();
+    };
+
+    $scope.syncSelectAllCurrentPage = function (): void {
+        if ($scope.dataList.length === 0) {
+            $scope.selectAllCurrentPage = false;
+            return;
+        }
+
+        for (var i = 0; i < $scope.dataList.length; i++) {
+            if (!$scope.dataList[i].IsSelected) {
+                $scope.selectAllCurrentPage = false;
+                return;
+            }
+        }
+
+        $scope.selectAllCurrentPage = true;
+    };
+
     $scope.showEditTransNameModal = function (item: SjlShippingDataSearchItem): void {
         $scope.editingItem = angular.copy(item);
+        $scope.editingItems = [angular.copy(item)];
         $scope.editModel.transName = item.TransName || '';
         $('#transNameModal').modal('show');
     };
 
-    $scope.saveTransName = function (): void {
-        if (!$scope.editingItem) {
+    $scope.showBatchEditTransNameModal = function (): void {
+        var selectedItems = $scope.getSelectedItems();
+
+        if (selectedItems.length === 0) {
+            swal({
+                title: '提示',
+                text: '請至少勾選一筆資料',
+                icon: 'warning'
+            });
             return;
+        }
+
+        $scope.editingItems = angular.copy(selectedItems);
+        $scope.editingItem = selectedItems.length === 1 ? angular.copy(selectedItems[0]) : null;
+        $scope.editModel.transName = '';
+        $('#transNameModal').modal('show');
+    };
+
+    $scope.saveTransName = function (): void {
+        if ($scope.editingItems.length === 0) {
+            return;
+        }
+
+        var targetIds: number[] = [];
+        for (var i = 0; i < $scope.editingItems.length; i++) {
+            targetIds.push($scope.editingItems[i].Id);
         }
 
         if (!$scope.editModel.transName) {
@@ -270,7 +363,15 @@ mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', func
             return;
         }
 
-        if (($scope.editingItem.TransName || '') === $scope.editModel.transName) {
+        var hasChanges = false;
+        for (var j = 0; j < $scope.editingItems.length; j++) {
+            if (($scope.editingItems[j].TransName || '') !== $scope.editModel.transName) {
+                hasChanges = true;
+                break;
+            }
+        }
+
+        if (!hasChanges) {
             swal({
                 title: '提示',
                 text: '派件公司未異動，不需修改',
@@ -285,25 +386,32 @@ mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', func
             url: Router.action('SjlBatchImport', 'UpdateTransName'),
             type: 'POST',
             dataType: 'json',
+            traditional: true,
             data: {
-                SjlShippingDataId: $scope.editingItem.Id,
+                SjlShippingDataId: targetIds.length === 1 ? targetIds[0] : 0,
+                SjlShippingDataIds: targetIds,
                 TransName: $scope.editModel.transName
             },
             success: function (response: SjlBatchImportUpdateTransNameResponse) {
                 $scope.$apply(function (): void {
                     if (response.status === 'success') {
-                        var item: SjlShippingDataSearchItem | null = null;
+                        var updatedIds = (response.ReturnObject && response.ReturnObject.Ids) || [];
+
+                        if (updatedIds.length === 0 && response.ReturnObject && response.ReturnObject.Id) {
+                            updatedIds.push(response.ReturnObject.Id);
+                        }
+
                         for (var i = 0; i < $scope.dataList.length; i++) {
-                            if ($scope.dataList[i].Id === $scope.editingItem!.Id) {
-                                item = $scope.dataList[i];
-                                break;
+                            if (updatedIds.indexOf($scope.dataList[i].Id) >= 0 && response.ReturnObject) {
+                                $scope.dataList[i].TransName = response.ReturnObject.TransName;
                             }
+                            $scope.dataList[i].IsSelected = false;
                         }
 
-                        if (item && response.ReturnObject) {
-                            item.TransName = response.ReturnObject.TransName;
-                        }
-
+                        $scope.selectAllCurrentPage = false;
+                        $scope.editingItem = null;
+                        $scope.editingItems = [];
+                        $scope.editModel.transName = '';
                         $('#transNameModal').modal('hide');
                         swal({
                             title: '成功',
@@ -343,6 +451,16 @@ mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', func
         var month = ('0' + (dateValue.getMonth() + 1)).slice(-2);
         var day = ('0' + dateValue.getDate()).slice(-2);
         return dateValue.getFullYear() + '-' + month + '-' + day;
+    }
+
+    function normalizePageSize(value: number): number {
+        var pageSize = parseInt(String(value), 10);
+
+        if (isNaN(pageSize) || pageSize <= 0) {
+            return 10;
+        }
+
+        return pageSize;
     }
 
     function destroyPagination($pagination: any): void {

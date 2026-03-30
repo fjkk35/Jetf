@@ -1,4 +1,6 @@
-﻿namespace Service.Services.SjlBatchImport.Domain
+﻿using System.Collections.Generic;
+
+namespace Service.Services.SjlBatchImport.Domain
 {
     /// <summary>
     /// 捷利托運資料派件公司修改條件。
@@ -6,6 +8,8 @@
     public class SjlShippingDataUpdateTransNameRequest
     {
         public int SjlShippingDataId { get; set; }
+
+        public List<int> SjlShippingDataIds { get; set; }
 
         public string TransName { get; set; }
     }

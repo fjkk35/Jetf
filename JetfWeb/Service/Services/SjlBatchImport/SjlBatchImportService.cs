@@ -139,9 +139,26 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
         /// </summary>
         public ResopnseModel UpdateTransName(SjlShippingDataUpdateTransNameRequest request)
         {
-            if (request == null || request.SjlShippingDataId <= 0)
+            if (request == null)
             {
                 return new ResopnseModel("資料不存在");
+            }
+
+            var targetIds = new List<int>();
+            if (request.SjlShippingDataIds != null && request.SjlShippingDataIds.Any())
+            {
+                targetIds.AddRange(request.SjlShippingDataIds);
+            }
+
+            if (request.SjlShippingDataId > 0)
+            {
+                targetIds.Add(request.SjlShippingDataId);
+            }
+
+            targetIds = targetIds.Where(x => x > 0).Distinct().ToList();
+            if (!targetIds.Any())
+            {
+                return new ResopnseModel("請至少選擇一筆資料");
             }
 
             var newTransName = NullIfEmpty(request.TransName);
@@ -160,35 +177,46 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
                 {
                     try
                     {
-                        var currentData = connection.QueryFirstOrDefault<SjlShippingDataSearchModel>(@"
+                        var currentData = connection.Query<SjlShippingDataSearchModel>(@"
 SELECT [Id], [TransName]
 FROM [jetf].[dbo].[SjlShippingData]
-WHERE [Id] = @Id", new
+WHERE [Id] IN @Ids", new
                         {
-                            Id = request.SjlShippingDataId
-                        }, transaction);
+                            Ids = targetIds
+                        }, transaction).ToList();
 
-                        if (currentData == null)
+                        if (!currentData.Any())
                         {
                             transaction.Rollback();
                             return new ResopnseModel("查無資料");
                         }
 
-                        var oldTransName = NullIfEmpty(currentData.TransName);
-                        if (string.Equals(oldTransName, newTransName, StringComparison.Ordinal))
+                        if (currentData.Count != targetIds.Count)
+                        {
+                            transaction.Rollback();
+                            return new ResopnseModel("部分資料不存在，請重新查詢後再試");
+                        }
+
+                        var pendingData = currentData
+                            .Where(x => !string.Equals(NullIfEmpty(x.TransName), newTransName, StringComparison.Ordinal))
+                            .ToList();
+
+                        if (!pendingData.Any())
                         {
                             transaction.Rollback();
                             return new ResopnseModel("派件公司未異動，不需修改");
                         }
+
+                        var pendingIds = pendingData.Select(x => x.Id).ToList();
 
                         connection.Execute(@"
 UPDATE [jetf].[dbo].[SjlShippingData]
 SET [TransName] = @TransName,
     [UpdatedOpe] = @UpdatedOpe,
     [UpdatedTime] = GETDATE()
-WHERE [Id] = @Id", new
+WHERE [Id] IN @Ids", new
                         {
-                            Id = request.SjlShippingDataId,
+                            Ids = pendingIds,
                             TransName = newTransName,
                             UpdatedOpe = userId
                         }, transaction);
@@ -197,24 +225,34 @@ WHERE [Id] = @Id", new
 INSERT INTO [jetf].[dbo].[SjlShippingDataTransNameHistory]
 ([SjlShippingDataId], [OldTransName], [NewTransName], [CreatedOpe], [CreatedTime])
 VALUES
-(@SjlShippingDataId, @OldTransName, @NewTransName, @CreatedOpe, GETDATE())", new
+(@SjlShippingDataId, @OldTransName, @NewTransName, @CreatedOpe, GETDATE())", pendingData.Select(x => new
                         {
-                            SjlShippingDataId = request.SjlShippingDataId,
-                            OldTransName = oldTransName,
+                            SjlShippingDataId = x.Id,
+                            OldTransName = NullIfEmpty(x.TransName),
                             NewTransName = newTransName,
                             CreatedOpe = userId
-                        }, transaction);
+                        }).ToList(), transaction);
 
                         transaction.Commit();
+
+                        var skippedCount = targetIds.Count - pendingIds.Count;
+                        var message = pendingIds.Count == 1 && skippedCount == 0
+                            ? "修改成功"
+                            : skippedCount > 0
+                                ? $"成功修改 {pendingIds.Count} 筆，略過 {skippedCount} 筆未異動資料"
+                                : $"成功修改 {pendingIds.Count} 筆資料";
 
                         return new ResopnseModel
                         {
                             status = Status.success,
-                            msg = "修改成功",
+                            msg = message,
                             ReturnObject = new
                             {
-                                Id = request.SjlShippingDataId,
-                                TransName = newTransName
+                                Id = pendingIds.Count == 1 ? pendingIds[0] : 0,
+                                Ids = pendingIds,
+                                TransName = newTransName,
+                                UpdatedCount = pendingIds.Count,
+                                SkippedCount = skippedCount
                             }
                         };
                     }
