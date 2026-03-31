@@ -190,16 +190,8 @@ left join [jetf].[dbo].[PdtScanCargoUpload] e on a.JETF_SERIAL=e.Data and TransN
                 row.WeightChargeAmount = row.BaseFee + row.OverweightFee;
             }
 
-            // 同日同地址若未滿 300，僅第一筆掛 300，其餘同組資料掛 0。
-            ApplyMinimumCharge(exportRows);
-
-            foreach (var row in exportRows)
-            {
-                // 若資料因最低收費規則被分攤為 0，捷通的應計價也必須維持 0，不能再回頭取重量計費 55。
-                row.ChargeAmount = IsJtFamilyTransName(transName)
-                    ? (row.TotalAmount == 0m ? 0m : Math.Max(row.TotalAmount, row.WeightChargeAmount))
-                    : row.TotalAmount;
-            }
+            // 同日同地址同時套用最低收費，捷通系則於同一輪分組中比較整組重量計費與總額。
+            ApplyMinimumCharge(exportRows, IsJtFamilyTransName(transName));
 
             return exportRows;
         }
@@ -250,14 +242,11 @@ left join [jetf].[dbo].[PdtScanCargoUpload] e on a.JETF_SERIAL=e.Data and TransN
         /// 套用同日同地址最低收費。
         /// </summary>
         /// <param name="rows">匯出資料。</param>
-        private void ApplyMinimumCharge(List<SjlBillingExportRowModel> rows)
+        /// <param name="useWeightChargeComparison">是否同時套用捷通系重量計費擇大值。</param>
+        private void ApplyMinimumCharge(List<SjlBillingExportRowModel> rows, bool useWeightChargeComparison)
         {
-            // 以同日且同地址分組，對應規格中的最低收費 300 元判斷單位。
-            var groupedRows = rows.GroupBy(row => new
-            {
-                SignOutDate = row.SignOutTime.HasValue ? row.SignOutTime.Value.Date : DateTime.MinValue,
-                ImporterAddr = (row.ImporterAddr ?? string.Empty).Trim()
-            });
+            // 最低收費與捷通系應計價都以「同日同地址」為同一個計價單位。
+            var groupedRows = GroupRowsByAddressCharge(rows);
 
             foreach (var group in groupedRows)
             {
@@ -266,7 +255,7 @@ left join [jetf].[dbo].[PdtScanCargoUpload] e on a.JETF_SERIAL=e.Data and TransN
 
                 if (subtotal < MinimumAddressCharge && groupRows.Count > 0)
                 {
-                    // 第一筆承接整組最低收費，其餘資料列維持存在但金額歸 0。
+                    // 材積計價整組未滿 300 時，第一筆承接整組最低收費，其餘資料列維持存在但金額歸 0。
                     groupRows[0].TotalAmount = MinimumAddressCharge;
 
                     for (int i = 1; i < groupRows.Count; i++)
@@ -282,7 +271,30 @@ left join [jetf].[dbo].[PdtScanCargoUpload] e on a.JETF_SERIAL=e.Data and TransN
                         row.TotalAmount = row.SubtotalAmount;
                     }
                 }
+
+                // 捷通 / 捷穩通要以整組比較「最低收費後總額」與「重量計費總額」，
+                // 若整組重量計費較高，則該組每筆 ChargeAmount 都改採各自的重量計費。
+                var useWeightChargeAmount = useWeightChargeComparison
+                    && groupRows.Sum(row => row.WeightChargeAmount) > groupRows.Sum(row => row.TotalAmount);
+
+                foreach (var row in groupRows)
+                {
+                    row.ChargeAmount = useWeightChargeAmount ? row.WeightChargeAmount : row.TotalAmount;
+                }
             }
+        }
+
+        /// <summary>
+        /// 依同日同地址分組。
+        /// </summary>
+        /// <param name="rows">匯出資料。</param>
+        /// <returns>分組資料。</returns>
+        private IEnumerable<IGrouping<string, SjlBillingExportRowModel>> GroupRowsByAddressCharge(List<SjlBillingExportRowModel> rows)
+        {
+            return rows.GroupBy(row =>
+                (row.SignOutTime.HasValue ? row.SignOutTime.Value.Date : DateTime.MinValue).ToString("yyyyMMdd")
+                + "|"
+                + (row.ImporterAddr ?? string.Empty).Trim());
         }
 
         /// <summary>
