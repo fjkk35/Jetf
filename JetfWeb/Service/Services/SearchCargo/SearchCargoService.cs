@@ -59,6 +59,13 @@ namespace Service.Services.SearchCargo
                         list = GetMerge_Originallist_Bl_No(bagNo);
                     }
                     break;
+                case "cainiaoFieldX":
+                    var deliveryNoList = GetOriginallist_DeliverynoListByFieldX(searchValue);
+                    if (deliveryNoList.Count > 0)
+                    {
+                        list = GetMerge_Originallist_DeliverynoList(deliveryNoList);
+                    }
+                    break;
                 case "orderNo":
                     string deliveryno = GetOriginallist_Deliveryno(searchValue);
                     if (!string.IsNullOrEmpty(deliveryno))
@@ -589,6 +596,17 @@ select a.Id,ORIGINAL,ETA,GW,PIECE,F_DataDate,I_DATA_TYPE,I_CLEARANCE_TYPE,DESPAT
         }
 
         /// <summary>
+        /// 取得貨況-多筆物流貨號
+        /// </summary>
+        private List<MergeOriginalListModel> GetMerge_Originallist_DeliverynoList(IEnumerable<string> deliveryNoList)
+        {
+            return deliveryNoList
+                .Where(deliveryNo => !string.IsNullOrWhiteSpace(deliveryNo))
+                .SelectMany(deliveryNo => GetMerge_Originallist_Deliveryno(deliveryNo.Trim()))
+                .ToList();
+        }
+
+        /// <summary>
         /// 取得貨況-分提單號
         /// </summary>
         private List<MergeOriginalListModel> GetMerge_Originallist_Jetf_Serial(string jetf_Serial)
@@ -653,6 +671,23 @@ select a.Id,ORIGINAL,ETA,GW,PIECE,F_DataDate,I_DATA_TYPE,I_CLEARANCE_TYPE,DESPAT
             using (var connection = new SqlConnection(conn.ConnectionString))
             {
                 return connection.QueryFirstOrDefault<string>(sql, new { FIELD_X = field_X })?.Trim() ?? "";
+            }
+        }
+
+        /// <summary>
+        /// 使用客戶外箱號(菜鳥)，回傳多筆物流貨號
+        /// </summary>
+        private List<string> GetOriginallist_DeliverynoListByFieldX(string field_X)
+        {
+            string sql = "select DELIVERYNO from [DATA_CENTER].[dbo].[ORIGINALLIST] (nolock) where FIELD_X=@FIELD_X";
+
+            using (var connection = new SqlConnection(conn.ConnectionString))
+            {
+                return connection.Query<string>(sql, new { FIELD_X = field_X })
+                    .Where(deliveryNo => !string.IsNullOrWhiteSpace(deliveryNo))
+                    .Select(deliveryNo => deliveryNo.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
             }
         }
 

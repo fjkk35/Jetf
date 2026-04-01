@@ -16,11 +16,12 @@ mainApp.controller('SearchCargoController', function ($scope, $http, $window) {
         { value: 'invoice', text: '物流貨號' },
         { value: 'phone', text: '手機' },
     { value: 'fieldX', text: '客戶外箱號' },
+      { value: 'cainiaoFieldX', text: '客戶外箱號(菜鳥)' },
       { value: 'orderNo', text: '客戶訂單號' }
     ];
 
     // 快捷鍵提示
-    $scope.shortcutHint = '快捷鍵:Ctrl+(1~5)切換查詢類別';
+    $scope.shortcutHint = '快捷鍵:Ctrl+(1~6)切換查詢類別';
 
     // 執行查詢
     $scope.search = function () {
@@ -118,6 +119,9 @@ break;
         case 53: // Ctrl+5
 index = 4;
    break;
+        case 54: // Ctrl+6
+      index = 5;
+         break;
  }
 
         if (index >= 0 && index < $scope.searchTypeOptions.length) {
