@@ -195,10 +195,10 @@ namespace Service.Services.SevenElevenEtlTaxTax
             }
         }
 
-        public ResopnseModel Upload(string filePath, string userId)
+        public ResponseModel Upload(string filePath, string userId)
         {
             var fileName = $"74B016{DateTime.Now.ToString("yyyyMMdd")}01.sup";
-            var resopnseModel = new ResopnseModel();
+            var resopnseModel = new ResponseModel();
 
             try
             {
@@ -214,13 +214,13 @@ namespace Service.Services.SevenElevenEtlTaxTax
                     var reslult = UploadFtp(filePath, fileName);
                     if (!reslult)
                     {
-                        resopnseModel = new ResopnseModel("FTP上傳失敗");
+                        resopnseModel = new ResponseModel("FTP上傳失敗");
                     }
                 }
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
 
             return resopnseModel;
@@ -268,9 +268,9 @@ namespace Service.Services.SevenElevenEtlTaxTax
         /// <param name="fileName"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        private ResopnseModel InsertSagawaData(List<SagawaSevenElevenEtlTaxModel> list, string fileName, string userId)
+        private ResponseModel InsertSagawaData(List<SagawaSevenElevenEtlTaxModel> list, string fileName, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = $"上傳成功筆數：{list.Count}";
 
@@ -310,7 +310,7 @@ namespace Service.Services.SevenElevenEtlTaxTax
                 }
                 catch (Exception ex)
                 {
-                    resopnseModel = new ResopnseModel(ex.Message);
+                    resopnseModel = new ResponseModel(ex.Message);
 
                     // 取消寫入
                     tran.Rollback();

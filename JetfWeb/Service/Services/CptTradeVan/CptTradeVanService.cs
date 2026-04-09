@@ -40,9 +40,9 @@ namespace Service.Services
             _cptPortalApi = cptPortalApi;
         }
 
-        public async Task<ResopnseModel> UploadAsync(string filePath, CptTradeVanEnum source,string data, string userId)
+        public async Task<ResponseModel> UploadAsync(string filePath, CptTradeVanEnum source,string data, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
             try
@@ -528,7 +528,7 @@ namespace Service.Services
         /// <param name="uploadTime"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel InsertCptSeaMainNumber(List<string> list, string uploadTime, string userId)
+        public ResponseModel InsertCptSeaMainNumber(List<string> list, string uploadTime, string userId)
         {
             var sql = @"
                         insert [jetf].[dbo].[CptSeaMainNumber](MainNumber, UploadOpe, UploadTime)
@@ -561,12 +561,12 @@ namespace Service.Services
 
                     tran.Commit();
 
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     tran.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
             }
         }
@@ -578,9 +578,9 @@ namespace Service.Services
         /// <param name="uploadTime"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel InsertCptGb378(List<CargoManifestModel> list, string uploadTime, string userId)
+        public ResponseModel InsertCptGb378(List<CargoManifestModel> list, string uploadTime, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             string sql = @"
                             insert [jetf].[dbo].[CptGb378](MainNumber, ContainerNo, VslRegNo, StorWareCd, ImCmRate, Gb378Msg, UploadOpe, UploadTime)
@@ -2218,7 +2218,7 @@ namespace Service.Services
         /// <param name="mainNumber">主號</param>
         /// <param name="userId">使用者ID</param>
         /// <returns></returns>
-        public ResopnseModel DeleteCptSeaMainNumber(string mainNumber)
+        public ResponseModel DeleteCptSeaMainNumber(string mainNumber)
         {
             // 先檢查主號是否存在
             var checkSql = @"SELECT COUNT(*) FROM [jetf].[dbo].[CptSeaMainNumber] WHERE MainNumber = @MainNumber";
@@ -2226,7 +2226,7 @@ namespace Service.Services
             
             if (existsCount == 0)
             {
-                return new ResopnseModel()
+                return new ResponseModel()
                 {
                     status = Status.error,
                     msg = $"主號 {mainNumber} 不存在，無法刪除"
@@ -2253,7 +2253,7 @@ namespace Service.Services
 
                     tran.Commit();
                     
-                    return new ResopnseModel()
+                    return new ResponseModel()
                     {
                         status = Status.success,
                         msg = $"主號 {mainNumber} 刪除成功，明細資料 {detailDeletedCount} 筆"
@@ -2262,7 +2262,7 @@ namespace Service.Services
                 catch (Exception ex)
                 {
                     tran.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
             }
         }

@@ -16,7 +16,7 @@ namespace Service.Services.WorkDayArea
         /// <summary>
         /// 取得所有作業地區列表
         /// </summary>
-        public ResopnseModel GetWorkAreaList()
+        public ResponseModel GetWorkAreaList()
         {
             try
             {
@@ -25,30 +25,30 @@ namespace Service.Services.WorkDayArea
                 using (var connection = new SqlConnection(conn.ConnectionString))
                 {
                     var result = connection.Query<WorkAreaModel>(sql).ToList();
-                    return new ResopnseModel(result);
+                    return new ResponseModel(result);
                 }
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"查詢作業地區失敗：{ex.Message}");
+                return new ResponseModel($"查詢作業地區失敗：{ex.Message}");
             }
         }
 
         /// <summary>
         /// 查詢工作天資料
         /// </summary>
-        public ResopnseModel QueryWorkDayArea(WorkDayAreaQueryRequest request)
+        public ResponseModel QueryWorkDayArea(WorkDayAreaQueryRequest request)
         {
             try
             {
                 if (request.WorkAreaId <= 0)
                 {
-                    return new ResopnseModel("請選擇作業地區");
+                    return new ResponseModel("請選擇作業地區");
                 }
 
                 if (request.StartDate > request.EndDate)
                 {
-                    return new ResopnseModel("開始日期不能大於結束日期");
+                    return new ResponseModel("開始日期不能大於結束日期");
                 }
 
                 // 查詢資料庫中已設定的工作天資料
@@ -115,29 +115,29 @@ namespace Service.Services.WorkDayArea
                     currentDate = currentDate.AddDays(1);
                 }
 
-                return new ResopnseModel(result);
+                return new ResponseModel(result);
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"查詢工作天資料失敗：{ex.Message}");
+                return new ResponseModel($"查詢工作天資料失敗：{ex.Message}");
             }
         }
 
         /// <summary>
         /// 更新工作天類型
         /// </summary>
-        public ResopnseModel UpdateWorkDayType(WorkDayAreaUpdateRequest request)
+        public ResponseModel UpdateWorkDayType(WorkDayAreaUpdateRequest request)
         {
             try
             {
                 if (request.WorkAreaId <= 0)
                 {
-                    return new ResopnseModel("作業地區Id不正確");
+                    return new ResponseModel("作業地區Id不正確");
                 }
 
                 if (request.DateType != (int)DateType.WorkDay && request.DateType != (int)DateType.Holiday)
                 {
-                    return new ResopnseModel("日期類型不正確");
+                    return new ResponseModel("日期類型不正確");
                 }
 
                 using (var connection = new SqlConnection(conn.ConnectionString))
@@ -198,7 +198,7 @@ namespace Service.Services.WorkDayArea
                             }
 
                             transaction.Commit();
-                            return new ResopnseModel();
+                            return new ResponseModel();
                         }
                         catch (Exception)
                         {
@@ -210,7 +210,7 @@ namespace Service.Services.WorkDayArea
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"更新工作天類型失敗：{ex.Message}");
+                return new ResponseModel($"更新工作天類型失敗：{ex.Message}");
             }
         }
 

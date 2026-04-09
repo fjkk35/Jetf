@@ -20,9 +20,9 @@ namespace Service.Services.BatchUploadProcess
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel BatchUploadProcess(ProcessStatus status, string filePath, string fileName, string userId)
+        public ResponseModel BatchUploadProcess(ProcessStatus status, string filePath, string fileName, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             DataTable dt_Upload = ReadExcelBatchProcess(filePath, status);
 
@@ -139,9 +139,9 @@ namespace Service.Services.BatchUploadProcess
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel InsertProcess(DataTable dt_Upload, string fileName, string user_Id)
+        public ResponseModel InsertProcess(DataTable dt_Upload, string fileName, string user_Id)
         {
-            var resopnseModel = new ResopnseModel();
+            var resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = $"上傳檔案筆數：{dt_Upload.Rows.Count}";
 
@@ -201,9 +201,9 @@ namespace Service.Services.BatchUploadProcess
         /// <param name="fileName"></param>
         /// <param name="user_Id"></param>
         /// <returns></returns>
-        public ResopnseModel InsertFinish(DataTable dt_Upload, string fileName, string user_Id)
+        public ResponseModel InsertFinish(DataTable dt_Upload, string fileName, string user_Id)
         {
-            var resopnseModel = new ResopnseModel();
+            var resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = $"上傳檔案筆數：{dt_Upload.Rows.Count}";
 

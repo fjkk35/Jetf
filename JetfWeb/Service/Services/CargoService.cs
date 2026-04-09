@@ -488,9 +488,9 @@ namespace Service.Services
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel InsertLog_Cargo_Status(LogCargoStatusModel model)
+        public ResponseModel InsertLog_Cargo_Status(LogCargoStatusModel model)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
             StringBuilder sb = new StringBuilder();
@@ -592,9 +592,9 @@ namespace Service.Services
         /// <param name="upload_time"></param>
         /// <param name="user_Id"></param>
         /// <returns></returns>
-        public ResopnseModel InsertBatchSearchCargo2(DataTable dt_Upload, string upload_time, string user_Id)
+        public ResponseModel InsertBatchSearchCargo2(DataTable dt_Upload, string upload_time, string user_Id)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "新增成功";
 
@@ -675,9 +675,9 @@ namespace Service.Services
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel InsertProcess(ProcessModel model)
+        public ResponseModel InsertProcess(ProcessModel model)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "新增成功";
 
@@ -752,9 +752,9 @@ namespace Service.Services
         /// <param name="id"></param>
         /// <param name="user_Id"></param>
         /// <returns></returns>
-        public ResopnseModel DeleteProcess(string id, string user_Id)
+        public ResponseModel DeleteProcess(string id, string user_Id)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "刪除成功";
             try
@@ -787,9 +787,9 @@ namespace Service.Services
         /// <param name="id"></param>
         /// <param name="user_Id"></param>
         /// <returns></returns>
-        public ResopnseModel FinishProcess(string dlv_inv, string user_Id)
+        public ResponseModel FinishProcess(string dlv_inv, string user_Id)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "結案成功";
             try
@@ -879,9 +879,9 @@ namespace Service.Services
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel BatchSearchCargo2(string filePath, string fileName, string userId)
+        public ResponseModel BatchSearchCargo2(string filePath, string fileName, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             if (conn.State != ConnectionState.Open)
             {

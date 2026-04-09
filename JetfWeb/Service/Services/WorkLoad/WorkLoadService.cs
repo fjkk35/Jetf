@@ -29,9 +29,9 @@ namespace Service.Services.WorkLoad
         /// 上傳檔案(A03、B6F、班機派件送達)
         /// </summary>
         /// <returns></returns>
-        public ResopnseModel UploadFile(string filePath, string userId)
+        public ResponseModel UploadFile(string filePath, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             DateTime date;
             string sheetName;
@@ -240,9 +240,9 @@ namespace Service.Services.WorkLoad
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UploadFileEtlBagNo(string filePath, string userId)
+        public ResponseModel UploadFileEtlBagNo(string filePath, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
             if (conn.State != ConnectionState.Open)
@@ -279,9 +279,9 @@ namespace Service.Services.WorkLoad
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UploadFileSeaBagNo(string filePath, string dataDate, string userId)
+        public ResponseModel UploadFileSeaBagNo(string filePath, string dataDate, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
             if (conn.State != ConnectionState.Open)
@@ -318,9 +318,9 @@ namespace Service.Services.WorkLoad
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UploadFileSeaManifest(string filePath, string dataDate, string userId)
+        public ResponseModel UploadFileSeaManifest(string filePath, string dataDate, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
             if (conn.State != ConnectionState.Open)
@@ -763,9 +763,9 @@ namespace Service.Services.WorkLoad
         /// <summary>
         /// 寫入上傳檔案
         /// </summary>
-        ResopnseModel Insert_Upload(DataTable dt_A03_B6F, DataTable dt_Arrive, string userId)
+        ResponseModel Insert_Upload(DataTable dt_A03_B6F, DataTable dt_Arrive, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             using (SqlTransaction tran = conn.BeginTransaction())
             {
                 try
@@ -888,9 +888,9 @@ namespace Service.Services.WorkLoad
         /// <param name="upload_Time"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel InsertEtl_BagNo_Upload(DataTable dt_Upload, string upload_Time, string userId)
+        public ResponseModel InsertEtl_BagNo_Upload(DataTable dt_Upload, string upload_Time, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             //新增SEA_TAX_UPLOAD
             StringBuilder sb = new StringBuilder();
             sb.Append("insert [jetf].[dbo].[ETL_BAGNO_UPLOAD](BAGNO,UPLOAD_TIME,UPLOAD_OPE) ");
@@ -931,9 +931,9 @@ namespace Service.Services.WorkLoad
         /// <param name="upload_Time"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel InsertSea_BagNo_Upload(DataTable dt_Upload, string dataDate, string upload_Time, string userId)
+        public ResponseModel InsertSea_BagNo_Upload(DataTable dt_Upload, string dataDate, string upload_Time, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             //新增SEA_TAX_UPLOAD
             StringBuilder sb = new StringBuilder();
             sb.Append("select MAINNUMBER from  [jetf].[dbo].[SEA_BAGNO_UPLOAD] ");
@@ -1027,9 +1027,9 @@ namespace Service.Services.WorkLoad
         /// <param name="upload_Time"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel InsertSea_MANIFEST_Upload(DataTable dt_Upload, string dataDate, string upload_Time, string userId)
+        public ResponseModel InsertSea_MANIFEST_Upload(DataTable dt_Upload, string dataDate, string upload_Time, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             //新增SEA_TAX_UPLOAD
             StringBuilder sb = new StringBuilder();
             sb.Append("select MAINNUMBER from [jetf].[dbo].[SEA_MANIFEST_UPLOAD] ");

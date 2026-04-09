@@ -21,7 +21,7 @@ namespace Service.Services.EtlErrorWork
         /// <summary>
         /// 取得空快錯單統計報表資料
         /// </summary>
-        public ResopnseModel GetEtlErrorWorkReport(string sDate, string eDate)
+        public ResponseModel GetEtlErrorWorkReport(string sDate, string eDate)
         {
             try
             {
@@ -50,18 +50,18 @@ namespace Service.Services.EtlErrorWork
                     }
                 }
 
-                return new ResopnseModel { ReturnObject = data };
+                return new ResponseModel { ReturnObject = data };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
         /// <summary>
         /// 取得空快錯單統計報表傳輸筆數
         /// </summary>
-        public ResopnseModel GetEtlErrorWorkReportCount(string sDate, string eDate)
+        public ResponseModel GetEtlErrorWorkReportCount(string sDate, string eDate)
         {
             try
             {
@@ -97,18 +97,18 @@ namespace Service.Services.EtlErrorWork
                     }
                 }
 
-                return new ResopnseModel { ReturnObject = data };
+                return new ResponseModel { ReturnObject = data };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
         /// <summary>
         /// 取得空快錯單明細資料
         /// </summary>
-        public ResopnseModel GetEtlErrorWorkDetails(string sDate, string eDate)
+        public ResponseModel GetEtlErrorWorkDetails(string sDate, string eDate)
         {
             try
             {
@@ -138,11 +138,11 @@ namespace Service.Services.EtlErrorWork
                     }
                 }
 
-                return new ResopnseModel { ReturnObject = data };
+                return new ResponseModel { ReturnObject = data };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 

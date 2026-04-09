@@ -32,7 +32,7 @@ namespace Service.Services.SeaUnreceivedOrder
             _workDayService = workDayService;
         }
 
-        public ResopnseModel GetExecl(string mainNumber, SeaErrorReportEnum dataType)
+        public ResponseModel GetExecl(string mainNumber, SeaErrorReportEnum dataType)
         {
             try
             {
@@ -69,11 +69,11 @@ namespace Service.Services.SeaUnreceivedOrder
                         break;
                 }
 
-                return new ResopnseModel() { ReturnObject = workbook };
+                return new ResponseModel() { ReturnObject = workbook };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 

@@ -165,7 +165,7 @@ namespace Service.Services.CustomerTaxSetting
         /// <param name="custCode">客戶代號</param>
         /// <param name="taxTimeIds">稅金時間ID列表</param>
         /// <returns></returns>
-        public ResopnseModel SaveCustomerTaxSetting(string custCode, List<int> taxTimeIds)
+        public ResponseModel SaveCustomerTaxSetting(string custCode, List<int> taxTimeIds)
         {
             try
             {
@@ -227,7 +227,7 @@ namespace Service.Services.CustomerTaxSetting
                         }
 
                         transaction.Commit();
-                        return new ResopnseModel { status = Status.success, msg = "設定儲存成功" };
+                        return new ResponseModel { status = Status.success, msg = "設定儲存成功" };
                     }
                     catch
                     {
@@ -242,7 +242,7 @@ namespace Service.Services.CustomerTaxSetting
             }
             catch (Exception ex)
             {
-                return new ResopnseModel { status = Status.error, msg = ex.Message };
+                return new ResponseModel { status = Status.error, msg = ex.Message };
             }
         }
 
@@ -251,7 +251,7 @@ namespace Service.Services.CustomerTaxSetting
         /// </summary>
         /// <param name="custCode">客戶代號</param>
         /// <returns></returns>
-        public ResopnseModel DeleteCustomerTaxSetting(string custCode)
+        public ResponseModel DeleteCustomerTaxSetting(string custCode)
         {
             try
             {
@@ -282,7 +282,7 @@ namespace Service.Services.CustomerTaxSetting
                         }
 
                         transaction.Commit();
-                        return new ResopnseModel { status = Status.success, msg = "設定刪除成功" };
+                        return new ResponseModel { status = Status.success, msg = "設定刪除成功" };
                     }
                     catch
                     {
@@ -297,7 +297,7 @@ namespace Service.Services.CustomerTaxSetting
             }
             catch (Exception ex)
             {
-                return new ResopnseModel { status = Status.error, msg = ex.Message };
+                return new ResponseModel { status = Status.error, msg = ex.Message };
             }
         }
     }

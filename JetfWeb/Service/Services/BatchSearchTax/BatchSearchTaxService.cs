@@ -20,13 +20,13 @@ namespace Service.Services.BatchSearchTax
         /// </summary>
         /// <param name="request">查詢請求</param>
         /// <returns>查詢結果</returns>
-        public ResopnseModel QueryTaxData(BatchSearchTaxRequest request)
+        public ResponseModel QueryTaxData(BatchSearchTaxRequest request)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(request.DlvInvList))
                 {
-                    return new ResopnseModel("請輸入物流貨號");
+                    return new ResponseModel("請輸入物流貨號");
                 }
 
                 // 分割物流貨號列表（支援換行、逗號、空白分隔）
@@ -39,7 +39,7 @@ namespace Service.Services.BatchSearchTax
 
                 if (!dlvInvList.Any())
                 {
-                    return new ResopnseModel("請輸入有效的物流貨號");
+                    return new ResponseModel("請輸入有效的物流貨號");
                 }
 
                 // 查詢資料
@@ -88,11 +88,11 @@ namespace Service.Services.BatchSearchTax
                     item.TrackingNo = item.Dlv_Inv;
                 }
 
-                return new ResopnseModel(result);
+                return new ResponseModel(result);
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"查詢失敗：{ex.Message}");
+                return new ResponseModel($"查詢失敗：{ex.Message}");
             }
         }
 

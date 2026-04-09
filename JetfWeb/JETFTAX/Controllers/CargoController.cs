@@ -413,7 +413,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SearchCargo)]
         public JsonResult UploadFileProcess(HttpPostedFileBase file, DialogProcessViewModel vm)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 if (vm.P_Remark == null || vm.P_Remark.Trim() == "")
@@ -464,7 +464,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SearchCargo)]
         public ActionResult DeleteProcess(string id)
         {
-            ResopnseModel resopnseModel = cargoService.DeleteProcess(id, Session["user_id"].ToString());
+            ResponseModel resopnseModel = cargoService.DeleteProcess(id, Session["user_id"].ToString());
             return Json(resopnseModel, JsonRequestBehavior.AllowGet);
         }
 
@@ -476,7 +476,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SearchCargo)]
         public ActionResult FinishProcess(string dlv_inv)
         {
-            ResopnseModel resopnseModel = cargoService.FinishProcess(dlv_inv, Session["user_id"].ToString());
+            ResponseModel resopnseModel = cargoService.FinishProcess(dlv_inv, Session["user_id"].ToString());
             return Json(resopnseModel, JsonRequestBehavior.AllowGet);
         }
 
@@ -734,7 +734,7 @@ namespace JETFTAX.Controllers
         [HttpPost]
         public JsonResult BatchSearchCargo2(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;
@@ -828,7 +828,7 @@ namespace JETFTAX.Controllers
         [HttpPost]
         public JsonResult BatchSearchCargoShopee(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;

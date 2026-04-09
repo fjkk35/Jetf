@@ -87,7 +87,7 @@ namespace JETFTAX.Controllers
         [HttpPost]
         public JsonResult UploadOrderInfo(HttpPostedFileBase file)
         {
-            ResopnseModel result = new ResopnseModel();
+            ResponseModel result = new ResponseModel();
             try
             {
                 if (file == null || file.ContentLength == 0)

@@ -124,10 +124,10 @@ namespace Service.Services.AuthorityGroup
         /// <param name="memo">備註</param>
         /// <param name="authorityIds">權限ID清單</param>
         /// <returns>處理結果</returns>
-        public ResopnseModel Create(string groupName, string memo, List<string> authorityIds)
+        public ResponseModel Create(string groupName, string memo, List<string> authorityIds)
         {
             if (string.IsNullOrWhiteSpace(groupName))
-                return new ResopnseModel("請輸入群組名稱");
+                return new ResponseModel("請輸入群組名稱");
 
             try
             {
@@ -147,7 +147,7 @@ namespace Service.Services.AuthorityGroup
                         if (existsCount > 0)
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("群組名稱已存在");
+                            return new ResponseModel("群組名稱已存在");
                         }
 
                         // 新增權限群組
@@ -175,7 +175,7 @@ namespace Service.Services.AuthorityGroup
                         }
 
                         transaction.Commit();
-                        return new ResopnseModel() { status = Status.success, msg = "新增成功" };
+                        return new ResponseModel() { status = Status.success, msg = "新增成功" };
                     }
                     catch
                     {
@@ -186,7 +186,7 @@ namespace Service.Services.AuthorityGroup
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
             finally
             {
@@ -203,10 +203,10 @@ namespace Service.Services.AuthorityGroup
         /// <param name="memo">備註</param>
         /// <param name="authorityIds">權限ID清單</param>
         /// <returns>處理結果</returns>
-        public ResopnseModel Update(int id, string groupName, string memo, List<string> authorityIds)
+        public ResponseModel Update(int id, string groupName, string memo, List<string> authorityIds)
         {
             if (string.IsNullOrWhiteSpace(groupName))
-                return new ResopnseModel("請輸入群組名稱");
+                return new ResponseModel("請輸入群組名稱");
 
             try
             {
@@ -226,7 +226,7 @@ namespace Service.Services.AuthorityGroup
                         if (!existsGroup)
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("群組不存在");
+                            return new ResponseModel("群組不存在");
                         }
 
                         // 檢查群組名稱是否與其他群組重複 (排除自己)
@@ -238,7 +238,7 @@ namespace Service.Services.AuthorityGroup
                         if (duplicateCount > 0)
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("群組名稱已存在");
+                            return new ResponseModel("群組名稱已存在");
                         }
 
                         // 更新權限群組
@@ -270,7 +270,7 @@ namespace Service.Services.AuthorityGroup
                         }
 
                         transaction.Commit();
-                        return new ResopnseModel() { status = Status.success, msg = "修改成功" };
+                        return new ResponseModel() { status = Status.success, msg = "修改成功" };
                     }
                     catch
                     {
@@ -281,7 +281,7 @@ namespace Service.Services.AuthorityGroup
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
             finally
             {
@@ -295,7 +295,7 @@ namespace Service.Services.AuthorityGroup
         /// </summary>
         /// <param name="id">群組ID</param>
         /// <returns>處理結果</returns>
-        public ResopnseModel Delete(int id)
+        public ResponseModel Delete(int id)
         {
             try
             {
@@ -317,9 +317,9 @@ namespace Service.Services.AuthorityGroup
                         transaction.Commit();
 
                         if (affectedRows == 0)
-                            return new ResopnseModel("群組不存在");
+                            return new ResponseModel("群組不存在");
 
-                        return new ResopnseModel() { status = Status.success, msg = "刪除成功" };
+                        return new ResponseModel() { status = Status.success, msg = "刪除成功" };
                     }
                     catch
                     {
@@ -330,7 +330,7 @@ namespace Service.Services.AuthorityGroup
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
             finally
             {

@@ -17,13 +17,13 @@ namespace Service.Services.MainTaxSearch
         /// </summary>
         /// <param name="request">查詢請求</param>
         /// <returns>查詢結果</returns>
-        public ResopnseModel QueryData(MainTaxSearchRequest request)
+        public ResponseModel QueryData(MainTaxSearchRequest request)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(request.MainNumberList))
                 {
-                    return new ResopnseModel("請輸入主號");
+                    return new ResponseModel("請輸入主號");
                 }
 
                 var mainNumbers = request.MainNumberList
@@ -35,7 +35,7 @@ namespace Service.Services.MainTaxSearch
 
                 if (!mainNumbers.Any())
                 {
-                    return new ResopnseModel("請輸入有效的主號");
+                    return new ResponseModel("請輸入有效的主號");
                 }
 
                 string sql = @"
@@ -62,11 +62,11 @@ left join SysParam d on c.CLEARANCE_CP=d.CODE
 
                 var result = conn.Query<MainTaxSearchModel>(sql, new { MAIN_NUMBER = mainNumbers }).ToList();
 
-                return new ResopnseModel(result);
+                return new ResponseModel(result);
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"查詢失敗：{ex.Message}");
+                return new ResponseModel($"查詢失敗：{ex.Message}");
             }
         }
 

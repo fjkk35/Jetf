@@ -23,17 +23,17 @@ namespace Service.Services.SeaUnboxingRecord
     public class SeaUnboxingRecordService : _BaseService
     {
 
-        public ResopnseModel Upload(string filePath, string userId)
+        public ResponseModel Upload(string filePath, string userId)
         {
             try
             {
                 //讀取Excel 
                 ReadExcel(filePath, userId);
-                return new ResopnseModel();
+                return new ResponseModel();
             }
             catch (UploadValidationException ex)
             {
-                return new ResopnseModel
+                return new ResponseModel
                 {
                     status = Status.error,
                     msg = "上傳失敗，請修正以下資料：",
@@ -42,7 +42,7 @@ namespace Service.Services.SeaUnboxingRecord
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 

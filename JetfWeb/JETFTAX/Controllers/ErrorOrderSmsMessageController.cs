@@ -36,16 +36,16 @@ namespace JETFTAX.Controllers
         public ActionResult Create(ErrorOrderSmsMessageModel model)
         {
             if (string.IsNullOrEmpty(model.Name) || string.IsNullOrEmpty(model.Content))
-                return Json(new ResopnseModel("請輸入簡訊名稱、內容"));
+                return Json(new ResponseModel("請輸入簡訊名稱、內容"));
 
             if (model.Content.Contains("＜平台＞") == false)
             {
-                return Json(new ResopnseModel("簡訊內容沒有輸入：＜平台＞"));
+                return Json(new ResponseModel("簡訊內容沒有輸入：＜平台＞"));
             }
 
             if (model.Content.Contains("＜分提單號＞") == false)
             {
-                return Json(new ResopnseModel("簡訊內容沒有輸入：＜分提單號＞"));
+                return Json(new ResponseModel("簡訊內容沒有輸入：＜分提單號＞"));
             }
 
             var userId = Session["user_id"].ToString();
@@ -58,16 +58,16 @@ namespace JETFTAX.Controllers
         public ActionResult Update(ErrorOrderSmsMessageModel model)
         {
             if (string.IsNullOrEmpty(model.Name) || string.IsNullOrEmpty(model.Content))
-                return Json(new ResopnseModel("請輸入簡訊名稱、內容"));
+                return Json(new ResponseModel("請輸入簡訊名稱、內容"));
 
             if (model.Content.Contains("＜平台＞") == false)
             {
-                return Json(new ResopnseModel("簡訊內容沒有輸入：＜平台＞"));
+                return Json(new ResponseModel("簡訊內容沒有輸入：＜平台＞"));
             }
 
             if (model.Content.Contains("＜分提單號＞") == false)
             {
-                return Json(new ResopnseModel("簡訊內容沒有輸入：＜分提單號＞"));
+                return Json(new ResponseModel("簡訊內容沒有輸入：＜分提單號＞"));
             }
 
             var userId = Session["user_id"].ToString();

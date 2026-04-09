@@ -19,18 +19,18 @@ namespace Service.Services.SeaTransRecord
 {
     public class SeaTransRecordService : _BaseService
     {
-        public ResopnseModel Upload(string filePath, string userId)
+        public ResponseModel Upload(string filePath, string userId)
         {
             try
             {
                 //讀取Excel 
                 var list = ReadExcel(filePath);
                 InsertSeaUnboxingRecord(list, userId);
-                return new ResopnseModel();
+                return new ResponseModel();
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 

@@ -1,4 +1,4 @@
-using Dapper;
+ï»¿using Dapper;
 using Service.Models;
 using Service.Models.ApprovalCategory;
 using System;
@@ -12,7 +12,7 @@ namespace Service.Services.ApprovalCategory
     public class ApprovalCategoryService : _BaseService
     {
         /// <summary>
-        /// ¨ú±o©Ò¦³Ã±¼fÃş§O
+        /// å–å¾—æ‰€æœ‰ç°½å¯©é¡åˆ¥
         /// </summary>
         /// <returns></returns>
         public List<ApprovalCategoryModel> GetAll()
@@ -27,7 +27,7 @@ namespace Service.Services.ApprovalCategory
         }
 
         /// <summary>
-        /// ®Ú¾ÚID¨ú±oÃ±¼fÃş§O
+        /// æ ¹æ“šIDå–å¾—ç°½å¯©é¡åˆ¥
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
@@ -43,11 +43,11 @@ namespace Service.Services.ApprovalCategory
         }
 
         /// <summary>
-        /// ÀË¬dÃ±¼fÃş§O¦WºÙ¬O§_­«½Æ
+        /// æª¢æŸ¥ç°½å¯©é¡åˆ¥åç¨±æ˜¯å¦é‡è¤‡
         /// </summary>
-        /// <param name="categoryName">Ã±¼fÃş§O¦WºÙ</param>
-        /// <param name="excludeId">­n±Æ°£ªºID¡]§ó·s®É¨Ï¥Î¡^</param>
-        /// <param name="transaction">¥æ©ö</param>
+        /// <param name="categoryName">ç°½å¯©é¡åˆ¥åç¨±</param>
+        /// <param name="excludeId">è¦æ’é™¤çš„IDï¼ˆæ›´æ–°æ™‚ä½¿ç”¨ï¼‰</param>
+        /// <param name="transaction">äº¤æ˜“</param>
         /// <returns></returns>
         private bool IsCategoryNameExists(string categoryName, int? excludeId, System.Data.SqlClient.SqlTransaction transaction)
         {
@@ -71,16 +71,16 @@ namespace Service.Services.ApprovalCategory
         }
 
         /// <summary>
-        /// ·s¼WÃ±¼fÃş§O
+        /// æ–°å¢ç°½å¯©é¡åˆ¥
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel Create(ApprovalCategoryModel model)
+        public ResponseModel Create(ApprovalCategoryModel model)
         {
-            // °ò¥»ÅçÃÒ
+            // åŸºæœ¬é©—è­‰
             if (string.IsNullOrWhiteSpace(model.CategoryName))
             {
-                return new ResopnseModel("Ã±¼fÃş§O¦WºÙ¤£¯à¬°ªÅ");
+                return new ResponseModel("ç°½å¯©é¡åˆ¥åç¨±ä¸èƒ½ç‚ºç©º");
             }
 
             conn.Open();
@@ -88,13 +88,13 @@ namespace Service.Services.ApprovalCategory
             {
                 try
                 {
-                    // ÀË¬dÃ±¼fÃş§O¦WºÙ¬O§_­«½Æ
+                    // æª¢æŸ¥ç°½å¯©é¡åˆ¥åç¨±æ˜¯å¦é‡è¤‡
                     if (IsCategoryNameExists(model.CategoryName, null, transaction))
                     {
-                        return new ResopnseModel($"Ã±¼fÃş§O¦WºÙ¡u{model.CategoryName.Trim()}¡v¤w¦s¦b¡A½Ğ¨Ï¥Î¨ä¥L¦WºÙ");
+                        return new ResponseModel($"ç°½å¯©é¡åˆ¥åç¨±ã€Œ{model.CategoryName.Trim()}ã€å·²å­˜åœ¨ï¼Œè«‹ä½¿ç”¨å…¶ä»–åç¨±");
                     }
 
-                    // ½Õ¾ã¨ä¥L¶µ¥Øªº±Æ§Ç
+                    // èª¿æ•´å…¶ä»–é …ç›®çš„æ’åº
                     AdjustSortOrder(model.Sort, null, transaction);
 
                     var sql = @"
@@ -110,12 +110,12 @@ namespace Service.Services.ApprovalCategory
                     }, transaction);
 
                     transaction.Commit();
-                    return new ResopnseModel { ReturnObject = id };
+                    return new ResponseModel { ReturnObject = id };
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -125,16 +125,16 @@ namespace Service.Services.ApprovalCategory
         }
 
         /// <summary>
-        /// §ó·sÃ±¼fÃş§O
+        /// æ›´æ–°ç°½å¯©é¡åˆ¥
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel Update(ApprovalCategoryModel model)
+        public ResponseModel Update(ApprovalCategoryModel model)
         {
-            // °ò¥»ÅçÃÒ
+            // åŸºæœ¬é©—è­‰
             if (string.IsNullOrWhiteSpace(model.CategoryName))
             {
-                return new ResopnseModel("Ã±¼fÃş§O¦WºÙ¤£¯à¬°ªÅ");
+                return new ResponseModel("ç°½å¯©é¡åˆ¥åç¨±ä¸èƒ½ç‚ºç©º");
             }
 
             conn.Open();
@@ -142,13 +142,13 @@ namespace Service.Services.ApprovalCategory
             {
                 try
                 {
-                    // ÀË¬dÃ±¼fÃş§O¦WºÙ¬O§_­«½Æ¡]±Æ°£¦Û¤v¡^
+                    // æª¢æŸ¥ç°½å¯©é¡åˆ¥åç¨±æ˜¯å¦é‡è¤‡ï¼ˆæ’é™¤è‡ªå·±ï¼‰
                     if (IsCategoryNameExists(model.CategoryName, model.Id, transaction))
                     {
-                        return new ResopnseModel($"Ã±¼fÃş§O¦WºÙ¡u{model.CategoryName.Trim()}¡v¤w¦s¦b¡A½Ğ¨Ï¥Î¨ä¥L¦WºÙ");
+                        return new ResponseModel($"ç°½å¯©é¡åˆ¥åç¨±ã€Œ{model.CategoryName.Trim()}ã€å·²å­˜åœ¨ï¼Œè«‹ä½¿ç”¨å…¶ä»–åç¨±");
                     }
 
-                    // ½Õ¾ã¨ä¥L¶µ¥Øªº±Æ§Ç
+                    // èª¿æ•´å…¶ä»–é …ç›®çš„æ’åº
                     AdjustSortOrder(model.Sort, model.Id, transaction);
 
                     var sql = @"
@@ -167,16 +167,16 @@ namespace Service.Services.ApprovalCategory
                     if (affected == 0)
                     {
                         transaction.Rollback();
-                        return new ResopnseModel("§ä¤£¨ì«ü©wªºÃ±¼fÃş§O");
+                        return new ResponseModel("æ‰¾ä¸åˆ°æŒ‡å®šçš„ç°½å¯©é¡åˆ¥");
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -186,14 +186,14 @@ namespace Service.Services.ApprovalCategory
         }
 
         /// <summary>
-        /// ½Õ¾ã±Æ§Ç¶¶§Ç¡AÁ×§K­«½Æ
+        /// èª¿æ•´æ’åºé †åºï¼Œé¿å…é‡è¤‡
         /// </summary>
-        /// <param name="newSort">·sªº±Æ§Ç¸¹½X</param>
-        /// <param name="excludeId">­n±Æ°£ªºID¡]§ó·s®É¨Ï¥Î¡^</param>
-        /// <param name="transaction">¥æ©ö</param>
+        /// <param name="newSort">æ–°çš„æ’åºè™Ÿç¢¼</param>
+        /// <param name="excludeId">è¦æ’é™¤çš„IDï¼ˆæ›´æ–°æ™‚ä½¿ç”¨ï¼‰</param>
+        /// <param name="transaction">äº¤æ˜“</param>
         private void AdjustSortOrder(int newSort, int? excludeId, System.Data.SqlClient.SqlTransaction transaction)
         {
-            // ±N±Æ§Ç¸¹½X¤j©óµ¥©ónewSortªº¶µ¥Ø³£¥[1
+            // å°‡æ’åºè™Ÿç¢¼å¤§æ–¼ç­‰æ–¼newSortçš„é …ç›®éƒ½åŠ 1
             var adjustSql = @"
                 UPDATE jetf.dbo.ApprovalCategory 
                 SET Sort = Sort + 1 
@@ -212,18 +212,18 @@ namespace Service.Services.ApprovalCategory
         }
 
         /// <summary>
-        /// §R°£Ã±¼fÃş§O
+        /// åˆªé™¤ç°½å¯©é¡åˆ¥
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public ResopnseModel Delete(int id)
+        public ResponseModel Delete(int id)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
             {
                 try
                 {
-                    // ÀË¬d¬O§_¦³³Q¨Ï¥Î
+                    // æª¢æŸ¥æ˜¯å¦æœ‰è¢«ä½¿ç”¨
                     var checkSql = @"
                         SELECT COUNT(*) 
                         FROM jetf.dbo.SeaClearanceDetailApprovalCategory 
@@ -234,17 +234,17 @@ namespace Service.Services.ApprovalCategory
 
                     if (usageCount > 0)
                     {
-                        return new ResopnseModel("¦¹Ã±¼fÃş§O¥¿¦b³Q¨Ï¥Î¤¤¡AµLªk§R°£");
+                        return new ResponseModel("æ­¤ç°½å¯©é¡åˆ¥æ­£åœ¨è¢«ä½¿ç”¨ä¸­ï¼Œç„¡æ³•åˆªé™¤");
                     }
 
-                    // ¨ú±o­n§R°£¶µ¥Øªº±Æ§Ç
+                    // å–å¾—è¦åˆªé™¤é …ç›®çš„æ’åº
                     var getSortSql = @"
                         SELECT Sort FROM jetf.dbo.ApprovalCategory 
                         WHERE Id = @Id
                     ";
                     var sortToDelete = conn.QueryFirstOrDefault<int?>(getSortSql, new { Id = id }, transaction);
 
-                    // §R°£¶µ¥Ø
+                    // åˆªé™¤é …ç›®
                     var deleteSql = @"
                         DELETE FROM jetf.dbo.ApprovalCategory 
                         WHERE Id = @Id
@@ -254,10 +254,10 @@ namespace Service.Services.ApprovalCategory
 
                     if (affected == 0)
                     {
-                        return new ResopnseModel("§ä¤£¨ì«ü©wªºÃ±¼fÃş§O");
+                        return new ResponseModel("æ‰¾ä¸åˆ°æŒ‡å®šçš„ç°½å¯©é¡åˆ¥");
                     }
 
-                    // ½Õ¾ã¨ä¥L¶µ¥Øªº±Æ§Ç¡]±N¤j©ó³Q§R°£¶µ¥Ø±Æ§Çªº³£´î1¡^
+                    // èª¿æ•´å…¶ä»–é …ç›®çš„æ’åºï¼ˆå°‡å¤§æ–¼è¢«åˆªé™¤é …ç›®æ’åºçš„éƒ½æ¸›1ï¼‰
                     if (sortToDelete.HasValue)
                     {
                         var adjustSql = @"
@@ -269,12 +269,12 @@ namespace Service.Services.ApprovalCategory
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -284,11 +284,11 @@ namespace Service.Services.ApprovalCategory
         }
 
         /// <summary>
-        /// §å¶q§ó·s±Æ§Ç
+        /// æ‰¹é‡æ›´æ–°æ’åº
         /// </summary>
         /// <param name="sortUpdates"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateSorts(List<ApprovalCategoryModel> sortUpdates)
+        public ResponseModel UpdateSorts(List<ApprovalCategoryModel> sortUpdates)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
@@ -311,12 +311,12 @@ namespace Service.Services.ApprovalCategory
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {

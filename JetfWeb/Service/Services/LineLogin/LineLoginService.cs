@@ -134,7 +134,7 @@ namespace Service.Services.LineLogin
             return conn.Execute(upsertSql, parameters);
         }
 
-        public ResopnseModel UpdatePhone(string userId, string phone)
+        public ResponseModel UpdatePhone(string userId, string phone)
         {
             string sql = "UPDATE jetf.[dbo].[LineUserProfile] SET Phone = @Phone,UpdateDateTime=getdate() WHERE UserId = @UserId";
 
@@ -146,7 +146,7 @@ namespace Service.Services.LineLogin
 
             conn.Execute(sql, parameters);
 
-            var response = new ResopnseModel()
+            var response = new ResponseModel()
             {
                 msg = "綁定手機成功"
             };

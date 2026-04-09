@@ -39,7 +39,7 @@ namespace Service.Services.ErrorOrderSmsMessage
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public ResopnseModel Delete(int id)
+        public ResponseModel Delete(int id)
         {
             try
             {
@@ -47,11 +47,11 @@ namespace Service.Services.ErrorOrderSmsMessage
 
                 conn.Execute(sqlQuery, new { Id = id });
 
-                return new ResopnseModel() { };
+                return new ResponseModel() { };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
@@ -60,7 +60,7 @@ namespace Service.Services.ErrorOrderSmsMessage
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ResopnseModel Create(ErrorOrderSmsMessageModel model,string userId)
+        public ResponseModel Create(ErrorOrderSmsMessageModel model,string userId)
         {
             try
             {
@@ -75,11 +75,11 @@ namespace Service.Services.ErrorOrderSmsMessage
                         EditDateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                     });
 
-                return new ResopnseModel() { };
+                return new ResponseModel() { };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
@@ -88,7 +88,7 @@ namespace Service.Services.ErrorOrderSmsMessage
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ResopnseModel Update(ErrorOrderSmsMessageModel model, string userId)
+        public ResponseModel Update(ErrorOrderSmsMessageModel model, string userId)
         {
             try
             {
@@ -107,11 +107,11 @@ namespace Service.Services.ErrorOrderSmsMessage
                         EditDateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                     });
 
-                return new ResopnseModel() { };
+                return new ResponseModel() { };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
     }

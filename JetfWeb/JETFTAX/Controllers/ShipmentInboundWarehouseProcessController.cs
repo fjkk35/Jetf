@@ -80,11 +80,11 @@ namespace JETFTAX.Controllers
             {
                 _service.UpdateProcessType(request);
 
-                return Json(new ResopnseModel());
+                return Json(new ResponseModel());
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel
+                return Json(new ResponseModel
                 {
                     status = "error",
                     msg = ex.Message
@@ -100,7 +100,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.ShipmentInboundWarehouseProcess)]
         public JsonResult BatchUpload(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 if (file == null || file.ContentLength == 0)

@@ -139,7 +139,7 @@ namespace Service.Services.SeaClearance
         /// <param name="stepDetailIds"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel SaveSeaClearanceStep(int seaClearanceDetailId, int stepId, List<int> stepDetailIds)
+        public ResponseModel SaveSeaClearanceStep(int seaClearanceDetailId, int stepId, List<int> stepDetailIds)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
@@ -270,7 +270,7 @@ namespace Service.Services.SeaClearance
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel
+                    return new ResponseModel
                     {
                         ReturnObject = new
                         {
@@ -283,7 +283,7 @@ namespace Service.Services.SeaClearance
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {

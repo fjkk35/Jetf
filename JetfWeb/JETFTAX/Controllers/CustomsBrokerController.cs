@@ -63,11 +63,11 @@ namespace JETFTAX.Controllers
             try
             {
                 var result = _customsBrokerService.GetById(id);
-                return Json(new ResopnseModel(result));
+                return Json(new ResponseModel(result));
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -89,7 +89,7 @@ namespace JETFTAX.Controllers
                         .SelectMany(v => v.Errors)
                         .Select(e => e.ErrorMessage)
                         .ToList();
-                    return Json(new ResopnseModel(string.Join(", ", errors)));
+                    return Json(new ResponseModel(string.Join(", ", errors)));
                 }
 
                 var result = _customsBrokerService.Insert(model);
@@ -97,7 +97,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -119,7 +119,7 @@ namespace JETFTAX.Controllers
                         .SelectMany(v => v.Errors)
                         .Select(e => e.ErrorMessage)
                         .ToList();
-                    return Json(new ResopnseModel(string.Join(", ", errors)));
+                    return Json(new ResponseModel(string.Join(", ", errors)));
                 }
 
                 // 這裡應該從 Session 或其他方式取得當前使用者ID
@@ -130,7 +130,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -151,7 +151,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -209,11 +209,11 @@ namespace JETFTAX.Controllers
             try
             {
                 var result = _customsBrokerService.GetContactById(id);
-                return Json(new ResopnseModel(result));
+                return Json(new ResponseModel(result));
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -235,7 +235,7 @@ namespace JETFTAX.Controllers
                         .SelectMany(v => v.Errors)
                         .Select(e => e.ErrorMessage)
                         .ToList();
-                    return Json(new ResopnseModel(string.Join(", ", errors)));
+                    return Json(new ResponseModel(string.Join(", ", errors)));
                 }
 
                 var result = _customsBrokerService.InsertContact(model);
@@ -243,7 +243,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -265,7 +265,7 @@ namespace JETFTAX.Controllers
                         .SelectMany(v => v.Errors)
                         .Select(e => e.ErrorMessage)
                         .ToList();
-                    return Json(new ResopnseModel(string.Join(", ", errors)));
+                    return Json(new ResponseModel(string.Join(", ", errors)));
                 }
 
                 var userId = Session["user_id"]?.ToString() ?? "system";
@@ -274,7 +274,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -294,7 +294,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 

@@ -36,7 +36,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.UploadPostClearance)]
         public JsonResult UploadFile(HttpPostedFileBase file, PostClearanceViewModel vm)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;

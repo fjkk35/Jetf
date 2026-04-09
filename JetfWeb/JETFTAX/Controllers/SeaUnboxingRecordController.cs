@@ -30,7 +30,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SeaUnboxingRecord)]
         public JsonResult Upload(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;

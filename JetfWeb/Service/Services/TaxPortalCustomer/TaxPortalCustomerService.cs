@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 using Service.EnumTax;
 using Service.Models;
 using Service.Services.TaxPortalCustomerService.Domain;
@@ -23,7 +23,7 @@ namespace Service.Services.TaxPortalCustomerService
         /// 取得可選客戶分組。
         /// </summary>
         /// <returns>客戶分組資料。</returns>
-        public ResopnseModel GetCustomerGroups()
+        public ResponseModel GetCustomerGroups()
         {
             try
             {
@@ -40,11 +40,11 @@ namespace Service.Services.TaxPortalCustomerService
                         .ToList()
                 };
 
-                return new ResopnseModel(result);
+                return new ResponseModel(result);
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"載入客戶資料失敗：{ex.Message}");
+                return new ResponseModel($"載入客戶資料失敗：{ex.Message}");
             }
         }
 
@@ -53,7 +53,7 @@ namespace Service.Services.TaxPortalCustomerService
         /// </summary>
         /// <param name="request">查詢條件。</param>
         /// <returns>帳號列表。</returns>
-        public ResopnseModel QueryUsers(TaxPortalUserQueryRequest request)
+        public ResponseModel QueryUsers(TaxPortalUserQueryRequest request)
         {
             try
             {
@@ -110,11 +110,11 @@ ORDER BY tu.UserName, cs.CustomerType, tc.CustCode";
                     .OrderBy(x => x.UserName)
                     .ToList();
 
-                return new ResopnseModel(result);
+                return new ResponseModel(result);
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"查詢失敗：{ex.Message}");
+                return new ResponseModel($"查詢失敗：{ex.Message}");
             }
         }
 
@@ -123,7 +123,7 @@ ORDER BY tu.UserName, cs.CustomerType, tc.CustCode";
         /// </summary>
         /// <param name="id">帳號流水號。</param>
         /// <returns>帳號明細。</returns>
-        public ResopnseModel GetUserDetail(int id)
+        public ResponseModel GetUserDetail(int id)
         {
             try
             {
@@ -165,7 +165,7 @@ ORDER BY cs.CustomerType, tc.CustCode";
                 var rows = conn.Query<TaxPortalUserQueryRow>(sql, new { Id = id }).ToList();
                 if (!rows.Any())
                 {
-                    return new ResopnseModel("查無帳號資料");
+                    return new ResponseModel("查無帳號資料");
                 }
 
                 var first = rows.First();
@@ -188,11 +188,11 @@ ORDER BY cs.CustomerType, tc.CustCode";
                         .ToList()
                 };
 
-                return new ResopnseModel(result);
+                return new ResponseModel(result);
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"載入明細失敗：{ex.Message}");
+                return new ResponseModel($"載入明細失敗：{ex.Message}");
             }
         }
 
@@ -200,18 +200,18 @@ ORDER BY cs.CustomerType, tc.CustCode";
         /// 產生符合規則的密碼。
         /// </summary>
         /// <returns>明文密碼。</returns>
-        public ResopnseModel GeneratePassword()
+        public ResponseModel GeneratePassword()
         {
             try
             {
-                return new ResopnseModel(new TaxPortalPasswordResultModel
+                return new ResponseModel(new TaxPortalPasswordResultModel
                 {
                     Password = GeneratePlainPassword()
                 });
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"產生密碼失敗：{ex.Message}");
+                return new ResponseModel($"產生密碼失敗：{ex.Message}");
             }
         }
 
@@ -221,7 +221,7 @@ ORDER BY cs.CustomerType, tc.CustCode";
         /// <param name="request">新增資料。</param>
         /// <param name="createOpe">建立人員。</param>
         /// <returns>新增結果。</returns>
-        public ResopnseModel CreateUser(TaxPortalUserCreateRequest request, string createOpe)
+        public ResponseModel CreateUser(TaxPortalUserCreateRequest request, string createOpe)
         {
             try
             {
@@ -243,7 +243,7 @@ ORDER BY cs.CustomerType, tc.CustCode";
                         if (IsDuplicateUserName(userName, null, transaction))
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("帳號已存在，請重新輸入");
+                            return new ResponseModel("帳號已存在，請重新輸入");
                         }
 
                         EnsureCustomersExist(selectedCustCodes, transaction);
@@ -266,7 +266,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);";
                         InsertCustomers(userId, selectedCustCodes, createOpe, transaction);
 
                         transaction.Commit();
-                        return new ResopnseModel
+                        return new ResponseModel
                         {
                             status = Status.success,
                             msg = "新增成功",
@@ -290,7 +290,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);";
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"新增失敗：{ex.Message}");
+                return new ResponseModel($"新增失敗：{ex.Message}");
             }
         }
 
@@ -300,7 +300,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);";
         /// <param name="request">修改資料。</param>
         /// <param name="createOpe">建立人員。</param>
         /// <returns>修改結果。</returns>
-        public ResopnseModel UpdateUser(TaxPortalUserUpdateRequest request, string createOpe)
+        public ResponseModel UpdateUser(TaxPortalUserUpdateRequest request, string createOpe)
         {
             try
             {
@@ -327,7 +327,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);";
                         if (string.IsNullOrWhiteSpace(userName))
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("查無帳號資料");
+                            return new ResponseModel("查無帳號資料");
                         }
 
                         EnsureCustomersExist(selectedCustCodes, transaction);
@@ -353,7 +353,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);";
                         InsertCustomers(request.Id, selectedCustCodes, createOpe, transaction);
 
                         transaction.Commit();
-                        return new ResopnseModel
+                        return new ResponseModel
                         {
                             status = Status.success,
                             msg = "修改成功",
@@ -379,7 +379,7 @@ SELECT CAST(SCOPE_IDENTITY() AS INT);";
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"修改失敗：{ex.Message}");
+                return new ResponseModel($"修改失敗：{ex.Message}");
             }
         }
 
@@ -408,31 +408,31 @@ WHERE CUST_TYPE = 'AIR'
             return conn.Query<TaxPortalCustomerOptionModel>(sql, transaction: transaction).ToList();
         }
 
-        private ResopnseModel ValidateCreateRequest(string userName, List<string> selectedCustCodes)
+        private ResponseModel ValidateCreateRequest(string userName, List<string> selectedCustCodes)
         {
             if (string.IsNullOrWhiteSpace(userName))
             {
-                return new ResopnseModel("請輸入帳號");
+                return new ResponseModel("請輸入帳號");
             }
 
             if (!selectedCustCodes.Any())
             {
-                return new ResopnseModel("請至少選擇一位客戶");
+                return new ResponseModel("請至少選擇一位客戶");
             }
 
             return null;
         }
 
-        private ResopnseModel ValidateUpdateRequest(TaxPortalUserUpdateRequest request, List<string> selectedCustCodes)
+        private ResponseModel ValidateUpdateRequest(TaxPortalUserUpdateRequest request, List<string> selectedCustCodes)
         {
             if (request == null || request.Id <= 0)
             {
-                return new ResopnseModel("缺少帳號資料");
+                return new ResponseModel("缺少帳號資料");
             }
 
             if (!selectedCustCodes.Any())
             {
-                return new ResopnseModel("請至少選擇一位客戶");
+                return new ResponseModel("請至少選擇一位客戶");
             }
 
             return null;

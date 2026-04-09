@@ -107,13 +107,13 @@ LEFT JOIN jetf.dbo.FEE_MASTER c ON a.Data = c.DLV_INV AND c.Download = 1";
         /// <summary>
         /// 讀取 Excel 並呼叫外部 API 上傳訂單資料
         /// </summary>
-        public ResopnseModel UploadOrderInfo(string filePath)
+        public ResponseModel UploadOrderInfo(string filePath)
         {
             var items = ReadExcel(filePath);
 
             if (items.Count == 0)
             {
-                return new ResopnseModel { status = Status.error, msg = "Excel 無有效資料" };
+                return new ResponseModel { status = Status.error, msg = "Excel 無有效資料" };
             }
 
             DeliveryAssistantApiResult uploadOrderInfoResult;
@@ -134,7 +134,7 @@ LEFT JOIN jetf.dbo.FEE_MASTER c ON a.Data = c.DLV_INV AND c.Download = 1";
                 uploadOrderInfoResult.success ? "成功" : "失敗",
                 establishDcShipResult.success ? "成功" : "失敗");
 
-            return new ResopnseModel
+            return new ResponseModel
             {
                 status = isSuccess ? Status.success : Status.error,
                 msg = msg,

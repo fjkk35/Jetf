@@ -48,7 +48,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.ErrorOrderSend)]
         public ActionResult Upload(ErrorOrderSendViewModel vm, HttpPostedFileBase file) 
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;
@@ -96,7 +96,7 @@ namespace JETFTAX.Controllers
                 var isSend = _errorOrderSendService.IsSend(id);
                 if (isSend)
                 {
-                    return Json(new ResopnseModel()
+                    return Json(new ResponseModel()
                     {
                         status = Status.error,
                         msg = "已發送過訊息"
@@ -138,7 +138,7 @@ namespace JETFTAX.Controllers
                 var isSend = _errorOrderSendService.IsSend(id);
                 if (isSend)
                 {
-                    return Json(new ResopnseModel()
+                    return Json(new ResponseModel()
                     {
                         status = Status.error,
                         msg = "已發送過訊息，無法刪除"

@@ -93,12 +93,12 @@ namespace Service.Services.AbnormalState
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel CreateAbnormalState(AbnormalStateModel model)
+        public ResponseModel CreateAbnormalState(AbnormalStateModel model)
         {
             // 驗證
             if (string.IsNullOrWhiteSpace(model.AbnormalStateName))
             {
-                return new ResopnseModel("異常狀態名稱不可為空");
+                return new ResponseModel("異常狀態名稱不可為空");
             }
 
             conn.Open();
@@ -109,7 +109,7 @@ namespace Service.Services.AbnormalState
                     // 檢查異常狀態名稱是否重複
                     if (IsAbnormalStateNameExists(model.AbnormalStateName, null, transaction))
                     {
-                        return new ResopnseModel($"異常狀態名稱「{model.AbnormalStateName.Trim()}」已存在，請使用其他名稱");
+                        return new ResponseModel($"異常狀態名稱「{model.AbnormalStateName.Trim()}」已存在，請使用其他名稱");
                     }
 
                     // 取得下一個排序號碼
@@ -128,12 +128,12 @@ namespace Service.Services.AbnormalState
                     }, transaction);
 
                     transaction.Commit();
-                    return new ResopnseModel { ReturnObject = id };
+                    return new ResponseModel { ReturnObject = id };
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -147,12 +147,12 @@ namespace Service.Services.AbnormalState
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateAbnormalState(AbnormalStateModel model)
+        public ResponseModel UpdateAbnormalState(AbnormalStateModel model)
         {
             // 驗證
             if (string.IsNullOrWhiteSpace(model.AbnormalStateName))
             {
-                return new ResopnseModel("異常狀態名稱不可為空");
+                return new ResponseModel("異常狀態名稱不可為空");
             }
 
             conn.Open();
@@ -163,7 +163,7 @@ namespace Service.Services.AbnormalState
                     // 檢查異常狀態名稱是否重複（排除自己）
                     if (IsAbnormalStateNameExists(model.AbnormalStateName, model.Id, transaction))
                     {
-                        return new ResopnseModel($"異常狀態名稱「{model.AbnormalStateName.Trim()}」已存在，請使用其他名稱");
+                        return new ResponseModel($"異常狀態名稱「{model.AbnormalStateName.Trim()}」已存在，請使用其他名稱");
                     }
 
                     var sql = @"
@@ -181,16 +181,16 @@ namespace Service.Services.AbnormalState
                     if (affected == 0)
                     {
                         transaction.Rollback();
-                        return new ResopnseModel("找不到指定的異常狀態");
+                        return new ResponseModel("找不到指定的異常狀態");
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -204,7 +204,7 @@ namespace Service.Services.AbnormalState
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public ResopnseModel DeleteAbnormalState(int id)
+        public ResponseModel DeleteAbnormalState(int id)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
@@ -222,7 +222,7 @@ namespace Service.Services.AbnormalState
 
                     if (detailCount > 0)
                     {
-                        return new ResopnseModel("此異常狀態下還有異常狀態詳細資料，請先刪除所有異常狀態詳細後，再刪除異常狀態");
+                        return new ResponseModel("此異常狀態下還有異常狀態詳細資料，請先刪除所有異常狀態詳細後，再刪除異常狀態");
                     }
 
                     // 取得要刪除的資料的排序
@@ -242,7 +242,7 @@ namespace Service.Services.AbnormalState
 
                     if (affected == 0)
                     {
-                        return new ResopnseModel("找不到指定的異常狀態");
+                        return new ResponseModel("找不到指定的異常狀態");
                     }
 
                     // 調整其他的排序（將大於被刪除的排序的減1）
@@ -257,12 +257,12 @@ namespace Service.Services.AbnormalState
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -276,7 +276,7 @@ namespace Service.Services.AbnormalState
         /// </summary>
         /// <param name="sortUpdates"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateAbnormalStateSorts(List<AbnormalStateSortUpdateModel> sortUpdates)
+        public ResponseModel UpdateAbnormalStateSorts(List<AbnormalStateSortUpdateModel> sortUpdates)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
@@ -299,12 +299,12 @@ namespace Service.Services.AbnormalState
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -335,17 +335,17 @@ namespace Service.Services.AbnormalState
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel CreateAbnormalStateDetail(AbnormalStateDetailModel model)
+        public ResponseModel CreateAbnormalStateDetail(AbnormalStateDetailModel model)
         {
             // 驗證
             if (string.IsNullOrWhiteSpace(model.AbnormalStateDetailName))
             {
-                return new ResopnseModel("異常狀態詳細名稱不可為空");
+                return new ResponseModel("異常狀態詳細名稱不可為空");
             }
 
             if (model.AbnormalStateId <= 0)
             {
-                return new ResopnseModel("請選擇異常狀態");
+                return new ResponseModel("請選擇異常狀態");
             }
 
             conn.Open();
@@ -356,13 +356,13 @@ namespace Service.Services.AbnormalState
                     // 檢查異常狀態是否存在
                     if (!IsAbnormalStateExists(model.AbnormalStateId, transaction))
                     {
-                        return new ResopnseModel("指定的異常狀態不存在");
+                        return new ResponseModel("指定的異常狀態不存在");
                     }
 
                     // 檢查異常狀態詳細名稱在同一異常狀態下是否重複
                     if (IsAbnormalStateDetailNameExists(model.AbnormalStateId, model.AbnormalStateDetailName, null, transaction))
                     {
-                        return new ResopnseModel($"在此異常狀態下，異常狀態詳細名稱「{model.AbnormalStateDetailName.Trim()}」已存在，請使用其他名稱");
+                        return new ResponseModel($"在此異常狀態下，異常狀態詳細名稱「{model.AbnormalStateDetailName.Trim()}」已存在，請使用其他名稱");
                     }
 
                     // 取得下一個排序號碼
@@ -382,12 +382,12 @@ namespace Service.Services.AbnormalState
                     }, transaction);
 
                     transaction.Commit();
-                    return new ResopnseModel { ReturnObject = id };
+                    return new ResponseModel { ReturnObject = id };
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -401,17 +401,17 @@ namespace Service.Services.AbnormalState
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateAbnormalStateDetail(AbnormalStateDetailModel model)
+        public ResponseModel UpdateAbnormalStateDetail(AbnormalStateDetailModel model)
         {
             // 驗證
             if (string.IsNullOrWhiteSpace(model.AbnormalStateDetailName))
             {
-                return new ResopnseModel("異常狀態詳細名稱不可為空");
+                return new ResponseModel("異常狀態詳細名稱不可為空");
             }
 
             if (model.AbnormalStateId <= 0)
             {
-                return new ResopnseModel("請選擇異常狀態");
+                return new ResponseModel("請選擇異常狀態");
             }
 
             conn.Open();
@@ -422,7 +422,7 @@ namespace Service.Services.AbnormalState
                     // 檢查異常狀態詳細名稱在同一異常狀態下是否重複（排除自己）
                     if (IsAbnormalStateDetailNameExists(model.AbnormalStateId, model.AbnormalStateDetailName, model.Id, transaction))
                     {
-                        return new ResopnseModel($"在此異常狀態下，異常狀態詳細名稱「{model.AbnormalStateDetailName.Trim()}」已存在，請使用其他名稱");
+                        return new ResponseModel($"在此異常狀態下，異常狀態詳細名稱「{model.AbnormalStateDetailName.Trim()}」已存在，請使用其他名稱");
                     }
 
                     var sql = @"
@@ -441,16 +441,16 @@ namespace Service.Services.AbnormalState
                     if (affected == 0)
                     {
                         transaction.Rollback();
-                        return new ResopnseModel("找不到指定的異常狀態詳細");
+                        return new ResponseModel("找不到指定的異常狀態詳細");
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -464,7 +464,7 @@ namespace Service.Services.AbnormalState
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public ResopnseModel DeleteAbnormalStateDetail(int id)
+        public ResponseModel DeleteAbnormalStateDetail(int id)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
@@ -480,7 +480,7 @@ namespace Service.Services.AbnormalState
 
                     if (deleteInfo == null)
                     {
-                        return new ResopnseModel("找不到指定的異常狀態詳細");
+                        return new ResponseModel("找不到指定的異常狀態詳細");
                     }
 
                     // 刪除異常狀態詳細
@@ -493,7 +493,7 @@ namespace Service.Services.AbnormalState
 
                     if (affected == 0)
                     {
-                        return new ResopnseModel("找不到指定的異常狀態詳細");
+                        return new ResponseModel("找不到指定的異常狀態詳細");
                     }
 
                     // 調整同一異常狀態下其他的排序
@@ -508,12 +508,12 @@ namespace Service.Services.AbnormalState
                     }, transaction);
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -527,7 +527,7 @@ namespace Service.Services.AbnormalState
         /// </summary>
         /// <param name="sortUpdates"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateAbnormalStateDetailSorts(List<AbnormalStateDetailSortUpdateModel> sortUpdates)
+        public ResponseModel UpdateAbnormalStateDetailSorts(List<AbnormalStateDetailSortUpdateModel> sortUpdates)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
@@ -550,12 +550,12 @@ namespace Service.Services.AbnormalState
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {

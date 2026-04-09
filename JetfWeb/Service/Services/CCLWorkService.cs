@@ -55,9 +55,9 @@ namespace Service.Services
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UploadFileB6F(string filePath, string source, string userId)
+        public ResponseModel UploadFileB6F(string filePath, string source, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
             if (conn.State != ConnectionState.Open)
@@ -273,9 +273,9 @@ namespace Service.Services
         /// <param name="upload_Time"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel InsertB6F_Unpacking_Upload(DataTable dt_Upload, string upload_Time, string userId)
+        public ResponseModel InsertB6F_Unpacking_Upload(DataTable dt_Upload, string upload_Time, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             StringBuilder sb = new StringBuilder();
             sb.Append("select MAINNUMBER from [jetf].[dbo].[B6F_UNPACKING_UPLOAD] ");
             sb.Append("where MAINNUMBER=@MAINNUMBER and BAGNO=@BAGNO and TRACKINGNO=@TRACKINGNO ");
@@ -356,9 +356,9 @@ namespace Service.Services
         /// <param name="upload_Time"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel InsertB6F_Sea_Unpacking_Upload(DataTable dt_Upload, string upload_Time, string userId)
+        public ResponseModel InsertB6F_Sea_Unpacking_Upload(DataTable dt_Upload, string upload_Time, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             StringBuilder sb = new StringBuilder();
             sb.Append("select TRACKINGNO from [jetf].[dbo].[B6F_SEA_UNPACKING_UPLOAD] ");
             sb.Append("where TRACKINGNO=@TRACKINGNO ");

@@ -42,7 +42,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -61,7 +61,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -94,7 +94,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel($"匯出失敗：{ex.Message}"));
+                return Json(new ResponseModel($"匯出失敗：{ex.Message}"));
             }
         }
 

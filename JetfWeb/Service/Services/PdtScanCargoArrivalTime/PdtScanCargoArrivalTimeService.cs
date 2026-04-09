@@ -78,9 +78,9 @@ FROM [jetf].[dbo].[PdtTrans]";
             return grouped;
         }
 
-        public ResopnseModel UpdateArrivalTime(DateTime arrivalTime, string transName, List<string> ids)
+        public ResponseModel UpdateArrivalTime(DateTime arrivalTime, string transName, List<string> ids)
         {
-            var result = new ResopnseModel();
+            var result = new ResponseModel();
 
             if (ids == null || ids.Count == 0)
             {
@@ -138,7 +138,7 @@ INNER JOIN @Ids i ON p.Id = i.Value";
             return result;
         }
 
-        private ResopnseModel ValidateArrivalTime(DateTime arrivalTime, string transName, List<string> ids)
+        private ResponseModel ValidateArrivalTime(DateTime arrivalTime, string transName, List<string> ids)
         {
             const string getMinUploadTimeSql = @"
 SELECT MIN(p.UploadTime)
@@ -159,7 +159,7 @@ INNER JOIN @Ids i ON p.Id = i.Value";
 
             if (!minUploadTime.HasValue)
             {
-                return new ResopnseModel
+                return new ResponseModel
                 {
                     status = Status.error,
                     msg = "更新失敗：找不到對應的掃讀資料"
@@ -168,7 +168,7 @@ INNER JOIN @Ids i ON p.Id = i.Value";
 
             if (arrivalTime < minUploadTime.Value)
             {
-                return new ResopnseModel
+                return new ResponseModel
                 {
                     status = Status.error,
                     msg = $"更新失敗：交倉時間不可小於掃讀時間({minUploadTime.Value:yyyy-MM-dd HH:mm:ss})"
@@ -178,7 +178,7 @@ INNER JOIN @Ids i ON p.Id = i.Value";
             var maxArrivalTime = minUploadTime.Value.AddDays(3);
             if (arrivalTime > maxArrivalTime)
             {
-                return new ResopnseModel
+                return new ResponseModel
                 {
                     status = Status.error,
                     msg = $"更新失敗：交倉時間不可大於掃讀時間 + 3 天({maxArrivalTime:yyyy-MM-dd HH:mm:ss})"
@@ -195,7 +195,7 @@ INNER JOIN @Ids i ON p.Id = i.Value";
 
                 if (!maxUploadTime.HasValue)
                 {
-                    return new ResopnseModel
+                    return new ResponseModel
                     {
                         status = Status.error,
                         msg = "更新失敗：找不到對應的掃讀資料"
@@ -206,7 +206,7 @@ INNER JOIN @Ids i ON p.Id = i.Value";
                 // 允許區間為「最後掃讀時間」到「最後掃讀時間 + 15 小時」。
                 if (arrivalTime < maxUploadTime.Value || arrivalTime > maxAllowedArrivalTime)
                 {
-                    return new ResopnseModel
+                    return new ResponseModel
                     {
                         status = Status.error,
                         msg = $"更新失敗：{transName} 的交倉時間需介於最後掃讀時間 {maxUploadTime.Value:yyyy-MM-dd HH:mm:ss} 到 {maxAllowedArrivalTime:yyyy-MM-dd HH:mm:ss}"

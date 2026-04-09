@@ -48,7 +48,7 @@ namespace Service.Services.ErrorOrderSend
         /// <param name="type"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel Upload(string filePath, int smsMessageId, string userId)
+        public ResponseModel Upload(string filePath, int smsMessageId, string userId)
         {
             try
             {
@@ -56,7 +56,7 @@ namespace Service.Services.ErrorOrderSend
 
                 if (list.Any() == false)
                 {
-                    return new ResopnseModel("上傳檔案筆數:0");
+                    return new ResponseModel("上傳檔案筆數:0");
                 }
 
                 //確認要發送手機、Line
@@ -72,18 +72,18 @@ namespace Service.Services.ErrorOrderSend
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
-        public ResopnseModel Send(int id,string userId)
+        public ResponseModel Send(int id,string userId)
         {
             try
             {
                 var list = GetErrorOrderSendDetail(id);
 
                 if(list.Any() == false)
-                    return new ResopnseModel("沒有資料需要發送，請確認");
+                    return new ResponseModel("沒有資料需要發送，請確認");
 
                 //發送手機
                 SendPhone(list);
@@ -92,31 +92,31 @@ namespace Service.Services.ErrorOrderSend
                 SendLine(list);
 
                 UpdateErrorOrderSend(id, userId);
-                return new ResopnseModel()
+                return new ResponseModel()
                 {
                     msg = "發送成功"
                 };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
 
-        public ResopnseModel Delete(int id,string userId)
+        public ResponseModel Delete(int id,string userId)
         {
             try
             {
                 DeleteErrorOrderSend(id, userId);
-                return new ResopnseModel()
+                return new ResponseModel()
                 {
                     msg = "刪除成功"
                 };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
@@ -373,9 +373,9 @@ namespace Service.Services.ErrorOrderSend
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel InsertData(List<ErrorOrderSendDetailModel> list,string filePath,string userId)
+        public ResponseModel InsertData(List<ErrorOrderSendDetailModel> list,string filePath,string userId)
         {
-            var resopnseModel = new ResopnseModel();
+            var resopnseModel = new ResponseModel();
             resopnseModel.msg = $"上傳檔案筆數：{list.Count}";
 
             var insertErrorOrderSendSql = @"insert [jetf].[dbo].[ErrorOrderSend]([FileName], [FilePath],[TotalCount], [PhoneCount], [LineCount], [UploadOpe])
@@ -426,7 +426,7 @@ namespace Service.Services.ErrorOrderSend
                 }
                 catch (Exception ex)
                 {
-                    resopnseModel = new ResopnseModel(ex.Message);
+                    resopnseModel = new ResponseModel(ex.Message);
 
                     // 取消寫入
                     tran.Rollback();

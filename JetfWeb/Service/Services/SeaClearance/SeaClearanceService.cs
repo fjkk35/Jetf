@@ -182,7 +182,7 @@ namespace Service.Services.SeaClearance
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateSignInOutTime(int id)
+        public ResponseModel UpdateSignInOutTime(int id)
         {
             try
             {
@@ -190,7 +190,7 @@ namespace Service.Services.SeaClearance
                 
                 if (!CanUpdateSignInOutTime(detail))
                 {
-                    return new ResopnseModel
+                    return new ResponseModel
                     {
                         ReturnObject = new
                         {
@@ -216,7 +216,7 @@ namespace Service.Services.SeaClearance
 
                 if (clearanceInfo == null)
                 {
-                    return new ResopnseModel
+                    return new ResponseModel
                     {
                         ReturnObject = new
                         {
@@ -232,7 +232,7 @@ namespace Service.Services.SeaClearance
 
                 if (newSignInTime == detail.SignInTime && newSignOutTime == detail.SignOutTime)
                 {
-                    return new ResopnseModel
+                    return new ResponseModel
                     {
                         ReturnObject = new
                         {
@@ -257,7 +257,7 @@ namespace Service.Services.SeaClearance
                     SignOutTime = newSignOutTime
                 });
 
-                return new ResopnseModel
+                return new ResponseModel
                 {
                     ReturnObject = new
                     {
@@ -269,7 +269,7 @@ namespace Service.Services.SeaClearance
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
@@ -343,7 +343,7 @@ namespace Service.Services.SeaClearance
         /// <param name="value">新值</param>
         /// <param name="userId">使用者ID</param>
         /// <returns></returns>
-        public ResopnseModel UpdateField(int id, SeaClearanceEditField field, string newValue)
+        public ResponseModel UpdateField(int id, SeaClearanceEditField field, string newValue)
         {
             try
             {
@@ -351,14 +351,14 @@ namespace Service.Services.SeaClearance
                 var currentData = GetDetail(id);
                 if (currentData == null)
                 {
-                    return new ResopnseModel("找不到指定資料");
+                    return new ResponseModel("找不到指定資料");
                 }
 
                 string columnName = field.ToString();
 
                 if (string.IsNullOrEmpty(columnName))
                 {
-                    return new ResopnseModel("無效的欄位名稱");
+                    return new ResponseModel("無效的欄位名稱");
                 }
 
                 string sql = string.Empty;
@@ -403,7 +403,7 @@ namespace Service.Services.SeaClearance
                         });
                         break;
                     default:
-                        return new ResopnseModel("無效的欄位名稱");
+                        return new ResponseModel("無效的欄位名稱");
                 }
 
                 //新增編輯紀錄
@@ -414,11 +414,11 @@ namespace Service.Services.SeaClearance
                    newValue
                 );
 
-                return new ResopnseModel();
+                return new ResponseModel();
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
@@ -427,19 +427,19 @@ namespace Service.Services.SeaClearance
         /// </summary>
         /// <param name="seaClearanceDetailId"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateEta(int seaClearanceDetailId)
+        public ResponseModel UpdateEta(int seaClearanceDetailId)
         {
             try
             {
                 var detail = GetDetail(seaClearanceDetailId);
                 if (detail == null)
                 {
-                    return new ResopnseModel("找不到指定資料");
+                    return new ResponseModel("找不到指定資料");
                 }
 
                 if (string.IsNullOrEmpty(detail.MainNumber) || string.IsNullOrEmpty(detail.TrackingNo))
                 {
-                    return new ResopnseModel("主號或分提單號碼為空");
+                    return new ResponseModel("主號或分提單號碼為空");
                 }
 
                 var sql = @"
@@ -458,7 +458,7 @@ namespace Service.Services.SeaClearance
 
                 if (!eta.HasValue)
                 {
-                    return new ResopnseModel("查無預計到港日");
+                    return new ResponseModel("查無預計到港日");
                 }
 
                 var seaOrderOriginals = detail.SeaOrderOriginals?.FirstOrDefault(r => r.Gw > 0);
@@ -466,7 +466,7 @@ namespace Service.Services.SeaClearance
                 //到港日一樣不用更新
                 if (seaOrderOriginals?.Eta == eta)
                 {
-                    return new ResopnseModel
+                    return new ResponseModel
                     {
                         ReturnObject = eta
                     };
@@ -483,14 +483,14 @@ namespace Service.Services.SeaClearance
                     Eta = eta.Value.ToString("yyyy-MM-dd")
                 });
 
-                return new ResopnseModel
+                return new ResponseModel
                 {
                     ReturnObject = eta
                 };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
@@ -499,21 +499,21 @@ namespace Service.Services.SeaClearance
         /// </summary>
         /// <param name="seaClearanceDetailId"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateImportDate(int seaClearanceDetailId)
+        public ResponseModel UpdateImportDate(int seaClearanceDetailId)
         {
             try
             {
                 var detail = GetDetail(seaClearanceDetailId);
                 if (detail == null)
                 {
-                    return new ResopnseModel("找不到指定資料");
+                    return new ResponseModel("找不到指定資料");
                 }
 
                 // 先確認掛號是否存在；若明細本身沒有，則嘗試依主號回查並回寫資料表。
                 var mftNo = GetMftNo(detail);
                 if (string.IsNullOrWhiteSpace(mftNo))
                 {
-                    return new ResopnseModel("掛號為空");
+                    return new ResponseModel("掛號為空");
                 }
 
                 // 取得掛號後再呼叫 CPT 查詢最新艙單到港日。
@@ -534,13 +534,13 @@ namespace Service.Services.SeaClearance
 
                 if (string.IsNullOrEmpty(importDate))
                 {
-                    return new ResopnseModel("查無艙單到港日");
+                    return new ResponseModel("查無艙單到港日");
                 }
 
                 // 艙單到港日相同時不重複更新，只回傳目前畫面需要的資料。
                 if (detail.ImportDate == importDate)
                 {
-                    return new ResopnseModel
+                    return new ResponseModel
                     {
                         ReturnObject = new
                         {
@@ -568,7 +568,7 @@ namespace Service.Services.SeaClearance
                 detail.ImportDate = importDate;
                 CalculateDeadlines(detail);
 
-                return new ResopnseModel
+                return new ResponseModel
                 {
                     ReturnObject = new
                     {
@@ -582,7 +582,7 @@ namespace Service.Services.SeaClearance
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 

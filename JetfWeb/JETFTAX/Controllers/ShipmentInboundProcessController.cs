@@ -126,11 +126,11 @@ namespace JETFTAX.Controllers
             {
                 var result = _shipmentInboundProcessService.UpdateProcessType(request);
 
-                return Json(new ResopnseModel());
+                return Json(new ResponseModel());
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel
+                return Json(new ResponseModel
                 {
                     status = "error",
                     msg = ex.Message
@@ -182,7 +182,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.ShipmentInboundProcess)]
         public JsonResult BatchUpload(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 if (file == null || file.ContentLength == 0)
@@ -225,11 +225,11 @@ namespace JETFTAX.Controllers
             try
             {
                 _shipmentInboundProcessService.UpdateReturnReason(id, returnReason);
-                return Json(new ResopnseModel());
+                return Json(new ResponseModel());
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel
+                return Json(new ResponseModel
                 {
                     status = Status.error,
                     msg = ex.Message
@@ -245,7 +245,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.ShipmentInboundProcess)]
         public JsonResult BatchUploadReturnReason(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 if (file == null || file.ContentLength == 0)

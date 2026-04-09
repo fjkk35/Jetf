@@ -28,7 +28,7 @@ namespace JETFTAX.Controllers
         [HttpPost]
         public JsonResult Upload(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 if (file == null || file.ContentLength == 0)

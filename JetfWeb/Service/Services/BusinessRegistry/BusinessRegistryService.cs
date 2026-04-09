@@ -15,7 +15,7 @@ namespace Service.Services.BatchUploadProcess
 {
     public class BusinessRegistryService : _BaseService
     {
-        public ResopnseModel GetExecl(string businessId)
+        public ResponseModel GetExecl(string businessId)
         {
             try
             {
@@ -39,11 +39,11 @@ namespace Service.Services.BatchUploadProcess
                     row.CreateCell(1).SetCellValue(r.BusinessName);
                     iRow++;
                 });
-                return new ResopnseModel() { ReturnObject = workbook };
+                return new ResponseModel() { ReturnObject = workbook };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 

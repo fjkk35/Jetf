@@ -40,7 +40,7 @@ namespace JETFTAX.Controllers
         public ActionResult Create(ErrorOrderSendCustomer data) 
         {
             if (string.IsNullOrEmpty(data.Customer) || string.IsNullOrEmpty(data.Platform))
-                return Json(new ResopnseModel("請輸入客戶、平台資料"), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel("請輸入客戶、平台資料"), JsonRequestBehavior.AllowGet);
 
             var result = _errorOrderSendCustomerService.Create(new CustomerPlatformMapping
             {

@@ -35,7 +35,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.InvoiceProcessing)]
         public JsonResult InvoiceWorkNew(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             string handle = "";
             string fileName = "";
             

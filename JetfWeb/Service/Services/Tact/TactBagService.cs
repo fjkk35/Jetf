@@ -17,13 +17,13 @@ namespace Service.Services.Tact
         /// <summary>
         /// 併袋號查詢
         /// </summary>
-        public async Task<ResopnseModel> QueryBagAsync(TactBagQueryRequest request)
+        public async Task<ResponseModel> QueryBagAsync(TactBagQueryRequest request)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(request.BagNoList))
                 {
-                    return new ResopnseModel("請輸入併袋號");
+                    return new ResponseModel("請輸入併袋號");
                 }
 
                 var bagNoList = request.BagNoList.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
@@ -33,7 +33,7 @@ namespace Service.Services.Tact
 
                 if (!bagNoList.Any())
                 {
-                    return new ResopnseModel("請輸入併袋號");
+                    return new ResponseModel("請輸入併袋號");
                 }
 
                 var results = new List<TactBagNoModel>();
@@ -58,11 +58,11 @@ namespace Service.Services.Tact
                     }
                 }
 
-                return new ResopnseModel(results);
+                return new ResponseModel(results);
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"查詢錯誤：{ex.Message}");
+                return new ResponseModel($"查詢錯誤：{ex.Message}");
             }
         }
 

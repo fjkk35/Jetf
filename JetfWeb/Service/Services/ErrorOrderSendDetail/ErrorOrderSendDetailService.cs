@@ -13,7 +13,7 @@ namespace Service.Services.ErrorOrderSendDetail
 {
     public class ErrorOrderSendDetailService :_BaseService
     {
-        public ResopnseModel GetErrorOrderSendDetail(string startDate,string endDate,string trackingNo) 
+        public ResponseModel GetErrorOrderSendDetail(string startDate,string endDate,string trackingNo) 
         {
             var sqlQuery = @"
 select b.* from [jetf].[dbo].[ErrorOrderSend] a
@@ -48,7 +48,7 @@ where a.CrtDateTime between @StartDate and @EndDate
                 Message = item.Message
             }).ToList();
 
-            return new ResopnseModel()
+            return new ResponseModel()
             {
                 ReturnObject = resopnse
             };

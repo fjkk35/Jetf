@@ -17,21 +17,21 @@ namespace Service.Models
         public static string error = "error";
     }
 
-    public class ResopnseModel
+    public class ResponseModel
     {
-        public ResopnseModel() 
+        public ResponseModel() 
         {
             IsSuccess = true;
             status = Status.success;
         }
 
-        public ResopnseModel(string message)
+        public ResponseModel(string message)
         {
             status = Status.error;
             msg = message;
         }
 
-        public ResopnseModel(object returnObject)
+        public ResponseModel(object returnObject)
         {
             IsSuccess = true;
             status = Status.success;

@@ -66,7 +66,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel("綁定手機失敗，請聯絡客服"), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel("綁定手機失敗，請聯絡客服"), JsonRequestBehavior.AllowGet);
             }
         }
 

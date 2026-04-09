@@ -66,7 +66,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.ScanCargoCustomerDetails)]
         public ActionResult ScanCargoCustomerDetailsPdf(ScanCargoDetailsViewModel vm)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             //取得資料
             var result = _scanCargoCustomerService.GetScanCargoCustomerDetailsPdf(vm.trans, vm.dataType, vm.sDate, vm.eDate);

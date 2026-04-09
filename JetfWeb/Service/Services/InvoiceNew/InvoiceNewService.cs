@@ -25,9 +25,9 @@ namespace Service.Services.InvoiceNew
         /// <param name="fileName"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel InvoiceWorkNew(string filePath, string fileName, string userId)
+        public ResponseModel InvoiceWorkNew(string filePath, string fileName, string userId)
         {
-            var resopnseModel = new ResopnseModel();
+            var resopnseModel = new ResponseModel();
 
             try
             {

@@ -59,7 +59,7 @@ namespace JETFTAX.Controllers
 
         public ActionResult UpdateScanCargoArrivalTime(string arrivalTime,string transName, string searchTime, string searchOpe)
         {
-            var result = new ResopnseModel();
+            var result = new ResponseModel();
             if (DateTime.TryParse(arrivalTime, out var dateTime))
             {
                 result = _scanCargoArrivalTimeService.UpdateScanCargoArrivalTime(dateTime.ToString("yyyy-MM-dd HH:mm:ss"), transName, searchTime, searchOpe);

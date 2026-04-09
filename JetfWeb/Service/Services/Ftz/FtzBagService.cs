@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+ï»¿using Newtonsoft.Json;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.Extensions;
@@ -16,15 +16,15 @@ namespace Service.Services.Ftz
     public partial class FtzService
     {
         /// <summary>
-        /// ¬d¸ß¨Ö³U¸¹
+        /// æŸ¥è©¢ä½µè¢‹è™Ÿ
         /// </summary>
-        public async Task<ResopnseModel> QueryBagAsync(FtzBagQueryRequest request)
+        public async Task<ResponseModel> QueryBagAsync(FtzBagQueryRequest request)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(request.BagNoList))
                 {
-                    return new ResopnseModel("½Ğ¿é¤J¬d¸ß³U¸¹");
+                    return new ResponseModel("è«‹è¼¸å…¥æŸ¥è©¢è¢‹è™Ÿ");
                 }
 
                 var bagNoList = request.BagNoList.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
@@ -34,7 +34,7 @@ namespace Service.Services.Ftz
 
                 if (!bagNoList.Any())
                 {
-                    return new ResopnseModel("½Ğ¿é¤J¬d¸ß³U¸¹");
+                    return new ResponseModel("è«‹è¼¸å…¥æŸ¥è©¢è¢‹è™Ÿ");
                 }
 
                 var allResults = new List<RowItem>();
@@ -53,29 +53,29 @@ namespace Service.Services.Ftz
                         }
                         catch (Exception ex)
                         {
-                            // ¦pªG¬d¸ß¥¢±Ñ¡A²K¥[¤@µ§¿ù»~°O¿ı
+                            // å¦‚æœæŸ¥è©¢å¤±æ•—ï¼Œæ·»åŠ ä¸€ç­†éŒ¯èª¤è¨˜éŒ„
                             allResults.Add(new RowItem
                             {
                                 bagNo = bagNo,
-                                message = $"¬d¸ß¥¢±Ñ¡G{ex.Message}"
+                                message = $"æŸ¥è©¢å¤±æ•—ï¼š{ex.Message}"
                             });
                         }
                     }
                 }
 
-                return new ResopnseModel
+                return new ResponseModel
                 {
                     ReturnObject = allResults
                 };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"¬d¸ß¿ù»~¡G{ex.Message}");
+                return new ResponseModel($"æŸ¥è©¢éŒ¯èª¤ï¼š{ex.Message}");
             }
         }
 
         /// <summary>
-        /// ¬d¸ß³æµ§¨Ö³U¸¹¸ê®Æ
+        /// æŸ¥è©¢å–®ç­†ä½µè¢‹è™Ÿè³‡æ–™
         /// </summary>
         private async Task<List<RowItem>> QuerySingleBagAsync(HttpClient httpClient, string bagNo)
         {
@@ -102,7 +102,7 @@ namespace Service.Services.Ftz
                     new RowItem
                     {
                         bagNo = bagNo,
-                        message = "¬dµL¸ê®Æ"
+                        message = "æŸ¥ç„¡è³‡æ–™"
                     }
                 };
             }
@@ -111,45 +111,45 @@ namespace Service.Services.Ftz
         }
 
         /// <summary>
-        /// ¶×¥X¨Ö³U¸¹ Excel
+        /// åŒ¯å‡ºä½µè¢‹è™Ÿ Excel
         /// </summary>
         public async Task<IWorkbook> ExportBagExcel(FtzBagQueryRequest request)
         {
-            // ¥ı¬d¸ß¸ê®Æ
+            // å…ˆæŸ¥è©¢è³‡æ–™
             var queryResult = await QueryBagAsync(request);
 
             if (queryResult.status != Status.success || queryResult.ReturnObject == null)
             {
-                throw new Exception(queryResult.msg ?? "¬d¸ß¥¢±Ñ");
+                throw new Exception(queryResult.msg ?? "æŸ¥è©¢å¤±æ•—");
             }
 
             var results = queryResult.ReturnObject as List<RowItem>;
 
-            // «Ø¥ß Excel
+            // å»ºç«‹ Excel
             IWorkbook workbook = new XSSFWorkbook();
-            ISheet sheet = workbook.CreateSheet("¨Ö³U¸¹¬d¸ßµ²ªG");
+            ISheet sheet = workbook.CreateSheet("ä½µè¢‹è™ŸæŸ¥è©¢çµæœ");
 
-            // «Ø¥ß¼Ë¦¡
+            // å»ºç«‹æ¨£å¼
             var headerStyle = NpoiStyle.CreateHeaderStyle(workbook, 12, true);
             var dataStyle = NpoiStyle.CreateDataStyle(workbook);
 
-            // «Ø¥ßªíÀY
+            // å»ºç«‹è¡¨é ­
             string[] headers = new string[]
             {
-                "³U¸¹", "³ø³æ¸¹½X", "¥D¸¹", "¤À¸¹", "¯è¯Z", "­«¶q", 
-                "¥Ó³ø", "¶i­Ü", "¥X­Ü", "³qÃö¤è¦¡", "Åç³fµ¡¤f", "³Æµù","¿ù»~°T®§"
+                "è¢‹è™Ÿ", "å ±å–®è™Ÿç¢¼", "ä¸»è™Ÿ", "åˆ†è™Ÿ", "èˆªç­", "é‡é‡", 
+                "ç”³å ±", "é€²å€‰", "å‡ºå€‰", "é€šé—œæ–¹å¼", "é©—è²¨çª—å£", "å‚™è¨»","éŒ¯èª¤è¨Šæ¯"
             };
 
             IRow headerRow = sheet.CreateRow(0);
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
-            // ³]©wÄæ¼e
+            // è¨­å®šæ¬„å¯¬
             for (int i = 0; i < headers.Length; i++)
             {
                 sheet.SetColumnWidth(i, 5000);
             }
 
-            // ¶ñ¤J¸ê®Æ
+            // å¡«å…¥è³‡æ–™
             for (int i = 0; i < results.Count; i++)
             {
                 var item = results[i];

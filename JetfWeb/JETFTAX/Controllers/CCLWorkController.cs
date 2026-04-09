@@ -288,7 +288,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.UploadUnpackingBagNo)]
         public JsonResult UploadFileB6F(HttpPostedFileBase file, UploadFileB6FViewModel vm)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;
@@ -679,7 +679,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.ScanCargoDetails)]
         public ActionResult ScanCargoDetailsPdf(ScanCargoDetailsViewModel vm)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             DataTable dt = cCLWorkService.GetScanCargoDetailsPdf(vm.trans, vm.dataType, vm.sDate, vm.eDate);
             if (dt.Rows.Count > 0)
             {

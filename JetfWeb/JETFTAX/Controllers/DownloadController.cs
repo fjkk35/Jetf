@@ -409,7 +409,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.DownloadEtlTax)]
         public JsonResult UploadEtl(DownloadEtlViewModel vm)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             try
             {

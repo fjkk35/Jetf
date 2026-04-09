@@ -88,7 +88,7 @@ namespace JETFTAX.Controllers
                 }
 
                 //查詢資料
-                ResopnseModel resopnseModel = await _cptTradeVanService.UploadAsync(filePath, vm.source,vm.Data, Session["user_id"].ToString());
+                ResponseModel resopnseModel = await _cptTradeVanService.UploadAsync(filePath, vm.source,vm.Data, Session["user_id"].ToString());
                 msg = resopnseModel.msg;
 
                 if (vm.source != CptTradeVanEnum.DeleteSeaMainNumber && resopnseModel.status == Status.success)

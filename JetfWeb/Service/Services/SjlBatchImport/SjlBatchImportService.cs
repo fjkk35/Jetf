@@ -35,14 +35,14 @@ namespace Service.Services.SjlBatchImport
         /// <summary>
         /// 上傳捷利托運資料。
         /// </summary>
-        public ResopnseModel Upload(string filePath)
+        public ResponseModel Upload(string filePath)
         {
             try
             {
                 var uploadRows = ReadExcelFile(filePath);
                 if (uploadRows.Count == 0)
                 {
-                    return new ResopnseModel("Excel 檔案中沒有資料");
+                    return new ResponseModel("Excel 檔案中沒有資料");
                 }
 
                 ValidateUploadRows(uploadRows);
@@ -51,7 +51,7 @@ namespace Service.Services.SjlBatchImport
                 if (failList.Any())
                 {
                     var failMessage = $"上傳失敗，共 {failList.Count} 筆資料有錯誤，請修正後重新上傳";
-                    return new ResopnseModel
+                    return new ResponseModel
                     {
                         status = Status.error,
                         msg = failMessage,
@@ -68,7 +68,7 @@ namespace Service.Services.SjlBatchImport
                 SaveUploadRows(uploadRows);
 
                 var successMessage = $"成功上傳 {uploadRows.Count} 筆資料";
-                return new ResopnseModel
+                return new ResponseModel
                 {
                     status = Status.success,
                     msg = successMessage,
@@ -83,7 +83,7 @@ namespace Service.Services.SjlBatchImport
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"上傳失敗：{ex.Message}");
+                return new ResponseModel($"上傳失敗：{ex.Message}");
             }
         }
 
@@ -137,11 +137,11 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
         /// <summary>
         /// 修改派件公司並寫入歷史資料。
         /// </summary>
-        public ResopnseModel UpdateTransName(SjlShippingDataUpdateTransNameRequest request)
+        public ResponseModel UpdateTransName(SjlShippingDataUpdateTransNameRequest request)
         {
             if (request == null)
             {
-                return new ResopnseModel("資料不存在");
+                return new ResponseModel("資料不存在");
             }
 
             var targetIds = new List<int>();
@@ -158,13 +158,13 @@ OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
             targetIds = targetIds.Where(x => x > 0).Distinct().ToList();
             if (!targetIds.Any())
             {
-                return new ResopnseModel("請至少選擇一筆資料");
+                return new ResponseModel("請至少選擇一筆資料");
             }
 
             var newTransName = NullIfEmpty(request.TransName);
             if (newTransName != "大榮" && newTransName != "捷通" && newTransName != "捷穩通")
             {
-                return new ResopnseModel("派件公司僅能為大榮、捷通或捷穩通");
+                return new ResponseModel("派件公司僅能為大榮、捷通或捷穩通");
             }
 
             var userId = GetUserId();
@@ -188,13 +188,13 @@ WHERE [Id] IN @Ids", new
                         if (!currentData.Any())
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("查無資料");
+                            return new ResponseModel("查無資料");
                         }
 
                         if (currentData.Count != targetIds.Count)
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("部分資料不存在，請重新查詢後再試");
+                            return new ResponseModel("部分資料不存在，請重新查詢後再試");
                         }
 
                         var pendingData = currentData
@@ -204,7 +204,7 @@ WHERE [Id] IN @Ids", new
                         if (!pendingData.Any())
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("派件公司未異動，不需修改");
+                            return new ResponseModel("派件公司未異動，不需修改");
                         }
 
                         var pendingIds = pendingData.Select(x => x.Id).ToList();
@@ -242,7 +242,7 @@ VALUES
                                 ? $"成功修改 {pendingIds.Count} 筆，略過 {skippedCount} 筆未異動資料"
                                 : $"成功修改 {pendingIds.Count} 筆資料";
 
-                        return new ResopnseModel
+                        return new ResponseModel
                         {
                             status = Status.success,
                             msg = message,
@@ -259,7 +259,7 @@ VALUES
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        return new ResopnseModel($"修改失敗：{ex.Message}");
+                        return new ResponseModel($"修改失敗：{ex.Message}");
                     }
                 }
             }

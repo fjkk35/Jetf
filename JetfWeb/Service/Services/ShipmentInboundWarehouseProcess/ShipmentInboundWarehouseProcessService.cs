@@ -112,9 +112,9 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
         /// Excel 欄位：單號、處理狀態(中文)
         /// 整批驗證：任一筆驗證失敗則整批失敗，不更新任何資料。
         /// </summary>
-        public ResopnseModel BatchUpload(string filePath)
+        public ResponseModel BatchUpload(string filePath)
         {
-            var res = new ResopnseModel { status = Status.success, msg = "上傳成功" };
+            var res = new ResponseModel { status = Status.success, msg = "上傳成功" };
 
             var rows = ReadBatchUploadExcel(filePath);
             if (rows.Count == 0)

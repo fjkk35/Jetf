@@ -76,7 +76,7 @@ namespace Service.Services.Tact
         /// <summary>
         /// 登入 Tact 系統
         /// </summary>
-        public async Task<ResopnseModel> LoginAsync(TactLoginRequest request)
+        public async Task<ResponseModel> LoginAsync(TactLoginRequest request)
         {
             try
             {
@@ -94,28 +94,28 @@ namespace Service.Services.Tact
 
                     if (html.Contains("登入失敗") || html.Contains("密碼錯誤") || html.Contains("帳號錯誤") || html.Contains("login.php"))
                     {
-                        return new ResopnseModel("登入失敗：帳號或密碼錯誤");
+                        return new ResponseModel("登入失敗：帳號或密碼錯誤");
                     }
 
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"登入錯誤：{ex.Message}");
+                return new ResponseModel($"登入錯誤：{ex.Message}");
             }
         }
 
         /// <summary>
         /// 查詢 Tact 資料
         /// </summary>
-        public async Task<ResopnseModel> QueryAsync(TactQueryRequest request)
+        public async Task<ResponseModel> QueryAsync(TactQueryRequest request)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(request.HwbNoList))
                 {
-                    return new ResopnseModel("請輸入查詢資料");
+                    return new ResponseModel("請輸入查詢資料");
                 }
 
                 var hwbNoList = request.HwbNoList.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
@@ -125,7 +125,7 @@ namespace Service.Services.Tact
 
                 if (!hwbNoList.Any())
                 {
-                    return new ResopnseModel("請輸入查詢資料");
+                    return new ResponseModel("請輸入查詢資料");
                 }
 
                 var results = new List<TactHwbModel>();
@@ -150,11 +150,11 @@ namespace Service.Services.Tact
                     }
                 }
 
-                return new ResopnseModel(results);
+                return new ResponseModel(results);
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"查詢錯誤：{ex.Message}");
+                return new ResponseModel($"查詢錯誤：{ex.Message}");
             }
         }
 

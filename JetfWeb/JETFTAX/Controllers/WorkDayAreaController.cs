@@ -41,7 +41,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -58,7 +58,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -76,7 +76,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
     }

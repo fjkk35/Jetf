@@ -40,7 +40,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -58,13 +58,13 @@ namespace JETFTAX.Controllers
                 var authority = _authorityService.GetAuthority(id);
                 if (authority == null)
                 {
-                    return Json(new ResopnseModel("權限不存在"), JsonRequestBehavior.AllowGet);
+                    return Json(new ResponseModel("權限不存在"), JsonRequestBehavior.AllowGet);
                 }
                 return Json(authority, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -83,7 +83,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -100,7 +100,7 @@ namespace JETFTAX.Controllers
             {
                 if (req == null)
                 {
-                    return Json(new ResopnseModel("請求資料不能為空"), JsonRequestBehavior.AllowGet);
+                    return Json(new ResponseModel("請求資料不能為空"), JsonRequestBehavior.AllowGet);
                 }
 
                 // 使用 ModelState 驗證
@@ -110,7 +110,7 @@ namespace JETFTAX.Controllers
                         .Where(x => x.Value.Errors.Count > 0)
                         .Select(x => x.Value.Errors.First().ErrorMessage)
                         .FirstOrDefault();
-                    return Json(new ResopnseModel(errors ?? "資料驗證失敗"), JsonRequestBehavior.AllowGet);
+                    return Json(new ResponseModel(errors ?? "資料驗證失敗"), JsonRequestBehavior.AllowGet);
                 }
 
                 var result = _authorityService.Create(req.Id, req.Text, req.PartnerId, req.Sort);
@@ -118,7 +118,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -135,7 +135,7 @@ namespace JETFTAX.Controllers
             {
                 if (req == null || string.IsNullOrWhiteSpace(req.Id))
                 {
-                    return Json(new ResopnseModel("請求資料不完整，缺少權限ID"), JsonRequestBehavior.AllowGet);
+                    return Json(new ResponseModel("請求資料不完整，缺少權限ID"), JsonRequestBehavior.AllowGet);
                 }
 
                 // 使用 ModelState 驗證
@@ -145,7 +145,7 @@ namespace JETFTAX.Controllers
                         .Where(x => x.Value.Errors.Count > 0)
                         .Select(x => x.Value.Errors.First().ErrorMessage)
                         .FirstOrDefault();
-                    return Json(new ResopnseModel(errors ?? "資料驗證失敗"), JsonRequestBehavior.AllowGet);
+                    return Json(new ResponseModel(errors ?? "資料驗證失敗"), JsonRequestBehavior.AllowGet);
                 }
 
                 var result = _authorityService.Update(req.Id, req.Text, req.PartnerId, req.Sort);
@@ -153,7 +153,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
     }

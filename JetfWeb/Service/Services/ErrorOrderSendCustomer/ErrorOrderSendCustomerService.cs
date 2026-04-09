@@ -29,28 +29,28 @@ namespace Service.Services.ErrorOrderSendCustomer
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ResopnseModel Create(CustomerPlatformMapping data)
+        public ResponseModel Create(CustomerPlatformMapping data)
         {
             try
             {
                 var isCustomerExists = IsCustomerExists(data.Customer);
 
                 if(isCustomerExists)
-                    return new ResopnseModel("客戶已存在");
+                    return new ResponseModel("客戶已存在");
 
                 var sqlQuery = "INSERT INTO jetf.dbo.CustomerPlatformMapping (Customer, Platform) VALUES (@Customer, @Platform)";
 
                 conn.Execute(sqlQuery, new { Customer = data.Customer, Platform = data.Platform });
 
-                return new ResopnseModel() { };
+                return new ResponseModel() { };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
-        public ResopnseModel Delete(int id)
+        public ResponseModel Delete(int id)
         {
             try
             {
@@ -58,11 +58,11 @@ namespace Service.Services.ErrorOrderSendCustomer
 
                 conn.Execute(sqlQuery, new { Id = id });
 
-                return new ResopnseModel() { };
+                return new ResponseModel() { };
             }
             catch (Exception ex)
             { 
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 

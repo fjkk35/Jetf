@@ -44,7 +44,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -62,13 +62,13 @@ namespace JETFTAX.Controllers
                 var user = _userMasterService.GetUser(userId);
                 if (user == null)
                 {
-                    return Json(new ResopnseModel("會員不存在"), JsonRequestBehavior.AllowGet);
+                    return Json(new ResponseModel("會員不存在"), JsonRequestBehavior.AllowGet);
                 }
                 return Json(user, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -87,7 +87,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -104,13 +104,13 @@ namespace JETFTAX.Controllers
             {
                 if (req == null)
                 {
-                    return Json(new ResopnseModel("請求資料不能為空"), JsonRequestBehavior.AllowGet);
+                    return Json(new ResponseModel("請求資料不能為空"), JsonRequestBehavior.AllowGet);
                 }
 
                 // 新增時密碼為必填
                 if (string.IsNullOrWhiteSpace(req.Password))
                 {
-                    return Json(new ResopnseModel("請輸入密碼"), JsonRequestBehavior.AllowGet);
+                    return Json(new ResponseModel("請輸入密碼"), JsonRequestBehavior.AllowGet);
                 }
 
                 // 使用 ModelState 驗證
@@ -120,7 +120,7 @@ namespace JETFTAX.Controllers
                         .Where(x => x.Value.Errors.Count > 0)
                         .Select(x => x.Value.Errors.First().ErrorMessage)
                         .FirstOrDefault();
-                    return Json(new ResopnseModel(errors ?? "資料驗證失敗"), JsonRequestBehavior.AllowGet);
+                    return Json(new ResponseModel(errors ?? "資料驗證失敗"), JsonRequestBehavior.AllowGet);
                 }
 
                 var result = _userMasterService.Create(
@@ -134,7 +134,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -151,7 +151,7 @@ namespace JETFTAX.Controllers
             {
                 if (req == null || string.IsNullOrWhiteSpace(req.UserId))
                 {
-                    return Json(new ResopnseModel("請求資料不完整，缺少會員ID"), JsonRequestBehavior.AllowGet);
+                    return Json(new ResponseModel("請求資料不完整，缺少會員ID"), JsonRequestBehavior.AllowGet);
                 }
 
                 // 使用 ModelState 驗證（密碼在修改時為選填）
@@ -170,7 +170,7 @@ namespace JETFTAX.Controllers
                     
                     if (!string.IsNullOrEmpty(errors))
                     {
-                        return Json(new ResopnseModel(errors), JsonRequestBehavior.AllowGet);
+                        return Json(new ResponseModel(errors), JsonRequestBehavior.AllowGet);
                     }
                 }
 
@@ -187,7 +187,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
     }

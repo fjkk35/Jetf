@@ -25,7 +25,7 @@ namespace JETFTAX.Controllers
         public JsonResult Login(AccountViewModel vm)
         {
             AccountService accountService = new AccountService();
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             //resopnseModel.status = Status.success;
             //resopnseModel.msg = "";
             //Session["user_id"] = "admin";

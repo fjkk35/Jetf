@@ -35,7 +35,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SeaWorkErrorOrder)]
         public ActionResult Upload(HttpPostedFileBase file, SeaWorkErrorOrderViewModel vm) 
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;

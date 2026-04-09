@@ -31,9 +31,9 @@ namespace Service.Services
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel InvoiceWork(string filePath, string fileName, string userId)
+        public ResponseModel InvoiceWork(string filePath, string fileName, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             if (conn.State != ConnectionState.Open)
             {
@@ -145,9 +145,9 @@ namespace Service.Services
         /// <param name="upload_time"></param>
         /// <param name="user_Id"></param>
         /// <returns></returns>
-        public ResopnseModel InsertInvoiceWork(DataTable dt_Upload, string upload_time, string user_Id)
+        public ResponseModel InsertInvoiceWork(DataTable dt_Upload, string upload_time, string user_Id)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "新增成功";
 

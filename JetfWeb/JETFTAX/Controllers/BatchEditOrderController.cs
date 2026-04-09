@@ -60,7 +60,7 @@ namespace JETFTAX.Controllers
         [HttpPost]
         public JsonResult Search(string source, HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 if (file != null)

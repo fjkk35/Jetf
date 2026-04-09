@@ -65,10 +65,10 @@ namespace Service.Services.CainiaoHiLifeTax
         }
 
 
-        public ResopnseModel Upload(string filePath, string userId)
+        public ResponseModel Upload(string filePath, string userId)
         {
             var fileName = $"TB{DateTime.Now.ToString("yyyyMMddHHmmss")}.txt";
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
            
             //讀取Excel 
             List<CainiaoHiLifeTaxModel> modelList = ReadTxt(filePath);
@@ -115,9 +115,9 @@ namespace Service.Services.CainiaoHiLifeTax
         /// <param name="fileName"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        private ResopnseModel InsertCainiaoHiLifeTax(List<CainiaoHiLifeTaxModel> list, string fileName, string userId)
+        private ResponseModel InsertCainiaoHiLifeTax(List<CainiaoHiLifeTaxModel> list, string fileName, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = $"上傳成功筆數：{list.Count}";
 

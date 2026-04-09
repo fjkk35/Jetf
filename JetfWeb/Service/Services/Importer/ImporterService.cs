@@ -17,11 +17,11 @@ namespace Service.Services.Importer
 {
     public class ImporterService: _BaseService
     {
-        public async Task<ResopnseModel> Search(ImporterSearchType type ,List<string> list)
+        public async Task<ResponseModel> Search(ImporterSearchType type ,List<string> list)
         {
             var response = await GetList(type , list);
 
-            return new ResopnseModel() { ReturnObject = response };
+            return new ResponseModel() { ReturnObject = response };
         }
 
         /// <summary>

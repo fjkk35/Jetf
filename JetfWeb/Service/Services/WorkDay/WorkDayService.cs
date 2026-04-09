@@ -38,9 +38,9 @@ namespace Service.Services.WorkDay
         /// </summary>
         /// <param name="date"></param>
         /// <param name="type"></param>
-        public ResopnseModel UpdateType(DateTime date, DateType type,string updateOpe)
+        public ResponseModel UpdateType(DateTime date, DateType type,string updateOpe)
         {
-            var resopnseModel = new ResopnseModel();
+            var resopnseModel = new ResponseModel();
 
             try
             {

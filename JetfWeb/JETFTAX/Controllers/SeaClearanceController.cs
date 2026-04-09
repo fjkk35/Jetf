@@ -88,14 +88,14 @@ namespace JETFTAX.Controllers
             try
             {
                 var result = _seaClearanceService.GetDetail(id);
-                return Json(new ResopnseModel
+                return Json(new ResponseModel
                 {
                     ReturnObject = result
                 });
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel
+                return Json(new ResponseModel
                 {
                     msg = ex.Message
                 });
@@ -112,7 +112,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -129,14 +129,14 @@ namespace JETFTAX.Controllers
             try
             {
                 var result = _seaClearanceService.GetCptData(request);
-                return Json(new ResopnseModel
+                return Json(new ResponseModel
                 {
                     ReturnObject = result
                 }, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel
+                return Json(new ResponseModel
                 {
                     msg = ex.Message
                 }, JsonRequestBehavior.AllowGet);
@@ -161,7 +161,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -181,7 +181,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -224,7 +224,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -247,7 +247,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -266,7 +266,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -289,7 +289,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -308,7 +308,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -327,7 +327,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -345,7 +345,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -368,7 +368,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -386,7 +386,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -407,7 +407,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -425,7 +425,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -441,7 +441,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -465,7 +465,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
 
@@ -483,7 +483,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -505,7 +505,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -523,11 +523,11 @@ namespace JETFTAX.Controllers
             try
             {
                 var result = _seaClearanceService.GetProcessor(seaClearanceDetailId);
-                return Json(new ResopnseModel { ReturnObject = result }, JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel { ReturnObject = result }, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -551,7 +551,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel
+                return Json(new ResponseModel
                 {
                     msg = ex.Message
                 });
@@ -574,7 +574,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel
+                return Json(new ResponseModel
                 {
                     msg = ex.Message
                 });
@@ -601,7 +601,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel
+                return Json(new ResponseModel
                 {
                     msg = ex.Message
                 });

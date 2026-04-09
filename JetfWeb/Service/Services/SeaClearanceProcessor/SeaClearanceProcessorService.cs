@@ -16,7 +16,7 @@ namespace Service.Services.SeaClearanceProcessor
         /// </summary>
         /// <param name="query">查詢條件</param>
         /// <returns></returns>
-        public ResopnseModel GetProcessorList(SeaClearanceProcessorQueryModel query)
+        public ResponseModel GetProcessorList(SeaClearanceProcessorQueryModel query)
         {
             try
             {
@@ -59,14 +59,14 @@ namespace Service.Services.SeaClearanceProcessor
                 var result = conn.Query<SeaClearanceProcessorModel>(sql, parameters).ToList();
                 conn.Close();
 
-                return new ResopnseModel { ReturnObject = result };
+                return new ResponseModel { ReturnObject = result };
             }
             catch (Exception ex)
             {
                 if (conn.State == System.Data.ConnectionState.Open)
                     conn.Close();
 
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
@@ -75,7 +75,7 @@ namespace Service.Services.SeaClearanceProcessor
         /// </summary>
         /// <param name="id">ID</param>
         /// <returns></returns>
-        public ResopnseModel GetById(int id)
+        public ResponseModel GetById(int id)
         {
             try
             {
@@ -102,14 +102,14 @@ namespace Service.Services.SeaClearanceProcessor
                 var result = conn.QueryFirstOrDefault<SeaClearanceProcessorModel>(sql, new { Id = id });
                 conn.Close();
 
-                return new ResopnseModel { ReturnObject = result };
+                return new ResponseModel { ReturnObject = result };
             }
             catch (Exception ex)
             {
                 if (conn.State == System.Data.ConnectionState.Open)
                     conn.Close();
 
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
@@ -118,19 +118,19 @@ namespace Service.Services.SeaClearanceProcessor
         /// </summary>
         /// <param name="model">負責人資料</param>
         /// <returns></returns>
-        public ResopnseModel CreateProcessor(SeaClearanceProcessorRequestModel model)
+        public ResponseModel CreateProcessor(SeaClearanceProcessorRequestModel model)
         {
             try
             {
                 // 驗證必填欄位
                 if (model.StepId <= 0)
                 {
-                    return new ResopnseModel("步驟為必填");
+                    return new ResponseModel("步驟為必填");
                 }
 
                 if (string.IsNullOrWhiteSpace(model.Cust_Code))
                 {
-                    return new ResopnseModel("客戶為必填");
+                    return new ResponseModel("客戶為必填");
                 }
 
                 // 驗證至少有一個負責人
@@ -141,7 +141,7 @@ namespace Service.Services.SeaClearanceProcessor
                     string.IsNullOrWhiteSpace(model.TransferG1) &&
                     string.IsNullOrWhiteSpace(model.TransferWarehouse))
                 {
-                    return new ResopnseModel("至少需要填寫一個負責人");
+                    return new ResponseModel("至少需要填寫一個負責人");
                 }
 
                 conn.Open();
@@ -158,7 +158,7 @@ namespace Service.Services.SeaClearanceProcessor
                 if (exists)
                 {
                     conn.Close();
-                    return new ResopnseModel("此步驟與客戶的組合已存在，無法重複新增");
+                    return new ResponseModel("此步驟與客戶的組合已存在，無法重複新增");
                 }
 
                 // 新增資料
@@ -172,14 +172,14 @@ namespace Service.Services.SeaClearanceProcessor
                 conn.Execute(insertSql, model);
                 conn.Close();
 
-                return new ResopnseModel { msg = "新增成功" };
+                return new ResponseModel { msg = "新增成功" };
             }
             catch (Exception ex)
             {
                 if (conn.State == System.Data.ConnectionState.Open)
                     conn.Close();
 
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
@@ -188,24 +188,24 @@ namespace Service.Services.SeaClearanceProcessor
         /// </summary>
         /// <param name="model">負責人資料</param>
         /// <returns></returns>
-        public ResopnseModel UpdateProcessor(SeaClearanceProcessorRequestModel model)
+        public ResponseModel UpdateProcessor(SeaClearanceProcessorRequestModel model)
         {
             try
             {
                 // 驗證必填欄位
                 if (!model.Id.HasValue || model.Id.Value <= 0)
                 {
-                    return new ResopnseModel("ID為必填");
+                    return new ResponseModel("ID為必填");
                 }
 
                 if (model.StepId <= 0)
                 {
-                    return new ResopnseModel("步驟為必填");
+                    return new ResponseModel("步驟為必填");
                 }
 
                 if (string.IsNullOrWhiteSpace(model.Cust_Code))
                 {
-                    return new ResopnseModel("客戶為必填");
+                    return new ResponseModel("客戶為必填");
                 }
 
                 // 驗證至少有一個負責人
@@ -216,7 +216,7 @@ namespace Service.Services.SeaClearanceProcessor
                     string.IsNullOrWhiteSpace(model.TransferG1) &&
                     string.IsNullOrWhiteSpace(model.TransferWarehouse))
                 {
-                    return new ResopnseModel("至少需要填寫一個負責人");
+                    return new ResponseModel("至少需要填寫一個負責人");
                 }
 
                 conn.Open();
@@ -235,7 +235,7 @@ namespace Service.Services.SeaClearanceProcessor
                 if (exists)
                 {
                     conn.Close();
-                    return new ResopnseModel("此步驟與客戶的組合已存在於其他記錄中");
+                    return new ResponseModel("此步驟與客戶的組合已存在於其他記錄中");
                 }
 
                 // 更新資料
@@ -270,17 +270,17 @@ namespace Service.Services.SeaClearanceProcessor
 
                 if (affected == 0)
                 {
-                    return new ResopnseModel("找不到要更新的資料");
+                    return new ResponseModel("找不到要更新的資料");
                 }
 
-                return new ResopnseModel { msg = "更新成功" };
+                return new ResponseModel { msg = "更新成功" };
             }
             catch (Exception ex)
             {
                 if (conn.State == System.Data.ConnectionState.Open)
                     conn.Close();
 
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
@@ -289,7 +289,7 @@ namespace Service.Services.SeaClearanceProcessor
         /// </summary>
         /// <param name="id">ID</param>
         /// <returns></returns>
-        public ResopnseModel DeleteProcessor(int id)
+        public ResponseModel DeleteProcessor(int id)
         {
             try
             {
@@ -304,17 +304,17 @@ namespace Service.Services.SeaClearanceProcessor
 
                 if (affected == 0)
                 {
-                    return new ResopnseModel("找不到要刪除的資料");
+                    return new ResponseModel("找不到要刪除的資料");
                 }
 
-                return new ResopnseModel { msg = "刪除成功" };
+                return new ResponseModel { msg = "刪除成功" };
             }
             catch (Exception ex)
             {
                 if (conn.State == System.Data.ConnectionState.Open)
                     conn.Close();
 
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
     }

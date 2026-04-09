@@ -1,4 +1,4 @@
-using Dapper;
+ï»¿using Dapper;
 using Service.Models;
 using Service.Models.Step;
 using System;
@@ -12,7 +12,7 @@ namespace Service.Services.Step
     public class StepService : _BaseService
     {
         /// <summary>
-        /// ¨ú±o©Ò¦³¨BÆJ¡]¥]§t¨BÆJ¸Ô²Ó¡^
+        /// å–å¾—æ‰€æœ‰æ­¥é©Ÿï¼ˆåŒ…å«æ­¥é©Ÿè©³ç´°ï¼‰
         /// </summary>
         /// <returns></returns>
         public List<StepModel> GetAllStepsWithDetails()
@@ -58,7 +58,7 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// ¨ú±o©Ò¦³¨BÆJ¡]¤£¥]§t¸Ô²Ó¡^
+        /// å–å¾—æ‰€æœ‰æ­¥é©Ÿï¼ˆä¸åŒ…å«è©³ç´°ï¼‰
         /// </summary>
         /// <returns></returns>
         public List<StepModel> GetAllSteps()
@@ -73,7 +73,7 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// ®Ú¾ÚID¨ú±o¨BÆJ
+        /// æ ¹æ“šIDå–å¾—æ­¥é©Ÿ
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
@@ -89,16 +89,16 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// ·s¼W¨BÆJ
+        /// æ–°å¢æ­¥é©Ÿ
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel CreateStep(StepModel model)
+        public ResponseModel CreateStep(StepModel model)
         {
-            // °ò¥»ÅçÃÒ
+            // åŸºæœ¬é©—è­‰
             if (string.IsNullOrWhiteSpace(model.StepName))
             {
-                return new ResopnseModel("¨BÆJ¦WºÙ¤£¯à¬°ªÅ");
+                return new ResponseModel("æ­¥é©Ÿåç¨±ä¸èƒ½ç‚ºç©º");
             }
 
             conn.Open();
@@ -106,13 +106,13 @@ namespace Service.Services.Step
             {
                 try
                 {
-                    // ÀË¬d¨BÆJ¦WºÙ¬O§_­«½Æ
+                    // æª¢æŸ¥æ­¥é©Ÿåç¨±æ˜¯å¦é‡è¤‡
                     if (IsStepNameExists(model.StepName, null, transaction))
                     {
-                        return new ResopnseModel($"¨BÆJ¦WºÙ¡u{model.StepName.Trim()}¡v¤w¦s¦b¡A½Ğ¨Ï¥Î¨ä¥L¦WºÙ");
+                        return new ResponseModel($"æ­¥é©Ÿåç¨±ã€Œ{model.StepName.Trim()}ã€å·²å­˜åœ¨ï¼Œè«‹ä½¿ç”¨å…¶ä»–åç¨±");
                     }
 
-                    // ¨ú±o¤U¤@­Ó±Æ§Ç¸¹½X
+                    // å–å¾—ä¸‹ä¸€å€‹æ’åºè™Ÿç¢¼
                     var nextSort = GetNextStepSort(transaction);
 
                     var sql = @"
@@ -129,12 +129,12 @@ namespace Service.Services.Step
                     }, transaction);
 
                     transaction.Commit();
-                    return new ResopnseModel { ReturnObject = id };
+                    return new ResponseModel { ReturnObject = id };
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -144,16 +144,16 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// §ó·s¨BÆJ
+        /// æ›´æ–°æ­¥é©Ÿ
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateStep(StepModel model)
+        public ResponseModel UpdateStep(StepModel model)
         {
-            // °ò¥»ÅçÃÒ
+            // åŸºæœ¬é©—è­‰
             if (string.IsNullOrWhiteSpace(model.StepName))
             {
-                return new ResopnseModel("¨BÆJ¦WºÙ¤£¯à¬°ªÅ");
+                return new ResponseModel("æ­¥é©Ÿåç¨±ä¸èƒ½ç‚ºç©º");
             }
 
             conn.Open();
@@ -161,10 +161,10 @@ namespace Service.Services.Step
             {
                 try
                 {
-                    // ÀË¬d¨BÆJ¦WºÙ¬O§_­«½Æ¡]±Æ°£¦Û¤v¡^
+                    // æª¢æŸ¥æ­¥é©Ÿåç¨±æ˜¯å¦é‡è¤‡ï¼ˆæ’é™¤è‡ªå·±ï¼‰
                     if (IsStepNameExists(model.StepName, model.Id, transaction))
                     {
-                        return new ResopnseModel($"¨BÆJ¦WºÙ¡u{model.StepName.Trim()}¡v¤w¦s¦b¡A½Ğ¨Ï¥Î¨ä¥L¦WºÙ");
+                        return new ResponseModel($"æ­¥é©Ÿåç¨±ã€Œ{model.StepName.Trim()}ã€å·²å­˜åœ¨ï¼Œè«‹ä½¿ç”¨å…¶ä»–åç¨±");
                     }
 
                     var sql = @"
@@ -184,16 +184,16 @@ namespace Service.Services.Step
                     if (affected == 0)
                     {
                         transaction.Rollback();
-                        return new ResopnseModel("§ä¤£¨ì«ü©wªº¨BÆJ");
+                        return new ResponseModel("æ‰¾ä¸åˆ°æŒ‡å®šçš„æ­¥é©Ÿ");
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -203,18 +203,18 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// §R°£¨BÆJ
+        /// åˆªé™¤æ­¥é©Ÿ
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public ResopnseModel DeleteStep(int id)
+        public ResponseModel DeleteStep(int id)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
             {
                 try
                 {
-                    // ÀË¬d¬O§_¦³¨BÆJ¸Ô²Ó
+                    // æª¢æŸ¥æ˜¯å¦æœ‰æ­¥é©Ÿè©³ç´°
                     var checkSql = @"
                         SELECT COUNT(*) 
                         FROM jetf.dbo.StepDetail 
@@ -225,17 +225,17 @@ namespace Service.Services.Step
 
                     if (detailCount > 0)
                     {
-                        return new ResopnseModel("¦¹¨BÆJ¤UÁÙ¦³¨BÆJ¸Ô²Ó¸ê®Æ¡A½Ğ¥ı§R°£©Ò¦³¨BÆJ¸Ô²Ó«á¦A§R°£¨BÆJ");
+                        return new ResponseModel("æ­¤æ­¥é©Ÿä¸‹é‚„æœ‰æ­¥é©Ÿè©³ç´°è³‡æ–™ï¼Œè«‹å…ˆåˆªé™¤æ‰€æœ‰æ­¥é©Ÿè©³ç´°å¾Œå†åˆªé™¤æ­¥é©Ÿ");
                     }
 
-                    // ¨ú±o­n§R°£¶µ¥Øªº±Æ§Ç
+                    // å–å¾—è¦åˆªé™¤é …ç›®çš„æ’åº
                     var getSortSql = @"
                         SELECT Sort FROM jetf.dbo.Step 
                         WHERE Id = @Id
                     ";
                     var sortToDelete = conn.QueryFirstOrDefault<int?>(getSortSql, new { Id = id }, transaction);
 
-                    // §R°£¨BÆJ
+                    // åˆªé™¤æ­¥é©Ÿ
                     var deleteSql = @"
                         DELETE FROM jetf.dbo.Step 
                         WHERE Id = @Id
@@ -245,10 +245,10 @@ namespace Service.Services.Step
 
                     if (affected == 0)
                     {
-                        return new ResopnseModel("§ä¤£¨ì«ü©wªº¨BÆJ");
+                        return new ResponseModel("æ‰¾ä¸åˆ°æŒ‡å®šçš„æ­¥é©Ÿ");
                     }
 
-                    // ½Õ¾ã¨ä¥L¶µ¥Øªº±Æ§Ç¡]±N¤j©ó³Q§R°£¶µ¥Ø±Æ§Çªº³£´î1¡^
+                    // èª¿æ•´å…¶ä»–é …ç›®çš„æ’åºï¼ˆå°‡å¤§æ–¼è¢«åˆªé™¤é …ç›®æ’åºçš„éƒ½æ¸›1ï¼‰
                     if (sortToDelete.HasValue)
                     {
                         var adjustSql = @"
@@ -260,12 +260,12 @@ namespace Service.Services.Step
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -275,11 +275,11 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// §å¶q§ó·s¨BÆJ±Æ§Ç
+        /// æ‰¹é‡æ›´æ–°æ­¥é©Ÿæ’åº
         /// </summary>
         /// <param name="sortUpdates"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateStepSorts(List<StepSortUpdateModel> sortUpdates)
+        public ResponseModel UpdateStepSorts(List<StepSortUpdateModel> sortUpdates)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
@@ -302,12 +302,12 @@ namespace Service.Services.Step
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -317,7 +317,7 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// ¨ú±o¨BÆJªº©Ò¦³¸Ô²Ó
+        /// å–å¾—æ­¥é©Ÿçš„æ‰€æœ‰è©³ç´°
         /// </summary>
         /// <param name="stepId"></param>
         /// <returns></returns>
@@ -334,21 +334,21 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// ·s¼W¨BÆJ¸Ô²Ó
+        /// æ–°å¢æ­¥é©Ÿè©³ç´°
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel CreateStepDetail(StepDetailModel model)
+        public ResponseModel CreateStepDetail(StepDetailModel model)
         {
-            // °ò¥»ÅçÃÒ
+            // åŸºæœ¬é©—è­‰
             if (string.IsNullOrWhiteSpace(model.StepDetailName))
             {
-                return new ResopnseModel("¨BÆJ¸Ô²Ó¦WºÙ¤£¯à¬°ªÅ");
+                return new ResponseModel("æ­¥é©Ÿè©³ç´°åç¨±ä¸èƒ½ç‚ºç©º");
             }
 
             if (model.StepId <= 0)
             {
-                return new ResopnseModel("½Ğ¿ï¾Ü¨BÆJ");
+                return new ResponseModel("è«‹é¸æ“‡æ­¥é©Ÿ");
             }
 
             conn.Open();
@@ -356,19 +356,19 @@ namespace Service.Services.Step
             {
                 try
                 {
-                    // ÀË¬d¨BÆJ¬O§_¦s¦b
+                    // æª¢æŸ¥æ­¥é©Ÿæ˜¯å¦å­˜åœ¨
                     if (!IsStepExists(model.StepId, transaction))
                     {
-                        return new ResopnseModel("«ü©wªº¨BÆJ¤£¦s¦b");
+                        return new ResponseModel("æŒ‡å®šçš„æ­¥é©Ÿä¸å­˜åœ¨");
                     }
 
-                    // ÀË¬d¨BÆJ¸Ô²Ó¦WºÙ¦b¦P¤@¨BÆJ¤U¬O§_­«½Æ
+                    // æª¢æŸ¥æ­¥é©Ÿè©³ç´°åç¨±åœ¨åŒä¸€æ­¥é©Ÿä¸‹æ˜¯å¦é‡è¤‡
                     if (IsStepDetailNameExists(model.StepId, model.StepDetailName, null, transaction))
                     {
-                        return new ResopnseModel($"¦b¦¹¨BÆJ¤U¡A¨BÆJ¸Ô²Ó¦WºÙ¡u{model.StepDetailName.Trim()}¡v¤w¦s¦b¡A½Ğ¨Ï¥Î¨ä¥L¦WºÙ");
+                        return new ResponseModel($"åœ¨æ­¤æ­¥é©Ÿä¸‹ï¼Œæ­¥é©Ÿè©³ç´°åç¨±ã€Œ{model.StepDetailName.Trim()}ã€å·²å­˜åœ¨ï¼Œè«‹ä½¿ç”¨å…¶ä»–åç¨±");
                     }
 
-                    // ¨ú±o¤U¤@­Ó±Æ§Ç¸¹½X
+                    // å–å¾—ä¸‹ä¸€å€‹æ’åºè™Ÿç¢¼
                     var nextSort = GetNextStepDetailSort(model.StepId, transaction);
 
                     var sql = @"
@@ -385,12 +385,12 @@ namespace Service.Services.Step
                     }, transaction);
 
                     transaction.Commit();
-                    return new ResopnseModel { ReturnObject = id };
+                    return new ResponseModel { ReturnObject = id };
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -400,21 +400,21 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// §ó·s¨BÆJ¸Ô²Ó
+        /// æ›´æ–°æ­¥é©Ÿè©³ç´°
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateStepDetail(StepDetailModel model)
+        public ResponseModel UpdateStepDetail(StepDetailModel model)
         {
-            // °ò¥»ÅçÃÒ
+            // åŸºæœ¬é©—è­‰
             if (string.IsNullOrWhiteSpace(model.StepDetailName))
             {
-                return new ResopnseModel("¨BÆJ¸Ô²Ó¦WºÙ¤£¯à¬°ªÅ");
+                return new ResponseModel("æ­¥é©Ÿè©³ç´°åç¨±ä¸èƒ½ç‚ºç©º");
             }
 
             if (model.StepId <= 0)
             {
-                return new ResopnseModel("½Ğ¿ï¾Ü¨BÆJ");
+                return new ResponseModel("è«‹é¸æ“‡æ­¥é©Ÿ");
             }
 
             conn.Open();
@@ -422,10 +422,10 @@ namespace Service.Services.Step
             {
                 try
                 {
-                    // ÀË¬d¨BÆJ¸Ô²Ó¦WºÙ¦b¦P¤@¨BÆJ¤U¬O§_­«½Æ¡]±Æ°£¦Û¤v¡^
+                    // æª¢æŸ¥æ­¥é©Ÿè©³ç´°åç¨±åœ¨åŒä¸€æ­¥é©Ÿä¸‹æ˜¯å¦é‡è¤‡ï¼ˆæ’é™¤è‡ªå·±ï¼‰
                     if (IsStepDetailNameExists(model.StepId, model.StepDetailName, model.Id, transaction))
                     {
-                        return new ResopnseModel($"¦b¦¹¨BÆJ¤U¡A¨BÆJ¸Ô²Ó¦WºÙ¡u{model.StepDetailName.Trim()}¡v¤w¦s¦b¡A½Ğ¨Ï¥Î¨ä¥L¦WºÙ");
+                        return new ResponseModel($"åœ¨æ­¤æ­¥é©Ÿä¸‹ï¼Œæ­¥é©Ÿè©³ç´°åç¨±ã€Œ{model.StepDetailName.Trim()}ã€å·²å­˜åœ¨ï¼Œè«‹ä½¿ç”¨å…¶ä»–åç¨±");
                     }
 
                     var sql = @"
@@ -444,16 +444,16 @@ namespace Service.Services.Step
                     if (affected == 0)
                     {
                         transaction.Rollback();
-                        return new ResopnseModel("§ä¤£¨ì«ü©wªº¨BÆJ¸Ô²Ó");
+                        return new ResponseModel("æ‰¾ä¸åˆ°æŒ‡å®šçš„æ­¥é©Ÿè©³ç´°");
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -463,18 +463,18 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// §R°£¨BÆJ¸Ô²Ó
+        /// åˆªé™¤æ­¥é©Ÿè©³ç´°
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        public ResopnseModel DeleteStepDetail(int id)
+        public ResponseModel DeleteStepDetail(int id)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
             {
                 try
                 {
-                    // ¨ú±o­n§R°£¶µ¥Øªº±Æ§Ç©M¨BÆJID
+                    // å–å¾—è¦åˆªé™¤é …ç›®çš„æ’åºå’Œæ­¥é©ŸID
                     var getInfoSql = @"
                         SELECT StepId, Sort FROM jetf.dbo.StepDetail 
                         WHERE Id = @Id
@@ -483,10 +483,10 @@ namespace Service.Services.Step
 
                     if (deleteInfo == null)
                     {
-                        return new ResopnseModel("§ä¤£¨ì«ü©wªº¨BÆJ¸Ô²Ó");
+                        return new ResponseModel("æ‰¾ä¸åˆ°æŒ‡å®šçš„æ­¥é©Ÿè©³ç´°");
                     }
 
-                    // §R°£¨BÆJ¸Ô²Ó
+                    // åˆªé™¤æ­¥é©Ÿè©³ç´°
                     var deleteSql = @"
                         DELETE FROM jetf.dbo.StepDetail 
                         WHERE Id = @Id
@@ -496,10 +496,10 @@ namespace Service.Services.Step
 
                     if (affected == 0)
                     {
-                        return new ResopnseModel("§ä¤£¨ì«ü©wªº¨BÆJ¸Ô²Ó");
+                        return new ResponseModel("æ‰¾ä¸åˆ°æŒ‡å®šçš„æ­¥é©Ÿè©³ç´°");
                     }
 
-                    // ½Õ¾ã¦P¤@¨BÆJ¤U¨ä¥L¶µ¥Øªº±Æ§Ç
+                    // èª¿æ•´åŒä¸€æ­¥é©Ÿä¸‹å…¶ä»–é …ç›®çš„æ’åº
                     var adjustSql = @"
                         UPDATE jetf.dbo.StepDetail 
                         SET Sort = Sort - 1 
@@ -511,12 +511,12 @@ namespace Service.Services.Step
                     }, transaction);
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -526,11 +526,11 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// §å¶q§ó·s¨BÆJ¸Ô²Ó±Æ§Ç
+        /// æ‰¹é‡æ›´æ–°æ­¥é©Ÿè©³ç´°æ’åº
         /// </summary>
         /// <param name="sortUpdates"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateStepDetailSorts(List<StepDetailSortUpdateModel> sortUpdates)
+        public ResponseModel UpdateStepDetailSorts(List<StepDetailSortUpdateModel> sortUpdates)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
@@ -553,12 +553,12 @@ namespace Service.Services.Step
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -568,7 +568,7 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// ¨ú±o¤U¤@­Ó¨BÆJ±Æ§Ç¸¹½X
+        /// å–å¾—ä¸‹ä¸€å€‹æ­¥é©Ÿæ’åºè™Ÿç¢¼
         /// </summary>
         /// <param name="transaction"></param>
         /// <returns></returns>
@@ -583,7 +583,7 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// ¨ú±o¤U¤@­Ó¨BÆJ¸Ô²Ó±Æ§Ç¸¹½X
+        /// å–å¾—ä¸‹ä¸€å€‹æ­¥é©Ÿè©³ç´°æ’åºè™Ÿç¢¼
         /// </summary>
         /// <param name="stepId"></param>
         /// <param name="transaction"></param>
@@ -600,11 +600,11 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// ÀË¬d¨BÆJ¦WºÙ¬O§_­«½Æ
+        /// æª¢æŸ¥æ­¥é©Ÿåç¨±æ˜¯å¦é‡è¤‡
         /// </summary>
-        /// <param name="stepName">¨BÆJ¦WºÙ</param>
-        /// <param name="excludeId">­n±Æ°£ªºID¡]§ó·s®É¨Ï¥Î¡^</param>
-        /// <param name="transaction">¥æ©ö</param>
+        /// <param name="stepName">æ­¥é©Ÿåç¨±</param>
+        /// <param name="excludeId">è¦æ’é™¤çš„IDï¼ˆæ›´æ–°æ™‚ä½¿ç”¨ï¼‰</param>
+        /// <param name="transaction">äº¤æ˜“</param>
         /// <returns></returns>
         private bool IsStepNameExists(string stepName, int? excludeId, System.Data.SqlClient.SqlTransaction transaction)
         {
@@ -628,12 +628,12 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// ÀË¬d¨BÆJ¸Ô²Ó¦WºÙ¦b¦P¤@¨BÆJ¤U¬O§_­«½Æ
+        /// æª¢æŸ¥æ­¥é©Ÿè©³ç´°åç¨±åœ¨åŒä¸€æ­¥é©Ÿä¸‹æ˜¯å¦é‡è¤‡
         /// </summary>
-        /// <param name="stepId">¨BÆJID</param>
-        /// <param name="stepDetailName">¨BÆJ¸Ô²Ó¦WºÙ</param>
-        /// <param name="excludeId">­n±Æ°£ªºID¡]§ó·s®É¨Ï¥Î¡^</param>
-        /// <param name="transaction">¥æ©ö</param>
+        /// <param name="stepId">æ­¥é©ŸID</param>
+        /// <param name="stepDetailName">æ­¥é©Ÿè©³ç´°åç¨±</param>
+        /// <param name="excludeId">è¦æ’é™¤çš„IDï¼ˆæ›´æ–°æ™‚ä½¿ç”¨ï¼‰</param>
+        /// <param name="transaction">äº¤æ˜“</param>
         /// <returns></returns>
         private bool IsStepDetailNameExists(int stepId, string stepDetailName, int? excludeId, System.Data.SqlClient.SqlTransaction transaction)
         {
@@ -658,10 +658,10 @@ namespace Service.Services.Step
         }
 
         /// <summary>
-        /// ÀË¬d¨BÆJ¬O§_¦s¦b
+        /// æª¢æŸ¥æ­¥é©Ÿæ˜¯å¦å­˜åœ¨
         /// </summary>
-        /// <param name="stepId">¨BÆJID</param>
-        /// <param name="transaction">¥æ©ö</param>
+        /// <param name="stepId">æ­¥é©ŸID</param>
+        /// <param name="transaction">äº¤æ˜“</param>
         /// <returns></returns>
         private bool IsStepExists(int stepId, System.Data.SqlClient.SqlTransaction transaction)
         {

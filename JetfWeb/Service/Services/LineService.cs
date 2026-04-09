@@ -26,9 +26,9 @@ namespace Service.Services
         /// 新增LINE群組
         /// </summary>
         /// <returns></returns>
-        public ResopnseModel InsertLineGroup(LineGroupModel model, string user_id)
+        public ResponseModel InsertLineGroup(LineGroupModel model, string user_id)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "新增成功";
             try
@@ -60,9 +60,9 @@ namespace Service.Services
         /// 刪除LINE群組
         /// </summary>
         /// <returns></returns>
-        public ResopnseModel DeleteLineGroup(string token)
+        public ResponseModel DeleteLineGroup(string token)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "刪除成功";
             try
@@ -124,9 +124,9 @@ namespace Service.Services
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel CheckLineGroup(LineGroupModel model)
+        public ResponseModel CheckLineGroup(LineGroupModel model)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "";
             if (model.GroupId == null || model.GroupName == null || model.GroupId.Trim() == "" || model.GroupName.Trim() == "")

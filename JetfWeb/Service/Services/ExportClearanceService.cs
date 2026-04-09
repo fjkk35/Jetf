@@ -32,9 +32,9 @@ namespace Service.Services
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UploadExportFlight(string filePath, string userId)
+        public ResponseModel UploadExportFlight(string filePath, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
             try
@@ -233,7 +233,7 @@ namespace Service.Services
         /// <returns></returns>
         public void InsertExportClearanceInfo(List<ExportClearanceInfoModel> list, string upload_Time, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             string sql = $@"
                               insert jetf.dbo.EXPORT_CLEARANCE_INFO(MAWB_NO,CUST_HAWB_NO,CLEARANCE_TYPE,MERGE_NUMBER,CLEARANCE_NUMBER,CLEARANCE_MODEL,DECLARED_PIECE,INBOUND_PIECE,OUTBOUND_PIECE,DECLARED_WEIGHT,INBOUND_WEIGHT,SIGN_IN_TIME,SIGN_OUT_TIME,FLT_NO,AMEND_CLEARANCE_NUMBER,TAX,UPDATE_TIME,UPLOAD_OPE)

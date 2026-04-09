@@ -22,7 +22,7 @@ namespace Service.Services.SeaClearance
         /// <param name="abnormalStateId"></param>
         /// <param name="abnormalStateDetailIds"></param>
         /// <returns></returns>
-        public ResopnseModel SaveSeaClearanceAbnormalState(int seaClearanceDetailId, int abnormalStateId, List<int> abnormalStateDetailIds)
+        public ResponseModel SaveSeaClearanceAbnormalState(int seaClearanceDetailId, int abnormalStateId, List<int> abnormalStateDetailIds)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
@@ -90,12 +90,12 @@ namespace Service.Services.SeaClearance
                     );
 
                     transaction.Commit();
-                    return new ResopnseModel { ReturnObject = seaClearanceAbnormalStateId };
+                    return new ResponseModel { ReturnObject = seaClearanceAbnormalStateId };
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {

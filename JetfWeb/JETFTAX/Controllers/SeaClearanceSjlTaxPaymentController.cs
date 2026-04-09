@@ -44,7 +44,7 @@ namespace JETFTAX.Controllers
         public ActionResult Create(SeaClearanceSjlTaxPaymentViewModel vm)
         {
             if(string.IsNullOrEmpty(vm.Importer))
-                return Json(new ResopnseModel("請輸入申報人"), JsonRequestBehavior.AllowGet);
+                return Json(new ResponseModel("請輸入申報人"), JsonRequestBehavior.AllowGet);
 
             var result = _seaClearanceSjlTaxPaymentService.Create(new SeaClearanceSjlTaxPaymentModel
             {

@@ -22,13 +22,13 @@ namespace Service.Services.Ftz
         /// <summary>
         /// 主號查詢
         /// </summary>
-        public async Task<ResopnseModel> MainQueryAsync(FtzMainQueryRequest request)
+        public async Task<ResponseModel> MainQueryAsync(FtzMainQueryRequest request)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(request.Mwb))
                 {
-                    return new ResopnseModel("請輸入主號");
+                    return new ResponseModel("請輸入主號");
                 }
 
                 // 解析主號列表（支援換行分隔）
@@ -39,7 +39,7 @@ namespace Service.Services.Ftz
 
                 if (!mwbList.Any())
                 {
-                    return new ResopnseModel("請輸入主號");
+                    return new ResponseModel("請輸入主號");
                 }
 
                 var results = new List<FtzMainQueryViewModel>();
@@ -79,14 +79,14 @@ namespace Service.Services.Ftz
                 //取得派件公司
                 GetTransName(results);
 
-                return new ResopnseModel
+                return new ResponseModel
                 {
                     ReturnObject = results
                 };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"查詢錯誤：{ex.Message}");
+                return new ResponseModel($"查詢錯誤：{ex.Message}");
             }
         }
 

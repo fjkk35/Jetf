@@ -38,7 +38,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SjlBatchImport)]
         public JsonResult Upload(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 if (file == null || file.ContentLength == 0)
@@ -104,7 +104,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel(ex.Message));
+                return Json(new ResponseModel(ex.Message));
             }
         }
     }

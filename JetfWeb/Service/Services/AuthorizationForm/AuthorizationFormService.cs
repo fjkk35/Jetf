@@ -1,4 +1,4 @@
-using Dapper;
+ï»¿using Dapper;
 using Service.Models;
 using Service.Models.AuthorizationForm;
 using System;
@@ -12,7 +12,7 @@ namespace Service.Services.AuthorizationForm
     public class AuthorizationFormService : _BaseService
     {
         /// <summary>
-        /// ¨ú±o©Ò¦³¤å¥ó¦WºÙ
+        /// å–å¾—æ‰€æœ‰æ–‡ä»¶åç¨±
         /// </summary>
         /// <returns></returns>
         public List<AuthorizationFormModel> GetAll()
@@ -27,7 +27,7 @@ namespace Service.Services.AuthorizationForm
         }
 
         /// <summary>
-        /// ®Ú¾ÚID¨ú±o¤å¥ó¦WºÙ
+        /// æ ¹æ“šIDå–å¾—æ–‡ä»¶åç¨±
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
@@ -43,11 +43,11 @@ namespace Service.Services.AuthorizationForm
         }
 
         /// <summary>
-        /// ÀË¬d¤å¥ó¦WºÙ¬O§_­«½Æ
+        /// æª¢æŸ¥æ–‡ä»¶åç¨±æ˜¯å¦é‡è¤‡
         /// </summary>
-        /// <param name="formName">¤å¥ó¦WºÙ</param>
-        /// <param name="excludeId">­n±Æ°£ªºID¡]§ó·s®É¨Ï¥Î¡^</param>
-        /// <param name="transaction">¥æ©ö</param>
+        /// <param name="formName">æ–‡ä»¶åç¨±</param>
+        /// <param name="excludeId">è¦æ’é™¤çš„IDï¼ˆæ›´æ–°æ™‚ä½¿ç”¨ï¼‰</param>
+        /// <param name="transaction">äº¤æ˜“</param>
         /// <returns></returns>
         private bool IsFormNameExists(string formName, int? excludeId, System.Data.SqlClient.SqlTransaction transaction)
         {
@@ -71,16 +71,16 @@ namespace Service.Services.AuthorizationForm
         }
 
         /// <summary>
-        /// ·s¼W¤å¥ó¦WºÙ
+        /// æ–°å¢æ–‡ä»¶åç¨±
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel Create(AuthorizationFormModel model)
+        public ResponseModel Create(AuthorizationFormModel model)
         {
-            // °ò¥»ÅçÃÒ
+            // åŸºæœ¬é©—è­‰
             if (string.IsNullOrWhiteSpace(model.FormName))
             {
-                return new ResopnseModel("¤å¥ó¦WºÙ¤£¯à¬°ªÅ");
+                return new ResponseModel("æ–‡ä»¶åç¨±ä¸èƒ½ç‚ºç©º");
             }
 
             conn.Open();
@@ -88,13 +88,13 @@ namespace Service.Services.AuthorizationForm
             {
                 try
                 {
-                    // ÀË¬d¤å¥ó¦WºÙ¬O§_­«½Æ
+                    // æª¢æŸ¥æ–‡ä»¶åç¨±æ˜¯å¦é‡è¤‡
                     if (IsFormNameExists(model.FormName, null, transaction))
                     {
-                        return new ResopnseModel($"¤å¥ó¦WºÙ¡u{model.FormName.Trim()}¡v¤w¦s¦b¡A½Ğ¨Ï¥Î¨ä¥L¦WºÙ");
+                        return new ResponseModel($"æ–‡ä»¶åç¨±ã€Œ{model.FormName.Trim()}ã€å·²å­˜åœ¨ï¼Œè«‹ä½¿ç”¨å…¶ä»–åç¨±");
                     }
 
-                    // ½Õ¾ã¨ä¥L¶µ¥Øªº±Æ§Ç
+                    // èª¿æ•´å…¶ä»–é …ç›®çš„æ’åº
                     AdjustSortOrder(model.Sort, null, transaction);
 
                     var sql = @"
@@ -110,12 +110,12 @@ namespace Service.Services.AuthorizationForm
                     }, transaction);
 
                     transaction.Commit();
-                    return new ResopnseModel { ReturnObject = id };
+                    return new ResponseModel { ReturnObject = id };
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -125,16 +125,16 @@ namespace Service.Services.AuthorizationForm
         }
 
         /// <summary>
-        /// §ó·s¤å¥ó¦WºÙ
+        /// æ›´æ–°æ–‡ä»¶åç¨±
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel Update(AuthorizationFormModel model)
+        public ResponseModel Update(AuthorizationFormModel model)
         {
-            // °ò¥»ÅçÃÒ
+            // åŸºæœ¬é©—è­‰
             if (string.IsNullOrWhiteSpace(model.FormName))
             {
-                return new ResopnseModel("¤å¥ó¦WºÙ¤£¯à¬°ªÅ");
+                return new ResponseModel("æ–‡ä»¶åç¨±ä¸èƒ½ç‚ºç©º");
             }
 
             conn.Open();
@@ -142,13 +142,13 @@ namespace Service.Services.AuthorizationForm
             {
                 try
                 {
-                    // ÀË¬d¤å¥ó¦WºÙ¬O§_­«½Æ¡]±Æ°£¦Û¤v¡^
+                    // æª¢æŸ¥æ–‡ä»¶åç¨±æ˜¯å¦é‡è¤‡ï¼ˆæ’é™¤è‡ªå·±ï¼‰
                     if (IsFormNameExists(model.FormName, model.Id, transaction))
                     {
-                        return new ResopnseModel($"¤å¥ó¦WºÙ¡u{model.FormName.Trim()}¡v¤w¦s¦b¡A½Ğ¨Ï¥Î¨ä¥L¦WºÙ");
+                        return new ResponseModel($"æ–‡ä»¶åç¨±ã€Œ{model.FormName.Trim()}ã€å·²å­˜åœ¨ï¼Œè«‹ä½¿ç”¨å…¶ä»–åç¨±");
                     }
 
-                    // ½Õ¾ã¨ä¥L¶µ¥Øªº±Æ§Ç
+                    // èª¿æ•´å…¶ä»–é …ç›®çš„æ’åº
                     AdjustSortOrder(model.Sort, model.Id, transaction);
 
                     var sql = @"
@@ -167,16 +167,16 @@ namespace Service.Services.AuthorizationForm
                     if (affected == 0)
                     {
                         transaction.Rollback();
-                        return new ResopnseModel("§ä¤£¨ì«ü©wªº¤å¥ó¦WºÙ");
+                        return new ResponseModel("æ‰¾ä¸åˆ°æŒ‡å®šçš„æ–‡ä»¶åç¨±");
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -186,14 +186,14 @@ namespace Service.Services.AuthorizationForm
         }
 
         /// <summary>
-        /// ½Õ¾ã±Æ§Ç¶¶§Ç¡AÁ×§K­«½Æ
+        /// èª¿æ•´æ’åºé †åºï¼Œé¿å…é‡è¤‡
         /// </summary>
-        /// <param name="newSort">·sªº±Æ§Ç¸¹½X</param>
-        /// <param name="excludeId">­n±Æ°£ªºID¡]§ó·s®É¨Ï¥Î¡^</param>
-        /// <param name="transaction">¥æ©ö</param>
+        /// <param name="newSort">æ–°çš„æ’åºè™Ÿç¢¼</param>
+        /// <param name="excludeId">è¦æ’é™¤çš„IDï¼ˆæ›´æ–°æ™‚ä½¿ç”¨ï¼‰</param>
+        /// <param name="transaction">äº¤æ˜“</param>
         private void AdjustSortOrder(int newSort, int? excludeId, System.Data.SqlClient.SqlTransaction transaction)
         {
-            // ±N±Æ§Ç¸¹½X¤j©óµ¥©ónewSortªº¶µ¥Ø³£¥[1
+            // å°‡æ’åºè™Ÿç¢¼å¤§æ–¼ç­‰æ–¼newSortçš„é …ç›®éƒ½åŠ 1
             var adjustSql = @"
                 UPDATE jetf.dbo.AuthorizationForm 
                 SET Sort = Sort + 1 
@@ -212,11 +212,11 @@ namespace Service.Services.AuthorizationForm
         }
 
         /// <summary>
-        /// §å¶q§ó·s±Æ§Ç
+        /// æ‰¹é‡æ›´æ–°æ’åº
         /// </summary>
         /// <param name="sortUpdates"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateSorts(List<AuthorizationFormModel> sortUpdates)
+        public ResponseModel UpdateSorts(List<AuthorizationFormModel> sortUpdates)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
@@ -239,12 +239,12 @@ namespace Service.Services.AuthorizationForm
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {

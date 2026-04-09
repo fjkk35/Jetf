@@ -42,7 +42,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.BatchUploadProcess)]
         public JsonResult Upload(BatchUploadProcessViewModel vm, HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;

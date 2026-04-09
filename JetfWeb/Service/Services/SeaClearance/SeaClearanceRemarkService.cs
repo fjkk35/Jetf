@@ -1,4 +1,4 @@
-using Dapper;
+ï»¿using Dapper;
 using Service.EnumTax;
 using Service.Models;
 using Service.Models.SeaClearance;
@@ -13,17 +13,17 @@ namespace Service.Services.SeaClearance
     public partial class SeaClearanceService
     {
         /// <summary>
-        /// ·s¼W®ü¹B³qÃö³Æµù
+        /// æ–°å¢æµ·é‹é€šé—œå‚™è¨»
         /// </summary>
         /// <param name="seaClearanceDetailId"></param>
         /// <param name="remark"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel AddSeaClearanceRemark(int seaClearanceDetailId, string remark)
+        public ResponseModel AddSeaClearanceRemark(int seaClearanceDetailId, string remark)
         {
             if (string.IsNullOrWhiteSpace(remark))
             {
-                return new ResopnseModel("³Æµù¤º®e¤£¥i¬°ªÅ");
+                return new ResponseModel("å‚™è¨»å…§å®¹ä¸å¯ç‚ºç©º");
             }
 
             conn.Open();
@@ -46,7 +46,7 @@ namespace Service.Services.SeaClearance
                         CreateTime = DateTime.Now
                     }, transaction);
 
-                    //½s¿è¬ö¿ı
+                    //ç·¨è¼¯ç´€éŒ„
                     _editHistoryService.RecordEdit(
                        transaction,
                        conn,
@@ -57,12 +57,12 @@ namespace Service.Services.SeaClearance
                     );
 
                     transaction.Commit();
-                    return new ResopnseModel { ReturnObject = id };
+                    return new ResponseModel { ReturnObject = id };
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -72,7 +72,7 @@ namespace Service.Services.SeaClearance
         }
 
         /// <summary>
-        /// ¨ú±o®ü¹B³qÃöªº©Ò¦³³Æµù
+        /// å–å¾—æµ·é‹é€šé—œçš„æ‰€æœ‰å‚™è¨»
         /// </summary>
         /// <param name="seaClearanceDetailId"></param>
         /// <returns></returns>

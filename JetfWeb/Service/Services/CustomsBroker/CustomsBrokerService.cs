@@ -105,7 +105,7 @@ namespace Service.Services.CustomsBroker
         /// <summary>
         /// 新增報驗公司
         /// </summary>
-        public ResopnseModel Insert(CustomsBrokerModel model)
+        public ResponseModel Insert(CustomsBrokerModel model)
         {
             try
             {
@@ -124,20 +124,20 @@ namespace Service.Services.CustomsBroker
                 };
 
                 conn.Execute(sql, parameters);
-                return new ResopnseModel();
+                return new ResponseModel();
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
         /// <summary>
         /// 更新報驗公司
         /// </summary>
-        public ResopnseModel Update(CustomsBrokerModel model, string userId)
+        public ResponseModel Update(CustomsBrokerModel model, string userId)
         {
-            var response = new ResopnseModel();
+            var response = new ResponseModel();
             
             try
             {
@@ -165,12 +165,12 @@ namespace Service.Services.CustomsBroker
                 }
                 else
                 {
-                    response = new ResopnseModel("更新失敗，找不到指定的記錄");
+                    response = new ResponseModel("更新失敗，找不到指定的記錄");
                 }
             }
             catch (Exception ex)
             {
-                response = new ResopnseModel(ex.Message);
+                response = new ResponseModel(ex.Message);
             }
 
             return response;
@@ -179,9 +179,9 @@ namespace Service.Services.CustomsBroker
         /// <summary>
         /// 刪除報驗公司 (軟刪除)
         /// </summary>
-        public ResopnseModel Delete(int id, string userId)
+        public ResponseModel Delete(int id, string userId)
         {
-            var response = new ResopnseModel();
+            var response = new ResponseModel();
             
             try
             {
@@ -200,12 +200,12 @@ namespace Service.Services.CustomsBroker
                 }
                 else
                 {
-                    response = new ResopnseModel("刪除失敗，找不到指定的記錄");
+                    response = new ResponseModel("刪除失敗，找不到指定的記錄");
                 }
             }
             catch (Exception ex)
             {
-                response = new ResopnseModel(ex.Message);
+                response = new ResponseModel(ex.Message);
             }
 
             return response;
@@ -238,7 +238,7 @@ namespace Service.Services.CustomsBroker
         /// <summary>
         /// 新增聯絡人
         /// </summary>
-        public ResopnseModel InsertContact(CustomsBrokerContactModel model)
+        public ResponseModel InsertContact(CustomsBrokerContactModel model)
         {
             try
             {
@@ -260,20 +260,20 @@ namespace Service.Services.CustomsBroker
                 };
 
                 conn.Execute(sql, parameters);
-                return new ResopnseModel();
+                return new ResponseModel();
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
         /// <summary>
         /// 更新聯絡人
         /// </summary>
-        public ResopnseModel UpdateContact(CustomsBrokerContactModel model, string userId)
+        public ResponseModel UpdateContact(CustomsBrokerContactModel model, string userId)
         {
-            var response = new ResopnseModel();
+            var response = new ResponseModel();
             
             try
             {
@@ -305,12 +305,12 @@ namespace Service.Services.CustomsBroker
                 }
                 else
                 {
-                    response = new ResopnseModel("更新失敗，找不到指定的記錄");
+                    response = new ResponseModel("更新失敗，找不到指定的記錄");
                 }
             }
             catch (Exception ex)
             {
-                response = new ResopnseModel(ex.Message);
+                response = new ResponseModel(ex.Message);
             }
 
             return response;
@@ -319,9 +319,9 @@ namespace Service.Services.CustomsBroker
         /// <summary>
         /// 刪除聯絡人 (實體刪除)
         /// </summary>
-        public ResopnseModel DeleteContact(int id)
+        public ResponseModel DeleteContact(int id)
         {
-            var response = new ResopnseModel();
+            var response = new ResponseModel();
             
             try
             {
@@ -335,12 +335,12 @@ namespace Service.Services.CustomsBroker
                 }
                 else
                 {
-                    response = new ResopnseModel("刪除失敗，找不到指定的記錄");
+                    response = new ResponseModel("刪除失敗，找不到指定的記錄");
                 }
             }
             catch (Exception ex)
             {
-                response = new ResopnseModel(ex.Message);
+                response = new ResponseModel(ex.Message);
             }
 
             return response;

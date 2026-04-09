@@ -23,7 +23,7 @@ namespace Service.Services.ShipmentInboundBatchImport
         /// </summary>
         /// <param name="filePath">檔案路徑</param>
         /// <returns></returns>
-        public ResopnseModel UploadShipmentInbound(string filePath)
+        public ResponseModel UploadShipmentInbound(string filePath)
         {
             try
             {
@@ -31,7 +31,7 @@ namespace Service.Services.ShipmentInboundBatchImport
 
                 if (shipmentInboundList.Count == 0)
                 {
-                    return new ResopnseModel("Excel 檔案中沒有資料");
+                    return new ResponseModel("Excel 檔案中沒有資料");
                 }
 
                 EnrichShipmentData(shipmentInboundList);
@@ -49,7 +49,7 @@ namespace Service.Services.ShipmentInboundBatchImport
 
                 var responseMessage = $"成功 {successList.Count} 筆，失敗 {failList.Count} 筆";
 
-                var response = new ResopnseModel
+                var response = new ResponseModel
                 {
                     IsSuccess = successList.Count > 0,
                     status = successList.Count > 0 ? Status.success : Status.error,
@@ -67,7 +67,7 @@ namespace Service.Services.ShipmentInboundBatchImport
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"上傳失敗：{ex.Message}");
+                return new ResponseModel($"上傳失敗：{ex.Message}");
             }
         }
 

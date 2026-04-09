@@ -31,9 +31,9 @@ namespace Service.Services
         /// <param name="fileType"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UploadFile(string dataDate, string filePath, SeaTaxType taxType, string userId)
+        public ResponseModel UploadFile(string dataDate, string filePath, SeaTaxType taxType, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             if (conn.State != ConnectionState.Open)
             {
@@ -108,9 +108,9 @@ namespace Service.Services
         /// <param name="fileType"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UploadFileG(string dataDate, string filePath, string userId)
+        public ResponseModel UploadFileG(string dataDate, string filePath, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             if (conn.State != ConnectionState.Open)
             {
@@ -145,9 +145,9 @@ namespace Service.Services
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UploadFileReceive(string filePath, string userId)
+        public ResponseModel UploadFileReceive(string filePath, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             if (conn.State != ConnectionState.Open)
             {
@@ -284,9 +284,9 @@ namespace Service.Services
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UploadFileTransfer(string filePath, string userId)
+        public ResponseModel UploadFileTransfer(string filePath, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             if (conn.State != ConnectionState.Open)
             {
@@ -438,9 +438,9 @@ namespace Service.Services
         /// <param name="fileType"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UploadFileAgainCargo(string filePath, string userId)
+        public ResponseModel UploadFileAgainCargo(string filePath, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             if (conn.State != ConnectionState.Open)
             {
@@ -476,9 +476,9 @@ namespace Service.Services
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel CainiaoTaxEdit(string filePath, string fileName, string source, string column, string userId)
+        public ResponseModel CainiaoTaxEdit(string filePath, string fileName, string source, string column, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             if (conn.State != ConnectionState.Open)
             {
@@ -583,9 +583,9 @@ namespace Service.Services
         /// <param name="upload_time"></param>
         /// <param name="user_Id"></param>
         /// <returns></returns>
-        public ResopnseModel InsertCainiaoTaxEdit(DataTable dt_Upload, string source, string upload_time, string user_Id)
+        public ResponseModel InsertCainiaoTaxEdit(DataTable dt_Upload, string source, string upload_time, string user_Id)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "新增成功";
 
@@ -635,9 +635,9 @@ namespace Service.Services
         /// <param name="upload_time"></param>
         /// <param name="user_Id"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateCainiaoTaxEditSea(string upload_time, string user_Id)
+        public ResponseModel UpdateCainiaoTaxEditSea(string upload_time, string user_Id)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "更新成功";
 
@@ -686,9 +686,9 @@ namespace Service.Services
         /// <param name="upload_time"></param>
         /// <param name="user_Id"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateCainiaoTaxEditSea_JetfSerial(string upload_time, string user_Id)
+        public ResponseModel UpdateCainiaoTaxEditSea_JetfSerial(string upload_time, string user_Id)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "更新成功";
 
@@ -736,9 +736,9 @@ namespace Service.Services
         /// <param name="upload_time"></param>
         /// <param name="user_Id"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateCainiaoTaxEditEtl(string upload_time, string user_Id)
+        public ResponseModel UpdateCainiaoTaxEditEtl(string upload_time, string user_Id)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "更新成功";
 
@@ -843,9 +843,9 @@ namespace Service.Services
             return dataTableModel;
         }
 
-        public ResopnseModel InsertSea_Tax_Upload(DataTable dt_Upload, string upload_Time, string userId)
+        public ResponseModel InsertSea_Tax_Upload(DataTable dt_Upload, string upload_Time, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             //新增SEA_TAX_UPLOAD
             StringBuilder sb = new StringBuilder();
@@ -891,9 +891,9 @@ namespace Service.Services
             return resopnseModel;
         }
 
-        public ResopnseModel InsertSea_Tax_Upload_Modify(DataTable dt_Upload, string dataDate, string taxType, string upload_Time, string userId)
+        public ResponseModel InsertSea_Tax_Upload_Modify(DataTable dt_Upload, string dataDate, string taxType, string upload_Time, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             DataRow dr_Upload;
             DataTable dt_Modify = new DataTable();
             var sql = @"
@@ -992,11 +992,11 @@ and a.BAG_NUMBER=BL_NO and a.MAIN_NUMBER = MAIN_NUMBER)
             return resopnseModel;
         }
 
-        ResopnseModel InsertFee_Master(DataTable dt_Fee_Master, string dataDate, string userId)
+        ResponseModel InsertFee_Master(DataTable dt_Fee_Master, string dataDate, string userId)
         {
             //DataRow dr_error;
             //int error = 0;
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             using (SqlTransaction tran = conn.BeginTransaction())
             {
                 //新增FEE_MASTER
@@ -1084,9 +1084,9 @@ and a.BAG_NUMBER=BL_NO and a.MAIN_NUMBER = MAIN_NUMBER)
         /// </summary>
         /// <param name="dt_Fee_Master"></param>
         /// <param name="userId"></param>
-        ResopnseModel InsertFee_MasterG(DataTable dt_Fee_Master, string dataDate, string userId)
+        ResponseModel InsertFee_MasterG(DataTable dt_Fee_Master, string dataDate, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             using (SqlTransaction tran = conn.BeginTransaction())
             {
@@ -1176,9 +1176,9 @@ and a.BAG_NUMBER=BL_NO and a.MAIN_NUMBER = MAIN_NUMBER)
         /// </summary>
         /// <param name="dt_Fee_Master"></param>
         /// <param name="userId"></param>
-        ResopnseModel InsertAgainCargo(DataTable dt_AgainCargo, string userId)
+        ResponseModel InsertAgainCargo(DataTable dt_AgainCargo, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             using (SqlTransaction tran = conn.BeginTransaction())
             {

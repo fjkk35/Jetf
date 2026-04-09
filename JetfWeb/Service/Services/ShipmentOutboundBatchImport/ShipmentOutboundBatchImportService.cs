@@ -20,7 +20,7 @@ namespace Service.Services.ShipmentOutboundBatchImport
         /// <param name="filePath">檔案路徑</param>
         /// <param name="userId">上傳人員ID</param>
         /// <returns></returns>
-        public ResopnseModel UploadShipmentOutbound(string filePath)
+        public ResponseModel UploadShipmentOutbound(string filePath)
         {
             try
             {
@@ -28,7 +28,7 @@ namespace Service.Services.ShipmentOutboundBatchImport
 
                 if (shipmentOutboundList.Count == 0)
                 {
-                    return new ResopnseModel("Excel 檔案中沒有資料");
+                    return new ResponseModel("Excel 檔案中沒有資料");
                 }
 
                 ValidateData(shipmentOutboundList);
@@ -37,7 +37,7 @@ namespace Service.Services.ShipmentOutboundBatchImport
 
                 if (failList.Count > 0)
                 {
-                    return new ResopnseModel(new
+                    return new ResponseModel(new
                     {
                         count = 0,
                         failCount = failList.Count,
@@ -50,7 +50,7 @@ namespace Service.Services.ShipmentOutboundBatchImport
 
                 UpdateShipmentOutbound(successList);
 
-                return new ResopnseModel(new
+                return new ResponseModel(new
                 {
                     count = successList.Count,
                     failCount = 0,
@@ -60,7 +60,7 @@ namespace Service.Services.ShipmentOutboundBatchImport
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"上傳失敗：{ex.Message}");
+                return new ResponseModel($"上傳失敗：{ex.Message}");
             }
         }
 

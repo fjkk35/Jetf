@@ -31,7 +31,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.UploadEtlMergeBagNo)]
         public JsonResult Upload(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;

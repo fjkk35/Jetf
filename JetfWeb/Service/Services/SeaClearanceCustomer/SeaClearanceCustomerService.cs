@@ -1,4 +1,4 @@
-using Dapper;
+ï»¿using Dapper;
 using Service.Models;
 using Service.Models.SeaClearanceCustomer;
 using System;
@@ -12,7 +12,7 @@ namespace Service.Services.SeaClearanceCustomer
     public class SeaClearanceCustomerService : _BaseService
     {
         /// <summary>
-        /// ¨ú±o©Ò¦³¤w¿ï¾Üªº«È¤á
+        /// å–å¾—æ‰€æœ‰å·²é¸æ“‡çš„å®¢æˆ¶
         /// </summary>
         /// <returns></returns>
         public List<SeaClearanceCustomerModel> GetSelectedCustomers()
@@ -27,7 +27,7 @@ namespace Service.Services.SeaClearanceCustomer
         }
 
         /// <summary>
-        /// ¨ú±o©Ò¦³¥i¥Îªº«È¤á¡]¨Ó·½¦Û DATA_CENTER¡^
+        /// å–å¾—æ‰€æœ‰å¯ç”¨çš„å®¢æˆ¶ï¼ˆä¾†æºè‡ª DATA_CENTERï¼‰
         /// </summary>
         /// <returns></returns>
         public List<AvailableCustomerModel> GetAvailableCustomers()
@@ -47,15 +47,15 @@ namespace Service.Services.SeaClearanceCustomer
         }
 
         /// <summary>
-        /// §å¶q·s¼W«È¤á
+        /// æ‰¹é‡æ–°å¢å®¢æˆ¶
         /// </summary>
-        /// <param name="customerCodes">«È¤á¥N½X¦Cªí</param>
+        /// <param name="customerCodes">å®¢æˆ¶ä»£ç¢¼åˆ—è¡¨</param>
         /// <returns></returns>
-        public ResopnseModel AddCustomers(List<string> customerCodes)
+        public ResponseModel AddCustomers(List<string> customerCodes)
         {
             if (customerCodes == null || !customerCodes.Any())
             {
-                return new ResopnseModel("½Ğ¿ï¾Ü­n·s¼Wªº«È¤á");
+                return new ResponseModel("è«‹é¸æ“‡è¦æ–°å¢çš„å®¢æˆ¶");
             }
 
             conn.Open();
@@ -68,7 +68,7 @@ namespace Service.Services.SeaClearanceCustomer
 
                     foreach (var custCode in customerCodes.Where(c => !string.IsNullOrWhiteSpace(c)))
                     {
-                        // ÀË¬d«È¤á¬O§_¤w¦s¦b
+                        // æª¢æŸ¥å®¢æˆ¶æ˜¯å¦å·²å­˜åœ¨
                         var existsSql = @"
                             SELECT COUNT(*) 
                             FROM jetf.dbo.SeaClearanceCustomer 
@@ -82,7 +82,7 @@ namespace Service.Services.SeaClearanceCustomer
                             continue;
                         }
 
-                        // ±q DATA_CENTER ¨ú±o«È¤á¸ê®Æ
+                        // å¾ DATA_CENTER å–å¾—å®¢æˆ¶è³‡æ–™
                         var customerSql = @"
                             SELECT Cust_Code, Cust_Name
                             FROM DATA_CENTER.dbo.SYS_CUST
@@ -92,10 +92,10 @@ namespace Service.Services.SeaClearanceCustomer
 
                         if (customer == null)
                         {
-                            return new ResopnseModel($"«È¤á¥N½X {custCode} ¤£¦s¦b©Î¤£¬O®ü¹B«È¤á");
+                            return new ResponseModel($"å®¢æˆ¶ä»£ç¢¼ {custCode} ä¸å­˜åœ¨æˆ–ä¸æ˜¯æµ·é‹å®¢æˆ¶");
                         }
 
-                        // ·s¼W«È¤á
+                        // æ–°å¢å®¢æˆ¶
                         var insertSql = @"
                             INSERT INTO jetf.dbo.SeaClearanceCustomer (Cust_Code, Cust_Name)
                             VALUES (@Cust_Code, @Cust_Name)
@@ -106,18 +106,18 @@ namespace Service.Services.SeaClearanceCustomer
 
                     transaction.Commit();
 
-                    var message = $"¾Ş§@§¹¦¨¡G·s¼W {addedCount} ­Ó«È¤á";
+                    var message = $"æ“ä½œå®Œæˆï¼šæ–°å¢ {addedCount} å€‹å®¢æˆ¶";
                     if (skippedCount > 0)
                     {
-                        message += $"¡A¸õ¹L {skippedCount} ­Ó¤w¦s¦bªº«È¤á";
+                        message += $"ï¼Œè·³é {skippedCount} å€‹å·²å­˜åœ¨çš„å®¢æˆ¶";
                     }
 
-                    return new ResopnseModel { ReturnObject = new { AddedCount = addedCount, SkippedCount = skippedCount, Message = message } };
+                    return new ResponseModel { ReturnObject = new { AddedCount = addedCount, SkippedCount = skippedCount, Message = message } };
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -127,15 +127,15 @@ namespace Service.Services.SeaClearanceCustomer
         }
 
         /// <summary>
-        /// §å¶q§R°£«È¤á
+        /// æ‰¹é‡åˆªé™¤å®¢æˆ¶
         /// </summary>
-        /// <param name="customerCodes">«È¤á¥N½X¦Cªí</param>
+        /// <param name="customerCodes">å®¢æˆ¶ä»£ç¢¼åˆ—è¡¨</param>
         /// <returns></returns>
-        public ResopnseModel DeleteCustomers(List<string> customerCodes)
+        public ResponseModel DeleteCustomers(List<string> customerCodes)
         {
             if (customerCodes == null || !customerCodes.Any())
             {
-                return new ResopnseModel("½Ğ¿ï¾Ü­n§R°£ªº«È¤á");
+                return new ResponseModel("è«‹é¸æ“‡è¦åˆªé™¤çš„å®¢æˆ¶");
             }
 
             conn.Open();
@@ -143,8 +143,8 @@ namespace Service.Services.SeaClearanceCustomer
             {
                 try
                 {
-                    // ÀË¬d¬O§_¦³«È¤á¥¿¦b¨Ï¥Î¤¤¡]³o¸Ì¥i¥H®Ú¾Ú¹ê»Ú·~°È»İ¨D²K¥[ÀË¬dÅŞ¿è¡^
-                    // ¨Ò¦p¡GÀË¬d¬O§_¦³¬ÛÃöªº³øÃö°O¿ıµ¥
+                    // æª¢æŸ¥æ˜¯å¦æœ‰å®¢æˆ¶æ­£åœ¨ä½¿ç”¨ä¸­ï¼ˆé€™è£¡å¯ä»¥æ ¹æ“šå¯¦éš›æ¥­å‹™éœ€æ±‚æ·»åŠ æª¢æŸ¥é‚è¼¯ï¼‰
+                    // ä¾‹å¦‚ï¼šæª¢æŸ¥æ˜¯å¦æœ‰ç›¸é—œçš„å ±é—œè¨˜éŒ„ç­‰
 
                     var deletedCount = 0;
                     foreach (var custCode in customerCodes.Where(c => !string.IsNullOrWhiteSpace(c)))
@@ -159,13 +159,13 @@ namespace Service.Services.SeaClearanceCustomer
 
                     transaction.Commit();
 
-                    var message = $"¦¨¥\§R°£ {deletedCount} ­Ó«È¤á";
-                    return new ResopnseModel { ReturnObject = new { DeletedCount = deletedCount, Message = message } };
+                    var message = $"æˆåŠŸåˆªé™¤ {deletedCount} å€‹å®¢æˆ¶";
+                    return new ResponseModel { ReturnObject = new { DeletedCount = deletedCount, Message = message } };
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -175,9 +175,9 @@ namespace Service.Services.SeaClearanceCustomer
         }
 
         /// <summary>
-        /// ÀË¬d«È¤á¬O§_¦s¦b©ó DATA_CENTER
+        /// æª¢æŸ¥å®¢æˆ¶æ˜¯å¦å­˜åœ¨æ–¼ DATA_CENTER
         /// </summary>
-        /// <param name="custCode">«È¤á¥N½X</param>
+        /// <param name="custCode">å®¢æˆ¶ä»£ç¢¼</param>
         /// <returns></returns>
         public bool IsValidCustomer(string custCode)
         {
@@ -191,9 +191,9 @@ namespace Service.Services.SeaClearanceCustomer
         }
 
         /// <summary>
-        /// ®Ú¾Ú«È¤á¥N½X¨ú±o«È¤á¦WºÙ
+        /// æ ¹æ“šå®¢æˆ¶ä»£ç¢¼å–å¾—å®¢æˆ¶åç¨±
         /// </summary>
-        /// <param name="custCode">«È¤á¥N½X</param>
+        /// <param name="custCode">å®¢æˆ¶ä»£ç¢¼</param>
         /// <returns></returns>
         public string GetCustomerName(string custCode)
         {

@@ -775,9 +775,9 @@ namespace Service.Services.EtlClearanceDetails
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel InsertLog_ClearanceWork(LogClearanceWork model)
+        public ResponseModel InsertLog_ClearanceWork(LogClearanceWork model)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
             StringBuilder sb = new StringBuilder();

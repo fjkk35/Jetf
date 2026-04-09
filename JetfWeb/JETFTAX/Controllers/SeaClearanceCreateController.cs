@@ -52,7 +52,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SeaClearanceCreate)]
         public JsonResult UploadFile(HttpPostedFileBase file, SeaClearanceCreateViewModel vm)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;

@@ -22,13 +22,13 @@ namespace Service.Services.Tact
         /// <summary>
         /// 主號查詢
         /// </summary>
-        public async Task<ResopnseModel> MainQueryAsync(TactMainQueryRequest request)
+        public async Task<ResponseModel> MainQueryAsync(TactMainQueryRequest request)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(request.Mwb))
                 {
-                    return new ResopnseModel("請輸入主號");
+                    return new ResponseModel("請輸入主號");
                 }
 
                 var mwbList = request.Mwb.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
@@ -38,7 +38,7 @@ namespace Service.Services.Tact
 
                 if (!mwbList.Any())
                 {
-                    return new ResopnseModel("請輸入主號");
+                    return new ResponseModel("請輸入主號");
                 }
 
                 var results = new List<TactMainQueryViewModel>();
@@ -66,11 +66,11 @@ namespace Service.Services.Tact
                 // 取得派件公司
                 GetTransName(results);
 
-                return new ResopnseModel(results);
+                return new ResponseModel(results);
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"查詢錯誤：{ex.Message}");
+                return new ResponseModel($"查詢錯誤：{ex.Message}");
             }
         }
 

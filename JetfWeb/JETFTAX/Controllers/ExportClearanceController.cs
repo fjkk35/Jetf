@@ -37,7 +37,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.UploadEtlExportFlight)]
         public JsonResult UploadExportFlight(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;

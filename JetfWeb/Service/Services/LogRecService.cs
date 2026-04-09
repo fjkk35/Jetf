@@ -27,8 +27,8 @@ namespace Service.Services
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel InsertLog_Rec(LogRecModel model) {
-            ResopnseModel resopnseModel = new ResopnseModel();
+        public ResponseModel InsertLog_Rec(LogRecModel model) {
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
             StringBuilder sb = new StringBuilder();

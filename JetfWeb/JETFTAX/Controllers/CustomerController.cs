@@ -113,7 +113,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SearchCustomer)]
         public ActionResult EditCustomer(CustomerViewModel vm)
         {
-            ResopnseModel resopnseModel;
+            ResponseModel resopnseModel;
             CustomerModel model = new CustomerModel() {
                 id=vm.id,
                 tran_type=vm.tran_type,

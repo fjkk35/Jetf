@@ -77,7 +77,7 @@ namespace Service.Services.Ftz
         /// <summary>
         /// 登入 Ftz 系統
         /// </summary>
-        public async Task<ResopnseModel> LoginAsync(FtzLoginRequest request)
+        public async Task<ResponseModel> LoginAsync(FtzLoginRequest request)
         {
             try
             {
@@ -94,28 +94,28 @@ namespace Service.Services.Ftz
 
                     if (html.Contains("登入失敗") || html.Contains("密碼錯誤") || html.Contains("帳號錯誤"))
                     {
-                        return new ResopnseModel("登入失敗：帳號或密碼錯誤");
+                        return new ResponseModel("登入失敗：帳號或密碼錯誤");
                     }
 
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"登入錯誤：{ex.Message}");
+                return new ResponseModel($"登入錯誤：{ex.Message}");
             }
         }
 
         /// <summary>
         /// 查詢 Ftz 資料
         /// </summary>
-        public async Task<ResopnseModel> QueryAsync(FtzQueryRequest request)
+        public async Task<ResponseModel> QueryAsync(FtzQueryRequest request)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(request.HwbqList))
                 {
-                    return new ResopnseModel("請輸入查詢資料");
+                    return new ResponseModel("請輸入查詢資料");
                 }
 
                 var hwbqList = request.HwbqList.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
@@ -125,7 +125,7 @@ namespace Service.Services.Ftz
 
                 if (!hwbqList.Any())
                 {
-                    return new ResopnseModel("請輸入查詢資料");
+                    return new ResponseModel("請輸入查詢資料");
                 }
 
                 var results = new List<FtzQueryResult>();
@@ -150,14 +150,14 @@ namespace Service.Services.Ftz
                     }
                 }
 
-                return new ResopnseModel
+                return new ResponseModel
                 {
                     ReturnObject = results
                 };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"查詢錯誤：{ex.Message}");
+                return new ResponseModel($"查詢錯誤：{ex.Message}");
             }
         }
 

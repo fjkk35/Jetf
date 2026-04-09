@@ -62,7 +62,7 @@ namespace Service.Services.SeaClearance
         /// <param name="categoryIds"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateDetailApprovalCategories(int seaClearanceDetailId, List<int> categoryIds, string userId)
+        public ResponseModel UpdateDetailApprovalCategories(int seaClearanceDetailId, List<int> categoryIds, string userId)
         {
             // 確保連線開啟
             if (conn.State != System.Data.ConnectionState.Open)
@@ -136,12 +136,12 @@ namespace Service.Services.SeaClearance
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {
@@ -202,7 +202,7 @@ namespace Service.Services.SeaClearance
         /// <param name="formIds"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UpdateDetailAuthorizationForms(int seaClearanceDetailId, int type, List<int> formIds)
+        public ResponseModel UpdateDetailAuthorizationForms(int seaClearanceDetailId, int type, List<int> formIds)
         {
             conn.Open();
             using (var transaction = conn.BeginTransaction())
@@ -257,12 +257,12 @@ namespace Service.Services.SeaClearance
                     }
 
                     transaction.Commit();
-                    return new ResopnseModel();
+                    return new ResponseModel();
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    return new ResopnseModel(ex.Message);
+                    return new ResponseModel(ex.Message);
                 }
                 finally
                 {

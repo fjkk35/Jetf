@@ -28,9 +28,9 @@ namespace Service.Services
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel Upload(string filePath, string userId)
+        public ResponseModel Upload(string filePath, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
             if (conn.State != ConnectionState.Open)
@@ -99,9 +99,9 @@ namespace Service.Services
         /// <param name="upload_Time"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel InsertEtlMergeBagNo(DataTable dt_Upload, string upload_Time, string userId)
+        public ResponseModel InsertEtlMergeBagNo(DataTable dt_Upload, string upload_Time, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             StringBuilder sb = new StringBuilder();
             sb.Append("insert jetf.dbo.EtlMergeBagNo(BagNo, MergeBagNo, UploadOpe, UploadTime) ");
             sb.Append("values(@BagNo, @MergeBagNo, @UploadOpe, @UploadTime) ");

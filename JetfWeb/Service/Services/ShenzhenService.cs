@@ -22,9 +22,9 @@ namespace Service.Services
             conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString);
         }
 
-        public ResopnseModel Upload(string filePath, string userId)
+        public ResponseModel Upload(string filePath, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
             if (conn.State != ConnectionState.Open)
@@ -52,9 +52,9 @@ namespace Service.Services
             return resopnseModel;
         }
 
-        public ResopnseModel InsertShenzhenCargo(List<ShenzhenCargoModel> list, string uploadTime, string userId)
+        public ResponseModel InsertShenzhenCargo(List<ShenzhenCargoModel> list, string uploadTime, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             string sql = @"
                             insert [jetf].[dbo].[ShenzhenCargo](TrackingNo, DeliveryNo, UploadOpe, UploadTime)

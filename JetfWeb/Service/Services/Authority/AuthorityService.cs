@@ -55,16 +55,16 @@ namespace Service.Services.Authority
         /// <param name="partnerId">權限分類</param>
         /// <param name="sort">排序</param>
         /// <returns>處理結果</returns>
-        public ResopnseModel Create(string id, string text, string partnerId, int sort)
+        public ResponseModel Create(string id, string text, string partnerId, int sort)
         {
             if (string.IsNullOrWhiteSpace(id))
-                return new ResopnseModel("請輸入權限ID");
+                return new ResponseModel("請輸入權限ID");
 
             if (string.IsNullOrWhiteSpace(text))
-                return new ResopnseModel("請輸入權限說明");
+                return new ResponseModel("請輸入權限說明");
 
             if (string.IsNullOrWhiteSpace(partnerId))
-                return new ResopnseModel("請選擇權限分類");
+                return new ResponseModel("請選擇權限分類");
 
             try
             {
@@ -84,7 +84,7 @@ namespace Service.Services.Authority
                         if (existsIdCount > 0)
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("權限ID已存在");
+                            return new ResponseModel("權限ID已存在");
                         }
 
                         // 檢查權限說明是否重複
@@ -96,7 +96,7 @@ namespace Service.Services.Authority
                         if (existsTextCount > 0)
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("權限說明已存在");
+                            return new ResponseModel("權限說明已存在");
                         }
 
                         // 新增權限
@@ -108,7 +108,7 @@ namespace Service.Services.Authority
                             transaction);
 
                         transaction.Commit();
-                        return new ResopnseModel() { status = Status.success, msg = "新增成功" };
+                        return new ResponseModel() { status = Status.success, msg = "新增成功" };
                     }
                     catch
                     {
@@ -119,7 +119,7 @@ namespace Service.Services.Authority
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
             finally
             {
@@ -136,16 +136,16 @@ namespace Service.Services.Authority
         /// <param name="partnerId">權限分類</param>
         /// <param name="sort">排序</param>
         /// <returns>處理結果</returns>
-        public ResopnseModel Update(string id, string text, string partnerId, int sort)
+        public ResponseModel Update(string id, string text, string partnerId, int sort)
         {
             if (string.IsNullOrWhiteSpace(id))
-                return new ResopnseModel("權限ID不能為空");
+                return new ResponseModel("權限ID不能為空");
 
             if (string.IsNullOrWhiteSpace(text))
-                return new ResopnseModel("請輸入權限說明");
+                return new ResponseModel("請輸入權限說明");
 
             if (string.IsNullOrWhiteSpace(partnerId))
-                return new ResopnseModel("請選擇權限分類");
+                return new ResponseModel("請選擇權限分類");
 
             try
             {
@@ -165,7 +165,7 @@ namespace Service.Services.Authority
                         if (!existsAuthority)
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("權限不存在");
+                            return new ResponseModel("權限不存在");
                         }
 
                         // 檢查權限說明是否與其他權限重複 (排除自己)
@@ -177,7 +177,7 @@ namespace Service.Services.Authority
                         if (duplicateCount > 0)
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("權限說明已存在");
+                            return new ResponseModel("權限說明已存在");
                         }
 
                         // 更新權限
@@ -190,7 +190,7 @@ namespace Service.Services.Authority
                             transaction);
 
                         transaction.Commit();
-                        return new ResopnseModel() { status = Status.success, msg = "修改成功" };
+                        return new ResponseModel() { status = Status.success, msg = "修改成功" };
                     }
                     catch
                     {
@@ -201,7 +201,7 @@ namespace Service.Services.Authority
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
             finally
             {

@@ -38,9 +38,9 @@ namespace Service.Services
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UploadFile(string filePath, string dataDate, string userId)
+        public ResponseModel UploadFile(string filePath, string dataDate, string userId)
         {
-            var resopnseModel = new ResopnseModel();
+            var resopnseModel = new ResponseModel();
 
             dataDate = Convert.ToDateTime(dataDate).ToString("yyyyMMdd");
 
@@ -133,9 +133,9 @@ namespace Service.Services
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ResopnseModel InsertData(List<SeaClearanceDetailQueryModel> list, string filePath, string userId)
+        public ResponseModel InsertData(List<SeaClearanceDetailQueryModel> list, string filePath, string userId)
         {
-            var resopnseModel = new ResopnseModel();
+            var resopnseModel = new ResponseModel();
             resopnseModel.msg = $"上傳檔案筆數：{list.Count}";
 
             var insertMainSql = @"insert [jetf].[dbo].[SeaClearance]([FileName],[UploadOpe])
@@ -212,7 +212,7 @@ namespace Service.Services
                 }
                 catch (Exception ex)
                 {
-                    resopnseModel = new ResopnseModel(ex.Message);
+                    resopnseModel = new ResponseModel(ex.Message);
 
                     // 取消寫入
                     tran.Rollback();

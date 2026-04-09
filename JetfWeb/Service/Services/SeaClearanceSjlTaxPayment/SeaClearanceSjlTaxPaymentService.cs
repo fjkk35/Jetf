@@ -19,28 +19,28 @@ namespace Service.Services.SeaClearanceSjlTaxPayment
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ResopnseModel Create(SeaClearanceSjlTaxPaymentModel data)
+        public ResponseModel Create(SeaClearanceSjlTaxPaymentModel data)
         {
             try
             {
                 var isImporterExists = IsImporterExists(data.Importer);
 
                 if (isImporterExists)
-                    return new ResopnseModel("申報人已存在");
+                    return new ResponseModel("申報人已存在");
 
                 var sqlQuery = "INSERT INTO [jetf].[dbo].[SeaClearanceSjlTaxPayment] (Importer, TaxPayment) VALUES (@Importer, @TaxPayment)";
 
                 conn.Execute(sqlQuery, new { Importer = data.Importer, TaxPayment = data.TaxPayment.ToString() });
 
-                return new ResopnseModel() { };
+                return new ResponseModel() { };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
-        public ResopnseModel Delete(int id)
+        public ResponseModel Delete(int id)
         {
             try
             {
@@ -48,11 +48,11 @@ namespace Service.Services.SeaClearanceSjlTaxPayment
 
                 conn.Execute(sqlQuery, new { Id = id });
 
-                return new ResopnseModel() { };
+                return new ResponseModel() { };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 

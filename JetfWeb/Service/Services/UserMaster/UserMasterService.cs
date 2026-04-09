@@ -117,16 +117,16 @@ namespace Service.Services.UserMaster
         /// <param name="userStatus">狀態</param>
         /// <param name="authorityGroupIds">權限群組ID列表</param>
         /// <returns>處理結果</returns>
-        public ResopnseModel Create(string userId, string userName, string password, string userStatus, List<int> authorityGroupIds)
+        public ResponseModel Create(string userId, string userName, string password, string userStatus, List<int> authorityGroupIds)
         {
             if (string.IsNullOrWhiteSpace(userId))
-                return new ResopnseModel("請輸入會員ID");
+                return new ResponseModel("請輸入會員ID");
 
             if (string.IsNullOrWhiteSpace(userName))
-                return new ResopnseModel("請輸入會員名稱");
+                return new ResponseModel("請輸入會員名稱");
 
             if (string.IsNullOrWhiteSpace(password))
-                return new ResopnseModel("請輸入密碼");
+                return new ResponseModel("請輸入密碼");
 
             try
             {
@@ -146,7 +146,7 @@ namespace Service.Services.UserMaster
                         if (existsCount > 0)
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("會員ID已存在");
+                            return new ResponseModel("會員ID已存在");
                         }
 
                         // 加密密碼
@@ -188,7 +188,7 @@ namespace Service.Services.UserMaster
                         }
 
                         transaction.Commit();
-                        return new ResopnseModel() { status = Status.success, msg = "新增成功" };
+                        return new ResponseModel() { status = Status.success, msg = "新增成功" };
                     }
                     catch
                     {
@@ -199,7 +199,7 @@ namespace Service.Services.UserMaster
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
             finally
             {
@@ -217,13 +217,13 @@ namespace Service.Services.UserMaster
         /// <param name="authorityGroupIds">權限群組ID列表</param>
         /// <param name="password">密碼（選填，不填則不更新密碼）</param>
         /// <returns>處理結果</returns>
-        public ResopnseModel Update(string userId, string userName, string userStatus, List<int> authorityGroupIds, string password = null)
+        public ResponseModel Update(string userId, string userName, string userStatus, List<int> authorityGroupIds, string password = null)
         {
             if (string.IsNullOrWhiteSpace(userId))
-                return new ResopnseModel("會員ID不能為空");
+                return new ResponseModel("會員ID不能為空");
 
             if (string.IsNullOrWhiteSpace(userName))
-                return new ResopnseModel("請輸入會員名稱");
+                return new ResponseModel("請輸入會員名稱");
 
             try
             {
@@ -243,7 +243,7 @@ namespace Service.Services.UserMaster
                         if (!existsUser)
                         {
                             transaction.Rollback();
-                            return new ResopnseModel("會員不存在");
+                            return new ResponseModel("會員不存在");
                         }
 
                         var currentUser = GetUserId();
@@ -319,7 +319,7 @@ namespace Service.Services.UserMaster
                         }
 
                         transaction.Commit();
-                        return new ResopnseModel() { status = Status.success, msg = "修改成功" };
+                        return new ResponseModel() { status = Status.success, msg = "修改成功" };
                     }
                     catch
                     {
@@ -330,7 +330,7 @@ namespace Service.Services.UserMaster
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
             finally
             {
@@ -341,14 +341,14 @@ namespace Service.Services.UserMaster
 
         // 向下相容的舊方法（已棄用）
         [Obsolete("此方法已棄用，請使用支援多個權限群組的 Create 方法")]
-        public ResopnseModel Create(string userId, string userName, string password, string userStatus, int? authorityGroupId)
+        public ResponseModel Create(string userId, string userName, string password, string userStatus, int? authorityGroupId)
         {
             var groupIds = authorityGroupId.HasValue ? new List<int> { authorityGroupId.Value } : new List<int>();
             return Create(userId, userName, password, userStatus, groupIds);
         }
 
         [Obsolete("此方法已棄用，請使用支援多個權限群組的 Update 方法")]
-        public ResopnseModel Update(string userId, string userName, string userStatus, int? authorityGroupId, string password = null)
+        public ResponseModel Update(string userId, string userName, string userStatus, int? authorityGroupId, string password = null)
         {
             var groupIds = authorityGroupId.HasValue ? new List<int> { authorityGroupId.Value } : new List<int>();
             return Update(userId, userName, userStatus, groupIds, password);

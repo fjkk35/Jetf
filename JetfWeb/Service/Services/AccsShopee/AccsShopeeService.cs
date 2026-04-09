@@ -1,4 +1,4 @@
-using FluentFTP.Helpers;
+ï»¿using FluentFTP.Helpers;
 using HtmlAgilityPack;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
@@ -28,18 +28,18 @@ namespace Service.Services.AccsShopee
         private const string SESSION_COOKIE_CONTAINER = "AccsShopee_CookieContainer";
 
         /// <summary>
-        /// ¨ú±o©Î«Ø¥ß HttpClient¡]¨Ï¥Î Session «O«ùª¬ºA¡^
+        /// å–å¾—æˆ–å»ºç«‹ HttpClientï¼ˆä½¿ç”¨ Session ä¿æŒç‹€æ…‹ï¼‰
         /// </summary>
         private HttpClient GetHttpClient()
         {
             var session = HttpContext.Current?.Session;
             if (session == null)
             {
-                // ¦pªG¨S¦³ Session¡]¨Ò¦p¦b­I´º¤u§@¡^¡Aª½±µ«Ø¥ß·sªº
+                // å¦‚æœæ²’æœ‰ Sessionï¼ˆä¾‹å¦‚åœ¨èƒŒæ™¯å·¥ä½œï¼‰ï¼Œç›´æ¥å»ºç«‹æ–°çš„
                 return CreateHttpClient(new CookieContainer());
             }
 
-            // ±q Session ¨ú±o CookieContainer
+            // å¾ Session å–å¾— CookieContainer
             var cookieContainer = session[SESSION_COOKIE_CONTAINER] as CookieContainer;
             if (cookieContainer == null)
             {
@@ -47,12 +47,12 @@ namespace Service.Services.AccsShopee
                 session[SESSION_COOKIE_CONTAINER] = cookieContainer;
             }
 
-            // ¨C¦¸³£«Ø¥ß·sªº HttpClient¡A¦ı¦@¥Î¦P¤@­Ó CookieContainer
+            // æ¯æ¬¡éƒ½å»ºç«‹æ–°çš„ HttpClientï¼Œä½†å…±ç”¨åŒä¸€å€‹ CookieContainer
             return CreateHttpClient(cookieContainer);
         }
 
         /// <summary>
-        /// «Ø¥ß HttpClient
+        /// å»ºç«‹ HttpClient
         /// </summary>
         private HttpClient CreateHttpClient(CookieContainer cookieContainer)
         {
@@ -68,7 +68,7 @@ namespace Service.Services.AccsShopee
                 Timeout = TimeSpan.FromSeconds(30)
             };
 
-            // ³]©w¹w³] Headers
+            // è¨­å®šé è¨­ Headers
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
             httpClient.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
             httpClient.DefaultRequestHeaders.Add("Accept-Language", "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7");
@@ -77,27 +77,27 @@ namespace Service.Services.AccsShopee
         }
 
         /// <summary>
-        /// ¨ú±oÅçÃÒ½X¹Ï¤ù
+        /// å–å¾—é©—è­‰ç¢¼åœ–ç‰‡
         /// </summary>
         /// <returns></returns>
-        public async Task<ResopnseModel> GetVerifyCodeImageAsync()
+        public async Task<ResponseModel> GetVerifyCodeImageAsync()
         {
             try
             {
                 using (var httpClient = GetHttpClient())
                 {
-                    // ¥ı³X°İµn¤J­¶­±¥H«Ø¥ß Session
+                    // å…ˆè¨ªå•ç™»å…¥é é¢ä»¥å»ºç«‹ Session
                     var loginPageResponse = await httpClient.GetAsync(LOGIN_URL);
                     loginPageResponse.EnsureSuccessStatusCode();
 
-                    // ¨ú±oÅçÃÒ½X¹Ï¤ù
+                    // å–å¾—é©—è­‰ç¢¼åœ–ç‰‡
                     var verifyCodeResponse = await httpClient.GetAsync(VERIFY_CODE_URL);
                     verifyCodeResponse.EnsureSuccessStatusCode();
 
                     var imageBytes = await verifyCodeResponse.Content.ReadAsByteArrayAsync();
                     var base64Image = Convert.ToBase64String(imageBytes);
 
-                    return new ResopnseModel
+                    return new ResponseModel
                     {
                         ReturnObject = new
                         {
@@ -109,22 +109,22 @@ namespace Service.Services.AccsShopee
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"¨ú±oÅçÃÒ½X¥¢±Ñ¡G{ex.Message}");
+                return new ResponseModel($"å–å¾—é©—è­‰ç¢¼å¤±æ•—ï¼š{ex.Message}");
             }
         }
 
         /// <summary>
-        /// µn¤J Accs ¨t²Î
+        /// ç™»å…¥ Accs ç³»çµ±
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<ResopnseModel> LoginAsync(AccsLoginRequest request)
+        public async Task<ResponseModel> LoginAsync(AccsLoginRequest request)
         {
             try
             {
                 using (var httpClient = GetHttpClient())
                 {
-                    // ·Ç³Æµn¤Jªí³æ¸ê®Æ
+                    // æº–å‚™ç™»å…¥è¡¨å–®è³‡æ–™
                     var formContent = new FormUrlEncodedContent(new[]
                     {
                         new KeyValuePair<string, string>("userid", request.UserId ?? "GUEST"),
@@ -133,21 +133,21 @@ namespace Service.Services.AccsShopee
                         new KeyValuePair<string, string>("loginType", "1")
                     });
 
-                    // µo°eµn¤J½Ğ¨D
+                    // ç™¼é€ç™»å…¥è«‹æ±‚
                     var response = await httpClient.PostAsync(LOGIN_URL, formContent);
                     var html = await response.Content.ReadAsStringAsync();
 
-                    // ÀË¬dµn¤J¬O§_¦¨¥\
-                    if (html.Contains("ÅçÃÒ½X¿ù»~") || html.Contains("µn¤J¥¢±Ñ"))
+                    // æª¢æŸ¥ç™»å…¥æ˜¯å¦æˆåŠŸ
+                    if (html.Contains("é©—è­‰ç¢¼éŒ¯èª¤") || html.Contains("ç™»å…¥å¤±æ•—"))
                     {
-                        return new ResopnseModel("µn¤J¥¢±Ñ¡GÅçÃÒ½X¿ù»~©Î±b¸¹±K½X¤£¥¿½T");
+                        return new ResponseModel("ç™»å…¥å¤±æ•—ï¼šé©—è­‰ç¢¼éŒ¯èª¤æˆ–å¸³è™Ÿå¯†ç¢¼ä¸æ­£ç¢º");
                     }
 
-                    // ¨ú±o Token
+                    // å–å¾— Token
                     var token = ExtractToken(html);
                     if (string.IsNullOrEmpty(token))
                     {
-                        // ¥i¯à»İ­n¾É¦V¬d¸ß­¶­±
+                        // å¯èƒ½éœ€è¦å°å‘æŸ¥è©¢é é¢
                         var queryPageResponse = await httpClient.GetAsync(QUERY_PAGE_URL);
                         var queryPageHtml = await queryPageResponse.Content.ReadAsStringAsync();
                         token = ExtractToken(queryPageHtml);
@@ -155,10 +155,10 @@ namespace Service.Services.AccsShopee
 
                     if (string.IsNullOrEmpty(token))
                     {
-                        return new ResopnseModel("µn¤J¥¢±Ñ¡GµLªk¨ú±o Token");
+                        return new ResponseModel("ç™»å…¥å¤±æ•—ï¼šç„¡æ³•å–å¾— Token");
                     }
 
-                    return new ResopnseModel
+                    return new ResponseModel
                     {
                         ReturnObject = new AccsSessionInfo
                         {
@@ -172,22 +172,22 @@ namespace Service.Services.AccsShopee
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"µn¤J¥¢±Ñ¡G{ex.Message}");
+                return new ResponseModel($"ç™»å…¥å¤±æ•—ï¼š{ex.Message}");
             }
         }
 
         /// <summary>
-        /// ¬d¸ß¸ê®Æ
+        /// æŸ¥è©¢è³‡æ–™
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public async Task<ResopnseModel> QueryAsync(AccsQueryRequest request)
+        public async Task<ResponseModel> QueryAsync(AccsQueryRequest request)
         {
             try
             {
                 if (string.IsNullOrEmpty(request.MawbNumbers))
                 {
-                    return new ResopnseModel("½Ğ¿é¤J¥D´£³æ¸¹");
+                    return new ResponseModel("è«‹è¼¸å…¥ä¸»æå–®è™Ÿ");
                 }
 
                 var results = new List<AccsQueryResult>();
@@ -207,12 +207,12 @@ namespace Service.Services.AccsShopee
                         {
                             var result = await QuerySingleAsync(httpClient, mawb, request.Token);
                             
-                            // ÀË¬d¬O§_¦³ SessionExpired ª¬ºA
+                            // æª¢æŸ¥æ˜¯å¦æœ‰ SessionExpired ç‹€æ…‹
                             if (result.Any(r => r.Status == "SessionExpired"))
                             {
-                                // ²M°£ Session Cookie
+                                // æ¸…é™¤ Session Cookie
                                 ClearSession();
-                                return new ResopnseModel("±zªºµn¤J¤w¹L´Á¡A½Ğ­«·sµn¤J");
+                                return new ResponseModel("æ‚¨çš„ç™»å…¥å·²éæœŸï¼Œè«‹é‡æ–°ç™»å…¥");
                             }
                             
                             results.AddRange(result);
@@ -223,31 +223,31 @@ namespace Service.Services.AccsShopee
                             {
                                 MawbNo = mawb,
                                 Status = "Error",
-                                Message = $"¬d¸ß¥¢±Ñ¡G{ex.Message}"
+                                Message = $"æŸ¥è©¢å¤±æ•—ï¼š{ex.Message}"
                             });
                         }
                     }
                 }
 
-                return new ResopnseModel
+                return new ResponseModel
                 {
                     ReturnObject = results
                 };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"¬d¸ß¥¢±Ñ¡G{ex.Message}");
+                return new ResponseModel($"æŸ¥è©¢å¤±æ•—ï¼š{ex.Message}");
             }
         }
 
         /// <summary>
-        /// ¬d¸ß³æµ§¸ê®Æ
+        /// æŸ¥è©¢å–®ç­†è³‡æ–™
         /// </summary>
         private async Task<List<AccsQueryResult>> QuerySingleAsync(HttpClient httpClient, string mawbNo, string token)
         {
             try
             {
-                // ¨BÆJ1: ¥ı¬d¸ß¥H¨ú±o³sµ²°Ñ¼Æ
+                // æ­¥é©Ÿ1: å…ˆæŸ¥è©¢ä»¥å–å¾—é€£çµåƒæ•¸
                 var searchFormContent = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("org.apache.struts.taglib.html.TOKEN", token),
@@ -260,19 +260,19 @@ namespace Service.Services.AccsShopee
                 var searchResponse = await httpClient.PostAsync(QUERY_ACTION_URL, searchFormContent);
                 var searchHtml = await searchResponse.Content.ReadAsStringAsync();
 
-                // ÀË¬d¬O§_ Session ¹L´Á¡]userID ¬°ªÅ¡^
+                // æª¢æŸ¥æ˜¯å¦ Session éæœŸï¼ˆuserID ç‚ºç©ºï¼‰
                 if (IsSessionExpired(searchHtml))
                 {
                     return new List<AccsQueryResult>() {
                         new AccsQueryResult {
                             MawbNo = mawbNo,
                             Status = "SessionExpired",
-                            Message = "µn¤J¤w¹L´Á¡A½Ğ­«·sµn¤J"
+                            Message = "ç™»å…¥å·²éæœŸï¼Œè«‹é‡æ–°ç™»å…¥"
                         }
                     };
                 }
 
-                // ¨BÆJ2: ¸ÑªR·j´Mµ²ªG¡A§ä¨ì©Ò¦³¥D´£³æ¸¹ªº³sµ²
+                // æ­¥é©Ÿ2: è§£ææœå°‹çµæœï¼Œæ‰¾åˆ°æ‰€æœ‰ä¸»æå–®è™Ÿçš„é€£çµ
                 var linkParamsList = ExtractAllLinkParameters(searchHtml, mawbNo);
                 if (linkParamsList == null || linkParamsList.Count == 0)
                 {
@@ -280,12 +280,12 @@ namespace Service.Services.AccsShopee
                         new AccsQueryResult {
                             MawbNo = mawbNo,
                             Status = "NoData",
-                            Message = "¬dµL¸ê®Æ"
+                            Message = "æŸ¥ç„¡è³‡æ–™"
                         }
                     };
                 }
 
-                // ¨BÆJ3: ¬d¸ß©Ò¦³³sµ²¨Ã·J¾ã¸ê®Æ
+                // æ­¥é©Ÿ3: æŸ¥è©¢æ‰€æœ‰é€£çµä¸¦å½™æ•´è³‡æ–™
                 var results = new List<AccsQueryResult>();
 
                 foreach (var linkParams in linkParamsList)
@@ -311,14 +311,14 @@ namespace Service.Services.AccsShopee
                         var detailResponse = await httpClient.PostAsync(BASE_URL + "/accsw-bin/APACCS/cImMergeListAction.do", detailFormContent);
                         var detailHtml = await detailResponse.Content.ReadAsStringAsync();
 
-                        // ÀË¬d©ú²Ó­¶­±¬O§_ Session ¹L´Á
+                        // æª¢æŸ¥æ˜ç´°é é¢æ˜¯å¦ Session éæœŸ
                         if (IsSessionExpired(detailHtml))
                         {
                             return new List<AccsQueryResult>() {
                                 new AccsQueryResult {
                                     MawbNo = mawbNo,
                                     Status = "SessionExpired",
-                                    Message = "µn¤J¤w¹L´Á¡A½Ğ­«·sµn¤J"
+                                    Message = "ç™»å…¥å·²éæœŸï¼Œè«‹é‡æ–°ç™»å…¥"
                                 }
                             };
                         }
@@ -333,7 +333,7 @@ namespace Service.Services.AccsShopee
                         {
                             MawbNo = mawbNo,
                             Status = "Error",
-                            Message = $"¬d¸ß©ú²Ó¥¢±Ñ¡G{ex.Message}"
+                            Message = $"æŸ¥è©¢æ˜ç´°å¤±æ•—ï¼š{ex.Message}"
                         });
                     }
                 }
@@ -346,14 +346,14 @@ namespace Service.Services.AccsShopee
                     new AccsQueryResult {
                         MawbNo = mawbNo,
                         Status = "Error",
-                        Message = $"¬d¸ß¥¢±Ñ¡G{ex.Message}"
+                        Message = $"æŸ¥è©¢å¤±æ•—ï¼š{ex.Message}"
                     }
                 };
             }
         }
 
         /// <summary>
-        /// ±q·j´Mµ²ªG HTML ¤¤´£¨ú©Ò¦³³sµ²°Ñ¼Æ
+        /// å¾æœå°‹çµæœ HTML ä¸­æå–æ‰€æœ‰é€£çµåƒæ•¸
         /// </summary>
         private List<AccsLinkParameters> ExtractAllLinkParameters(string html, string mawbNo)
         {
@@ -364,7 +364,7 @@ namespace Service.Services.AccsShopee
 
                 var parametersList = new List<AccsLinkParameters>();
 
-                // ´M§ä©Ò¦³¥]§t¥D´£³æ¸¹ªº³sµ²
+                // å°‹æ‰¾æ‰€æœ‰åŒ…å«ä¸»æå–®è™Ÿçš„é€£çµ
                 var linkNodes = doc.DocumentNode.SelectNodes($"//a[contains(text(), '{mawbNo}')]");
                 if (linkNodes == null || linkNodes.Count == 0)
                 {
@@ -379,7 +379,7 @@ namespace Service.Services.AccsShopee
                         continue;
                     }
 
-                    // ¨Ï¥Î¥¿«hªí¹F¦¡´£¨ú°Ñ¼Æ
+                    // ä½¿ç”¨æ­£å‰‡è¡¨é”å¼æå–åƒæ•¸
                     var parameters = new AccsLinkParameters();
 
                     var mawbNoMatch = Regex.Match(onClickAttr, @"mawb_no\.value='([^']+)'");
@@ -415,7 +415,7 @@ namespace Service.Services.AccsShopee
                     var qrySortMatch = Regex.Match(onClickAttr, @"qry_sort\.value='([^']*)'");
                     if (qrySortMatch.Success) parameters.QrySort = qrySortMatch.Groups[1].Value;
 
-                    // ¥u¥[¤J¦³®Äªº°Ñ¼Æ
+                    // åªåŠ å…¥æœ‰æ•ˆçš„åƒæ•¸
                     if (!string.IsNullOrEmpty(parameters.MawbNo))
                     {
                         parametersList.Add(parameters);
@@ -431,7 +431,7 @@ namespace Service.Services.AccsShopee
         }
 
         /// <summary>
-        /// ¸ÑªR¸Ô²Ó¸ê®Æ­¶­±
+        /// è§£æè©³ç´°è³‡æ–™é é¢
         /// </summary>
         private AccsQueryResult ParseDetailResult(string html, string mawbNo)
         {
@@ -446,7 +446,7 @@ namespace Service.Services.AccsShopee
                 var doc = new HtmlDocument();
                 doc.LoadHtml(html);
 
-                // ÀË¬d¬O§_¦³¿ù»~°T®§
+                // æª¢æŸ¥æ˜¯å¦æœ‰éŒ¯èª¤è¨Šæ¯
                 var errorNode = doc.DocumentNode.SelectSingleNode("//span[@class='error']");
                 if (errorNode != null)
                 {
@@ -455,61 +455,61 @@ namespace Service.Services.AccsShopee
                     return result;
                 }
 
-                // ®Ú¾Ú¹ê»Ú HTML µ²ºc¡Aª½±µ¿ï¾Ü²Ä¤T­Óªí®æ
+                // æ ¹æ“šå¯¦éš› HTML çµæ§‹ï¼Œç›´æ¥é¸æ“‡ç¬¬ä¸‰å€‹è¡¨æ ¼
                 var dataTable = doc.DocumentNode.SelectNodes("//table[@border='1' and @bordercolor='#79A8AE']")?[0];
 
                 if (dataTable == null)
                 {
-                    // ¹Á¸Õ¥t¤@ºØ¤è¦¡¡G§ä¨ì¥]§t "¥D¸¹Á`¥ó¼Æ" ªºªí®æ
-                    dataTable = doc.DocumentNode.SelectSingleNode("//table[.//td[contains(text(), '¥D¸¹Á`¥ó¼Æ')]]");
+                    // å˜—è©¦å¦ä¸€ç¨®æ–¹å¼ï¼šæ‰¾åˆ°åŒ…å« "ä¸»è™Ÿç¸½ä»¶æ•¸" çš„è¡¨æ ¼
+                    dataTable = doc.DocumentNode.SelectSingleNode("//table[.//td[contains(text(), 'ä¸»è™Ÿç¸½ä»¶æ•¸')]]");
                 }
 
                 if (dataTable == null)
                 {
                     result.Status = "NoData";
-                    result.Message = "µLªk§ä¨ì¸ê®Æªí®æ";
+                    result.Message = "ç„¡æ³•æ‰¾åˆ°è³‡æ–™è¡¨æ ¼";
                     return result;
                 }
 
-                // ´£¨ú¦U­ÓÄæ¦ì¸ê®Æ
-                var tdTotalHwb = dataTable.SelectSingleNode(".//td[.//text()[contains(., '¥D¸¹Á`¥ó¼Æ')]]/following-sibling::td[1]");
-                var tdTotal = dataTable.SelectSingleNode(".//td[.//text()[contains(., '¥»§å¥ó¼Æ')]]/following-sibling::td[1]");
-                var tdWeight = dataTable.SelectSingleNode(".//td[.//text()[contains(., '¤ò­«')] and not(.//text()[contains(., '­«¶q³æ¦ì')])]/following-sibling::td[1]");
-                var tdFlightNo = dataTable.SelectSingleNode(".//td[.//text()[contains(., '¯è¾÷¯Z¦¸')]]/following-sibling::td[1]");
-                var tdImportDate = dataTable.SelectSingleNode(".//td[.//text()[contains(., '¶i¤f¤é´Á')]]/following-sibling::td[1]");
+                // æå–å„å€‹æ¬„ä½è³‡æ–™
+                var tdTotalHwb = dataTable.SelectSingleNode(".//td[.//text()[contains(., 'ä¸»è™Ÿç¸½ä»¶æ•¸')]]/following-sibling::td[1]");
+                var tdTotal = dataTable.SelectSingleNode(".//td[.//text()[contains(., 'æœ¬æ‰¹ä»¶æ•¸')]]/following-sibling::td[1]");
+                var tdWeight = dataTable.SelectSingleNode(".//td[.//text()[contains(., 'æ¯›é‡')] and not(.//text()[contains(., 'é‡é‡å–®ä½')])]/following-sibling::td[1]");
+                var tdFlightNo = dataTable.SelectSingleNode(".//td[.//text()[contains(., 'èˆªæ©Ÿç­æ¬¡')]]/following-sibling::td[1]");
+                var tdImportDate = dataTable.SelectSingleNode(".//td[.//text()[contains(., 'é€²å£æ—¥æœŸ')]]/following-sibling::td[1]");
 
-                // ²M²z¨Ã³]©w¸ê®Æ
+                // æ¸…ç†ä¸¦è¨­å®šè³‡æ–™
                 result.TotalHwb = CleanText(tdTotalHwb?.InnerText);
                 result.Total = CleanText(tdTotal?.InnerText);
                 result.Weight = CleanText(tdWeight?.InnerText);
                 result.FlightNo = CleanText(tdFlightNo?.InnerText);
                 result.ImportDate = CleanText(tdImportDate?.InnerText);
 
-                // ÀË¬d¬O§_¦³¨ú±o¸ê®Æ
+                // æª¢æŸ¥æ˜¯å¦æœ‰å–å¾—è³‡æ–™
                 if (string.IsNullOrEmpty(result.TotalHwb) &&
                     string.IsNullOrEmpty(result.Total) &&
                     string.IsNullOrEmpty(result.Weight))
                 {
                     result.Status = "NoData";
-                    result.Message = "µLªk¸ÑªR¸ê®ÆÄæ¦ì";
+                    result.Message = "ç„¡æ³•è§£æè³‡æ–™æ¬„ä½";
                 }
                 else
                 {
-                    result.Message = "¬d¸ß¦¨¥\";
+                    result.Message = "æŸ¥è©¢æˆåŠŸ";
                 }
 
             }
             catch (Exception ex)
             {
                 result.Status = "ParseError";
-                result.Message = $"¸ÑªR¸ê®Æ¥¢±Ñ¡G{ex.Message}";
+                result.Message = $"è§£æè³‡æ–™å¤±æ•—ï¼š{ex.Message}";
             }
 
             return result;
         }
 
         /// <summary>
-        /// ²M²z¤å¦r¡]²¾°£ &nbsp; ©M¦h¾lªÅ¥Õ¡^
+        /// æ¸…ç†æ–‡å­—ï¼ˆç§»é™¤ &nbsp; å’Œå¤šé¤˜ç©ºç™½ï¼‰
         /// </summary>
         private string CleanText(string text)
         {
@@ -525,13 +525,13 @@ namespace Service.Services.AccsShopee
         }
 
         /// <summary>
-        /// ¶×¥X Excel
+        /// åŒ¯å‡º Excel
         /// </summary>
         public async Task<XSSFWorkbook> ExportExcel(AccsQueryRequest request)
         {
             try
             {
-                // °õ¦æ¬d¸ß
+                // åŸ·è¡ŒæŸ¥è©¢
                 var queryResult = await QueryAsync(request);
 
                 if (queryResult.status == "error")
@@ -542,37 +542,37 @@ namespace Service.Services.AccsShopee
                 var data = queryResult.ReturnObject as List<AccsQueryResult>;
                 if (data == null || data.Count == 0)
                 {
-                    throw new Exception("¬dµL¸ê®Æ¥i¶×¥X");
+                    throw new Exception("æŸ¥ç„¡è³‡æ–™å¯åŒ¯å‡º");
                 }
 
-                // ÀË¬d¬O§_¦³ Session ¹L´Áªº¸ê®Æ
+                // æª¢æŸ¥æ˜¯å¦æœ‰ Session éæœŸçš„è³‡æ–™
                 if (data.Any(x => x.Status == "SessionExpired"))
                 {
-                    throw new Exception("µn¤J¤w¹L´Á¡A½Ğ­«·sµn¤J");
+                    throw new Exception("ç™»å…¥å·²éæœŸï¼Œè«‹é‡æ–°ç™»å…¥");
                 }
 
-                // «Ø¥ß Excel
+                // å»ºç«‹ Excel
                 var workbook = new XSSFWorkbook();
-                var sheet = workbook.CreateSheet("AccsÃö¶TªÅ¹B¬d¸ßµ²ªG");
+                var sheet = workbook.CreateSheet("Accsé—œè²¿ç©ºé‹æŸ¥è©¢çµæœ");
 
-                // «Ø¥ß¼Ë¦¡
+                // å»ºç«‹æ¨£å¼
                 var headerStyle = NpoiStyle.CreateHeaderStyle(workbook, 12, true);
                 var dataStyle = NpoiStyle.CreateDataStyle(workbook, HorizontalAlignment.Left);
                 var centerStyle = NpoiStyle.CreateDataStyle(workbook, HorizontalAlignment.Center);
                 var rightStyle = NpoiStyle.CreateDataStyle(workbook, HorizontalAlignment.Right);
 
-                // «Ø¥ß¼ĞÃD¦C
+                // å»ºç«‹æ¨™é¡Œåˆ—
                 var headerRow = sheet.CreateRow(0);
-                NpoiCell.CreateCell(headerRow, 0, "¶µ¦¸", headerStyle);
-                NpoiCell.CreateCell(headerRow, 1, "¥D¸¹", headerStyle);
-                NpoiCell.CreateCell(headerRow, 2, "¥D¸¹Á`¥ó¼Æ", headerStyle);
-                NpoiCell.CreateCell(headerRow, 3, "¥»§å¥ó¼Æ", headerStyle);
-                NpoiCell.CreateCell(headerRow, 4, "¤ò­«", headerStyle);
-                NpoiCell.CreateCell(headerRow, 5, "¯è¾÷¯Z¦¸", headerStyle);
-                NpoiCell.CreateCell(headerRow, 6, "¶i¤f¤é´Á", headerStyle);
-                NpoiCell.CreateCell(headerRow, 7, "ª¬ºA", headerStyle);
+                NpoiCell.CreateCell(headerRow, 0, "é …æ¬¡", headerStyle);
+                NpoiCell.CreateCell(headerRow, 1, "ä¸»è™Ÿ", headerStyle);
+                NpoiCell.CreateCell(headerRow, 2, "ä¸»è™Ÿç¸½ä»¶æ•¸", headerStyle);
+                NpoiCell.CreateCell(headerRow, 3, "æœ¬æ‰¹ä»¶æ•¸", headerStyle);
+                NpoiCell.CreateCell(headerRow, 4, "æ¯›é‡", headerStyle);
+                NpoiCell.CreateCell(headerRow, 5, "èˆªæ©Ÿç­æ¬¡", headerStyle);
+                NpoiCell.CreateCell(headerRow, 6, "é€²å£æ—¥æœŸ", headerStyle);
+                NpoiCell.CreateCell(headerRow, 7, "ç‹€æ…‹", headerStyle);
 
-                // ¶ñ¤J¸ê®Æ
+                // å¡«å…¥è³‡æ–™
                 int rowIndex = 1;
                 foreach (var item in data)
                 {
@@ -590,11 +590,11 @@ namespace Service.Services.AccsShopee
                     rowIndex++;
                 }
 
-                // ¦Û°Ê½Õ¾ãÄæ¼e
+                // è‡ªå‹•èª¿æ•´æ¬„å¯¬
                 for (int i = 0; i < 8; i++)
                 {
                     sheet.AutoSizeColumn(i);
-                    // ³]©w³Ì¤p¼e«×
+                    // è¨­å®šæœ€å°å¯¬åº¦
                     if (sheet.GetColumnWidth(i) < 3000)
                     {
                         sheet.SetColumnWidth(i, 3000);
@@ -605,12 +605,12 @@ namespace Service.Services.AccsShopee
             }
             catch (Exception ex)
             {
-                throw new Exception($"¶×¥X Excel ¥¢±Ñ¡G{ex.Message}");
+                throw new Exception($"åŒ¯å‡º Excel å¤±æ•—ï¼š{ex.Message}");
             }
         }
 
         /// <summary>
-        /// ±q HTML ¤¤´£¨ú Token
+        /// å¾ HTML ä¸­æå– Token
         /// </summary>
         private string ExtractToken(string html)
         {
@@ -625,7 +625,7 @@ namespace Service.Services.AccsShopee
                     return tokenInput.GetAttributeValue("value", "");
                 }
 
-                // ¨Ï¥Î¥¿«hªí¹F¦¡§@¬°³Æ¥Î¤è®×
+                // ä½¿ç”¨æ­£å‰‡è¡¨é”å¼ä½œç‚ºå‚™ç”¨æ–¹æ¡ˆ
                 var match = Regex.Match(html, @"name=""org\.apache\.struts\.taglib\.html\.TOKEN""\s+value=""([^""]+)""");
                 if (match.Success)
                 {
@@ -641,7 +641,7 @@ namespace Service.Services.AccsShopee
         }
 
         /// <summary>
-        /// ¨ú±o Session ID
+        /// å–å¾— Session ID
         /// </summary>
         private string GetSessionId()
         {
@@ -663,14 +663,14 @@ namespace Service.Services.AccsShopee
         }
 
         /// <summary>
-        /// ÀË¬d Session ¬O§_¹L´Á¡]ÀË¬d HTML ¤¤ªº userID ¬O§_¬°ªÅ¡^
+        /// æª¢æŸ¥ Session æ˜¯å¦éæœŸï¼ˆæª¢æŸ¥ HTML ä¸­çš„ userID æ˜¯å¦ç‚ºç©ºï¼‰
         /// </summary>
         private bool IsSessionExpired(string html)
         {
             try
             {
-                // ¦pªG­¶­±¥]§t¡uµn¥X¡vÃöÁä¦r¡A¥Nªí¨Ï¥ÎªÌ¤wµn¤J ¡÷ Session ¥¼¹L´Á
-                if (html.Contains("µn¥X") || html.Contains("µn¥X¨t²Î"))
+                // å¦‚æœé é¢åŒ…å«ã€Œç™»å‡ºã€é—œéµå­—ï¼Œä»£è¡¨ä½¿ç”¨è€…å·²ç™»å…¥ â†’ Session æœªéæœŸ
+                if (html.Contains("ç™»å‡º") || html.Contains("ç™»å‡ºç³»çµ±"))
                 {
                     return false;
                 }
@@ -684,7 +684,7 @@ namespace Service.Services.AccsShopee
         }
 
         /// <summary>
-        /// ²M°£ Session Cookie
+        /// æ¸…é™¤ Session Cookie
         /// </summary>
         private void ClearSession()
         {
@@ -696,7 +696,7 @@ namespace Service.Services.AccsShopee
         }
 
         /// <summary>
-        /// ³sµ²°Ñ¼ÆÃş§O
+        /// é€£çµåƒæ•¸é¡åˆ¥
         /// </summary>
         private class AccsLinkParameters
         {

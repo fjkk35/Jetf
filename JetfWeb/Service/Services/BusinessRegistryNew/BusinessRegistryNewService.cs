@@ -18,7 +18,7 @@ namespace Service.Services.BusinessRegistryNew
         {
             _companyRegistration = new CompanyRegistration();        }
 
-        public async Task<ResopnseModel> Search(string businessId)
+        public async Task<ResponseModel> Search(string businessId)
         {
             var businessIds = businessId
            .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
@@ -28,10 +28,10 @@ namespace Service.Services.BusinessRegistryNew
 
             var list = await GetList(businessIds);
 
-            return new ResopnseModel() { ReturnObject = list };
+            return new ResponseModel() { ReturnObject = list };
         }
 
-        public async Task<ResopnseModel> GetExecl(string businessId)
+        public async Task<ResponseModel> GetExecl(string businessId)
         {
             try
             {
@@ -67,11 +67,11 @@ namespace Service.Services.BusinessRegistryNew
                     row.CreateCell(3).SetCellValue(r.Revoke_App_Date);
                     iRow++;
                 });
-                return new ResopnseModel() { ReturnObject = workbook };
+                return new ResponseModel() { ReturnObject = workbook };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 

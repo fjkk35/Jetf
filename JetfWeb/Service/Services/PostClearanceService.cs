@@ -41,9 +41,9 @@ namespace Service.Services
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel UploadFile(string filePath, string dataDate, string userId)
+        public ResponseModel UploadFile(string filePath, string dataDate, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
             if (conn.State != ConnectionState.Open)
@@ -204,9 +204,9 @@ namespace Service.Services
         /// <param name="upload_Time"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel InsertPostClearanceUpload(List<PostClearanceUploadModel> modelList, string dataDate, string upload_Time, string userId)
+        public ResponseModel InsertPostClearanceUpload(List<PostClearanceUploadModel> modelList, string dataDate, string upload_Time, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             StringBuilder sb = new StringBuilder();
             sb.Append("insert [jetf].[dbo].[PostClearanceUpload](ImportDate, BlNo, TransferDate, SignOutDate, Mail, ClearanceType, DataType, Volume, XTax, GTax, FeeReduction, ClearanceFee2, ClearanceFeeType, TaxPayer, Customer, ActualDate, Remark,WarehouseRentDaysReduction, Upload_Ope, UPLOAD_TIME) ");

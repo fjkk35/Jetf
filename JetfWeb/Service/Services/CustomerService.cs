@@ -43,9 +43,9 @@ namespace Service.Services
         /// 更新客戶資料
         /// </summary>
         /// <returns></returns>
-        public ResopnseModel EditCustomer_Master(CustomerModel model,string user_id)
+        public ResponseModel EditCustomer_Master(CustomerModel model,string user_id)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "更新成功";
             try
@@ -96,9 +96,9 @@ namespace Service.Services
         /// 新增客戶資料
         /// </summary>
         /// <returns></returns>
-        public ResopnseModel InsertCustomer_Master(CustomerModel model, string user_id)
+        public ResponseModel InsertCustomer_Master(CustomerModel model, string user_id)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "新增成功";
             try

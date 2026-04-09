@@ -479,9 +479,9 @@ VALUES
         /// Excel 欄位：單號、處理方式(中文)、備註
         /// 整批驗證：任一筆驗證失敗則整批失敗，不更新任何資料。
         /// </summary>
-        public ResopnseModel BatchUpload(string filePath)
+        public ResponseModel BatchUpload(string filePath)
         {
-            var res = new ResopnseModel { status = Status.success, msg = "上傳成功" };
+            var res = new ResponseModel { status = Status.success, msg = "上傳成功" };
 
             var rows = ReadBatchUploadExcel(filePath);
             if (rows.Count == 0)
@@ -780,9 +780,9 @@ WHERE [TrackingNo] IN @TrackingNos
         /// Excel 欄位：單號、退件原因
         /// 驗證規則：如果有單號找不到，整批上傳失敗，並回傳失敗原因
         /// </summary>
-        public ResopnseModel BatchUploadReturnReason(string filePath)
+        public ResponseModel BatchUploadReturnReason(string filePath)
         {
-            var res = new ResopnseModel { status = Status.success, msg = "上傳成功" };
+            var res = new ResponseModel { status = Status.success, msg = "上傳成功" };
 
             var rows = ReadReturnReasonBatchUploadExcel(filePath);
             if (rows.Count == 0)

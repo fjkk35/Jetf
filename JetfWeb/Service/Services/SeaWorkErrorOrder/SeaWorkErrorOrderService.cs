@@ -31,9 +31,9 @@ namespace Service.Services.SeaWorkErrorOrder
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel Upload(string filePath, string dataDate, string userId)
+        public ResponseModel Upload(string filePath, string dataDate, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
             //讀取Excel
@@ -70,9 +70,9 @@ namespace Service.Services.SeaWorkErrorOrder
         /// <param name="upload_Time"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResopnseModel InsertData(List<SeaWorkErrorOrderModel> list, string dataDate, string userId)
+        public ResponseModel InsertData(List<SeaWorkErrorOrderModel> list, string dataDate, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             var sql = @"
 IF EXISTS (
     SELECT 1 FROM [jetf].[dbo].[SeaWorkErrorOrder]

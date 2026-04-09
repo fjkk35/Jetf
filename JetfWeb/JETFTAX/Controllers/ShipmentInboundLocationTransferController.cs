@@ -63,7 +63,7 @@ namespace JETFTAX.Controllers
             {
                 _service.UpdateLocation(request);
 
-                return Json(new ResopnseModel
+                return Json(new ResponseModel
                 {
                     status = "success",
                     msg = "儲位更新成功"
@@ -71,7 +71,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel
+                return Json(new ResponseModel
                 {
                     status = "error",
                     msg = ex.Message

@@ -23,9 +23,9 @@ namespace Service.Services
         /// 更新菜鳥海運、空運，稅金方式P
         /// </summary>
         /// <returns></returns>
-        public ResopnseModel UpdateCainiaoTaxEdit() {
+        public ResponseModel UpdateCainiaoTaxEdit() {
 
-            ResopnseModel resopnse = new ResopnseModel();
+            ResponseModel resopnse = new ResponseModel();
             DataTable dt = new DataTable();
             using (SqlDataAdapter da = new SqlDataAdapter("[jetf].[dbo].[USP_Update_CainiaoTaxEdit]", conn))
             {
@@ -450,9 +450,9 @@ namespace Service.Services
             return dt_Fee_Master;
         }
 
-        ResopnseModel InsertFee_Master_Etl(DataTable dt_Fee_Master, string dataDate, string userId)
+        ResponseModel InsertFee_Master_Etl(DataTable dt_Fee_Master, string dataDate, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             using (SqlTransaction tran = conn.BeginTransaction())
             {
@@ -629,9 +629,9 @@ namespace Service.Services
             return dataTableModel;
         }
 
-        public ResopnseModel UploadEtl(string date, string timeBetween, string sTime, string eTime, string userId)
+        public ResponseModel UploadEtl(string date, string timeBetween, string sTime, string eTime, string userId)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             DateTime sdate, edate;
             sTime = sTime.Insert(2, ":");

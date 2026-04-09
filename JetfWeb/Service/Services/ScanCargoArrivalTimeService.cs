@@ -28,9 +28,9 @@ namespace Service.Services
         /// 取得輸入外車交倉時間資料
         /// </summary>
         /// <returns></returns>
-        public ResopnseModel GetData(string trans, string dataType, string sDate, string eDate, string userId) 
+        public ResponseModel GetData(string trans, string dataType, string sDate, string eDate, string userId) 
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 List<ScanCargoArrivalTimeModel> list = new List<ScanCargoArrivalTimeModel>();
@@ -81,7 +81,7 @@ namespace Service.Services
             return resopnseModel;
         }
 
-        public ResopnseModel UpdateScanCargoArrivalTime(string arrivalTime,string transName, string searchTime, string searchOpe) 
+        public ResponseModel UpdateScanCargoArrivalTime(string arrivalTime,string transName, string searchTime, string searchOpe) 
         {
             var result = CheckArrivalTime(arrivalTime, transName, searchTime, searchOpe);
 
@@ -130,9 +130,9 @@ namespace Service.Services
         /// </summary>
         /// <param name="list"></param>
         /// <returns></returns>
-        private ResopnseModel InsertScanCargoArrivalTime(List<ScanCargoArrivalTimeModel> list) 
+        private ResponseModel InsertScanCargoArrivalTime(List<ScanCargoArrivalTimeModel> list) 
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
 
             string sql = @"insert [jetf].[dbo].[ScanCargoArrivalTime](PdtScanCargoUploadId, ArrivalTime, UploadTime, TransName, SearchTime, SearchOpe)
                            values(@PdtScanCargoUploadId, @ArrivalTime, @UploadTime, @TransName, @SearchTime, @SearchOpe)";
@@ -197,9 +197,9 @@ namespace Service.Services
         /// <param name="searchTime"></param>
         /// <param name="searchOpe"></param>
         /// <returns></returns>
-        private ResopnseModel CheckArrivalTime(string arrivalTime, string transName, string searchTime, string searchOpe) 
+        private ResponseModel CheckArrivalTime(string arrivalTime, string transName, string searchTime, string searchOpe) 
         {
-            ResopnseModel result = new ResopnseModel { status = Status.success };
+            ResponseModel result = new ResponseModel { status = Status.success };
             
 
             List<ScanCargoArrivalTimeModel> list = new List<ScanCargoArrivalTimeModel>();

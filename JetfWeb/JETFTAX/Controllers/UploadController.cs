@@ -66,9 +66,9 @@ namespace JETFTAX.Controllers
         /// <summary>
         /// 驗證檔案格式和檔名
         /// </summary>
-        private ResopnseModel ValidateSeaTaxFile(string fileName, string fileType, SeaTaxType taxType, string date)
+        private ResponseModel ValidateSeaTaxFile(string fileName, string fileType, SeaTaxType taxType, string date)
         {
-            var response = new ResopnseModel();
+            var response = new ResponseModel();
 
             // 驗證副檔名
             if (fileType != ".xlsx")
@@ -128,7 +128,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.UploadSeaTax)]
         public JsonResult UploadFile(HttpPostedFileBase file, SeataxViewModel vm)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath, date;
@@ -197,7 +197,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.UploadSeaTaxG)]
         public JsonResult UploadFileG(HttpPostedFileBase file, SeataxViewModel vm)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath, date;
@@ -260,7 +260,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.UploadCollectibleAmount)]
         public JsonResult UploadFileReceive(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;
@@ -322,7 +322,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.UploadCollectibleRemittance)]
         public JsonResult UploadFileTransfer(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;
@@ -395,7 +395,7 @@ namespace JETFTAX.Controllers
         [HttpPost]
         public ActionResult CainiaoTaxEdit(HttpPostedFileBase file, CainiaoTaxEditViewModel vm)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath,source, column;

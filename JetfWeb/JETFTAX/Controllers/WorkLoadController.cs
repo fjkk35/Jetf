@@ -638,7 +638,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.UploadFlightArrival)]
         public JsonResult UploadFile(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;
@@ -723,7 +723,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.UploadEtlErrorBagNo)]
         public JsonResult UploadFileEtlBagNo(HttpPostedFileBase file)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;
@@ -872,7 +872,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.UploadSeaErrorBagNo)]
         public JsonResult UploadFileSeaBagNo(HttpPostedFileBase file, UploadFileSeaBagNoViewModel vm)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;
@@ -935,7 +935,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.UploadSeaManifest)]
         public JsonResult UploadFileSeaManifest(HttpPostedFileBase file, UploadFileSeaManifestViewModel vm)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             try
             {
                 string fileType, fileName, filePath;

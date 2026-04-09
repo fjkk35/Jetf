@@ -21,7 +21,7 @@ namespace Service.Services.CptStatusReport
             _cptTradeVanService = cptTradeVanService;
         }
 
-        public ResopnseModel GetExecl(DataTypeEnum type, CptStatusEnum cptStatus, string startDate, string endDate)
+        public ResponseModel GetExecl(DataTypeEnum type, CptStatusEnum cptStatus, string startDate, string endDate)
         {
             try
             {
@@ -29,15 +29,15 @@ namespace Service.Services.CptStatusReport
                 {
                     var list = GetCptSeaMainNumberDetails(cptStatus, startDate, endDate);
                     var workbook = _cptTradeVanService.GetCptSeaMainNumberDetailExcel(list);
-                    return new ResopnseModel() {ReturnObject = workbook };
+                    return new ResponseModel() {ReturnObject = workbook };
                 }
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
            
-            return new ResopnseModel("查無資料");
+            return new ResponseModel("查無資料");
         }
 
 

@@ -306,9 +306,9 @@ namespace Service.Services.SearchCargo
         /// <summary>
         /// 新增處置說明
         /// </summary>
-        public ResopnseModel InsertProcess(ProcessModel model)
+        public ResponseModel InsertProcess(ProcessModel model)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "新增成功";
 
@@ -345,9 +345,9 @@ namespace Service.Services.SearchCargo
         /// <summary>
         /// 處置說明結案
         /// </summary>
-        public ResopnseModel FinishProcess(string dlv_inv, string user_Id)
+        public ResponseModel FinishProcess(string dlv_inv, string user_Id)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "結案成功";
 
@@ -379,9 +379,9 @@ namespace Service.Services.SearchCargo
         /// <summary>
         /// 刪除處置說明
         /// </summary>
-        public ResopnseModel DeleteProcess(string id, string user_Id)
+        public ResponseModel DeleteProcess(string id, string user_Id)
         {
-            ResopnseModel resopnseModel = new ResopnseModel();
+            ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
             resopnseModel.msg = "刪除成功";
 

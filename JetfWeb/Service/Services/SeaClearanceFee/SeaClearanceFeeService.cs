@@ -28,14 +28,14 @@ namespace Service.Services.SeaClearanceFee
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ResopnseModel Create(SeaClearanceFeeModel data)
+        public ResponseModel Create(SeaClearanceFeeModel data)
         {
             try
             {
                 var isCustomerExists = IsCustomerExists(data.CustCode);
 
                 if (isCustomerExists)
-                    return new ResopnseModel("客戶已存在");
+                    return new ResponseModel("客戶已存在");
 
                 var sqlQuery = "INSERT INTO [jetf].[dbo].[SeaClearanceFee] (CustCode,G1Fee,MoveWarehouseFee,TransferG1Fee,TransferWarehouseFee,X2Fee) VALUES (@CustCode, @G1Fee,@MoveWarehouseFee,@TransferG1Fee,@TransferWarehouseFee,@X2Fee)";
 
@@ -50,15 +50,15 @@ namespace Service.Services.SeaClearanceFee
                 });
 
 
-                return new ResopnseModel() { };
+                return new ResponseModel() { };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 
-        public ResopnseModel Delete(int id)
+        public ResponseModel Delete(int id)
         {
             try
             {
@@ -66,11 +66,11 @@ namespace Service.Services.SeaClearanceFee
 
                 conn.Execute(sqlQuery, new { Id = id });
 
-                return new ResopnseModel() { };
+                return new ResponseModel() { };
             }
             catch (Exception ex)
             {
-                return new ResopnseModel(ex.Message);
+                return new ResponseModel(ex.Message);
             }
         }
 

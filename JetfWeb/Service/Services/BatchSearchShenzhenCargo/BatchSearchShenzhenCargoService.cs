@@ -20,13 +20,13 @@ namespace Service.Services.BatchSearchShenzhenCargo
         /// </summary>
         /// <param name="request">查詢請求</param>
         /// <returns>查詢結果</returns>
-        public ResopnseModel QueryShenzhenCargo(BatchSearchShenzhenCargoRequest request)
+        public ResponseModel QueryShenzhenCargo(BatchSearchShenzhenCargoRequest request)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(request.TrackingNoList))
                 {
-                    return new ResopnseModel("請輸入分提單號");
+                    return new ResponseModel("請輸入分提單號");
                 }
 
                 // 分割分提單號列表（支援換行、逗號、空白分隔）
@@ -39,7 +39,7 @@ namespace Service.Services.BatchSearchShenzhenCargo
 
                 if (!trackingNoList.Any())
                 {
-                    return new ResopnseModel("請輸入有效的分提單號");
+                    return new ResponseModel("請輸入有效的分提單號");
                 }
 
                 // 查詢資料
@@ -76,11 +76,11 @@ namespace Service.Services.BatchSearchShenzhenCargo
                     }
                 }
 
-                return new ResopnseModel(fullResult);
+                return new ResponseModel(fullResult);
             }
             catch (Exception ex)
             {
-                return new ResopnseModel($"查詢失敗：{ex.Message}");
+                return new ResponseModel($"查詢失敗：{ex.Message}");
             }
         }
 

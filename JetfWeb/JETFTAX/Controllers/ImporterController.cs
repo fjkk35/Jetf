@@ -42,7 +42,7 @@ namespace JETFTAX.Controllers
                     .ToList();
 
                 if (list.Count > 100)
-                    return Json(new ResopnseModel()
+                    return Json(new ResponseModel()
                     {
                         msg = "一次最多只能查詢100筆"
                     });
@@ -53,7 +53,7 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new ResopnseModel()
+                return Json(new ResponseModel()
                 {
                     msg = ex.Message
                 });
