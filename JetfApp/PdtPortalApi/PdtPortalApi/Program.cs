@@ -98,7 +98,7 @@ app.UseSwagger(options =>
     options.RouteTemplate = "openapi/{documentName}.json";
 });
 
-app.MapScalarApiReference("/docs", options =>
+app.MapScalarApiReference("/scalar", options =>
 {
     options.WithTitle("Pdt Portal API");
     options.WithOpenApiRoutePattern("/openapi/{documentName}.json");
