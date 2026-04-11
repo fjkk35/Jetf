@@ -290,9 +290,16 @@ API 文件頁面:
 }
 ```
 
+### HMAC 設定
+
+| 項目 | 值 | 說明 |
+| --- | --- | --- |
+| HMAC Key | `4CE2DDD2-501F-40B8-B10B-C35B79B404EC` | Android 端與後端共用的簽章金鑰 |
+| Allowed Clock Skew | `5` 分鐘 | `X-Timestamp` 與後端時間誤差不可超過 5 分鐘 |
+
 ### 簽章規則
 
-後端會用以下格式組字串後做 HMAC-SHA256:
+後端會以 UTF-8 將以下字串組成 payload，並使用 HMAC Key 做 HMAC-SHA256:
 
 ```text
 {X-Timestamp}
@@ -303,6 +310,8 @@ API 文件頁面:
 {SourceType}
 {ReturnTrackingNo}
 ```
+
+簽章結果需轉成十六進位小寫字串後放入 `X-Signature`。
 
 ### 成功回應 data 欄位
 
