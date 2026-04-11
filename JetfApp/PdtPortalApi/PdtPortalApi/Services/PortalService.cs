@@ -125,7 +125,7 @@ public sealed class PortalService(
 			var entity = new ShipmentInboundEntity
 			{
 				DataType = dataType,
-				InboundDate = request.InboundDate,
+                InboundDate = request.InboundDate.LocalDateTime,
 				TrackingNo = request.TrackingNo,
 				SeqNo = request.SeqNo,
 				LocationCode = request.LocationCode,

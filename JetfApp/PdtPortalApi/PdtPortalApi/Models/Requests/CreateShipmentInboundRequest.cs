@@ -11,7 +11,7 @@ public sealed class CreateShipmentInboundRequest
     /// 入庫日期。
     /// </summary>
     [Required(ErrorMessage = "InboundDate 為必填")]
-    public DateTime InboundDate { get; set; }
+    public DateTimeOffset InboundDate { get; set; }
 
     /// <summary>
     /// 單號。

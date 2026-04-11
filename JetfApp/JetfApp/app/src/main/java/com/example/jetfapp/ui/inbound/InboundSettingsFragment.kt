@@ -18,11 +18,13 @@ import com.example.jetfapp.MainActivity
 import com.example.jetfapp.databinding.FragmentInboundSettingsBinding
 import com.example.jetfapp.ui.common.FunctionKey
 import com.example.jetfapp.ui.common.FunctionKeyHandler
+import com.example.jetfapp.ui.common.ScanInputHandler
+import com.example.jetfapp.ui.common.hideKeyboard
 import com.example.jetfapp.viewmodel.ShipmentInboundEvent
 import com.example.jetfapp.viewmodel.ShipmentInboundViewModel
 import kotlinx.coroutines.launch
 
-class InboundSettingsFragment : Fragment(), FunctionKeyHandler {
+class InboundSettingsFragment : Fragment(), FunctionKeyHandler, ScanInputHandler {
     private var _binding: FragmentInboundSettingsBinding? = null
     private val binding: FragmentInboundSettingsBinding
         get() = checkNotNull(_binding)
@@ -45,6 +47,14 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler {
         binding.dropdownSource.setOnItemClickListener { _, _, position, _ ->
             val selectedSource = binding.dropdownSource.adapter.getItem(position)?.toString().orEmpty()
             shipmentInboundViewModel.updateSelectedSourceName(selectedSource)
+        }
+        binding.editSequence.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                binding.editSequence.selectAll()
+            }
+        }
+        binding.editSequence.setOnClickListener {
+            binding.editSequence.selectAll()
         }
         binding.editSequence.setOnEditorActionListener { _, actionId, event ->
             val isImeDone = actionId == EditorInfo.IME_ACTION_DONE
@@ -82,6 +92,12 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler {
 
                         binding.textMessage.isVisible = !state.message.isNullOrBlank()
                         binding.textMessage.text = state.message.orEmpty()
+
+                        if (!state.message.isNullOrBlank()) {
+                            binding.dropdownSource.clearFocus()
+                            binding.editSequence.clearFocus()
+                            hideKeyboard(binding.root)
+                        }
                     }
                 }
 
@@ -99,6 +115,13 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler {
         }
 
         shipmentInboundViewModel.loadSourceTypes()
+    }
+
+    override fun onScanReceived(scanValue: String) {
+        val normalized = scanValue.trim().uppercase()
+        binding.editSequence.setText(normalized)
+        binding.editSequence.setSelection(normalized.length)
+        shipmentInboundViewModel.updateStartSequence(normalized)
     }
 
     override fun onFunctionKeyPressed(functionKey: FunctionKey) {

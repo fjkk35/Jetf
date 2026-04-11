@@ -66,6 +66,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                android:textSize="18sp"
                 android:textColor="@color/jetf_error"
                 tools:text="登入失敗，請確認帳號是否正確。" />
         </LinearLayout>

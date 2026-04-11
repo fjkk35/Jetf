@@ -1,74 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:paddingStart="14dp"
+    android:paddingTop="12dp"
+    android:paddingEnd="14dp"
+    android:paddingBottom="8dp">
+
+    <TextView
+        android:id="@+id/text_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_settings_title"
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+        android:textColor="@color/jetf_ink"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/settings_panel"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_card_panel"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="14dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/text_title">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/label_settings_title"
-            android:textAppearance="@style/TextAppearance.Material3.DisplaySmall"
-            android:textColor="@color/jetf_ink" />
-
-        <LinearLayout
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/input_layout_source"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/bg_card_panel"
-            android:orientation="vertical"
-            android:padding="24dp">
+            android:hint="@string/hint_source_type">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/input_layout_source"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            <AutoCompleteTextView
+                android:id="@+id/dropdown_source"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/hint_source_type">
+                android:inputType="none"
+                android:maxLines="1"
+                android:textSize="16sp"
+                tools:text="人工" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-                <AutoCompleteTextView
-                    android:id="@+id/dropdown_source"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none"
-                    tools:text="人工" />
-            </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/input_layout_sequence"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/hint_start_sequence"
+            app:helperText="@string/helper_start_sequence">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/input_layout_sequence"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edit_sequence"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:helperText="@string/helper_start_sequence"
-                android:hint="@string/hint_start_sequence">
+                android:imeOptions="actionDone"
+                android:inputType="textCapCharacters"
+                android:maxLength="6"
+                android:maxLines="1"
+                android:textSize="16sp"
+                tools:text="AB0001" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/edit_sequence"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:imeOptions="actionDone"
-                    android:inputType="textCapCharacters"
-                    android:maxLength="6"
-                    tools:text="AB0001" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <TextView
-                android:id="@+id/text_message"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                android:textColor="@color/jetf_error"
-                tools:text="請輸入正確的流水號格式，例如 AB0001。" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/text_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+            android:textSize="18sp"
+            android:textColor="@color/jetf_error"
+            tools:text="請輸入正確的流水號格式，例如 AB0001。" />
     </LinearLayout>
-</ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

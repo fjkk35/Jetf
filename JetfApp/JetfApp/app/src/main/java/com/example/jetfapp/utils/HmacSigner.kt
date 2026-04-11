@@ -1,14 +1,20 @@
 package com.example.jetfapp.utils
 
 import com.example.jetfapp.data.model.ShipmentInboundRequest
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 object HmacSigner {
+    private val canonicalInboundDateFormatter: DateTimeFormatter =
+        DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSSSSSXXX")
+
     fun sign(timestamp: Long, request: ShipmentInboundRequest, secretKey: String): String {
+        val canonicalInboundDate = OffsetDateTime.parse(request.inboundDate).format(canonicalInboundDateFormatter)
         val payload = buildString {
             appendLine(timestamp)
-            appendLine(request.inboundDate)
+            appendLine(canonicalInboundDate)
             appendLine(request.trackingNo)
             appendLine(request.seqNo)
             appendLine(request.locationCode)

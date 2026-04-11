@@ -143,25 +143,26 @@ class ShipmentInboundViewModel(
         }
     }
 
-    fun lockLocation() {
-        val locationCode = _workState.value.locationCode.trim()
+    fun lockLocation(locationCodeInput: String? = null): Boolean {
+        val locationCode = (locationCodeInput ?: _workState.value.locationCode).trim().uppercase()
         if (locationCode.isBlank()) {
-            _workState.update { it.copy(message = "請先輸入儲位並鎖定。") }
-            return
+            _workState.update { it.copy(message = "請先輸入儲位。") }
+            return false
         }
 
         _workState.update {
             it.copy(
                 locationCode = locationCode,
                 isLocationLocked = true,
-                message = "儲位已鎖定，可開始掃描單號。"
+                message = "儲位已自動鎖定，可開始掃描單號。"
             )
         }
+        return true
     }
 
     fun unlockLocation() {
         _workState.update {
-            it.copy(isLocationLocked = false, message = "已解除儲位鎖定，請重新輸入。")
+            it.copy(isLocationLocked = false, message = "已解除儲位設定，請重新輸入。")
         }
     }
 
@@ -177,29 +178,85 @@ class ShipmentInboundViewModel(
         }
     }
 
-    fun submitTracking(inputTrackingNo: String? = null) {
-        val currentState = _workState.value
-        if (currentState.isSequenceLimitReached) {
+    fun applyTrackingInput(trackingNo: String): Boolean {
+        if (_workState.value.isSequenceLimitReached) {
             _workState.update { it.copy(message = "流水號為最後號，請到上一步變更") }
-            return
+            return false
         }
-        if (!currentState.isLocationLocked) {
-            _workState.update { it.copy(message = "請先輸入儲位並鎖定。") }
+
+        if (!_workState.value.isLocationLocked && !lockLocation()) {
+            return false
+        }
+
+        val normalizedTrackingNo = trackingNo.trim()
+        if (normalizedTrackingNo.isBlank()) {
+            _workState.update { it.copy(message = "請輸入或掃描單號。") }
+            return false
+        }
+
+        val latestState = _workState.value
+        val requiresReturnTracking = latestState.showReturnTracking
+
+        _workState.update {
+            it.copy(
+                trackingNo = normalizedTrackingNo,
+                returnTrackingNo = if (it.showReturnTracking) "" else it.returnTrackingNo,
+                message = if (requiresReturnTracking) "請輸入或掃描退件單號。" else null
+            )
+        }
+
+        if (requiresReturnTracking) {
+            return true
+        }
+
+        submitTracking(normalizedTrackingNo)
+        return false
+    }
+
+    fun applyReturnTrackingAndSubmit(returnTrackingNo: String) {
+        val normalizedReturnTrackingNo = returnTrackingNo.trim()
+        if (normalizedReturnTrackingNo.isBlank()) {
+            _workState.update { it.copy(message = "此貨件來源需輸入退件單號。") }
             return
         }
 
+        _workState.update {
+            it.copy(returnTrackingNo = normalizedReturnTrackingNo, message = null)
+        }
+        submitTracking()
+    }
+
+    fun submitTracking(inputTrackingNo: String? = null) {
+        if (_workState.value.isSequenceLimitReached) {
+            _workState.update { it.copy(message = "流水號為最後號，請到上一步變更") }
+            return
+        }
+
+        if (!_workState.value.isLocationLocked && !lockLocation()) {
+            return
+        }
+
+        val currentState = _workState.value
         val trackingNo = (inputTrackingNo ?: currentState.trackingNo).trim()
         if (trackingNo.isBlank()) {
             _workState.update { it.copy(message = "請輸入或掃描單號。") }
             return
         }
 
-        if (currentState.showReturnTracking && currentState.returnTrackingNo.trim().isBlank()) {
+        val returnTrackingNo = currentState.returnTrackingNo.trim()
+        if (currentState.showReturnTracking && returnTrackingNo.isBlank()) {
             _workState.update { it.copy(message = "此貨件來源需輸入退件單號。") }
             return
         }
 
-        _workState.update { it.copy(trackingNo = trackingNo, isSubmitting = true, message = null) }
+        _workState.update {
+            it.copy(
+                trackingNo = trackingNo,
+                returnTrackingNo = returnTrackingNo,
+                isSubmitting = true,
+                message = null
+            )
+        }
 
         viewModelScope.launch {
             when (val result = repository.checkShipment(trackingNo)) {

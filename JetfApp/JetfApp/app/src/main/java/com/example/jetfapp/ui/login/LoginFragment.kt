@@ -17,11 +17,13 @@ import com.example.jetfapp.MainActivity
 import com.example.jetfapp.databinding.FragmentLoginBinding
 import com.example.jetfapp.ui.common.FunctionKey
 import com.example.jetfapp.ui.common.FunctionKeyHandler
+import com.example.jetfapp.ui.common.ScanInputHandler
+import com.example.jetfapp.ui.common.hideKeyboard
 import com.example.jetfapp.viewmodel.AppEvent
 import com.example.jetfapp.viewmodel.AppViewModel
 import kotlinx.coroutines.launch
 
-class LoginFragment : Fragment(), FunctionKeyHandler {
+class LoginFragment : Fragment(), FunctionKeyHandler, ScanInputHandler {
     private var _binding: FragmentLoginBinding? = null
     private val binding: FragmentLoginBinding
         get() = checkNotNull(_binding)
@@ -41,6 +43,14 @@ class LoginFragment : Fragment(), FunctionKeyHandler {
         super.onViewCreated(view, savedInstanceState)
         binding.buttonLogin.setOnClickListener {
             appViewModel.login()
+        }
+        binding.editAccount.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                binding.editAccount.selectAll()
+            }
+        }
+        binding.editAccount.setOnClickListener {
+            binding.editAccount.selectAll()
         }
         binding.editAccount.setOnEditorActionListener { _, actionId, event ->
             val isImeDone = actionId == EditorInfo.IME_ACTION_DONE
@@ -67,6 +77,10 @@ class LoginFragment : Fragment(), FunctionKeyHandler {
                         binding.buttonLogin.isEnabled = !state.isSubmitting
                         binding.textMessage.isVisible = !state.message.isNullOrBlank()
                         binding.textMessage.text = state.message.orEmpty()
+                        if (!state.message.isNullOrBlank()) {
+                            binding.editAccount.clearFocus()
+                            hideKeyboard(binding.root)
+                        }
                     }
                 }
 
@@ -79,6 +93,13 @@ class LoginFragment : Fragment(), FunctionKeyHandler {
                 }
             }
         }
+    }
+
+    override fun onScanReceived(scanValue: String) {
+        val normalized = scanValue.trim()
+        binding.editAccount.setText(normalized)
+        binding.editAccount.setSelection(normalized.length)
+        appViewModel.updateAccount(normalized)
     }
 
     override fun onFunctionKeyPressed(functionKey: FunctionKey) {

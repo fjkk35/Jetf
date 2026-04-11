@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
@@ -25,6 +26,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     private val appConfig = ServiceLocator.provideAppConfig()
+    private var isBottomActionBarRequested = false
+    private var isKeyboardVisible = false
 
     private val scanReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -45,6 +48,19 @@ class MainActivity : AppCompatActivity() {
         }
         binding.buttonF4.setOnClickListener {
             dispatchFunctionKey(FunctionKey.F4)
+        }
+
+        binding.main.viewTreeObserver.addOnGlobalLayoutListener {
+            val visibleFrame = Rect()
+            binding.main.getWindowVisibleDisplayFrame(visibleFrame)
+            val screenHeight = binding.main.rootView.height
+            val obscuredHeight = screenHeight - visibleFrame.bottom
+            val keyboardVisible = obscuredHeight > screenHeight * 0.15f
+
+            if (isKeyboardVisible != keyboardVisible) {
+                isKeyboardVisible = keyboardVisible
+                renderBottomActionBar()
+            }
         }
 
         supportFragmentManager.addOnBackStackChangedListener {
@@ -140,11 +156,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showBottomActionBar(visible: Boolean, f3Text: String = "", f4Text: String = "") {
+        isBottomActionBarRequested = visible
+        binding.buttonF3.text = f3Text
+        binding.buttonF4.text = f4Text
+        renderBottomActionBar()
+    }
+
+    private fun renderBottomActionBar() {
+        val visible = isBottomActionBarRequested && !isKeyboardVisible
         binding.bottomActionBar.isVisible = visible
         binding.buttonF3.isVisible = visible
         binding.buttonF4.isVisible = visible
-        binding.buttonF3.text = f3Text
-        binding.buttonF4.text = f4Text
     }
 
     private fun registerScanReceiverIfNeeded() {
