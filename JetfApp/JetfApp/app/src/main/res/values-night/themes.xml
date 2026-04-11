@@ -1,7 +1,19 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.JetfApp" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+    <style name="Base.Theme.JetfApp" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/jetf_red</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/jetf_red_dark</item>
+        <item name="colorOnPrimaryContainer">@color/white</item>
+        <item name="colorSecondary">@color/jetf_ink</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorSurface">@color/jetf_surface</item>
+        <item name="colorOnSurface">@color/jetf_ink</item>
+        <item name="colorSurfaceContainer">@color/jetf_surface_alt</item>
+        <item name="android:colorBackground">@color/jetf_canvas</item>
+        <item name="android:windowBackground">@color/jetf_canvas</item>
+        <item name="colorOutline">@color/jetf_outline</item>
+        <item name="android:navigationBarColor">@color/jetf_ink</item>
+        <item name="android:statusBarColor">@color/jetf_ink</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

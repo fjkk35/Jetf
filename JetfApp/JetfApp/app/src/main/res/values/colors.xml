@@ -2,4 +2,15 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="jetf_red">#C8102E</color>
+    <color name="jetf_red_dark">#8C1327</color>
+    <color name="jetf_ink">#14213D</color>
+    <color name="jetf_canvas">#F6F3EE</color>
+    <color name="jetf_surface">#FFFDF9</color>
+    <color name="jetf_surface_alt">#E7E1D8</color>
+    <color name="jetf_success">#17663A</color>
+    <color name="jetf_warning">#A15C00</color>
+    <color name="jetf_error">#B3261E</color>
+    <color name="jetf_outline">#B0A99F</color>
+    <color name="jetf_disabled">#8C8479</color>
 </resources>
