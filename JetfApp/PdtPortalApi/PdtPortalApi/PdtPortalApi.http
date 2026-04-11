@@ -1,0 +1,48 @@
+@PdtPortalApi_HostAddress = http://localhost:5260
+@Timestamp = 1712736000
+@Signature = replace-with-hmac-sha256-hex
+
+GET {{PdtPortalApi_HostAddress}}/api/app/version-check?versionCode=0.0.1
+Accept: application/json
+
+###
+
+POST {{PdtPortalApi_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+	"account": "demo",
+	"versionCode": "0.0.1"
+}
+
+###
+
+GET {{PdtPortalApi_HostAddress}}/api/shipmentinbound/source-types
+Accept: application/json
+
+###
+
+POST {{PdtPortalApi_HostAddress}}/api/shipmentinbound/check
+Content-Type: application/json
+
+{
+	"trackingNo": "JETF0001"
+}
+
+###
+
+POST {{PdtPortalApi_HostAddress}}/api/shipmentinbound
+Content-Type: application/json
+X-Timestamp: {{Timestamp}}
+X-Signature: {{Signature}}
+
+{
+	"inboundDate": "2026-04-10T09:00:00+08:00",
+	"trackingNo": "JETF0001",
+	"seqNo": "1",
+	"locationCode": "A01-01",
+	"sourceType": 1,
+	"returnTrackingNo": ""
+}
+
+###

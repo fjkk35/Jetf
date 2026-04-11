@@ -1,0 +1,54 @@
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+
+namespace PdtPortalApi.Models.Entities;
+
+/// <summary>
+/// 海運原單實體。
+/// </summary>
+[Keyless]
+[Table("SEA_ORDER_ORIGINAL", Schema = "dbo")]
+public sealed class SeaOrderOriginalEntity
+{
+    /// <summary>
+    /// 單號。
+    /// </summary>
+    [Column("JETF_SERIAL")]
+    public string JetfSerial { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 進口人或收件人地址。
+    /// </summary>
+    [Column("IM_ADD")]
+    public string ImporterAddr { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 進口人或收件人電話。
+    /// </summary>
+    [Column("IM_PHONENO")]
+    public string ImporterPhone { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 進口人姓名或收件人名稱。
+    /// </summary>
+    [Column("IMPORTER")]
+    public string Importer { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 客戶代碼（CustCode）。
+    /// </summary>
+    [Column("DESPATCH_NAME")]
+    public string CustCode { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 承運商名稱。
+    /// </summary>
+    [Column("TRANS_NAME")]
+    public string TransName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 毛重。
+    /// </summary>
+    [Column("GW")]
+    public decimal Gw { get; set; }
+}
