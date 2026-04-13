@@ -138,7 +138,7 @@ public sealed class PortalService(
 				ImporterPhone = seaData?.ImporterPhone ?? airData?.ImporterPhone ?? string.Empty,
 				ImporterAddr = seaData?.ImporterAddr ?? airData?.ImporterAddr ?? string.Empty,
 				IsOrderOriginal = hasOriginalData,
-				UploadOpe = string.Empty,
+                UploadOpe = request.UploadOpe ?? string.Empty,
 				CreatedTime = DateTime.Now,
 				Tax = feeData?.Tax ?? 0,
 				Ccfee = feeData?.Ccfee ?? 0,
@@ -270,7 +270,7 @@ public sealed class PortalService(
             return await _jetfDbContext.ShipmentInbounds
                 .AsNoTracking()
                 .AnyAsync(
-                    entity => entity.TrackingNo == trackingNo && entity.OutboundDate < duplicateThreshold,
+                    entity => entity.TrackingNo == trackingNo && (!entity.OutboundDate.HasValue ||entity.OutboundDate < duplicateThreshold ),
                     cancellationToken);
         }
         catch (Exception exception)

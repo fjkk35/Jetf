@@ -12,3 +12,7 @@ interface FunctionKeyHandler {
 interface ScanInputHandler {
     fun onScanReceived(scanValue: String)
 }
+
+interface KeyboardWedgeScanHandler : ScanInputHandler {
+    fun shouldConsumeWedgeInput(): Boolean
+}

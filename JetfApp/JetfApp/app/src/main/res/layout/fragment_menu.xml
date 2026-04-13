@@ -4,6 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
     android:orientation="vertical"
     android:padding="24dp">
 
@@ -11,7 +13,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/label_menu_title"
-        android:textAppearance="@style/TextAppearance.Material3.DisplaySmall"
+        android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
         android:textColor="@color/jetf_ink" />
 
     <TextView
@@ -26,12 +28,14 @@
     <com.google.android.material.button.MaterialButton
         android:id="@+id/button_inbound"
         android:layout_width="match_parent"
-        android:layout_height="88dp"
+        android:layout_height="76dp"
         android:layout_marginTop="24dp"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
         android:insetTop="0dp"
         android:insetBottom="0dp"
         android:text="@string/label_menu_inbound"
         android:textAllCaps="false"
-        android:textSize="28sp" />
+        android:textSize="22sp" />
 
 </LinearLayout>

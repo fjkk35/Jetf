@@ -20,9 +20,24 @@ fun escapeForBuildConfig(value: String): String {
     return value.replace("\\", "\\\\").replace("\"", "\\\"")
 }
 
+fun versionCodeFromVersionName(versionName: String): Int {
+    val parts = versionName.split('.')
+        .map { it.toIntOrNull() ?: 0 }
+        .take(3)
+        .toMutableList()
+
+    while (parts.size < 3) {
+        parts += 0
+    }
+
+    return (parts[0] * 10_000) + (parts[1] * 100) + parts[2]
+}
+
 val apiBaseUrl = project.propertyOrDefault("API_BASE_URL", "http://localhost:5260/")
 val normalizedApiBaseUrl = if (apiBaseUrl.endsWith('/')) apiBaseUrl else "$apiBaseUrl/"
+val releaseApiBaseUrl = "https://service.jet-f.com/PdtPortalAPI/"
 val hmacKey = project.propertyOrDefault("PDT_HMAC_KEY", "")
+val appVersionName = "0.0.6"
 
 android {
     namespace = "com.example.jetfapp"
@@ -34,18 +49,22 @@ android {
         applicationId = "com.example.jetfapp"
         minSdk = 28
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = versionCodeFromVersionName(appVersionName)
+        versionName = appVersionName
 
-        buildConfigField("String", "API_BASE_URL", "\"${escapeForBuildConfig(normalizedApiBaseUrl)}\"")
         buildConfigField("String", "PDT_HMAC_KEY", "\"${escapeForBuildConfig(hmacKey)}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "API_BASE_URL", "\"${escapeForBuildConfig(normalizedApiBaseUrl)}\"")
+        }
+
         release {
             isMinifyEnabled = false
+            buildConfigField("String", "API_BASE_URL", "\"${escapeForBuildConfig(releaseApiBaseUrl)}\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

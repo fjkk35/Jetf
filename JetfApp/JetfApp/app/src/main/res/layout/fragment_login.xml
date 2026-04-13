@@ -57,6 +57,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginTop="20dp"
+                android:focusable="false"
+                android:focusableInTouchMode="false"
                 android:text="@string/action_login"
                 android:textAllCaps="false" />
 

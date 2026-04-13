@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="version_label_top_spacing">8dp</dimen>
+    <dimen name="version_label_end_spacing">12dp</dimen>
+</resources>

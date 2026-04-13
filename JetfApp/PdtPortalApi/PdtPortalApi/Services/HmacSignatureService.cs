@@ -62,7 +62,8 @@ public sealed class HmacSignatureService(IOptions<HmacOptions> options, ILogger<
                 request.SeqNo ?? string.Empty,
                 request.LocationCode ?? string.Empty,
                 request.SourceType.ToString(CultureInfo.InvariantCulture),
-                request.ReturnTrackingNo ?? string.Empty);
+                request.ReturnTrackingNo ?? string.Empty,
+                request.UploadOpe ?? string.Empty);
 
             var key = Encoding.UTF8.GetBytes(_options.Secret);
             var bytes = Encoding.UTF8.GetBytes(payload);

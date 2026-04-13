@@ -4,17 +4,21 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
+import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import com.example.jetfapp.databinding.ActivityMainBinding
 import com.example.jetfapp.di.ServiceLocator
 import com.example.jetfapp.ui.common.FunctionKey
 import com.example.jetfapp.ui.common.FunctionKeyHandler
+import com.example.jetfapp.ui.common.KeyboardWedgeScanHandler
 import com.example.jetfapp.ui.common.ScanInputHandler
 import com.example.jetfapp.ui.inbound.InboundSettingsFragment
 import com.example.jetfapp.ui.inbound.InboundWorkFragment
@@ -23,11 +27,22 @@ import com.example.jetfapp.ui.menu.MenuFragment
 import com.example.jetfapp.ui.splash.SplashFragment
 
 class MainActivity : AppCompatActivity() {
+    private companion object {
+        val scannerTriggerKeyCodes = setOf(
+            KeyEvent.KEYCODE_F9,
+            KeyEvent.KEYCODE_F10,
+            KeyEvent.KEYCODE_F11,
+            KeyEvent.KEYCODE_BUTTON_L1,
+            KeyEvent.KEYCODE_BUTTON_R1
+        )
+    }
+
     private lateinit var binding: ActivityMainBinding
 
     private val appConfig = ServiceLocator.provideAppConfig()
     private var isBottomActionBarRequested = false
-    private var isKeyboardVisible = false
+    private var isBottomActionBarSuppressed = false
+    private val wedgeScanBuffer = StringBuilder()
 
     private val scanReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -42,25 +57,21 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.textAppVersion.text = getString(R.string.label_version_short, BuildConfig.VERSION_NAME)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { _, windowInsets ->
+            val systemBarsInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.textAppVersion.updateLayoutParams<androidx.constraintlayout.widget.ConstraintLayout.LayoutParams> {
+                topMargin = systemBarsInsets.top + resources.getDimensionPixelSize(R.dimen.version_label_top_spacing)
+                marginEnd = resources.getDimensionPixelSize(R.dimen.version_label_end_spacing)
+            }
+            windowInsets
+        }
 
         binding.buttonF3.setOnClickListener {
             dispatchFunctionKey(FunctionKey.F3)
         }
         binding.buttonF4.setOnClickListener {
             dispatchFunctionKey(FunctionKey.F4)
-        }
-
-        binding.main.viewTreeObserver.addOnGlobalLayoutListener {
-            val visibleFrame = Rect()
-            binding.main.getWindowVisibleDisplayFrame(visibleFrame)
-            val screenHeight = binding.main.rootView.height
-            val obscuredHeight = screenHeight - visibleFrame.bottom
-            val keyboardVisible = obscuredHeight > screenHeight * 0.15f
-
-            if (isKeyboardVisible != keyboardVisible) {
-                isKeyboardVisible = keyboardVisible
-                renderBottomActionBar()
-            }
         }
 
         supportFragmentManager.addOnBackStackChangedListener {
@@ -84,20 +95,65 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        return when (keyCode) {
-            KeyEvent.KEYCODE_F3 -> {
-                dispatchFunctionKey(FunctionKey.F3)
-                true
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_UP) {
+            when (event.keyCode) {
+                KeyEvent.KEYCODE_F3 -> {
+                    if (currentFragment() is InboundSettingsFragment || currentFragment() is InboundWorkFragment) {
+                        dispatchFunctionKey(FunctionKey.F3)
+                        return true
+                    }
+                }
+                KeyEvent.KEYCODE_F4 -> {
+                    if (currentFragment() is InboundSettingsFragment || currentFragment() is InboundWorkFragment) {
+                        dispatchFunctionKey(FunctionKey.F4)
+                        return true
+                    }
+                }
             }
-
-            KeyEvent.KEYCODE_F4 -> {
-                dispatchFunctionKey(FunctionKey.F4)
-                true
-            }
-
-            else -> super.onKeyDown(keyCode, event)
         }
+
+        val wedgeHandler = currentFragment() as? KeyboardWedgeScanHandler
+        if (wedgeHandler?.shouldConsumeWedgeInput() == true) {
+            if (event.keyCode in scannerTriggerKeyCodes) {
+                return true
+            }
+
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                when (event.keyCode) {
+                    KeyEvent.KEYCODE_ENTER,
+                    KeyEvent.KEYCODE_NUMPAD_ENTER,
+                    KeyEvent.KEYCODE_TAB -> {
+                        val scannedValue = wedgeScanBuffer.toString().trim()
+                        wedgeScanBuffer.clear()
+                        if (scannedValue.isNotEmpty()) {
+                            wedgeHandler.onScanReceived(scannedValue)
+                            return true
+                        }
+                    }
+                    else -> {
+                        val unicodeChar = event.unicodeChar
+                        if (unicodeChar != 0) {
+                            val character = unicodeChar.toChar()
+                            if (!character.isISOControl()) {
+                                wedgeScanBuffer.append(character)
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (event.action == KeyEvent.ACTION_UP && currentFragment() is MenuFragment) {
+            if (event.keyCode == KeyEvent.KEYCODE_1 || event.keyCode == KeyEvent.KEYCODE_NUMPAD_1) {
+                hideKeyboardAndClearFocus()
+                showInboundSettings()
+                return true
+            }
+        }
+
+        return super.dispatchKeyEvent(event)
     }
 
     fun showSplash() {
@@ -120,7 +176,18 @@ class MainActivity : AppCompatActivity() {
         navigateTo(InboundWorkFragment(), clearBackStack = false, addToBackStack = true)
     }
 
+    fun setBottomActionBarSuppressed(suppressed: Boolean) {
+        if (isBottomActionBarSuppressed == suppressed) {
+            return
+        }
+
+        isBottomActionBarSuppressed = suppressed
+        renderBottomActionBar()
+    }
+
     private fun navigateTo(fragment: Fragment, clearBackStack: Boolean, addToBackStack: Boolean) {
+        hideKeyboardAndClearFocus()
+
         if (clearBackStack) {
             supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
         }
@@ -147,9 +214,9 @@ class MainActivity : AppCompatActivity() {
     private fun updateBottomActionBar() {
         when (currentFragment()) {
             is SplashFragment -> showBottomActionBar(false)
-            is LoginFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_exit)), getString(R.string.label_function_f4, getString(R.string.action_login)))
-            is MenuFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_exit)), getString(R.string.label_function_f4, getString(R.string.action_confirm)))
-            is InboundSettingsFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_exit)), getString(R.string.label_function_f4, getString(R.string.action_next)))
+            is LoginFragment -> showBottomActionBar(false)
+            is MenuFragment -> showBottomActionBar(false)
+            is InboundSettingsFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), getString(R.string.label_function_f4, getString(R.string.action_next)))
             is InboundWorkFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), getString(R.string.label_function_f4, getString(R.string.action_change_location)))
             else -> showBottomActionBar(false)
         }
@@ -163,10 +230,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderBottomActionBar() {
-        val visible = isBottomActionBarRequested && !isKeyboardVisible
+        val visible = isBottomActionBarRequested && !isBottomActionBarSuppressed
         binding.bottomActionBar.isVisible = visible
         binding.buttonF3.isVisible = visible
         binding.buttonF4.isVisible = visible
+        binding.textAppVersion.isVisible = currentFragment() !is SplashFragment
+    }
+
+    private fun hideKeyboardAndClearFocus() {
+        wedgeScanBuffer.clear()
+        currentFocus?.let { focusedView ->
+            val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+            inputMethodManager?.hideSoftInputFromWindow(focusedView.windowToken, 0)
+            focusedView.clearFocus()
+        }
+        setBottomActionBarSuppressed(false)
     }
 
     private fun registerScanReceiverIfNeeded() {

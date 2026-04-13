@@ -19,7 +19,8 @@ object HmacSigner {
             appendLine(request.seqNo)
             appendLine(request.locationCode)
             appendLine(request.sourceType?.toString().orEmpty())
-            append(request.returnTrackingNo)
+            appendLine(request.returnTrackingNo)
+            append(request.uploadOpe)
         }
 
         val mac = Mac.getInstance("HmacSHA256")

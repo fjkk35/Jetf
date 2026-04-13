@@ -14,6 +14,7 @@ import com.example.jetfapp.R
 import com.example.jetfapp.databinding.FragmentMenuBinding
 import com.example.jetfapp.ui.common.FunctionKey
 import com.example.jetfapp.ui.common.FunctionKeyHandler
+import com.example.jetfapp.ui.common.hideKeyboard
 import com.example.jetfapp.viewmodel.AppViewModel
 import kotlinx.coroutines.launch
 
@@ -35,6 +36,8 @@ class MenuFragment : Fragment(), FunctionKeyHandler {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.root.requestFocus()
+        hideKeyboard(binding.root)
         binding.buttonInbound.setOnClickListener {
             (activity as? MainActivity)?.showInboundSettings()
         }

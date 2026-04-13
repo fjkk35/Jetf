@@ -40,4 +40,10 @@ public sealed class CreateShipmentInboundRequest
     /// 退回的追蹤編號（若為退貨或重出時使用）。
     /// </summary>
     public string ReturnTrackingNo { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 上傳作業人員帳號。
+    /// </summary>
+    [Required(ErrorMessage = "UploadOpe 為必填")]
+    public string UploadOpe { get; set; } = string.Empty;
 }

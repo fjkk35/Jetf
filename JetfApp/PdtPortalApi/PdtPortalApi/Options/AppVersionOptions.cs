@@ -24,4 +24,14 @@ public sealed class AppVersionOptions
     /// APK 下載網址。
     /// </summary>
     public string ApkUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// APK 實體檔案路徑。
+    /// </summary>
+    public string ApkFilePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// APK 下載檔名。
+    /// </summary>
+    public string ApkFileName { get; set; } = "JETFApp-release.apk";
 }

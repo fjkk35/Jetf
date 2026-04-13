@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">JETF 入庫系統</string>
     <string name="label_version">Version %1$s</string>
+    <string name="label_version_short">V %1$s</string>
     <string name="label_loading">系統啟動中，請稍候…</string>
     <string name="label_login_title">作業人員登入</string>
     <string name="hint_account">帳號</string>
@@ -20,7 +21,7 @@
     <string name="label_sequence">流水號</string>
     <string name="hint_location_code">儲位</string>
     <string name="action_lock_location">鎖定儲位</string>
-    <string name="hint_tracking_no">單號（掃描或輸入）</string>
+    <string name="hint_tracking_no">單號</string>
     <string name="hint_return_tracking_no">退件單號</string>
     <string name="action_change_location">變更儲位</string>
     <string name="action_cancel">取消</string>
@@ -42,6 +43,8 @@
     <string name="message_location_locked">儲位已鎖定，可開始掃描單號。</string>
     <string name="message_location_unlocked">已解除儲位鎖定，請重新輸入。</string>
     <string name="message_write_success">入庫成功</string>
+    <string name="message_return_tracking_same_as_tracking">退件單號不可與單號相同，請重新輸入。</string>
+    <string name="message_submitting">資料處理中，請稍候…</string>
     <string name="message_splash_retry">重新檢查</string>
     <string name="label_current_account">登入帳號：%1$s</string>
     <string name="action_continue">繼續使用</string>
@@ -50,4 +53,20 @@
     <string name="label_function_f3">F3 %1$s</string>
     <string name="label_function_f4">F4 %1$s</string>
     <string name="message_scan_received">已掃描：%1$s</string>
+    <string name="message_update_downloading">正在下載版本 %1$s，完成後會自動開啟安裝。</string>
+    <string name="message_update_download_failed">APK 下載失敗，請稍後再試。</string>
+    <string name="message_update_download_failed_with_reason">APK 下載失敗：%1$s</string>
+    <string name="message_enable_install_permission">請允許此 APP 安裝未知應用程式，才能完成更新。</string>
+    <string name="message_update_not_available">目前尚未提供可下載的更新檔，請稍後再試。</string>
+    <string name="message_update_ready_to_install">下載完成，正在開啟安裝畫面。</string>
+    <string name="message_update_error_cannot_resume">下載中斷且無法續傳</string>
+    <string name="message_update_error_device_not_found">找不到儲存裝置</string>
+    <string name="message_update_error_file_exists">更新檔已存在</string>
+    <string name="message_update_error_file">建立更新檔失敗</string>
+    <string name="message_update_error_http">伺服器回應異常</string>
+    <string name="message_update_error_no_space">儲存空間不足</string>
+    <string name="message_update_error_redirect">下載轉址次數過多</string>
+    <string name="message_update_error_unknown">未知錯誤</string>
+    <string name="message_update_error_not_found">伺服器找不到 APK 檔案</string>
+    <string name="message_update_error_code">錯誤代碼 %1$d</string>
 </resources>

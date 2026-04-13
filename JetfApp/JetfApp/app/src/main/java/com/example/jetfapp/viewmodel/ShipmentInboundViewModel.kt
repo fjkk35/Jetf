@@ -44,6 +44,7 @@ sealed interface ShipmentInboundEvent {
     data object NavigateToMenu : ShipmentInboundEvent
     data object NavigateToWork : ShipmentInboundEvent
     data object NavigateToSettings : ShipmentInboundEvent
+    data class ShowSubmissionSuccess(val message: String) : ShipmentInboundEvent
     data class ShowUnknownShipmentDialog(val trackingNo: String) : ShipmentInboundEvent
 }
 
@@ -60,6 +61,11 @@ class ShipmentInboundViewModel(
     val events = _events.asSharedFlow()
 
     private var pendingUnknownTrackingNo: String? = null
+    private var uploadOperator: String = ""
+
+    fun updateUploadOperator(account: String) {
+        uploadOperator = account.trim()
+    }
 
     fun loadSourceTypes(forceReload: Boolean = false) {
         if (_settingsState.value.sourceTypes.isNotEmpty() && !forceReload) {
@@ -103,6 +109,12 @@ class ShipmentInboundViewModel(
                 startSequence = SequenceNumberUtil.normalize(startSequence),
                 message = null
             )
+        }
+    }
+
+    fun showInvalidStartSequenceMessage() {
+        _settingsState.update {
+            it.copy(message = "請輸入正確的流水號格式，例如 AB0001。")
         }
     }
 
@@ -162,7 +174,7 @@ class ShipmentInboundViewModel(
 
     fun unlockLocation() {
         _workState.update {
-            it.copy(isLocationLocked = false, message = "已解除儲位設定，請重新輸入。")
+            it.copy(isLocationLocked = false, trackingNo = "", returnTrackingNo = "", message = "已解除儲位設定，請重新輸入。")
         }
     }
 
@@ -217,6 +229,17 @@ class ShipmentInboundViewModel(
         val normalizedReturnTrackingNo = returnTrackingNo.trim()
         if (normalizedReturnTrackingNo.isBlank()) {
             _workState.update { it.copy(message = "此貨件來源需輸入退件單號。") }
+            return
+        }
+
+        if (normalizedReturnTrackingNo == _workState.value.trackingNo.trim()) {
+            _workState.update {
+                it.copy(
+                    returnTrackingNo = "",
+                    isSubmitting = false,
+                    message = "退件單號不可與單號相同，請重新輸入。"
+                )
+            }
             return
         }
 
@@ -287,10 +310,18 @@ class ShipmentInboundViewModel(
 
     fun cancelUnknownShipment() {
         pendingUnknownTrackingNo = null
-        _workState.update { it.copy(isSubmitting = false) }
+        _workState.update {
+            it.copy(
+                trackingNo = "",
+                returnTrackingNo = "",
+                isSubmitting = false,
+                message = "已取消不明貨，請重新掃描單號。"
+            )
+        }
     }
 
     private fun submitInbound(trackingNo: String) {
+        _workState.update { it.copy(isSubmitting = true) }
         val currentState = _workState.value
         val request = ShipmentInboundRequest(
             inboundDate = OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
@@ -298,7 +329,8 @@ class ShipmentInboundViewModel(
             seqNo = currentState.currentSequence,
             locationCode = currentState.locationCode,
             sourceType = currentState.sourceTypeId,
-            returnTrackingNo = currentState.returnTrackingNo.trim()
+            returnTrackingNo = currentState.returnTrackingNo.trim(),
+            uploadOpe = uploadOperator
         )
 
         viewModelScope.launch {
@@ -316,13 +348,20 @@ class ShipmentInboundViewModel(
     private fun handleWriteSuccess(message: String) {
         val currentState = _workState.value
         val nextSequence = SequenceNumberUtil.nextOrNull(currentState.currentSequence)
+        val successMessage = if (currentState.showReturnTracking && currentState.returnTrackingNo.isNotBlank()) {
+            "新增成功\n單號：${currentState.trackingNo}\n退件單號：${currentState.returnTrackingNo}"
+        } else {
+            "新增成功\n單號：${currentState.trackingNo}"
+        }
+        _events.tryEmit(ShipmentInboundEvent.ShowSubmissionSuccess(successMessage))
+
         if (nextSequence == null) {
             _workState.update {
                 it.copy(
                     isSubmitting = false,
                     trackingNo = "",
                     returnTrackingNo = "",
-                    message = "流水號為最後號，請到上一步變更",
+                    message = "$successMessage\n流水號為最後號，請到上一步變更",
                     isSequenceLimitReached = true
                 )
             }
@@ -335,7 +374,7 @@ class ShipmentInboundViewModel(
                 trackingNo = "",
                 returnTrackingNo = "",
                 isSubmitting = false,
-                message = if (message.isBlank()) "入庫成功" else message
+                message = successMessage
             )
         }
     }

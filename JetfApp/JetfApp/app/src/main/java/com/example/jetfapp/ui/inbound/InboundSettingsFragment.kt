@@ -18,13 +18,15 @@ import com.example.jetfapp.MainActivity
 import com.example.jetfapp.databinding.FragmentInboundSettingsBinding
 import com.example.jetfapp.ui.common.FunctionKey
 import com.example.jetfapp.ui.common.FunctionKeyHandler
+import com.example.jetfapp.ui.common.KeyboardWedgeScanHandler
 import com.example.jetfapp.ui.common.ScanInputHandler
 import com.example.jetfapp.ui.common.hideKeyboard
+import com.example.jetfapp.utils.SequenceNumberUtil
 import com.example.jetfapp.viewmodel.ShipmentInboundEvent
 import com.example.jetfapp.viewmodel.ShipmentInboundViewModel
 import kotlinx.coroutines.launch
 
-class InboundSettingsFragment : Fragment(), FunctionKeyHandler, ScanInputHandler {
+class InboundSettingsFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHandler {
     private var _binding: FragmentInboundSettingsBinding? = null
     private val binding: FragmentInboundSettingsBinding
         get() = checkNotNull(_binding)
@@ -32,6 +34,7 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler, ScanInputHandler
     private val shipmentInboundViewModel: ShipmentInboundViewModel by activityViewModels {
         ShipmentInboundViewModel.factory()
     }
+    private var isNavigatingToWork = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -44,11 +47,30 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler, ScanInputHandler
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.root.isFocusable = true
+        binding.root.isFocusableInTouchMode = true
+        binding.dropdownSource.keyListener = null
+        binding.dropdownSource.isCursorVisible = false
+        binding.dropdownSource.showSoftInputOnFocus = false
+        binding.editSequence.showSoftInputOnFocus = false
+        binding.dropdownSource.setOnClickListener {
+            binding.dropdownSource.showDropDown()
+        }
+        binding.dropdownSource.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                hideKeyboard(binding.root)
+            }
+            (activity as? MainActivity)?.setBottomActionBarSuppressed(false)
+        }
         binding.dropdownSource.setOnItemClickListener { _, _, position, _ ->
             val selectedSource = binding.dropdownSource.adapter.getItem(position)?.toString().orEmpty()
             shipmentInboundViewModel.updateSelectedSourceName(selectedSource)
+            binding.root.requestFocus()
+            hideKeyboard(binding.root)
+            (activity as? MainActivity)?.setBottomActionBarSuppressed(false)
         }
         binding.editSequence.setOnFocusChangeListener { _, hasFocus ->
+            (activity as? MainActivity)?.setBottomActionBarSuppressed(hasFocus)
             if (hasFocus) {
                 binding.editSequence.selectAll()
             }
@@ -87,13 +109,14 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler, ScanInputHandler
                         }
                         if (binding.editSequence.text?.toString() != state.startSequence) {
                             binding.editSequence.setText(state.startSequence)
-                            binding.editSequence.setSelection(state.startSequence.length)
+                            binding.editSequence.setSelection(binding.editSequence.text?.length ?: 0)
                         }
 
                         binding.textMessage.isVisible = !state.message.isNullOrBlank()
                         binding.textMessage.text = state.message.orEmpty()
 
                         if (!state.message.isNullOrBlank()) {
+                            (activity as? MainActivity)?.setBottomActionBarSuppressed(false)
                             binding.dropdownSource.clearFocus()
                             binding.editSequence.clearFocus()
                             hideKeyboard(binding.root)
@@ -105,8 +128,12 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler, ScanInputHandler
                     shipmentInboundViewModel.events.collect { event ->
                         when (event) {
                             ShipmentInboundEvent.NavigateToMenu -> (activity as? MainActivity)?.showMenu()
-                            ShipmentInboundEvent.NavigateToWork -> (activity as? MainActivity)?.showInboundWork()
+                            ShipmentInboundEvent.NavigateToWork -> {
+                                isNavigatingToWork = false
+                                (activity as? MainActivity)?.showInboundWork()
+                            }
                             ShipmentInboundEvent.NavigateToSettings -> Unit
+                            is ShipmentInboundEvent.ShowSubmissionSuccess -> Unit
                             is ShipmentInboundEvent.ShowUnknownShipmentDialog -> Unit
                         }
                     }
@@ -118,20 +145,44 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler, ScanInputHandler
     }
 
     override fun onScanReceived(scanValue: String) {
+        if (isNavigatingToWork) {
+            return
+        }
+
         val normalized = scanValue.trim().uppercase()
         binding.editSequence.setText(normalized)
-        binding.editSequence.setSelection(normalized.length)
-        shipmentInboundViewModel.updateStartSequence(normalized)
+        binding.editSequence.setSelection(binding.editSequence.text?.length ?: 0)
+
+        val currentSequence = binding.editSequence.text?.toString().orEmpty()
+        shipmentInboundViewModel.updateStartSequence(currentSequence)
+
+        if (currentSequence.isNotBlank() && !SequenceNumberUtil.isValid(currentSequence)) {
+            shipmentInboundViewModel.showInvalidStartSequenceMessage()
+            return
+        }
+
+        val state = shipmentInboundViewModel.settingsState.value
+        if (state.selectedSourceName.isNotBlank() && SequenceNumberUtil.isValid(currentSequence)) {
+            isNavigatingToWork = true
+            binding.editSequence.clearFocus()
+            binding.root.requestFocus()
+            hideKeyboard(binding.root)
+            shipmentInboundViewModel.confirmSettings()
+        }
     }
+
+    override fun shouldConsumeWedgeInput(): Boolean = true
 
     override fun onFunctionKeyPressed(functionKey: FunctionKey) {
         when (functionKey) {
-            FunctionKey.F3 -> shipmentInboundViewModel.returnToMenu()
+            FunctionKey.F3 -> (activity as? MainActivity)?.showMenu()
             FunctionKey.F4 -> shipmentInboundViewModel.confirmSettings()
         }
     }
 
     override fun onDestroyView() {
+        (activity as? MainActivity)?.setBottomActionBarSuppressed(false)
+        isNavigatingToWork = false
         _binding = null
         super.onDestroyView()
     }

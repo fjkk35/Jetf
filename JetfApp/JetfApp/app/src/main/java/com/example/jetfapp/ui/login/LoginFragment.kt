@@ -45,6 +45,7 @@ class LoginFragment : Fragment(), FunctionKeyHandler, ScanInputHandler {
             appViewModel.login()
         }
         binding.editAccount.setOnFocusChangeListener { _, hasFocus ->
+            (activity as? MainActivity)?.setBottomActionBarSuppressed(hasFocus)
             if (hasFocus) {
                 binding.editAccount.selectAll()
             }
@@ -56,6 +57,8 @@ class LoginFragment : Fragment(), FunctionKeyHandler, ScanInputHandler {
             val isImeDone = actionId == EditorInfo.IME_ACTION_DONE
             val isEnterKey = event?.keyCode == KeyEvent.KEYCODE_ENTER
             if (isImeDone || isEnterKey) {
+                binding.editAccount.clearFocus()
+                hideKeyboard(binding.root)
                 appViewModel.login()
                 true
             } else {
@@ -78,6 +81,7 @@ class LoginFragment : Fragment(), FunctionKeyHandler, ScanInputHandler {
                         binding.textMessage.isVisible = !state.message.isNullOrBlank()
                         binding.textMessage.text = state.message.orEmpty()
                         if (!state.message.isNullOrBlank()) {
+                            (activity as? MainActivity)?.setBottomActionBarSuppressed(false)
                             binding.editAccount.clearFocus()
                             hideKeyboard(binding.root)
                         }
@@ -87,6 +91,8 @@ class LoginFragment : Fragment(), FunctionKeyHandler, ScanInputHandler {
                 launch {
                     appViewModel.events.collect { event ->
                         if (event is AppEvent.NavigateToMenu) {
+                            binding.editAccount.clearFocus()
+                            hideKeyboard(binding.root)
                             (activity as? MainActivity)?.showMenu()
                         }
                     }
@@ -110,6 +116,7 @@ class LoginFragment : Fragment(), FunctionKeyHandler, ScanInputHandler {
     }
 
     override fun onDestroyView() {
+        (activity as? MainActivity)?.setBottomActionBarSuppressed(false)
         _binding = null
         super.onDestroyView()
     }

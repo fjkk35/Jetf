@@ -67,5 +67,6 @@ data class ShipmentInboundRequest(
     @SerializedName("seqNo") val seqNo: String,
     @SerializedName("locationCode") val locationCode: String,
     @SerializedName("sourceType") val sourceType: Int?,
-    @SerializedName("returnTrackingNo") val returnTrackingNo: String
+    @SerializedName("returnTrackingNo") val returnTrackingNo: String,
+    @SerializedName("uploadOpe") val uploadOpe: String
 )
