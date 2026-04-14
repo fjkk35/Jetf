@@ -35,6 +35,7 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeSca
         ShipmentInboundViewModel.factory()
     }
     private var isNavigatingToWork = false
+    private var hasAutoOpenedSourceDropdown = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -65,12 +66,12 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeSca
         binding.dropdownSource.setOnItemClickListener { _, _, position, _ ->
             val selectedSource = binding.dropdownSource.adapter.getItem(position)?.toString().orEmpty()
             shipmentInboundViewModel.updateSelectedSourceName(selectedSource)
-            binding.root.requestFocus()
+            focusSequenceField()
             hideKeyboard(binding.root)
             (activity as? MainActivity)?.setBottomActionBarSuppressed(false)
         }
         binding.editSequence.setOnFocusChangeListener { _, hasFocus ->
-            (activity as? MainActivity)?.setBottomActionBarSuppressed(hasFocus)
+            (activity as? MainActivity)?.setBottomActionBarSuppressed(false)
             if (hasFocus) {
                 binding.editSequence.selectAll()
             }
@@ -103,6 +104,14 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeSca
                             sourceNames
                         )
                         binding.dropdownSource.setAdapter(adapter)
+
+                        if (!hasAutoOpenedSourceDropdown && sourceNames.isNotEmpty()) {
+                            hasAutoOpenedSourceDropdown = true
+                            binding.dropdownSource.post {
+                                binding.dropdownSource.requestFocus()
+                                binding.dropdownSource.showDropDown()
+                            }
+                        }
 
                         if (binding.dropdownSource.text?.toString() != state.selectedSourceName) {
                             binding.dropdownSource.setText(state.selectedSourceName, false)
@@ -183,7 +192,13 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeSca
     override fun onDestroyView() {
         (activity as? MainActivity)?.setBottomActionBarSuppressed(false)
         isNavigatingToWork = false
+        hasAutoOpenedSourceDropdown = false
         _binding = null
         super.onDestroyView()
+    }
+
+    private fun focusSequenceField() {
+        binding.editSequence.requestFocus()
+        binding.editSequence.selectAll()
     }
 }

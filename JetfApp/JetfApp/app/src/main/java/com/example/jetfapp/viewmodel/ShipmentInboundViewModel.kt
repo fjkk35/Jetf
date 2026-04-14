@@ -40,6 +40,8 @@ data class InboundWorkUiState(
     val isSequenceLimitReached: Boolean = false
 )
 
+private const val DuplicateReturnTrackingMessage = "退件單號不可與單號相同，請重新輸入。"
+
 sealed interface ShipmentInboundEvent {
     data object NavigateToMenu : ShipmentInboundEvent
     data object NavigateToWork : ShipmentInboundEvent
@@ -80,7 +82,7 @@ class ShipmentInboundViewModel(
                     _settingsState.update { currentState ->
                         val selectedSourceName = currentState.selectedSourceName
                             .takeIf { name -> sourceTypes.any { it.sourceType == name } }
-                            .orEmpty()
+                            ?: sourceTypes.firstOrNull()?.sourceType.orEmpty()
                         currentState.copy(
                             isLoading = false,
                             sourceTypes = sourceTypes,
@@ -185,8 +187,17 @@ class ShipmentInboundViewModel(
     }
 
     fun updateReturnTracking(returnTrackingNo: String) {
-        _workState.update {
-            it.copy(returnTrackingNo = returnTrackingNo.trim(), message = null)
+        _workState.update { currentState ->
+            val normalizedReturnTrackingNo = returnTrackingNo.trim()
+            val shouldKeepMessage =
+                currentState.message == DuplicateReturnTrackingMessage &&
+                    normalizedReturnTrackingNo.isBlank() &&
+                    currentState.returnTrackingNo.isBlank()
+
+            currentState.copy(
+                returnTrackingNo = normalizedReturnTrackingNo,
+                message = if (shouldKeepMessage) currentState.message else null
+            )
         }
     }
 
@@ -213,7 +224,7 @@ class ShipmentInboundViewModel(
             it.copy(
                 trackingNo = normalizedTrackingNo,
                 returnTrackingNo = if (it.showReturnTracking) "" else it.returnTrackingNo,
-                message = if (requiresReturnTracking) "請輸入或掃描退件單號。" else null
+                message = null
             )
         }
 
@@ -228,7 +239,16 @@ class ShipmentInboundViewModel(
     fun applyReturnTrackingAndSubmit(returnTrackingNo: String) {
         val normalizedReturnTrackingNo = returnTrackingNo.trim()
         if (normalizedReturnTrackingNo.isBlank()) {
-            _workState.update { it.copy(message = "此貨件來源需輸入退件單號。") }
+            _workState.update { currentState ->
+                currentState.copy(
+                    message = if (currentState.message == DuplicateReturnTrackingMessage) {
+                        currentState.message
+                    } else {
+                        null
+                    },
+                    isSubmitting = false
+                )
+            }
             return
         }
 
@@ -237,7 +257,7 @@ class ShipmentInboundViewModel(
                 it.copy(
                     returnTrackingNo = "",
                     isSubmitting = false,
-                    message = "退件單號不可與單號相同，請重新輸入。"
+                    message = DuplicateReturnTrackingMessage
                 )
             }
             return
@@ -268,7 +288,12 @@ class ShipmentInboundViewModel(
 
         val returnTrackingNo = currentState.returnTrackingNo.trim()
         if (currentState.showReturnTracking && returnTrackingNo.isBlank()) {
-            _workState.update { it.copy(message = "此貨件來源需輸入退件單號。") }
+            _workState.update {
+                it.copy(
+                    message = if (it.message == DuplicateReturnTrackingMessage) it.message else null,
+                    isSubmitting = false
+                )
+            }
             return
         }
 

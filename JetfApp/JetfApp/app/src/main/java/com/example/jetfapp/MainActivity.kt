@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
@@ -28,6 +29,7 @@ import com.example.jetfapp.ui.splash.SplashFragment
 
 class MainActivity : AppCompatActivity() {
     private companion object {
+        const val scannerTriggerGracePeriodMs = 750L
         val scannerTriggerKeyCodes = setOf(
             KeyEvent.KEYCODE_F9,
             KeyEvent.KEYCODE_F10,
@@ -43,6 +45,7 @@ class MainActivity : AppCompatActivity() {
     private var isBottomActionBarRequested = false
     private var isBottomActionBarSuppressed = false
     private val wedgeScanBuffer = StringBuilder()
+    private var scannerTriggerTimestampMs = 0L
 
     private val scanReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -116,28 +119,37 @@ class MainActivity : AppCompatActivity() {
         val wedgeHandler = currentFragment() as? KeyboardWedgeScanHandler
         if (wedgeHandler?.shouldConsumeWedgeInput() == true) {
             if (event.keyCode in scannerTriggerKeyCodes) {
+                if (event.action == KeyEvent.ACTION_DOWN) {
+                    wedgeScanBuffer.clear()
+                }
+                scannerTriggerTimestampMs = SystemClock.elapsedRealtime()
                 return true
             }
 
             if (event.action == KeyEvent.ACTION_DOWN) {
+                val shouldConsumeWedgeCharacters = isScannerWedgeInputActive()
                 when (event.keyCode) {
                     KeyEvent.KEYCODE_ENTER,
                     KeyEvent.KEYCODE_NUMPAD_ENTER,
                     KeyEvent.KEYCODE_TAB -> {
-                        val scannedValue = wedgeScanBuffer.toString().trim()
-                        wedgeScanBuffer.clear()
-                        if (scannedValue.isNotEmpty()) {
-                            wedgeHandler.onScanReceived(scannedValue)
+                        if (shouldConsumeWedgeCharacters) {
+                            val scannedValue = wedgeScanBuffer.toString().trim()
+                            wedgeScanBuffer.clear()
+                            if (scannedValue.isNotEmpty()) {
+                                wedgeHandler.onScanReceived(scannedValue)
+                            }
                             return true
                         }
                     }
                     else -> {
-                        val unicodeChar = event.unicodeChar
-                        if (unicodeChar != 0) {
-                            val character = unicodeChar.toChar()
-                            if (!character.isISOControl()) {
-                                wedgeScanBuffer.append(character)
-                                return true
+                        if (shouldConsumeWedgeCharacters) {
+                            val unicodeChar = event.unicodeChar
+                            if (unicodeChar != 0) {
+                                val character = unicodeChar.toChar()
+                                if (!character.isISOControl()) {
+                                    wedgeScanBuffer.append(character)
+                                    return true
+                                }
                             }
                         }
                     }
@@ -245,6 +257,15 @@ class MainActivity : AppCompatActivity() {
             focusedView.clearFocus()
         }
         setBottomActionBarSuppressed(false)
+    }
+
+    private fun isScannerWedgeInputActive(): Boolean {
+        if (wedgeScanBuffer.isNotEmpty()) {
+            return true
+        }
+
+        val elapsedSinceTrigger = SystemClock.elapsedRealtime() - scannerTriggerTimestampMs
+        return elapsedSinceTrigger in 0..scannerTriggerGracePeriodMs
     }
 
     private fun registerScanReceiverIfNeeded() {

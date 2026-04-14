@@ -21,7 +21,6 @@ import com.example.jetfapp.ui.common.FunctionKeyHandler
 import com.example.jetfapp.ui.common.KeyboardWedgeScanHandler
 import com.example.jetfapp.ui.common.ScanInputHandler
 import com.example.jetfapp.ui.common.hideKeyboard
-import com.example.jetfapp.ui.common.showKeyboard
 import com.example.jetfapp.viewmodel.AppViewModel
 import com.example.jetfapp.viewmodel.ShipmentInboundEvent
 import com.example.jetfapp.viewmodel.ShipmentInboundViewModel
@@ -31,6 +30,7 @@ import kotlinx.coroutines.launch
 class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHandler {
     private var _binding: FragmentInboundWorkBinding? = null
     private var isApplyingUiState = false
+    private var hasInitializedLocationFocus = false
     private val binding: FragmentInboundWorkBinding
         get() = checkNotNull(_binding)
 
@@ -55,8 +55,12 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
         shipmentInboundViewModel.updateUploadOperator(appViewModel.currentAccount.value.orEmpty())
         binding.root.isFocusable = true
         binding.root.isFocusableInTouchMode = true
+        binding.editLocation.showSoftInputOnFocus = false
         binding.editTracking.showSoftInputOnFocus = false
         binding.editReturnTracking.showSoftInputOnFocus = false
+        binding.root.post {
+            focusLocationField()
+        }
         binding.editLocation.doAfterTextChanged { editable ->
             if (isApplyingUiState) {
                 return@doAfterTextChanged
@@ -146,7 +150,7 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
                     shipmentInboundViewModel.workState.collect { state ->
                         isApplyingUiState = true
                         try {
-                            binding.textSource.text = getString(R.string.label_source_type) + "：" + state.sourceTypeName
+                            binding.textSource.text = state.sourceTypeName
                             binding.textSequence.text = getString(R.string.label_sequence) + "：" + state.currentSequence
                             if (binding.editLocation.text?.toString() != state.locationCode) {
                                 binding.editLocation.setText(state.locationCode)
@@ -173,12 +177,25 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
                             )
                             binding.loadingContainer.isVisible = state.isSubmitting
 
+                            if (!hasInitializedLocationFocus && !state.isLocationLocked && !state.isSubmitting) {
+                                hasInitializedLocationFocus = true
+                                binding.root.post {
+                                    focusLocationField()
+                                }
+                            }
+
                             if (state.message.isErrorMessage()) {
                                 (activity as? MainActivity)?.setBottomActionBarSuppressed(false)
-                                binding.editLocation.clearFocus()
-                                binding.editTracking.clearFocus()
-                                binding.editReturnTracking.clearFocus()
-                                hideKeyboard(binding.root)
+                                when {
+                                    state.message.isReturnTrackingErrorMessage() -> focusReturnTrackingField()
+                                    state.message.isTrackingErrorMessage() -> focusTrackingField()
+                                    else -> {
+                                        binding.editLocation.clearFocus()
+                                        binding.editTracking.clearFocus()
+                                        binding.editReturnTracking.clearFocus()
+                                        hideKeyboard(binding.root)
+                                    }
+                                }
                             }
                         } finally {
                             isApplyingUiState = false
@@ -190,7 +207,14 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
                     shipmentInboundViewModel.events.collect { event ->
                         when (event) {
                             ShipmentInboundEvent.NavigateToSettings -> requireActivity().onBackPressedDispatcher.onBackPressed()
-                            is ShipmentInboundEvent.ShowSubmissionSuccess -> Unit
+                            is ShipmentInboundEvent.ShowSubmissionSuccess -> {
+                                binding.root.post {
+                                    val currentState = shipmentInboundViewModel.workState.value
+                                    if (currentState.isLocationLocked && !currentState.isSubmitting && !currentState.isSequenceLimitReached) {
+                                        focusTrackingField()
+                                    }
+                                }
+                            }
                             is ShipmentInboundEvent.ShowUnknownShipmentDialog -> showUnknownShipmentDialog(event.trackingNo)
                             ShipmentInboundEvent.NavigateToMenu -> Unit
                             ShipmentInboundEvent.NavigateToWork -> Unit
@@ -209,7 +233,7 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
                 binding.editLocation.requestFocus()
                 binding.editLocation.selectAll()
                 syncBottomActionBarSuppressed()
-                showKeyboard(binding.editLocation)
+                hideKeyboard(binding.root)
             }
         }
     }
@@ -259,17 +283,26 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
     }
 
     private fun focusTrackingField() {
-        binding.editTracking.clearFocus()
         binding.editReturnTracking.clearFocus()
-        binding.root.requestFocus()
+        binding.editTracking.requestFocus()
+        binding.editTracking.selectAll()
         syncBottomActionBarSuppressed()
         hideKeyboard(binding.root)
     }
 
     private fun focusReturnTrackingField() {
         binding.editTracking.clearFocus()
+        binding.editReturnTracking.requestFocus()
+        binding.editReturnTracking.selectAll()
+        syncBottomActionBarSuppressed()
+        hideKeyboard(binding.root)
+    }
+
+    private fun focusLocationField() {
+        binding.editTracking.clearFocus()
         binding.editReturnTracking.clearFocus()
-        binding.root.requestFocus()
+        binding.editLocation.requestFocus()
+        binding.editLocation.selectAll()
         syncBottomActionBarSuppressed()
         hideKeyboard(binding.root)
     }
@@ -301,13 +334,13 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
 
     override fun onDestroyView() {
         (activity as? MainActivity)?.setBottomActionBarSuppressed(false)
+        hasInitializedLocationFocus = false
         _binding = null
         super.onDestroyView()
     }
 
     private fun syncBottomActionBarSuppressed() {
-        val hasFocusedInput = binding.editLocation.hasFocus() || binding.editReturnTracking.hasFocus()
-        (activity as? MainActivity)?.setBottomActionBarSuppressed(hasFocusedInput)
+        (activity as? MainActivity)?.setBottomActionBarSuppressed(false)
     }
 
     private fun String?.isErrorMessage(): Boolean {
@@ -326,5 +359,17 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
             "入庫成功",
             "入庫資料寫入成功"
         )
+    }
+
+    private fun String?.isReturnTrackingErrorMessage(): Boolean {
+        val message = this?.trim().orEmpty()
+        return message == "此貨件來源需輸入退件單號。" ||
+            message == "退件單號不可與單號相同，請重新輸入。"
+    }
+
+    private fun String?.isTrackingErrorMessage(): Boolean {
+        val message = this?.trim().orEmpty()
+        return message == "請輸入或掃描單號。" ||
+            message == "已取消不明貨，請重新掃描單號。"
     }
 }

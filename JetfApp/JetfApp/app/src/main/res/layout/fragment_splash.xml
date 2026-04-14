@@ -23,7 +23,7 @@
         android:layout_height="160dp"
         android:adjustViewBounds="true"
         android:contentDescription="@string/app_name"
-        android:src="@drawable/jetf_logo"
+        android:src="@drawable/app_logo_png"
         app:layout_constraintBottom_toTopOf="@id/text_status"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
