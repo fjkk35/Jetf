@@ -1,4 +1,4 @@
-mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', function ($scope, $timeout) {
+﻿mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', function ($scope, $timeout) {
         $scope.searchParams = {
             startDate: null,
             endDate: null,
@@ -57,7 +57,7 @@ mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', func
                 data: {
                     StartDate: formatDate($scope.searchParams.startDate),
                     EndDate: formatDate($scope.searchParams.endDate),
-                    JetfSerial: $scope.searchParams.jetfSerial,
+                    JetfSerial: ($scope.searchParams.jetfSerial || '').trim(),
                     Page: $scope.currentPage,
                     PageSize: $scope.pageSize
                 },

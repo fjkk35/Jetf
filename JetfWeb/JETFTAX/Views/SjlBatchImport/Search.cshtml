@@ -33,6 +33,13 @@
                 font-size: 1.1rem;
             }
 
+            .containertype .jetf-serial-textarea {
+                min-width: 260px;
+                max-width: 320px;
+                min-height: 88px;
+                resize: vertical;
+            }
+
             .containertype .table td,
             .containertype .table th {
                 vertical-align: middle;
@@ -84,7 +91,9 @@
                        readonly
                        placeholder="請選擇結束日期" />
             <label class="toolbar-label">運送編號</label>
-            <input type="text" class="form-control" ng-model="searchParams.jetfSerial" placeholder="請輸入運送編號" />
+            <textarea class="form-control jetf-serial-textarea"
+                      ng-model="searchParams.jetfSerial"
+                      placeholder="請輸入運送編號，每行一筆"></textarea>
             <button type="button" class="btn btn-primary confirmbtn" ng-click="performSearch()" ng-disabled="loading">
                 <i class="fas fa-search"></i> 查詢
             </button>

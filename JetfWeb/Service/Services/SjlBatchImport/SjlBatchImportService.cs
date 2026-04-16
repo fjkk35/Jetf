@@ -98,7 +98,7 @@ SELECT COUNT(1)
 FROM [jetf].[dbo].[SjlShippingData]
 WHERE (@StartDate IS NULL OR [CreatedTime] >= @StartDate)
   AND (@EndDate IS NULL OR [CreatedTime] < @EndDate)
-    AND (@JetfSerial = '' OR [JetfSerial] = @JetfSerial);
+  AND (@HasJetfSerialFilter = 0 OR [JetfSerial] IN @JetfSerialList);
 
 SELECT
     [Id],
@@ -120,7 +120,7 @@ SELECT
 FROM [jetf].[dbo].[SjlShippingData]
 WHERE (@StartDate IS NULL OR [CreatedTime] >= @StartDate)
   AND (@EndDate IS NULL OR [CreatedTime] < @EndDate)
-    AND (@JetfSerial = '' OR [JetfSerial] = @JetfSerial)
+  AND (@HasJetfSerialFilter = 0 OR [JetfSerial] IN @JetfSerialList)
 ORDER BY [CreatedTime] DESC, [Id] DESC
 OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
@@ -704,14 +704,38 @@ VALUES
 
             var page = request.Page <= 0 ? 1 : request.Page;
             var pageSize = request.PageSize <= 0 ? 10 : request.PageSize;
+            var jetfSerialList = ParseJetfSerialList(request.JetfSerial);
+            IEnumerable<string> searchJetfSerialList;
+            if (jetfSerialList.Any())
+            {
+                searchJetfSerialList = jetfSerialList;
+            }
+            else
+            {
+                searchJetfSerialList = new[] { string.Empty };
+            }
 
             var parameters = new DynamicParameters();
             parameters.Add("StartDate", startDateValue);
             parameters.Add("EndDate", endDateValue);
-            parameters.Add("JetfSerial", string.IsNullOrWhiteSpace(request.JetfSerial) ? string.Empty : request.JetfSerial.Trim());
+            parameters.Add("HasJetfSerialFilter", jetfSerialList.Any());
+            parameters.Add("JetfSerialList", searchJetfSerialList);
             parameters.Add("Offset", (page - 1) * pageSize);
             parameters.Add("PageSize", pageSize);
             return parameters;
+        }
+
+        /// <summary>
+        /// 解析多筆運送編號，每行一筆。
+        /// </summary>
+        private List<string> ParseJetfSerialList(string jetfSerial)
+        {
+            return (jetfSerial ?? string.Empty)
+                .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
         }
     }
 }
