@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using PdtPortalApi.Models.Requests;
 using PdtPortalApi.Models.Responses;
 using PdtPortalApi.Services;
@@ -41,6 +41,12 @@ public sealed class AuthController(IPortalService portalService, IAppVersionServ
             }
 
             var isSuccess = await _portalService.LoginAsync(request.Account, cancellationToken);
+
+            if (isSuccess)
+            {
+                _logger.LogDebug("登入成功，Account: {Account}, VersionCode: {VersionCode}", request.Account, request.VersionCode);
+            }
+
             var message = isSuccess ? "登入成功" : "查無此帳號";
             return Ok(ApiResponse<bool>.Ok(isSuccess, message));
         }

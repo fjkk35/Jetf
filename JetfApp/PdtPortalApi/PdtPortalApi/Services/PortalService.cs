@@ -107,6 +107,7 @@ public sealed class PortalService(
             var isDuplicate = await IsDuplicateShipmentInboundAsync(request.TrackingNo, cancellationToken);
             if (isDuplicate)
             {
+                _logger.LogDebug("入庫資料重複 TrackingNo: {TrackingNo}", request.TrackingNo);
                 return ServiceResult.Fail(
                     "DUPLICATE_TRACKING_NO",
                     "入庫資料重複，該單號已有符合條件的資料",

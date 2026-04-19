@@ -16,13 +16,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, _, configuration) =>
 {
+    var minimumLevel = ResolveLogLevel(context.Configuration["Logging:LogLevel:Default"], LogEventLevel.Information);
+    var microsoftLevel = ResolveLogLevel(context.Configuration["Logging:LogLevel:Microsoft.AspNetCore"], LogEventLevel.Warning);
+    var logDirectory = ResolveLogDirectory(context.Configuration["FileLogging:Path"]);
+    Directory.CreateDirectory(logDirectory);
+
     configuration
-        .MinimumLevel.Information()
-        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .MinimumLevel.Is(minimumLevel)
+        .MinimumLevel.Override("Microsoft", microsoftLevel)
         .Enrich.FromLogContext()
         .WriteTo.Console()
         .WriteTo.File(
-            Path.Combine(AppContext.BaseDirectory, "logs", "log-.txt"),
+            Path.Combine(logDirectory, "log-.txt"),
             rollingInterval: RollingInterval.Day,
             retainedFileCountLimit: 7,
             shared: true,
@@ -129,4 +134,23 @@ catch (Exception exception)
 finally
 {
     Log.CloseAndFlush();
+}
+
+static LogEventLevel ResolveLogLevel(string? configuredLevel, LogEventLevel fallbackLevel)
+{
+    return Enum.TryParse<LogEventLevel>(configuredLevel, ignoreCase: true, out var level)
+        ? level
+        : fallbackLevel;
+}
+
+static string ResolveLogDirectory(string? configuredPath)
+{
+    if (string.IsNullOrWhiteSpace(configuredPath))
+    {
+        return Path.Combine(AppContext.BaseDirectory, "logs");
+    }
+
+    return Path.IsPathRooted(configuredPath)
+        ? configuredPath
+        : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, configuredPath));
 }
