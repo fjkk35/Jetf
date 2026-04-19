@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
 namespace PdtPortalApi.Models.Entities;
@@ -21,6 +21,12 @@ public sealed class FeeMasterEntity
     /// </summary>
     [Column("Download")]
     public string Download { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 稅金方式
+    /// </summary>
+    [Column("INCLUDE_TAX")]
+    public string IncludeTax { get; set; } = string.Empty;
 
     /// <summary>
     /// 稅金一。

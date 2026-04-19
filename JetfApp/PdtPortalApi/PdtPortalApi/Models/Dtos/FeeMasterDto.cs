@@ -1,4 +1,4 @@
-namespace PdtPortalApi.Models.Dtos;
+﻿namespace PdtPortalApi.Models.Dtos;
 
 /// <summary>
 /// 費用資料傳輸物件。
@@ -24,4 +24,9 @@ public sealed class FeeMasterDto
     /// 到付款。
     /// </summary>
     public int Cod { get; set; }
+
+    /// <summary>
+    /// 手續費
+    /// </summary>
+    public int Fee { get; set; }
 }

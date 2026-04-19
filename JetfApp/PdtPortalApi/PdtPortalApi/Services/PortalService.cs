@@ -143,8 +143,8 @@ public sealed class PortalService(
 				Tax = feeData?.Tax ?? 0,
 				Ccfee = feeData?.Ccfee ?? 0,
 				Cod = feeData?.Cod ?? 0,
-				Fee = 30
-			};
+				Fee = feeData?.Fee ?? 0,
+            };
 
 			await _jetfDbContext.ShipmentInbounds.AddAsync(entity, cancellationToken);
 			var affectedRows = await _jetfDbContext.SaveChangesAsync(cancellationToken);
@@ -238,13 +238,14 @@ public sealed class PortalService(
         {
             return await _jetfDbContext.FeeMasters
                 .AsNoTracking()
-                .Where(entity => entity.Download == "1" && entity.TrackingNo == trackingNo)
+                .Where(entity => entity.Download == "1" && entity.IncludeTax == "N" && entity.TrackingNo == trackingNo)
                 .Select(entity => new FeeMasterDto
                 {
                     TrackingNo = entity.TrackingNo,
                     Tax = (entity.Tax1 ?? 0) + (entity.Tax2 ?? 0),
                     Ccfee = entity.Ccfee ?? 0,
-                    Cod = entity.Cod ?? 0
+                    Cod = entity.Cod ?? 0,
+                    Fee =30,
                 })
                 .FirstOrDefaultAsync(cancellationToken);
         }
