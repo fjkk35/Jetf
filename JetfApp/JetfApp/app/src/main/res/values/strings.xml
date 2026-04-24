@@ -20,11 +20,15 @@
     <string name="label_source_type">貨件來源</string>
     <string name="label_sequence">流水號</string>
     <string name="hint_location_code">儲位</string>
+    <string name="hint_size">尺寸</string>
     <string name="action_lock_location">鎖定儲位</string>
     <string name="hint_tracking_no">單號</string>
     <string name="hint_return_tracking_no">退件單號</string>
     <string name="action_change_location">變更儲位</string>
     <string name="action_cancel">取消</string>
+    <string name="option_size_small">小</string>
+    <string name="option_size_medium">中</string>
+    <string name="option_size_large">大</string>
     <string name="message_version_blocking">版本過舊，請更新後再使用。</string>
     <string name="message_version_optional">目前有新版本可更新，是否繼續使用此版本？</string>
     <string name="message_login_failed">登入失敗，請確認帳號是否正確。</string>

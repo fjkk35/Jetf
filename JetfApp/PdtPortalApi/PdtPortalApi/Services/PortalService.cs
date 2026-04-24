@@ -147,19 +147,21 @@ public sealed class PortalService(
             var feeData = await GetFeeDataAsync(request.TrackingNo, cancellationToken);
             var hasOriginalData = seaData is not null || airData is not null;
             var dataType = seaData is not null ? "海運" : airData is not null ? "空運" : string.Empty;
-
-			var entity = new ShipmentInboundEntity
-			{
-				DataType = dataType,
+            var size = string.IsNullOrWhiteSpace(request.Size) ? "小" : request.Size.Trim();
+ 
+ 			var entity = new ShipmentInboundEntity
+ 			{
+ 				DataType = dataType,
                 InboundDate = request.InboundDate.LocalDateTime,
 				TrackingNo = request.TrackingNo,
 				SeqNo = request.SeqNo,
-				LocationCode = request.LocationCode,
-				SourceType = request.SourceType,
-				ReturnTrackingNo = request.ReturnTrackingNo ?? string.Empty,
-				CustCode = seaData?.CustCode ?? airData?.CustCode ?? string.Empty,
-				TransNo = airData?.TransNo ?? string.Empty,
-				TransName = seaData?.TransName ?? string.Empty,
+ 				LocationCode = request.LocationCode,
+ 				SourceType = request.SourceType,
+ 				ReturnTrackingNo = request.ReturnTrackingNo ?? string.Empty,
+                Size = size,
+ 				CustCode = seaData?.CustCode ?? airData?.CustCode ?? string.Empty,
+ 				TransNo = airData?.TransNo ?? string.Empty,
+ 				TransName = seaData?.TransName ?? string.Empty,
 				Importer = seaData?.Importer ?? airData?.Importer ?? string.Empty,
 				ImporterPhone = seaData?.ImporterPhone ?? airData?.ImporterPhone ?? string.Empty,
 				ImporterAddr = seaData?.ImporterAddr ?? airData?.ImporterAddr ?? string.Empty,

@@ -59,6 +59,12 @@ public sealed class ShipmentInboundEntity
 	public string ReturnTrackingNo { get; set; } = string.Empty;
 
 	/// <summary>
+	/// 尺寸。
+	/// </summary>
+	[Column("Size")]
+	public string Size { get; set; } = string.Empty;
+
+	/// <summary>
 	/// 客戶代碼（CustCode），用於查詢客戶資料或對應客戶名稱。
 	/// </summary>
 	[Column("CustCode")]

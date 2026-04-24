@@ -42,6 +42,11 @@ public sealed class CreateShipmentInboundRequest
     public string ReturnTrackingNo { get; set; } = string.Empty;
 
     /// <summary>
+    /// 尺寸。
+    /// </summary>
+    public string Size { get; set; } = "小";
+
+    /// <summary>
     /// 上傳作業人員帳號。
     /// </summary>
     [Required(ErrorMessage = "UploadOpe 為必填")]

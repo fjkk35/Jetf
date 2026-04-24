@@ -20,6 +20,7 @@ object HmacSigner {
             appendLine(request.locationCode)
             appendLine(request.sourceType?.toString().orEmpty())
             appendLine(request.returnTrackingNo)
+            appendLine(request.size)
             append(request.uploadOpe)
         }
 

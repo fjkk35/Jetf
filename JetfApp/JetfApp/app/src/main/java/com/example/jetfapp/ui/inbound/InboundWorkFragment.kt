@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.widget.ArrayAdapter
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
@@ -52,9 +53,24 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val sizeOptions = listOf(
+            getString(R.string.option_size_small),
+            getString(R.string.option_size_medium),
+            getString(R.string.option_size_large)
+        )
         shipmentInboundViewModel.updateUploadOperator(appViewModel.currentAccount.value.orEmpty())
         binding.root.isFocusable = true
         binding.root.isFocusableInTouchMode = true
+        binding.dropdownSize.setAdapter(
+            ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_list_item_1,
+                sizeOptions
+            )
+        )
+        binding.dropdownSize.keyListener = null
+        binding.dropdownSize.isCursorVisible = false
+        binding.dropdownSize.showSoftInputOnFocus = false
         binding.editLocation.showSoftInputOnFocus = false
         binding.editTracking.showSoftInputOnFocus = false
         binding.editReturnTracking.showSoftInputOnFocus = false
@@ -79,6 +95,25 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
         }
         binding.editLocation.setOnClickListener {
             binding.editLocation.selectAll()
+        }
+        binding.dropdownSize.setOnClickListener {
+            binding.dropdownSize.showDropDown()
+        }
+        binding.dropdownSize.setOnFocusChangeListener { _, hasFocus ->
+            syncBottomActionBarSuppressed()
+            if (hasFocus) {
+                hideKeyboard(binding.root)
+            }
+        }
+        binding.dropdownSize.setOnItemClickListener { _, _, position, _ ->
+            val selectedSize = binding.dropdownSize.adapter.getItem(position)?.toString().orEmpty()
+            shipmentInboundViewModel.updateSize(selectedSize)
+            if (shipmentInboundViewModel.workState.value.isLocationLocked) {
+                focusTrackingField()
+            } else {
+                focusLocationField()
+            }
+            hideKeyboard(binding.root)
         }
         binding.editLocation.setOnEditorActionListener { _, actionId, event ->
             val isImeNext = actionId == EditorInfo.IME_ACTION_NEXT
@@ -156,6 +191,9 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
                                 binding.editLocation.setText(state.locationCode)
                                 binding.editLocation.setSelection(state.locationCode.length)
                             }
+                            if (binding.dropdownSize.text?.toString() != state.size) {
+                                binding.dropdownSize.setText(state.size, false)
+                            }
                             if (binding.editTracking.text?.toString() != state.trackingNo) {
                                 binding.editTracking.setText(state.trackingNo)
                                 binding.editTracking.setSelection(state.trackingNo.length)
@@ -166,6 +204,7 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
                             }
 
                             binding.editLocation.isEnabled = !state.isLocationLocked
+                            binding.dropdownSize.isEnabled = !state.isSubmitting
                             binding.editTracking.isEnabled = state.isLocationLocked && !state.isSequenceLimitReached && !state.isSubmitting
                             binding.inputLayoutReturnTracking.isVisible = state.showReturnTracking
                             binding.editReturnTracking.isEnabled = state.isLocationLocked && state.showReturnTracking && !state.isSubmitting
@@ -285,6 +324,7 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
     }
 
     private fun focusTrackingField() {
+        binding.dropdownSize.clearFocus()
         binding.editReturnTracking.clearFocus()
         binding.editTracking.requestFocus()
         binding.editTracking.selectAll()
@@ -293,6 +333,7 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
     }
 
     private fun focusReturnTrackingField() {
+        binding.dropdownSize.clearFocus()
         binding.editTracking.clearFocus()
         binding.editReturnTracking.requestFocus()
         binding.editReturnTracking.selectAll()
@@ -303,6 +344,7 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
     private fun focusLocationField() {
         binding.editTracking.clearFocus()
         binding.editReturnTracking.clearFocus()
+        binding.dropdownSize.clearFocus()
         binding.editLocation.requestFocus()
         binding.editLocation.selectAll()
         syncBottomActionBarSuppressed()

@@ -15,6 +15,7 @@
         android:layout_height="wrap_content"
         android:text="@string/label_work_title"
         android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+        android:textSize="@dimen/inbound_work_title_text_size"
         android:textColor="@color/jetf_ink"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -66,7 +67,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:hint="@string/hint_location_code">
+            android:hint="@string/hint_location_code"
+            app:boxCollapsedPaddingTop="6dp">
 
             <com.example.jetfapp.ui.common.NoImeTextInputEditText
                 android:id="@+id/edit_location"
@@ -75,8 +77,33 @@
                 android:imeOptions="actionNext"
                 android:inputType="textCapCharacters"
                 android:maxLines="1"
-                android:textSize="16sp"
+                android:minHeight="@dimen/inbound_work_input_min_height"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:textSize="@dimen/inbound_work_input_text_size"
                 tools:text="A01-01" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/input_layout_size"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/hint_size"
+            app:boxCollapsedPaddingTop="6dp">
+
+            <com.example.jetfapp.ui.common.NoImeAutoCompleteTextView
+                android:id="@+id/dropdown_size"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:maxLines="1"
+                android:minHeight="@dimen/inbound_work_input_min_height"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:textSize="@dimen/inbound_work_input_text_size"
+                tools:text="小" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -85,7 +112,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="@string/hint_tracking_no">
+            android:hint="@string/hint_tracking_no"
+            app:boxCollapsedPaddingTop="6dp">
 
             <com.example.jetfapp.ui.common.NoImeTextInputEditText
                 android:id="@+id/edit_tracking"
@@ -94,7 +122,10 @@
                 android:imeOptions="actionDone"
                 android:inputType="text"
                 android:maxLines="1"
-                android:textSize="16sp"
+                android:minHeight="@dimen/inbound_work_input_min_height"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:textSize="@dimen/inbound_work_input_text_size"
                 tools:text="JETF0001" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -106,6 +137,7 @@
             android:layout_marginTop="8dp"
             android:hint="@string/hint_return_tracking_no"
             android:visibility="gone"
+            app:boxCollapsedPaddingTop="6dp"
             tools:visibility="visible">
 
             <com.example.jetfapp.ui.common.NoImeTextInputEditText
@@ -115,7 +147,10 @@
                 android:imeOptions="actionDone"
                 android:inputType="text"
                 android:maxLines="1"
-                android:textSize="16sp"
+                android:minHeight="@dimen/inbound_work_input_min_height"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:textSize="@dimen/inbound_work_input_text_size"
                 tools:text="RET0001" />
         </com.google.android.material.textfield.TextInputLayout>
 

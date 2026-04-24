@@ -31,6 +31,7 @@ data class InboundWorkUiState(
     val sourceTypeName: String = "",
     val currentSequence: String = "",
     val locationCode: String = "",
+    val size: String = DefaultInboundSize,
     val isLocationLocked: Boolean = false,
     val trackingNo: String = "",
     val returnTrackingNo: String = "",
@@ -41,6 +42,7 @@ data class InboundWorkUiState(
 )
 
 private const val DuplicateReturnTrackingMessage = "退件單號不可與單號相同，請重新輸入。"
+private const val DefaultInboundSize = "小"
 
 sealed interface ShipmentInboundEvent {
     data object NavigateToMenu : ShipmentInboundEvent
@@ -138,6 +140,7 @@ class ShipmentInboundViewModel(
             sourceTypeId = sourceType.id,
             sourceTypeName = sourceType.sourceType,
             currentSequence = normalizedSequence,
+            size = DefaultInboundSize,
             showReturnTracking = sourceType.sourceType == "新竹退件"
         )
         _events.tryEmit(ShipmentInboundEvent.NavigateToWork)
@@ -154,6 +157,13 @@ class ShipmentInboundViewModel(
     fun updateLocation(locationCode: String) {
         _workState.update { currentState ->
             currentState.copy(locationCode = locationCode.trim().uppercase(), message = null)
+        }
+    }
+
+    fun updateSize(size: String) {
+        val normalizedSize = size.trim().ifBlank { DefaultInboundSize }
+        _workState.update { currentState ->
+            currentState.copy(size = normalizedSize, message = null)
         }
     }
 
@@ -360,6 +370,7 @@ class ShipmentInboundViewModel(
             locationCode = currentState.locationCode,
             sourceType = currentState.sourceTypeId,
             returnTrackingNo = currentState.returnTrackingNo.trim(),
+            size = currentState.size,
             uploadOpe = uploadOperator
         )
 
