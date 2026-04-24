@@ -29,12 +29,17 @@ class ShipmentInboundRepository(
         }
     }
 
-    suspend fun checkShipment(trackingNo: String): ApiResult<Boolean> = withContext(ioDispatcher) {
+    suspend fun checkShipment(trackingNo: String, sourceType: Int): ApiResult<Boolean> = withContext(ioDispatcher) {
         if (!appConfig.hasBaseUrl) {
             ApiResult.Failure(message = "Missing API_BASE_URL configuration.")
         } else {
             safeApiCall(gson) {
-                apiService.checkShipment(TrackingCheckRequest(trackingNo = trackingNo))
+                apiService.checkShipment(
+                    TrackingCheckRequest(
+                        trackingNo = trackingNo,
+                        sourceType = sourceType
+                    )
+                )
             }
         }
     }

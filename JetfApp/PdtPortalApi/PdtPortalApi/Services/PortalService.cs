@@ -2,6 +2,7 @@
 using PdtPortalApi.Data;
 using PdtPortalApi.Models.Dtos;
 using PdtPortalApi.Models.Entities;
+using PdtPortalApi.Models.Enums;
 using PdtPortalApi.Models.Requests;
 
 namespace PdtPortalApi.Services;
@@ -66,30 +67,54 @@ public sealed class PortalService(
     /// 檢查是否存在原始入庫資料。
     /// </summary>
     /// <param name="trackingNo">單號。</param>
+    /// <param name="sourceType">貨件來源。</param>
     /// <param name="cancellationToken">取消權杖。</param>
-    /// <returns>存在時回傳 true，否則回傳 false。</returns>
-    public async Task<bool> CheckInboundDataAsync(string trackingNo, CancellationToken cancellationToken)
+    /// <returns>單號檢查結果。</returns>
+    public async Task<TrackingCheckResult> CheckInboundDataAsync(
+        string trackingNo,
+        ShipmentInboundSourceType sourceType,
+        CancellationToken cancellationToken)
     {
         try
         {
+            var normalizedTrackingNo = trackingNo.Trim();
+            var expectedLength = GetExpectedTrackingNoLength(sourceType);
+            var isTrackingNoLengthValid = !expectedLength.HasValue || normalizedTrackingNo.Length == expectedLength.Value;
+
             var seaOrderExists = await _dataCenterDbContext.SeaOrderOriginals
                 .AsNoTracking()
-                .AnyAsync(entity => entity.JetfSerial == trackingNo, cancellationToken);
+                .AnyAsync(entity => entity.JetfSerial == normalizedTrackingNo, cancellationToken);
 
-            if (seaOrderExists)
-            {
-                return true;
-            }
-
-            return await _dataCenterDbContext.OriginalLists
+            var airOrderExists = await _dataCenterDbContext.OriginalLists
                 .AsNoTracking()
                 .AnyAsync(
-                    entity => entity.TrackingNo == trackingNo || entity.DeliveryNo == trackingNo,
+                    entity => entity.TrackingNo == normalizedTrackingNo || entity.DeliveryNo == normalizedTrackingNo,
                     cancellationToken);
+
+            var hasOriginalData = seaOrderExists || airOrderExists;
+            var messages = new List<string>();
+            if (!hasOriginalData)
+            {
+                messages.Add("不明貨");
+            }
+            if (!isTrackingNoLengthValid)
+            {
+                messages.Add($"貨件來源長度不符合:{expectedLength!.Value}碼");
+            }
+
+            return new TrackingCheckResult
+            {
+                IsValid = messages.Count == 0,
+                Message = messages.Count == 0 ? "操作成功" : string.Join("、", messages)
+            };
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "檢查原始入庫資料失敗，TrackingNo: {TrackingNo}", trackingNo);
+            _logger.LogError(
+                exception,
+                "檢查原始入庫資料失敗，TrackingNo: {TrackingNo}, SourceType: {SourceType}",
+                trackingNo,
+                sourceType);
             throw;
         }
     }
@@ -280,5 +305,22 @@ public sealed class PortalService(
             _logger.LogError(exception, "檢查入庫重複資料失敗，TrackingNo: {TrackingNo}", trackingNo);
             throw;
         }
+    }
+
+    private static int? GetExpectedTrackingNoLength(ShipmentInboundSourceType sourceType)
+    {
+        return sourceType switch
+        {
+            ShipmentInboundSourceType.Hct => 10,
+            ShipmentInboundSourceType.TCat => 12,
+            ShipmentInboundSourceType.SevenEleven => 8,
+            ShipmentInboundSourceType.Hilife => 18,
+            ShipmentInboundSourceType.OK => 11,
+            ShipmentInboundSourceType.Family => 11,
+            ShipmentInboundSourceType.Yto => 12,
+            ShipmentInboundSourceType.Ktj => 11,
+            ShipmentInboundSourceType.ShopeeSite => 14,
+            _ => null
+        };
     }
 }

@@ -1,4 +1,5 @@
 using PdtPortalApi.Models.Dtos;
+using PdtPortalApi.Models.Enums;
 using PdtPortalApi.Models.Requests;
 
 namespace PdtPortalApi.Services;
@@ -24,9 +25,13 @@ public interface IPortalService
     /// 檢查是否存在原始入庫資料。
     /// </summary>
     /// <param name="trackingNo">單號。</param>
+    /// <param name="sourceType">貨件來源。</param>
     /// <param name="cancellationToken">取消權杖。</param>
-    /// <returns>存在時回傳 true，否則回傳 false。</returns>
-    Task<bool> CheckInboundDataAsync(string trackingNo, CancellationToken cancellationToken);
+    /// <returns>單號檢查結果。</returns>
+    Task<TrackingCheckResult> CheckInboundDataAsync(
+        string trackingNo,
+        ShipmentInboundSourceType sourceType,
+        CancellationToken cancellationToken);
 
     /// <summary>
     /// 建立入庫資料。

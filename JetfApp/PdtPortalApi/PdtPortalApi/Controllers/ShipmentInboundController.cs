@@ -60,12 +60,16 @@ public sealed class ShipmentInboundController(
     {
         try
         {
-            var exists = await _portalService.CheckInboundDataAsync(request.TrackingNo, cancellationToken);
-            return Ok(ApiResponse<bool>.Ok(exists));
+            var result = await _portalService.CheckInboundDataAsync(request.TrackingNo, request.SourceType, cancellationToken);
+            return Ok(ApiResponse<bool>.Ok(result.IsValid, result.Message));
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "檢查原始入庫資料 API 執行失敗，TrackingNo: {TrackingNo}", request.TrackingNo);
+            _logger.LogError(
+                exception,
+                "檢查原始入庫資料 API 執行失敗，TrackingNo: {TrackingNo}, SourceType: {SourceType}",
+                request.TrackingNo,
+                request.SourceType);
             return StatusCode(
                 StatusCodes.Status500InternalServerError,
                 ApiResponse<bool>.Fail(

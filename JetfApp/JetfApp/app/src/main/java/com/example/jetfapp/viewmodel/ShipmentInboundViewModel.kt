@@ -47,7 +47,7 @@ sealed interface ShipmentInboundEvent {
     data object NavigateToWork : ShipmentInboundEvent
     data object NavigateToSettings : ShipmentInboundEvent
     data class ShowSubmissionSuccess(val message: String) : ShipmentInboundEvent
-    data class ShowUnknownShipmentDialog(val trackingNo: String) : ShipmentInboundEvent
+    data class ShowUnknownShipmentDialog(val trackingNo: String, val message: String) : ShipmentInboundEvent
 }
 
 class ShipmentInboundViewModel(
@@ -281,8 +281,13 @@ class ShipmentInboundViewModel(
 
         val currentState = _workState.value
         val trackingNo = (inputTrackingNo ?: currentState.trackingNo).trim()
+        val sourceTypeId = currentState.sourceTypeId
         if (trackingNo.isBlank()) {
             _workState.update { it.copy(message = "請輸入或掃描單號。") }
+            return
+        }
+        if (sourceTypeId == null) {
+            _workState.update { it.copy(isSubmitting = false, message = "請先選擇貨件來源。") }
             return
         }
 
@@ -307,14 +312,14 @@ class ShipmentInboundViewModel(
         }
 
         viewModelScope.launch {
-            when (val result = repository.checkShipment(trackingNo)) {
+            when (val result = repository.checkShipment(trackingNo, sourceTypeId)) {
                 is ApiResult.Success -> {
                     if (result.data) {
                         submitInbound(trackingNo)
                     } else {
                         pendingUnknownTrackingNo = trackingNo
                         _workState.update { it.copy(isSubmitting = false) }
-                        _events.emit(ShipmentInboundEvent.ShowUnknownShipmentDialog(trackingNo))
+                        _events.emit(ShipmentInboundEvent.ShowUnknownShipmentDialog(trackingNo, result.message))
                     }
                 }
 

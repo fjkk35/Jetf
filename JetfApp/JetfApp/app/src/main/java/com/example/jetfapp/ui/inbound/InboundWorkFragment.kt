@@ -215,7 +215,9 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
                                     }
                                 }
                             }
-                            is ShipmentInboundEvent.ShowUnknownShipmentDialog -> showUnknownShipmentDialog(event.trackingNo)
+                            is ShipmentInboundEvent.ShowUnknownShipmentDialog -> {
+                                showUnknownShipmentDialog(event.trackingNo, event.message)
+                            }
                             ShipmentInboundEvent.NavigateToMenu -> Unit
                             ShipmentInboundEvent.NavigateToWork -> Unit
                         }
@@ -307,10 +309,10 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
         hideKeyboard(binding.root)
     }
 
-    private fun showUnknownShipmentDialog(trackingNo: String) {
+    private fun showUnknownShipmentDialog(trackingNo: String, message: String) {
         val dialog = MaterialAlertDialogBuilder(requireContext())
             .setTitle(getString(R.string.message_unknown_shipment_title, trackingNo))
-            .setMessage(getString(R.string.message_unknown_shipment))
+            .setMessage(message)
             .setNegativeButton(R.string.action_cancel) { _, _ ->
                 shipmentInboundViewModel.cancelUnknownShipment()
             }
@@ -370,6 +372,8 @@ class InboundWorkFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHan
     private fun String?.isTrackingErrorMessage(): Boolean {
         val message = this?.trim().orEmpty()
         return message == "請輸入或掃描單號。" ||
-            message == "已取消不明貨，請重新掃描單號。"
+            message == "已取消不明貨，請重新掃描單號。" ||
+            message == "不明貨" ||
+            message == "貨件來源長度不符合"
     }
 }

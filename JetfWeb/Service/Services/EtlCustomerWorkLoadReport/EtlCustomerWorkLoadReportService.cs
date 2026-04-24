@@ -139,6 +139,8 @@ namespace Service.Services.EtlCustomerWorkLoadReport
             {
                 var details = custGroup.ToList();
 
+                var blno = details.Where(r => r.BlNo == "0H4PZ7HM").ToList();
+
                 // 根據客戶格式產生不同的報表
                 if (custTypeId == "1")
                 {

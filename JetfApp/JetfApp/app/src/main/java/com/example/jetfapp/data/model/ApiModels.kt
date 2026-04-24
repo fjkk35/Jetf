@@ -58,7 +58,8 @@ data class LoginRequest(
 )
 
 data class TrackingCheckRequest(
-    @SerializedName("trackingNo") val trackingNo: String
+    @SerializedName("trackingNo") val trackingNo: String,
+    @SerializedName("sourceType") val sourceType: Int
 )
 
 data class ShipmentInboundRequest(
