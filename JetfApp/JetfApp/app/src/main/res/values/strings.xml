@@ -9,6 +9,12 @@
     <string name="label_menu_title">主選單</string>
     <string name="label_menu_inbound">1. 入庫</string>
     <string name="label_menu_exception">2. 異常件</string>
+    <string name="label_menu_location_transfer">3. 儲位調撥</string>
+    <string name="label_location_transfer_title">儲位調撥</string>
+    <string name="label_location_transfer_single">3.1 單件調撥</string>
+    <string name="label_location_transfer_batch">3.2 整板調撥</string>
+    <string name="label_single_location_transfer_title">單件調撥</string>
+    <string name="label_batch_location_transfer_title">整板調撥</string>
     <string name="label_settings_title">入庫設定</string>
     <string name="hint_source_type">貨件來源</string>
     <string name="hint_start_sequence">起始流水號</string>
@@ -30,6 +36,9 @@
     <string name="hint_exception_seq_no">流水號</string>
     <string name="hint_exception_reason">異常原因</string>
     <string name="hint_location_code">儲位</string>
+    <string name="hint_new_location_code">新儲位</string>
+    <string name="hint_old_location_code">原儲位</string>
+    <string name="hint_transfer_seq_no">流水號</string>
     <string name="hint_size">尺寸</string>
     <string name="action_lock_location">鎖定儲位</string>
     <string name="hint_tracking_no">單號</string>

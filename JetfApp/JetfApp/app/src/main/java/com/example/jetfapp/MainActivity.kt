@@ -24,6 +24,9 @@ import com.example.jetfapp.ui.common.ScanInputHandler
 import com.example.jetfapp.ui.exception.ShipmentExceptionFragment
 import com.example.jetfapp.ui.inbound.InboundSettingsFragment
 import com.example.jetfapp.ui.inbound.InboundWorkFragment
+import com.example.jetfapp.ui.locationtransfer.BatchLocationTransferFragment
+import com.example.jetfapp.ui.locationtransfer.LocationTransferMenuFragment
+import com.example.jetfapp.ui.locationtransfer.SingleLocationTransferFragment
 import com.example.jetfapp.ui.login.LoginFragment
 import com.example.jetfapp.ui.menu.MenuFragment
 import com.example.jetfapp.ui.splash.SplashFragment
@@ -103,13 +106,26 @@ class MainActivity : AppCompatActivity() {
         if (event.action == KeyEvent.ACTION_UP) {
             when (event.keyCode) {
                 KeyEvent.KEYCODE_F3 -> {
-                    if (currentFragment() is InboundSettingsFragment || currentFragment() is InboundWorkFragment || currentFragment() is ShipmentExceptionFragment) {
+                    if (
+                        currentFragment() is InboundSettingsFragment ||
+                        currentFragment() is InboundWorkFragment ||
+                        currentFragment() is ShipmentExceptionFragment ||
+                        currentFragment() is LocationTransferMenuFragment ||
+                        currentFragment() is SingleLocationTransferFragment ||
+                        currentFragment() is BatchLocationTransferFragment
+                    ) {
                         dispatchFunctionKey(FunctionKey.F3)
                         return true
                     }
                 }
                 KeyEvent.KEYCODE_F4 -> {
-                    if (currentFragment() is InboundSettingsFragment || currentFragment() is InboundWorkFragment || currentFragment() is ShipmentExceptionFragment) {
+                    if (
+                        currentFragment() is InboundSettingsFragment ||
+                        currentFragment() is InboundWorkFragment ||
+                        currentFragment() is ShipmentExceptionFragment ||
+                        currentFragment() is SingleLocationTransferFragment ||
+                        currentFragment() is BatchLocationTransferFragment
+                    ) {
                         dispatchFunctionKey(FunctionKey.F4)
                         return true
                     }
@@ -169,6 +185,24 @@ class MainActivity : AppCompatActivity() {
                 showShipmentException()
                 return true
             }
+            if (event.keyCode == KeyEvent.KEYCODE_3 || event.keyCode == KeyEvent.KEYCODE_NUMPAD_3) {
+                hideKeyboardAndClearFocus()
+                showLocationTransferMenu()
+                return true
+            }
+        }
+
+        if (event.action == KeyEvent.ACTION_UP && currentFragment() is LocationTransferMenuFragment) {
+            if (event.keyCode == KeyEvent.KEYCODE_1 || event.keyCode == KeyEvent.KEYCODE_NUMPAD_1) {
+                hideKeyboardAndClearFocus()
+                showSingleLocationTransfer()
+                return true
+            }
+            if (event.keyCode == KeyEvent.KEYCODE_2 || event.keyCode == KeyEvent.KEYCODE_NUMPAD_2) {
+                hideKeyboardAndClearFocus()
+                showBatchLocationTransfer()
+                return true
+            }
         }
 
         return super.dispatchKeyEvent(event)
@@ -196,6 +230,18 @@ class MainActivity : AppCompatActivity() {
 
     fun showShipmentException() {
         navigateTo(ShipmentExceptionFragment(), clearBackStack = false, addToBackStack = true)
+    }
+
+    fun showLocationTransferMenu() {
+        navigateTo(LocationTransferMenuFragment(), clearBackStack = false, addToBackStack = true)
+    }
+
+    fun showSingleLocationTransfer() {
+        navigateTo(SingleLocationTransferFragment(), clearBackStack = false, addToBackStack = true)
+    }
+
+    fun showBatchLocationTransfer() {
+        navigateTo(BatchLocationTransferFragment(), clearBackStack = false, addToBackStack = true)
     }
 
     fun setBottomActionBarSuppressed(suppressed: Boolean) {
@@ -241,6 +287,9 @@ class MainActivity : AppCompatActivity() {
             is InboundSettingsFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), getString(R.string.label_function_f4, getString(R.string.action_next)))
             is InboundWorkFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), getString(R.string.label_function_f4, getString(R.string.action_change_location)))
             is ShipmentExceptionFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), getString(R.string.label_function_f4, getString(R.string.action_upload)))
+            is LocationTransferMenuFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), "")
+            is SingleLocationTransferFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), getString(R.string.label_function_f4, getString(R.string.action_change_location)))
+            is BatchLocationTransferFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), getString(R.string.label_function_f4, getString(R.string.action_upload)))
             else -> showBottomActionBar(false)
         }
     }
@@ -254,9 +303,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderBottomActionBar() {
         val visible = isBottomActionBarRequested && !isBottomActionBarSuppressed
-        binding.bottomActionBar.isVisible = visible
-        binding.buttonF3.isVisible = visible
-        binding.buttonF4.isVisible = visible
+        val showF3 = visible && binding.buttonF3.text?.isNotBlank() == true
+        val showF4 = visible && binding.buttonF4.text?.isNotBlank() == true
+        binding.bottomActionBar.isVisible = showF3 || showF4
+        binding.buttonF3.isVisible = showF3
+        binding.buttonF4.isVisible = showF4
         binding.textAppVersion.isVisible = currentFragment() !is SplashFragment
     }
 

@@ -1,11 +1,14 @@
 package com.example.jetfapp.network
 
 import com.example.jetfapp.data.model.ApiEnvelope
+import com.example.jetfapp.data.model.BatchUpdateLocationCodeRequest
+import com.example.jetfapp.data.model.GetBatchLocationUpdateCountRequest
 import com.example.jetfapp.data.model.LoginRequest
 import com.example.jetfapp.data.model.ShipmentInboundExceptionRequest
 import com.example.jetfapp.data.model.ShipmentInboundRequest
 import com.example.jetfapp.data.model.SourceType
 import com.example.jetfapp.data.model.TrackingCheckRequest
+import com.example.jetfapp.data.model.UpdateLocationCodeRequest
 import com.example.jetfapp.data.model.VersionCheckData
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -44,5 +47,26 @@ interface PdtPortalApiService {
         @Header("X-Timestamp") timestamp: Long,
         @Header("X-Signature") signature: String,
         @Body request: ShipmentInboundExceptionRequest
+    ): ApiEnvelope<Boolean>
+
+    @POST("api/shipmentinbound/update-location-code")
+    suspend fun updateLocationCode(
+        @Header("X-Timestamp") timestamp: Long,
+        @Header("X-Signature") signature: String,
+        @Body request: UpdateLocationCodeRequest
+    ): ApiEnvelope<Boolean>
+
+    @POST("api/shipmentinbound/batch-location-update-count")
+    suspend fun getBatchLocationUpdateCount(
+        @Header("X-Timestamp") timestamp: Long,
+        @Header("X-Signature") signature: String,
+        @Body request: GetBatchLocationUpdateCountRequest
+    ): ApiEnvelope<Boolean>
+
+    @POST("api/shipmentinbound/batch-update-location-code")
+    suspend fun batchUpdateLocationCode(
+        @Header("X-Timestamp") timestamp: Long,
+        @Header("X-Signature") signature: String,
+        @Body request: BatchUpdateLocationCodeRequest
     ): ApiEnvelope<Boolean>
 }

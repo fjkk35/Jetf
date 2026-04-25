@@ -2,10 +2,13 @@ package com.example.jetfapp.data.repository
 
 import com.example.jetfapp.data.model.ApiResult
 import com.example.jetfapp.data.model.AppConfig
+import com.example.jetfapp.data.model.BatchUpdateLocationCodeRequest
+import com.example.jetfapp.data.model.GetBatchLocationUpdateCountRequest
 import com.example.jetfapp.data.model.ShipmentInboundExceptionRequest
 import com.example.jetfapp.data.model.ShipmentInboundRequest
 import com.example.jetfapp.data.model.SourceType
 import com.example.jetfapp.data.model.TrackingCheckRequest
+import com.example.jetfapp.data.model.UpdateLocationCodeRequest
 import com.example.jetfapp.network.PdtPortalApiService
 import com.example.jetfapp.utils.HmacSigner
 import com.google.gson.Gson
@@ -84,6 +87,75 @@ class ShipmentInboundRepository(
 
         safeApiCall(gson) {
             apiService.submitShipmentInboundException(
+                timestamp = timestamp,
+                signature = signature,
+                request = request
+            )
+        }
+    }
+
+    suspend fun updateLocationCode(request: UpdateLocationCodeRequest): ApiResult<Boolean> = withContext(ioDispatcher) {
+        if (!appConfig.hasBaseUrl) {
+            return@withContext ApiResult.Failure(message = "Missing API_BASE_URL configuration.")
+        }
+        if (!appConfig.hasHmacKey) {
+            return@withContext ApiResult.Failure(
+                message = "Missing PDT_HMAC_KEY configuration.",
+                errorCode = "MISSING_HMAC_KEY"
+            )
+        }
+
+        val timestamp = Instant.now().epochSecond
+        val signature = HmacSigner.sign(timestamp = timestamp, request = request, secretKey = appConfig.hmacKey)
+
+        safeApiCall(gson) {
+            apiService.updateLocationCode(
+                timestamp = timestamp,
+                signature = signature,
+                request = request
+            )
+        }
+    }
+
+    suspend fun getBatchLocationUpdateCount(request: GetBatchLocationUpdateCountRequest): ApiResult<Boolean> = withContext(ioDispatcher) {
+        if (!appConfig.hasBaseUrl) {
+            return@withContext ApiResult.Failure(message = "Missing API_BASE_URL configuration.")
+        }
+        if (!appConfig.hasHmacKey) {
+            return@withContext ApiResult.Failure(
+                message = "Missing PDT_HMAC_KEY configuration.",
+                errorCode = "MISSING_HMAC_KEY"
+            )
+        }
+
+        val timestamp = Instant.now().epochSecond
+        val signature = HmacSigner.sign(timestamp = timestamp, request = request, secretKey = appConfig.hmacKey)
+
+        safeApiCall(gson) {
+            apiService.getBatchLocationUpdateCount(
+                timestamp = timestamp,
+                signature = signature,
+                request = request
+            )
+        }
+    }
+
+    suspend fun batchUpdateLocationCode(request: BatchUpdateLocationCodeRequest): ApiResult<Boolean> = withContext(ioDispatcher) {
+        if (!appConfig.hasBaseUrl) {
+            return@withContext ApiResult.Failure(message = "Missing API_BASE_URL configuration.")
+        }
+        if (!appConfig.hasHmacKey) {
+            return@withContext ApiResult.Failure(
+                message = "Missing PDT_HMAC_KEY configuration.",
+                errorCode = "MISSING_HMAC_KEY"
+            )
+        }
+
+        val timestamp = Instant.now().epochSecond
+        val signature = HmacSigner.sign(timestamp = timestamp, request = request, secretKey = appConfig.hmacKey)
+
+        safeApiCall(gson) {
+            apiService.batchUpdateLocationCode(
                 timestamp = timestamp,
                 signature = signature,
                 request = request

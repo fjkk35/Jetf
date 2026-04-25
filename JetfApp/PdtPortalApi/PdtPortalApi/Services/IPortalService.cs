@@ -50,4 +50,34 @@ public interface IPortalService
     Task<ServiceResult> CreateShipmentInboundExceptionAsync(
         CreateShipmentInboundExceptionRequest request,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 更新單件儲位。
+    /// </summary>
+    /// <param name="request">儲位調撥請求。</param>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>處理結果。</returns>
+    Task<ServiceResult> UpdateLocationCodeAsync(
+        UpdateLocationCodeRequest request,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 取得整板儲位調撥件數。
+    /// </summary>
+    /// <param name="request">件數查詢請求。</param>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>處理結果。</returns>
+    Task<ServiceResult> GetBatchLocationUpdateCountAsync(
+        GetBatchLocationUpdateCountRequest request,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 執行整板儲位調撥。
+    /// </summary>
+    /// <param name="request">整板調撥請求。</param>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>處理結果。</returns>
+    Task<ServiceResult> BatchUpdateLocationCodeAsync(
+        BatchUpdateLocationCodeRequest request,
+        CancellationToken cancellationToken);
 }

@@ -137,4 +137,125 @@ public sealed class HmacSignatureService(IOptions<HmacOptions> options, ILogger<
             return false;
         }
     }
+
+    /// <summary>
+    /// 驗證單件儲位調撥請求簽章是否正確。
+    /// </summary>
+    /// <param name="request">單件儲位調撥請求資料。</param>
+    /// <param name="unixTimeSeconds">Unix 秒數時間戳記。</param>
+    /// <param name="signature">HMAC 簽章字串。</param>
+    /// <returns>有效時回傳 true，否則回傳 false。</returns>
+    public bool IsSignatureValid(UpdateLocationCodeRequest request, long unixTimeSeconds, string? signature)
+    {
+        try
+        {
+            if (!IsTimestampValid(unixTimeSeconds) || string.IsNullOrWhiteSpace(signature) || string.IsNullOrWhiteSpace(_options.Secret))
+            {
+                return false;
+            }
+
+            var payload = string.Join(
+                "\n",
+                unixTimeSeconds.ToString(CultureInfo.InvariantCulture),
+                request.SeqNo ?? string.Empty,
+                request.LocationCode ?? string.Empty,
+                request.EditUser ?? string.Empty);
+
+            return IsPayloadSignatureValid(payload, signature, "單件儲位調撥", request.SeqNo);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "驗證單件儲位調撥 HMAC 簽章發生錯誤，SeqNo: {SeqNo}", request.SeqNo);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 驗證整板儲位調撥件數查詢請求簽章是否正確。
+    /// </summary>
+    /// <param name="request">整板儲位調撥件數查詢請求資料。</param>
+    /// <param name="unixTimeSeconds">Unix 秒數時間戳記。</param>
+    /// <param name="signature">HMAC 簽章字串。</param>
+    /// <returns>有效時回傳 true，否則回傳 false。</returns>
+    public bool IsSignatureValid(GetBatchLocationUpdateCountRequest request, long unixTimeSeconds, string? signature)
+    {
+        try
+        {
+            if (!IsTimestampValid(unixTimeSeconds) || string.IsNullOrWhiteSpace(signature) || string.IsNullOrWhiteSpace(_options.Secret))
+            {
+                return false;
+            }
+
+            var payload = string.Join(
+                "\n",
+                unixTimeSeconds.ToString(CultureInfo.InvariantCulture),
+                request.OldLocationCode ?? string.Empty,
+                request.NewLocationCode ?? string.Empty);
+
+            return IsPayloadSignatureValid(payload, signature, "整板儲位調撥件數查詢", request.OldLocationCode);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "驗證整板儲位調撥件數查詢 HMAC 簽章發生錯誤，OldLocationCode: {OldLocationCode}",
+                request.OldLocationCode);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 驗證整板儲位調撥請求簽章是否正確。
+    /// </summary>
+    /// <param name="request">整板儲位調撥請求資料。</param>
+    /// <param name="unixTimeSeconds">Unix 秒數時間戳記。</param>
+    /// <param name="signature">HMAC 簽章字串。</param>
+    /// <returns>有效時回傳 true，否則回傳 false。</returns>
+    public bool IsSignatureValid(BatchUpdateLocationCodeRequest request, long unixTimeSeconds, string? signature)
+    {
+        try
+        {
+            if (!IsTimestampValid(unixTimeSeconds) || string.IsNullOrWhiteSpace(signature) || string.IsNullOrWhiteSpace(_options.Secret))
+            {
+                return false;
+            }
+
+            var payload = string.Join(
+                "\n",
+                unixTimeSeconds.ToString(CultureInfo.InvariantCulture),
+                request.OldLocationCode ?? string.Empty,
+                request.NewLocationCode ?? string.Empty,
+                request.EditUser ?? string.Empty);
+
+            return IsPayloadSignatureValid(payload, signature, "整板儲位調撥", request.OldLocationCode);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "驗證整板儲位調撥 HMAC 簽章發生錯誤，OldLocationCode: {OldLocationCode}",
+                request.OldLocationCode);
+            return false;
+        }
+    }
+
+    private bool IsPayloadSignatureValid(string payload, string signature, string operationName, string identifier)
+    {
+        var key = Encoding.UTF8.GetBytes(_options.Secret);
+        var bytes = Encoding.UTF8.GetBytes(payload);
+
+        using var hmac = new HMACSHA256(key);
+        var expectedBytes = hmac.ComputeHash(bytes);
+
+        try
+        {
+            var providedBytes = Convert.FromHexString(signature.Trim());
+            return CryptographicOperations.FixedTimeEquals(expectedBytes, providedBytes);
+        }
+        catch (FormatException exception)
+        {
+            _logger.LogWarning(exception, "{OperationName}簽章格式不正確，Identifier: {Identifier}", operationName, identifier);
+            return false;
+        }
+    }
 }

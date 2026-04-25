@@ -15,6 +15,7 @@ public sealed class PortalService(
     ILogger<PortalService> logger) : IPortalService
 {
     private const string ExceptionPhotoDirectory = @"F:\UploadPdt";
+    private const string LocationFieldName = "儲位";
     private readonly JetfDbContext _jetfDbContext = jetfDbContext;
     private readonly DataCenterDbContext _dataCenterDbContext = dataCenterDbContext;
     private readonly ILogger<PortalService> _logger = logger;
@@ -259,6 +260,179 @@ public sealed class PortalService(
     }
 
     /// <summary>
+    /// 更新單件儲位。
+    /// </summary>
+    /// <param name="request">儲位調撥請求。</param>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>處理結果。</returns>
+    public async Task<ServiceResult> UpdateLocationCodeAsync(
+        UpdateLocationCodeRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var seqNo = request.SeqNo.Trim();
+            var newLocationCode = NormalizeLocationCode(request.LocationCode);
+            var editUser = request.EditUser.Trim();
+
+            var matchingInbounds = await _jetfDbContext.ShipmentInbounds
+                .Where(entity => entity.SeqNo == seqNo && entity.OutboundTime == null)
+                .ToListAsync(cancellationToken);
+
+            if (matchingInbounds.Count == 0)
+            {
+                return ServiceResult.Fail(
+                    "SHIPMENT_INBOUND_NOT_FOUND",
+                    "查無符合條件的入庫資料");
+            }
+
+            if (matchingInbounds.Count > 1)
+            {
+                return ServiceResult.Fail(
+                    "MULTIPLE_SHIPMENT_INBOUND_FOUND",
+                    "查到多筆符合條件的入庫資料，請確認流水號");
+            }
+
+            var inbound = matchingInbounds[0];
+            var oldLocationCode = inbound.LocationCode.Trim();
+            if (string.Equals(oldLocationCode, newLocationCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return ServiceResult.Fail(
+                    "LOCATION_CODE_UNCHANGED",
+                    "新儲位與原儲位相同，無需更新");
+            }
+
+            inbound.LocationCode = newLocationCode;
+            await AddLocationEditHistoryAsync(inbound.Id, oldLocationCode, newLocationCode, editUser, cancellationToken);
+
+            var affectedRows = await _jetfDbContext.SaveChangesAsync(cancellationToken);
+            return affectedRows > 0
+                ? ServiceResult.Success($"儲位調撥成功\n流水號：{seqNo}\n新儲位：{newLocationCode}")
+                : ServiceResult.Fail("UPDATE_FAILED", "儲位調撥失敗");
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "單件儲位調撥失敗，SeqNo: {SeqNo}", request.SeqNo);
+            return ServiceResult.Fail(
+                "INTERNAL_SERVER_ERROR",
+                "單件儲位調撥時發生未預期錯誤",
+                StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    /// <summary>
+    /// 取得整板儲位調撥件數。
+    /// </summary>
+    /// <param name="request">件數查詢請求。</param>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>處理結果。</returns>
+    public async Task<ServiceResult> GetBatchLocationUpdateCountAsync(
+        GetBatchLocationUpdateCountRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var oldLocationCode = NormalizeLocationCode(request.OldLocationCode);
+            var newLocationCode = NormalizeLocationCode(request.NewLocationCode);
+
+            if (string.Equals(oldLocationCode, newLocationCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return ServiceResult.Fail(
+                    "SAME_LOCATION_CODE",
+                    "原儲位不可與新儲位相同");
+            }
+
+            var updateCount = await _jetfDbContext.ShipmentInbounds
+                .AsNoTracking()
+                .CountAsync(
+                    entity => entity.LocationCode == oldLocationCode && entity.OutboundTime == null,
+                    cancellationToken);
+
+            if (updateCount == 0)
+            {
+                return ServiceResult.Fail(
+                    "SHIPMENT_INBOUND_NOT_FOUND",
+                    "查無符合條件的入庫資料");
+            }
+
+            return ServiceResult.Success(
+                $"確認要將原儲位 [{oldLocationCode}] 的資料調撥至新儲位 [{newLocationCode}] 嗎？\n更新筆數：[{updateCount}]");
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "查詢整板儲位調撥件數失敗，OldLocationCode: {OldLocationCode}, NewLocationCode: {NewLocationCode}",
+                request.OldLocationCode,
+                request.NewLocationCode);
+            return ServiceResult.Fail(
+                "INTERNAL_SERVER_ERROR",
+                "查詢整板儲位調撥件數時發生未預期錯誤",
+                StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    /// <summary>
+    /// 執行整板儲位調撥。
+    /// </summary>
+    /// <param name="request">整板調撥請求。</param>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>處理結果。</returns>
+    public async Task<ServiceResult> BatchUpdateLocationCodeAsync(
+        BatchUpdateLocationCodeRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var oldLocationCode = NormalizeLocationCode(request.OldLocationCode);
+            var newLocationCode = NormalizeLocationCode(request.NewLocationCode);
+            var editUser = request.EditUser.Trim();
+
+            if (string.Equals(oldLocationCode, newLocationCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return ServiceResult.Fail(
+                    "SAME_LOCATION_CODE",
+                    "原儲位不可與新儲位相同");
+            }
+
+            var matchingInbounds = await _jetfDbContext.ShipmentInbounds
+                .Where(entity => entity.LocationCode == oldLocationCode && entity.OutboundTime == null)
+                .ToListAsync(cancellationToken);
+
+            if (matchingInbounds.Count == 0)
+            {
+                return ServiceResult.Fail(
+                    "SHIPMENT_INBOUND_NOT_FOUND",
+                    "查無符合條件的入庫資料");
+            }
+
+            foreach (var inbound in matchingInbounds)
+            {
+                var originalLocationCode = inbound.LocationCode.Trim();
+                inbound.LocationCode = newLocationCode;
+                await AddLocationEditHistoryAsync(inbound.Id, originalLocationCode, newLocationCode, editUser, cancellationToken);
+            }
+
+            var affectedRows = await _jetfDbContext.SaveChangesAsync(cancellationToken);
+            return affectedRows > 0
+                ? ServiceResult.Success($"整板儲位調撥成功，已更新 {matchingInbounds.Count} 筆資料")
+                : ServiceResult.Fail("UPDATE_FAILED", "整板儲位調撥失敗");
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "整板儲位調撥失敗，OldLocationCode: {OldLocationCode}, NewLocationCode: {NewLocationCode}",
+                request.OldLocationCode,
+                request.NewLocationCode);
+            return ServiceResult.Fail(
+                "INTERNAL_SERVER_ERROR",
+                "整板儲位調撥時發生未預期錯誤",
+                StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    /// <summary>
     /// 查詢海運原始資料。
     /// </summary>
     /// <param name="trackingNo">單號。</param>
@@ -391,6 +565,31 @@ public sealed class PortalService(
             ShipmentInboundSourceType.ShopeeSite => 14,
             _ => null
         };
+    }
+
+    private async Task AddLocationEditHistoryAsync(
+        int shipmentInboundId,
+        string oldLocationCode,
+        string newLocationCode,
+        string editUser,
+        CancellationToken cancellationToken)
+    {
+        await _jetfDbContext.ShipmentInboundEditHistories.AddAsync(
+            new ShipmentInboundEditHistoryEntity
+            {
+                ShipmentInboundId = shipmentInboundId,
+                FieldName = LocationFieldName,
+                OldValue = oldLocationCode,
+                NewValue = newLocationCode,
+                EditTime = DateTime.Now,
+                EditUser = editUser
+            },
+            cancellationToken);
+    }
+
+    private static string NormalizeLocationCode(string locationCode)
+    {
+        return locationCode.Trim().ToUpperInvariant();
     }
 
     private async Task<PhotoSaveResult> SaveExceptionPhotoAsync(string photoBase64, CancellationToken cancellationToken)

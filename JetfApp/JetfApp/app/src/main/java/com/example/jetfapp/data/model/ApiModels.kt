@@ -79,3 +79,20 @@ data class ShipmentInboundExceptionRequest(
     @SerializedName("photo") val photo: String,
     @SerializedName("uploadOpe") val uploadOpe: String
 )
+
+data class UpdateLocationCodeRequest(
+    @SerializedName("seqNo") val seqNo: String,
+    @SerializedName("locationCode") val locationCode: String,
+    @SerializedName("editUser") val editUser: String
+)
+
+data class GetBatchLocationUpdateCountRequest(
+    @SerializedName("oldLocationCode") val oldLocationCode: String,
+    @SerializedName("newLocationCode") val newLocationCode: String
+)
+
+data class BatchUpdateLocationCodeRequest(
+    @SerializedName("oldLocationCode") val oldLocationCode: String,
+    @SerializedName("newLocationCode") val newLocationCode: String,
+    @SerializedName("editUser") val editUser: String
+)

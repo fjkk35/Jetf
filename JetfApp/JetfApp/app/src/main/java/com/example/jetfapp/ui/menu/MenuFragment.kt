@@ -44,6 +44,9 @@ class MenuFragment : Fragment(), FunctionKeyHandler {
         binding.buttonException.setOnClickListener {
             (activity as? MainActivity)?.showShipmentException()
         }
+        binding.buttonLocationTransfer.setOnClickListener {
+            (activity as? MainActivity)?.showLocationTransferMenu()
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
