@@ -384,6 +384,7 @@ public sealed class PortalService(
     {
         try
         {
+            await using var transaction = await _jetfDbContext.Database.BeginTransactionAsync(cancellationToken);
             var oldLocationCode = NormalizeLocationCode(request.OldLocationCode);
             var newLocationCode = NormalizeLocationCode(request.NewLocationCode);
             var editUser = request.EditUser.Trim();
@@ -414,9 +415,14 @@ public sealed class PortalService(
             }
 
             var affectedRows = await _jetfDbContext.SaveChangesAsync(cancellationToken);
-            return affectedRows > 0
-                ? ServiceResult.Success($"整板儲位調撥成功，已更新 {matchingInbounds.Count} 筆資料")
-                : ServiceResult.Fail("UPDATE_FAILED", "整板儲位調撥失敗");
+            if (affectedRows <= 0)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return ServiceResult.Fail("UPDATE_FAILED", "整板儲位調撥失敗");
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            return ServiceResult.Success($"整板儲位調撥成功，已更新 {matchingInbounds.Count} 筆資料");
         }
         catch (Exception exception)
         {
