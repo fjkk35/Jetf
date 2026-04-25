@@ -1,5 +1,6 @@
 package com.example.jetfapp.utils
 
+import com.example.jetfapp.data.model.ShipmentInboundExceptionRequest
 import com.example.jetfapp.data.model.ShipmentInboundRequest
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -21,6 +22,22 @@ object HmacSigner {
             appendLine(request.sourceType?.toString().orEmpty())
             appendLine(request.returnTrackingNo)
             appendLine(request.size)
+            append(request.uploadOpe)
+        }
+
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(secretKey.toByteArray(Charsets.UTF_8), "HmacSHA256"))
+        return mac.doFinal(payload.toByteArray(Charsets.UTF_8)).joinToString(separator = "") { byte ->
+            "%02x".format(byte)
+        }
+    }
+
+    fun sign(timestamp: Long, request: ShipmentInboundExceptionRequest, secretKey: String): String {
+        val payload = buildString {
+            appendLine(timestamp)
+            appendLine(request.seqNo)
+            appendLine(request.reason)
+            appendLine(request.photo)
             append(request.uploadOpe)
         }
 

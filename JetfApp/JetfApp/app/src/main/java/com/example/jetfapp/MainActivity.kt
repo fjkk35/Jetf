@@ -21,6 +21,7 @@ import com.example.jetfapp.ui.common.FunctionKey
 import com.example.jetfapp.ui.common.FunctionKeyHandler
 import com.example.jetfapp.ui.common.KeyboardWedgeScanHandler
 import com.example.jetfapp.ui.common.ScanInputHandler
+import com.example.jetfapp.ui.exception.ShipmentExceptionFragment
 import com.example.jetfapp.ui.inbound.InboundSettingsFragment
 import com.example.jetfapp.ui.inbound.InboundWorkFragment
 import com.example.jetfapp.ui.login.LoginFragment
@@ -102,13 +103,13 @@ class MainActivity : AppCompatActivity() {
         if (event.action == KeyEvent.ACTION_UP) {
             when (event.keyCode) {
                 KeyEvent.KEYCODE_F3 -> {
-                    if (currentFragment() is InboundSettingsFragment || currentFragment() is InboundWorkFragment) {
+                    if (currentFragment() is InboundSettingsFragment || currentFragment() is InboundWorkFragment || currentFragment() is ShipmentExceptionFragment) {
                         dispatchFunctionKey(FunctionKey.F3)
                         return true
                     }
                 }
                 KeyEvent.KEYCODE_F4 -> {
-                    if (currentFragment() is InboundSettingsFragment || currentFragment() is InboundWorkFragment) {
+                    if (currentFragment() is InboundSettingsFragment || currentFragment() is InboundWorkFragment || currentFragment() is ShipmentExceptionFragment) {
                         dispatchFunctionKey(FunctionKey.F4)
                         return true
                     }
@@ -163,6 +164,11 @@ class MainActivity : AppCompatActivity() {
                 showInboundSettings()
                 return true
             }
+            if (event.keyCode == KeyEvent.KEYCODE_2 || event.keyCode == KeyEvent.KEYCODE_NUMPAD_2) {
+                hideKeyboardAndClearFocus()
+                showShipmentException()
+                return true
+            }
         }
 
         return super.dispatchKeyEvent(event)
@@ -186,6 +192,10 @@ class MainActivity : AppCompatActivity() {
 
     fun showInboundWork() {
         navigateTo(InboundWorkFragment(), clearBackStack = false, addToBackStack = true)
+    }
+
+    fun showShipmentException() {
+        navigateTo(ShipmentExceptionFragment(), clearBackStack = false, addToBackStack = true)
     }
 
     fun setBottomActionBarSuppressed(suppressed: Boolean) {
@@ -230,6 +240,7 @@ class MainActivity : AppCompatActivity() {
             is MenuFragment -> showBottomActionBar(false)
             is InboundSettingsFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), getString(R.string.label_function_f4, getString(R.string.action_next)))
             is InboundWorkFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), getString(R.string.label_function_f4, getString(R.string.action_change_location)))
+            is ShipmentExceptionFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), getString(R.string.label_function_f4, getString(R.string.action_upload)))
             else -> showBottomActionBar(false)
         }
     }

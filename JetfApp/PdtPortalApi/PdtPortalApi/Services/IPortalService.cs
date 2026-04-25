@@ -40,4 +40,14 @@ public interface IPortalService
     /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>處理結果。</returns>
     Task<ServiceResult> CreateShipmentInboundAsync(CreateShipmentInboundRequest request, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// 建立異常件資料。
+    /// </summary>
+    /// <param name="request">異常件請求資料。</param>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>處理結果。</returns>
+    Task<ServiceResult> CreateShipmentInboundExceptionAsync(
+        CreateShipmentInboundExceptionRequest request,
+        CancellationToken cancellationToken);
 }

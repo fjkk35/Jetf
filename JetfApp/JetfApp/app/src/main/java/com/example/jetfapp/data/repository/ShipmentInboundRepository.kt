@@ -2,6 +2,7 @@ package com.example.jetfapp.data.repository
 
 import com.example.jetfapp.data.model.ApiResult
 import com.example.jetfapp.data.model.AppConfig
+import com.example.jetfapp.data.model.ShipmentInboundExceptionRequest
 import com.example.jetfapp.data.model.ShipmentInboundRequest
 import com.example.jetfapp.data.model.SourceType
 import com.example.jetfapp.data.model.TrackingCheckRequest
@@ -60,6 +61,29 @@ class ShipmentInboundRepository(
 
         safeApiCall(gson) {
             apiService.submitShipmentInbound(
+                timestamp = timestamp,
+                signature = signature,
+                request = request
+            )
+        }
+    }
+
+    suspend fun submitInboundException(request: ShipmentInboundExceptionRequest): ApiResult<Boolean> = withContext(ioDispatcher) {
+        if (!appConfig.hasBaseUrl) {
+            return@withContext ApiResult.Failure(message = "Missing API_BASE_URL configuration.")
+        }
+        if (!appConfig.hasHmacKey) {
+            return@withContext ApiResult.Failure(
+                message = "Missing PDT_HMAC_KEY configuration.",
+                errorCode = "MISSING_HMAC_KEY"
+            )
+        }
+
+        val timestamp = Instant.now().epochSecond
+        val signature = HmacSigner.sign(timestamp = timestamp, request = request, secretKey = appConfig.hmacKey)
+
+        safeApiCall(gson) {
+            apiService.submitShipmentInboundException(
                 timestamp = timestamp,
                 signature = signature,
                 request = request

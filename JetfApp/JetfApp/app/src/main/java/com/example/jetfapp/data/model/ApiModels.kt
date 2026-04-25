@@ -72,3 +72,10 @@ data class ShipmentInboundRequest(
     @SerializedName("size") val size: String,
     @SerializedName("uploadOpe") val uploadOpe: String
 )
+
+data class ShipmentInboundExceptionRequest(
+    @SerializedName("seqNo") val seqNo: String,
+    @SerializedName("reason") val reason: String,
+    @SerializedName("photo") val photo: String,
+    @SerializedName("uploadOpe") val uploadOpe: String
+)

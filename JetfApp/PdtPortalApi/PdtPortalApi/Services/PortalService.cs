@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Globalization;
+using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.EntityFrameworkCore;
 using PdtPortalApi.Data;
 using PdtPortalApi.Models.Dtos;
 using PdtPortalApi.Models.Entities;
@@ -12,6 +14,7 @@ public sealed class PortalService(
     DataCenterDbContext dataCenterDbContext,
     ILogger<PortalService> logger) : IPortalService
 {
+    private const string ExceptionPhotoDirectory = @"F:\UploadPdt";
     private readonly JetfDbContext _jetfDbContext = jetfDbContext;
     private readonly DataCenterDbContext _dataCenterDbContext = dataCenterDbContext;
     private readonly ILogger<PortalService> _logger = logger;
@@ -192,6 +195,70 @@ public sealed class PortalService(
     }
 
     /// <summary>
+    /// 建立異常件資料。
+    /// </summary>
+    /// <param name="request">異常件請求資料。</param>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>處理結果。</returns>
+    public async Task<ServiceResult> CreateShipmentInboundExceptionAsync(
+        CreateShipmentInboundExceptionRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var seqNo = request.SeqNo.Trim();
+            var matchingInbounds = await _jetfDbContext.ShipmentInbounds
+                .AsNoTracking()
+                .Where(entity => entity.SeqNo == seqNo && entity.OutboundTime == null)
+                .ToListAsync(cancellationToken);
+
+            if (matchingInbounds.Count == 0)
+            {
+                return ServiceResult.Fail(
+                    "SHIPMENT_INBOUND_NOT_FOUND",
+                    "查無符合條件的入庫資料");
+            }
+
+            if (matchingInbounds.Count > 1)
+            {
+                return ServiceResult.Fail(
+                    "MULTIPLE_SHIPMENT_INBOUND_FOUND",
+                    "查到多筆符合條件的入庫資料，請確認流水號");
+            }
+
+            var photoPathResult = await SaveExceptionPhotoAsync(request.Photo, cancellationToken);
+            if (!photoPathResult.IsSuccess || string.IsNullOrWhiteSpace(photoPathResult.PhotoPath))
+            {
+                return ServiceResult.Fail(photoPathResult.ErrorCode, photoPathResult.Message, photoPathResult.Code);
+            }
+
+            var entity = new ShipmentInboundExceptionEntity
+            {
+                ShipmentInboundId = matchingInbounds[0].Id,
+                SeqNo = request.SeqNo,
+                Reason = request.Reason.Trim(),
+                FilePath = photoPathResult.PhotoPath,
+                UploadOpe = request.UploadOpe.Trim()
+            };
+
+            await _jetfDbContext.ShipmentInboundExceptions.AddAsync(entity, cancellationToken);
+            var affectedRows = await _jetfDbContext.SaveChangesAsync(cancellationToken);
+
+            return affectedRows > 0
+                ? ServiceResult.Success("異常件上傳成功")
+                : ServiceResult.Fail("INSERT_FAILED", "異常件上傳失敗");
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "建立異常件資料失敗，SeqNo: {SeqNo}", request.SeqNo);
+            return ServiceResult.Fail(
+                "INTERNAL_SERVER_ERROR",
+                "異常件上傳時發生未預期錯誤",
+                StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    /// <summary>
     /// 查詢海運原始資料。
     /// </summary>
     /// <param name="trackingNo">單號。</param>
@@ -324,5 +391,97 @@ public sealed class PortalService(
             ShipmentInboundSourceType.ShopeeSite => 14,
             _ => null
         };
+    }
+
+    private async Task<PhotoSaveResult> SaveExceptionPhotoAsync(string photoBase64, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var normalizedPhotoBase64 = NormalizePhotoBase64(photoBase64);
+            if (string.IsNullOrWhiteSpace(normalizedPhotoBase64))
+            {
+                return PhotoSaveResult.Fail("INVALID_PHOTO", "照片為必填");
+            }
+
+            byte[] photoBytes;
+            try
+            {
+                photoBytes = Convert.FromBase64String(normalizedPhotoBase64);
+            }
+            catch (FormatException exception)
+            {
+                _logger.LogWarning(exception, "異常件照片格式不正確");
+                return PhotoSaveResult.Fail("INVALID_PHOTO", "照片格式不正確");
+            }
+
+            Directory.CreateDirectory(ExceptionPhotoDirectory);
+
+            string filePath;
+            do
+            {
+                var fileName = DateTime.Now.ToString("yyyyMMddhhmmssfff", CultureInfo.InvariantCulture);
+                filePath = Path.Combine(ExceptionPhotoDirectory, $"{fileName}.jpg");
+                if (!File.Exists(filePath))
+                {
+                    break;
+                }
+
+                await Task.Delay(1, cancellationToken);
+            } while (true);
+
+            await File.WriteAllBytesAsync(filePath, photoBytes, cancellationToken);
+            return PhotoSaveResult.Success(filePath);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "儲存異常件照片失敗");
+            return PhotoSaveResult.Fail(
+                "PHOTO_SAVE_FAILED",
+                "異常件照片儲存失敗",
+                StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    private static string NormalizePhotoBase64(string photoBase64)
+    {
+        var trimmedPhoto = photoBase64.Trim();
+        var commaIndex = trimmedPhoto.IndexOf(',');
+        return commaIndex >= 0 ? trimmedPhoto[(commaIndex + 1)..] : trimmedPhoto;
+    }
+
+    private sealed class PhotoSaveResult
+    {
+        public bool IsSuccess { get; init; }
+
+        public string PhotoPath { get; init; } = string.Empty;
+
+        public string ErrorCode { get; init; } = string.Empty;
+
+        public string Message { get; init; } = string.Empty;
+
+        public int Code { get; init; } = StatusCodes.Status200OK;
+
+        public static PhotoSaveResult Success(string photoPath)
+        {
+            return new PhotoSaveResult
+            {
+                IsSuccess = true,
+                PhotoPath = photoPath
+            };
+        }
+
+        public static PhotoSaveResult Fail(
+            string errorCode,
+            string message,
+            int code = StatusCodes.Status400BadRequest)
+        {
+            return new PhotoSaveResult
+            {
+                IsSuccess = false,
+                ErrorCode = errorCode,
+                Message = message,
+                Code = code
+            };
+        }
     }
 }

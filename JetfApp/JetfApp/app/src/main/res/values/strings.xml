@@ -8,6 +8,7 @@
     <string name="action_login">登入</string>
     <string name="label_menu_title">主選單</string>
     <string name="label_menu_inbound">1. 入庫</string>
+    <string name="label_menu_exception">2. 異常件</string>
     <string name="label_settings_title">入庫設定</string>
     <string name="hint_source_type">貨件來源</string>
     <string name="hint_start_sequence">起始流水號</string>
@@ -16,9 +17,18 @@
     <string name="action_exit">退出</string>
     <string name="action_back">返回</string>
     <string name="action_confirm">確認</string>
+    <string name="action_take_photo">拍照</string>
+    <string name="action_delete_photo">刪除</string>
+    <string name="action_upload">上傳</string>
+    <string name="action_continue_photo">繼續拍照</string>
+    <string name="action_next_item">下一筆</string>
     <string name="label_work_title">入庫作業</string>
+    <string name="label_exception_title">異常件</string>
+    <string name="label_exception_result_title">上傳結果</string>
     <string name="label_source_type">貨件來源</string>
     <string name="label_sequence">流水號</string>
+    <string name="hint_exception_seq_no">流水號</string>
+    <string name="hint_exception_reason">異常原因</string>
     <string name="hint_location_code">儲位</string>
     <string name="hint_size">尺寸</string>
     <string name="action_lock_location">鎖定儲位</string>
@@ -29,6 +39,12 @@
     <string name="option_size_small">小</string>
     <string name="option_size_medium">中</string>
     <string name="option_size_large">大</string>
+    <string name="option_exception_reason_water_damage">濕損</string>
+    <string name="option_exception_reason_damage">破損</string>
+    <string name="option_exception_reason_leak">溢漏</string>
+    <string name="option_exception_reason_label_issue">面單異常</string>
+    <string name="option_exception_reason_destroy">建議銷毀</string>
+    <string name="option_exception_reason_empty">無內容物</string>
     <string name="message_version_blocking">版本過舊，請更新後再使用。</string>
     <string name="message_version_optional">目前有新版本可更新，是否繼續使用此版本？</string>
     <string name="message_login_failed">登入失敗，請確認帳號是否正確。</string>
@@ -57,6 +73,8 @@
     <string name="label_function_f3">F3 %1$s</string>
     <string name="label_function_f4">F4 %1$s</string>
     <string name="message_scan_received">已掃描：%1$s</string>
+    <string name="message_camera_permission_denied">相機權限未開啟，無法拍照。</string>
+    <string name="message_photo_read_failed">照片讀取失敗，請重新拍照。</string>
     <string name="message_update_downloading">正在下載版本 %1$s，完成後會自動開啟安裝。</string>
     <string name="message_update_download_failed">APK 下載失敗，請稍後再試。</string>
     <string name="message_update_download_failed_with_reason">APK 下載失敗：%1$s</string>
@@ -73,4 +91,5 @@
     <string name="message_update_error_unknown">未知錯誤</string>
     <string name="message_update_error_not_found">伺服器找不到 APK 檔案</string>
     <string name="message_update_error_code">錯誤代碼 %1$d</string>
+    <string name="content_description_exception_photo">異常件照片預覽</string>
 </resources>

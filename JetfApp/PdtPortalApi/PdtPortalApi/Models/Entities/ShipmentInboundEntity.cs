@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
 namespace PdtPortalApi.Models.Entities;
@@ -21,6 +21,12 @@ public sealed class ShipmentInboundEntity
 	/// </summary>
 	[Column("InboundDate")]
 	public DateTime InboundDate { get; set; }
+
+    /// <summary>
+    /// 入庫資料 Id。
+    /// </summary>
+    [Column("Id")]
+    public int Id { get; set; }
 
 	/// <summary>
 	/// 出庫日期。
@@ -100,10 +106,16 @@ public sealed class ShipmentInboundEntity
 	[Column("ImporterAddr")]
 	public string ImporterAddr { get; set; } = string.Empty;
 
-	/// <summary>
-	/// 是否有原單資料。
-	/// </summary>
-	[Column("IsOrderOriginal")]
+    /// <summary>
+    /// 出庫時間
+    /// </summary>
+    [Column("OutboundTime")]
+    public DateTime? OutboundTime { get; set; }
+
+    /// <summary>
+    /// 是否有原單資料。
+    /// </summary>
+    [Column("IsOrderOriginal")]
 	public bool IsOrderOriginal { get; set; }
 
 	/// <summary>

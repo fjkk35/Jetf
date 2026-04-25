@@ -127,4 +127,51 @@ public sealed class ShipmentInboundController(
                     StatusCodes.Status500InternalServerError));
         }
     }
+
+    /// <summary>
+    /// 寫入異常件資料。
+    /// </summary>
+    /// <param name="request">異常件請求。</param>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>寫入結果。</returns>
+    [HttpPost("exception")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ApiResponse<bool>>> CreateExceptionAsync(
+        [FromHeader(Name = "X-Timestamp")] long timestamp,
+        [FromHeader(Name = "X-Signature")] string? signature,
+        [FromBody] CreateShipmentInboundExceptionRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (!_hmacSignatureService.IsSignatureValid(request, timestamp, signature))
+            {
+                return Unauthorized(
+                    ApiResponse<bool>.Fail(
+                        "INVALID_SIGNATURE",
+                        "簽章驗證失敗或 Timestamp 已超過 5 分鐘有效期",
+                        StatusCodes.Status401Unauthorized));
+            }
+
+            var result = await _portalService.CreateShipmentInboundExceptionAsync(request, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return StatusCode(result.Code, ApiResponse<bool>.Fail(result.ErrorCode, result.Message, result.Code));
+            }
+
+            return Ok(ApiResponse<bool>.Ok(true, result.Message));
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "寫入異常件資料 API 執行失敗，SeqNo: {SeqNo}", request.SeqNo);
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                ApiResponse<bool>.Fail(
+                    "INTERNAL_SERVER_ERROR",
+                    "寫入異常件資料時發生未預期錯誤",
+                    StatusCodes.Status500InternalServerError));
+        }
+    }
 }

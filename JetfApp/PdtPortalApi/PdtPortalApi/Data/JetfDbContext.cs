@@ -11,5 +11,7 @@ public sealed class JetfDbContext(DbContextOptions<JetfDbContext> options) : DbC
 
 	public DbSet<ShipmentInboundEntity> ShipmentInbounds => Set<ShipmentInboundEntity>();
 
+    public DbSet<ShipmentInboundExceptionEntity> ShipmentInboundExceptions => Set<ShipmentInboundExceptionEntity>();
+
 	public DbSet<FeeMasterEntity> FeeMasters => Set<FeeMasterEntity>();
 }

@@ -2,6 +2,7 @@ package com.example.jetfapp.network
 
 import com.example.jetfapp.data.model.ApiEnvelope
 import com.example.jetfapp.data.model.LoginRequest
+import com.example.jetfapp.data.model.ShipmentInboundExceptionRequest
 import com.example.jetfapp.data.model.ShipmentInboundRequest
 import com.example.jetfapp.data.model.SourceType
 import com.example.jetfapp.data.model.TrackingCheckRequest
@@ -36,5 +37,12 @@ interface PdtPortalApiService {
         @Header("X-Timestamp") timestamp: Long,
         @Header("X-Signature") signature: String,
         @Body request: ShipmentInboundRequest
+    ): ApiEnvelope<Boolean>
+
+    @POST("api/shipmentinbound/exception")
+    suspend fun submitShipmentInboundException(
+        @Header("X-Timestamp") timestamp: Long,
+        @Header("X-Signature") signature: String,
+        @Body request: ShipmentInboundExceptionRequest
     ): ApiEnvelope<Boolean>
 }

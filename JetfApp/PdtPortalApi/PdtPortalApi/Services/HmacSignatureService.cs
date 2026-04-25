@@ -89,4 +89,52 @@ public sealed class HmacSignatureService(IOptions<HmacOptions> options, ILogger<
             return false;
         }
     }
+
+    /// <summary>
+    /// 驗證異常件請求簽章是否正確。
+    /// </summary>
+    /// <param name="request">異常件請求資料。</param>
+    /// <param name="unixTimeSeconds">Unix 秒數時間戳記。</param>
+    /// <param name="signature">HMAC 簽章字串。</param>
+    /// <returns>有效時回傳 true，否則回傳 false。</returns>
+    public bool IsSignatureValid(CreateShipmentInboundExceptionRequest request, long unixTimeSeconds, string? signature)
+    {
+        try
+        {
+            if (!IsTimestampValid(unixTimeSeconds) || string.IsNullOrWhiteSpace(signature) || string.IsNullOrWhiteSpace(_options.Secret))
+            {
+                return false;
+            }
+
+            var payload = string.Join(
+                "\n",
+                unixTimeSeconds.ToString(CultureInfo.InvariantCulture),
+                request.SeqNo ?? string.Empty,
+                request.Reason ?? string.Empty,
+                request.Photo ?? string.Empty,
+                request.UploadOpe ?? string.Empty);
+
+            var key = Encoding.UTF8.GetBytes(_options.Secret);
+            var bytes = Encoding.UTF8.GetBytes(payload);
+
+            using var hmac = new HMACSHA256(key);
+            var expectedBytes = hmac.ComputeHash(bytes);
+
+            try
+            {
+                var providedBytes = Convert.FromHexString(signature.Trim());
+                return CryptographicOperations.FixedTimeEquals(expectedBytes, providedBytes);
+            }
+            catch (FormatException exception)
+            {
+                _logger.LogWarning(exception, "異常件簽章格式不正確，SeqNo: {SeqNo}", request.SeqNo);
+                return false;
+            }
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "驗證異常件 HMAC 簽章發生錯誤，SeqNo: {SeqNo}", request.SeqNo);
+            return false;
+        }
+    }
 }
