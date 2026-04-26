@@ -10,7 +10,14 @@ namespace Service.Data
     public sealed class SeaOrderOriginalEntity
     {
         [Key]
+        [Column("ROW_ID")]
         public int Id { get; set; }
+
+        /// <summary>
+        /// 分提單號
+        /// </summary>
+        [Column("BL_NO")]
+        public string BlNo { get; set; }
 
         /// <summary>
         /// 物流貨號

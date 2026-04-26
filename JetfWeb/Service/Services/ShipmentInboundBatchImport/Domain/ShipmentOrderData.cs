@@ -1,12 +1,14 @@
-namespace Service.Services.ShipmentInboundBatchImport.Domain
+ï»¿namespace Service.Services.ShipmentInboundBatchImport.Domain
 {
     /// <summary>
-    /// ­q³æ¸ê®ÆÃþ§O
+    /// è¨‚å–®è³‡æ–™é¡žåˆ¥
     /// </summary>
     public class ShipmentOrderData
     {
         public string DeliveryNo { get; set; }
         public string TrackingNo { get; set; }
+        public string OriginalJetfSerial { get; set; }
+        public string OriginalTrackingNo { get; set; }
         public string ImporterAddr { get; set; }
         public string ImporterPhone { get; set; }
         public string Importer { get; set; }

@@ -1,139 +1,149 @@
-using System;
+ï»¿using System;
 
 namespace Service.Services.ShipmentInboundBatchImport.Domain
 {
     /// <summary>
-    /// ªí¥Ü¤@µ§¤J®w³f¥óªº¸ê®Æ¼Ò«¬¡A¨Ó¦Û§å¦¸¶×¤Jªº¬ö¿ı¡C
+    /// è¡¨ç¤ºä¸€ç­†å…¥åº«è²¨ä»¶çš„è³‡æ–™æ¨¡å‹ï¼Œä¾†è‡ªæ‰¹æ¬¡åŒ¯å…¥çš„ç´€éŒ„ã€‚
     /// </summary>
     public class ShipmentInboundModel
     {
         /// <summary>
-        /// ¥DÁäÃÑ§O ID¡C
+        /// ä¸»éµè­˜åˆ¥ IDã€‚
         /// </summary>
         public int Id { get; set; }
 
         /// <summary>
-        /// ¸ê®Æ«¬ºA¡]¨Ò¦p¡G"®ü¹B"¡B"ªÅ¹B"¡^¡C
+        /// è³‡æ–™å‹æ…‹ï¼ˆä¾‹å¦‚ï¼š"æµ·é‹"ã€"ç©ºé‹"ï¼‰ã€‚
         /// </summary>
         public string DataType { get; set; }
 
         /// <summary>
-        /// ¤J®w¤é´Á¡C
+        /// å…¥åº«æ—¥æœŸã€‚
         /// </summary>
         public DateTime InboundDate { get; set; }
 
         /// <summary>
-        /// ³æ¸¹¡C
+        /// å–®è™Ÿã€‚
         /// </summary>
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// ¬y¤ô¸¹¡C
+        /// åŸå–®ç‰©æµè²¨è™Ÿ
+        /// </summary>
+        public string OriginalJetfSerial { get; set; }
+
+        /// <summary>
+        /// åŸå–®åˆ†æå–®è™Ÿ
+        /// </summary>
+        public string OriginalTrackingNo { get; set; }
+
+        /// <summary>
+        /// æµæ°´è™Ÿã€‚
         /// </summary>
         public string SeqNo { get; set; }
 
         /// <summary>
-        /// Àx¦ì
+        /// å„²ä½
         /// </summary>
         public string LocationCode { get; set; }
 
         /// <summary>
-        /// ³f¥ó¨Ó·½¡C
+        /// è²¨ä»¶ä¾†æºã€‚
         /// </summary>
         public string SourceType { get; set; }
 
         /// <summary>
-        /// ³f¥ó¨Ó·½Åã¥Ü¦WºÙ¡]¥Î©ó«eºİÅã¥Ü¡^
+        /// è²¨ä»¶ä¾†æºé¡¯ç¤ºåç¨±ï¼ˆç”¨æ–¼å‰ç«¯é¡¯ç¤ºï¼‰
         /// </summary>
         public string SourceTypeDisplay { get; set; }
 
         /// <summary>
-        /// °h¦^ªº°lÂÜ½s¸¹¡]­Y¬°°h³f©Î­«¥X®É¨Ï¥Î¡^¡C
+        /// é€€å›çš„è¿½è¹¤ç·¨è™Ÿï¼ˆè‹¥ç‚ºé€€è²¨æˆ–é‡å‡ºæ™‚ä½¿ç”¨ï¼‰ã€‚
         /// </summary>
         public string ReturnTrackingNo { get; set; }
 
         /// <summary>
-        /// ¤Ø¤o©Î³W®æ¸ê°T¡]¨Ò¦p¡GS/M/L ©Î ªøx¼ex°ª¡^¡C
+        /// å°ºå¯¸æˆ–è¦æ ¼è³‡è¨Šï¼ˆä¾‹å¦‚ï¼šS/M/L æˆ– é•·xå¯¬xé«˜ï¼‰ã€‚
         /// </summary>
         public string Size { get; set; }
 
         /// <summary>
-        /// «È¤á¥N½X¡]CustCode¡^¡A¥Î©ó¬d¸ß«È¤á¸ê®Æ©Î¹ïÀ³«È¤á¦WºÙ¡C
+        /// å®¢æˆ¶ä»£ç¢¼ï¼ˆCustCodeï¼‰ï¼Œç”¨æ–¼æŸ¥è©¢å®¢æˆ¶è³‡æ–™æˆ–å°æ‡‰å®¢æˆ¶åç¨±ã€‚
         /// </summary>
         public string CustCode { get; set; }
 
         /// <summary>
-        /// ©Ó¹B°Ó¥N¸¹¡]TransNo¡^¡C
+        /// æ‰¿é‹å•†ä»£è™Ÿï¼ˆTransNoï¼‰ã€‚
         /// </summary>
         public string TransNo { get; set; }
 
         /// <summary>
-        /// ©Ó¹B°Ó¦WºÙ¡]¥i³z¹L TransNo ¤Ï¬d¶ñ¤J¡^¡C
+        /// æ‰¿é‹å•†åç¨±ï¼ˆå¯é€é TransNo åæŸ¥å¡«å…¥ï¼‰ã€‚
         /// </summary>
         public string TransName { get; set; }
 
         /// <summary>
-        /// ¶i¤f¤H©m¦W©Î¦¬¥ó¤H¦WºÙ¡C
+        /// é€²å£äººå§“åæˆ–æ”¶ä»¶äººåç¨±ã€‚
         /// </summary>
         public string Importer { get; set; }
 
         /// <summary>
-        /// ¶i¤f¤H©Î¦¬¥ó¤H¹q¸Ü¡C
+        /// é€²å£äººæˆ–æ”¶ä»¶äººé›»è©±ã€‚
         /// </summary>
         public string ImporterPhone { get; set; }
 
         /// <summary>
-        /// ¶i¤f¤H©Î¦¬¥ó¤H¦a§}¡C
+        /// é€²å£äººæˆ–æ”¶ä»¶äººåœ°å€ã€‚
         /// </summary>
         public string ImporterAddr { get; set; }
 
         /// <summary>
-        /// ¬O§_¦³­ì³æ¸ê®Æ
+        /// æ˜¯å¦æœ‰åŸå–®è³‡æ–™
         /// </summary>
         public bool IsOrderOriginal { get; set; }
 
         /// <summary>
-        /// ¤W¶Ç¾Ş§@¤H­û±b¸¹©ÎÃÑ§O¡C
+        /// ä¸Šå‚³æ“ä½œäººå“¡å¸³è™Ÿæˆ–è­˜åˆ¥ã€‚
         /// </summary>
         public string UploadOpe { get; set; }
 
         /// <summary>
-        /// «Ø¥ß®É¶¡¡]¬ö¿ı¶×¤J©Î«Ø¥ßªº®É¶¡¡^¡C
+        /// å»ºç«‹æ™‚é–“ï¼ˆç´€éŒ„åŒ¯å…¥æˆ–å»ºç«‹çš„æ™‚é–“ï¼‰ã€‚
         /// </summary>
         public DateTime CreatedTime { get; set; }
 
         /// <summary>
-        /// ¤W¶Çª¬ºA¡]¦¨¥\/¥¢±Ñ¡^
+        /// ä¸Šå‚³ç‹€æ…‹ï¼ˆæˆåŠŸ/å¤±æ•—ï¼‰
         /// </summary>
         public string UploadStatus { get; set; }
 
         /// <summary>
-        /// ¤W¶Ç¥¢±Ñ­ì¦]
+        /// ä¸Šå‚³å¤±æ•—åŸå› 
         /// </summary>
         public string FailReason { get; set; }
 
         /// <summary>
-        /// µ|ª÷
+        /// ç¨…é‡‘
         /// </summary>
         public int Tax { get; set; }
 
         /// <summary>
-        /// ³øÃö¶O
+        /// å ±é—œè²»
         /// </summary>
         public int Ccfee { get; set; }
 
         /// <summary>
-        /// ¨ì¥I´Ú
+        /// åˆ°ä»˜æ¬¾
         /// </summary>
         public int Cod { get; set; }
 
         /// <summary>
-        /// ¤âÄò¶O
+        /// æ‰‹çºŒè²»
         /// </summary>
         public int Fee { get; set; }
 
         /// <summary>
-        /// °h¥ó­ì¦]
+        /// é€€ä»¶åŸå› 
         /// </summary>
         public string ReturnReason { get; set; }
     }

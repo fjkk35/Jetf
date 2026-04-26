@@ -158,6 +158,8 @@ namespace Service.Services.ShipmentInboundBatchImport
                     var seaOrder = seaData[shipment.TrackingNo];
                     shipment.DataType = "海運";
                     shipment.IsOrderOriginal = true;
+                    shipment.OriginalJetfSerial = seaOrder.OriginalJetfSerial;
+                    shipment.OriginalTrackingNo = seaOrder.OriginalTrackingNo;
                     shipment.ImporterAddr = seaOrder.ImporterAddr;
                     shipment.ImporterPhone = seaOrder.ImporterPhone;
                     shipment.Importer = seaOrder.Importer;
@@ -169,6 +171,8 @@ namespace Service.Services.ShipmentInboundBatchImport
                     var etlOrder = etlData[shipment.TrackingNo];
                     shipment.DataType = "空運";
                     shipment.IsOrderOriginal = true;
+                    shipment.OriginalJetfSerial = etlOrder.OriginalJetfSerial;
+                    shipment.OriginalTrackingNo = etlOrder.OriginalTrackingNo;
                     shipment.Importer = etlOrder.Importer;
                     shipment.ImporterPhone = etlOrder.ImporterPhone;
                     shipment.ImporterAddr = etlOrder.ImporterAddr;
@@ -180,6 +184,8 @@ namespace Service.Services.ShipmentInboundBatchImport
                     var etlOrder = etlData2[shipment.TrackingNo];
                     shipment.DataType = "空運";
                     shipment.IsOrderOriginal = true;
+                    shipment.OriginalJetfSerial = etlOrder.OriginalJetfSerial;
+                    shipment.OriginalTrackingNo = etlOrder.OriginalTrackingNo;
                     shipment.Importer = etlOrder.Importer;
                     shipment.ImporterPhone = etlOrder.ImporterPhone;
                     shipment.ImporterAddr = etlOrder.ImporterAddr;
@@ -220,6 +226,8 @@ namespace Service.Services.ShipmentInboundBatchImport
                         .Select(x => new ShipmentOrderData
                         {
                             TrackingNo = x.JetfSerial,
+                            OriginalJetfSerial = x.JetfSerial,
+                            OriginalTrackingNo = x.BlNo,
                             ImporterAddr = x.ImporterAddr,
                             ImporterPhone = x.ImporterPhone,
                             Importer = x.Importer,
@@ -250,6 +258,8 @@ namespace Service.Services.ShipmentInboundBatchImport
                     .Select(g => g.Select(x => new ShipmentOrderData
                     {
                         TrackingNo = x.TrackingNo,
+                        OriginalJetfSerial = x.DeliveryNo,
+                        OriginalTrackingNo = x.TrackingNo,
                         Importer = x.Importer,
                         ImporterPhone = x.ImporterPhone,
                         ImporterAddr = x.ImporterAddr,
@@ -280,6 +290,8 @@ namespace Service.Services.ShipmentInboundBatchImport
                     {
                         DeliveryNo = x.DeliveryNo,
                         TrackingNo = x.TrackingNo,
+                        OriginalJetfSerial = x.DeliveryNo,
+                        OriginalTrackingNo = x.TrackingNo,
                         Importer = x.Importer,
                         ImporterPhone = x.ImporterPhone,
                         ImporterAddr = x.ImporterAddr,
@@ -451,6 +463,8 @@ namespace Service.Services.ShipmentInboundBatchImport
                             DataType = x.DataType,
                             InboundDate = x.InboundDate,
                             TrackingNo = x.TrackingNo,
+                            OriginalJetfSerial = x.OriginalJetfSerial,
+                            OriginalTrackingNo = x.OriginalTrackingNo,
                             SeqNo = x.SeqNo,
                             LocationCode = x.LocationCode,
                             SourceType = byte.TryParse(x.SourceType, out var sourceType) ? (byte?)sourceType : null,

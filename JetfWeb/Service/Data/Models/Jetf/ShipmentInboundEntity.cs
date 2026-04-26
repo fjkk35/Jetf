@@ -36,6 +36,18 @@ namespace Service.Data
         public string TrackingNo { get; set; }
 
         /// <summary>
+        /// 原始物流貨號。
+        /// </summary>
+        [Column("OriginalJetfSerial")]
+        public string OriginalJetfSerial { get; set; }
+
+        /// <summary>
+        /// 原始追蹤單號。
+        /// </summary>
+        [Column("OriginalTrackingNo")]
+        public string OriginalTrackingNo { get; set; }
+
+        /// <summary>
         /// 流水編號。
         /// </summary>
         [Column("SeqNo")]

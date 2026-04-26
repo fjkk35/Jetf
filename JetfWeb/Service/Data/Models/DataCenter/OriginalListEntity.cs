@@ -9,10 +9,13 @@ namespace Service.Data
     [Table("ORIGINALLIST", Schema = "dbo")]
     public sealed class OriginalListEntity
     {
+        [Key]
+        [Column("ROW_ID")]
+        public int Id { get; set; }
+
         /// <summary>
         /// 追蹤單號。
         /// </summary>
-        [Key]
         [Column("TRACKINGNO")]
         public string TrackingNo { get; set; }
 
