@@ -55,5 +55,5 @@ public sealed class OriginalListEntity
     /// 承運商代號（TransNo）。
     /// </summary>
     [Column("CLEARANCEWAREHOUSING")]
-    public string TransNo { get; set; } = string.Empty;
+    public int? TransNo { get; set; }
 }

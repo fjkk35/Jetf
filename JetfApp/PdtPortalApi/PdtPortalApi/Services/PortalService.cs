@@ -516,10 +516,10 @@ public sealed class PortalService(
     {
         try
         {
-            return await _dataCenterDbContext.OriginalLists
+            var airData = await _dataCenterDbContext.OriginalLists
                 .AsNoTracking()
                 .Where(entity => entity.TrackingNo == trackingNo || entity.DeliveryNo == trackingNo)
-                .Select(entity => new AirOrderOriginalDto
+                .Select(entity => new
                 {
                     TrackingNo = entity.TrackingNo,
                     OriginalJetfSerial = entity.DeliveryNo,
@@ -531,6 +531,23 @@ public sealed class PortalService(
                     TransNo = entity.TransNo
                 })
                 .FirstOrDefaultAsync(cancellationToken);
+
+            if (airData is null)
+            {
+                return null;
+            }
+
+            return new AirOrderOriginalDto
+            {
+                TrackingNo = airData.TrackingNo,
+                OriginalJetfSerial = airData.OriginalJetfSerial,
+                OriginalTrackingNo = airData.OriginalTrackingNo,
+                Importer = airData.Importer,
+                ImporterPhone = airData.ImporterPhone,
+                ImporterAddr = airData.ImporterAddr,
+                CustCode = airData.CustCode,
+                TransNo = airData.TransNo?.ToString() ?? string.Empty
+            };
         }
         catch (Exception exception)
         {
