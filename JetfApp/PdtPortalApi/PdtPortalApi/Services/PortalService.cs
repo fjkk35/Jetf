@@ -14,7 +14,7 @@ public sealed class PortalService(
     DataCenterDbContext dataCenterDbContext,
     ILogger<PortalService> logger) : IPortalService
 {
-    private const string ExceptionPhotoDirectory = @"F:\UploadPdt";
+    private const string ExceptionPhotoDirectory = @"D:\UploadPdt";
     private const string LocationFieldName = "儲位";
     private readonly JetfDbContext _jetfDbContext = jetfDbContext;
     private readonly DataCenterDbContext _dataCenterDbContext = dataCenterDbContext;

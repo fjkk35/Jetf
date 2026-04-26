@@ -10,10 +10,17 @@ namespace PdtPortalApi.Models.Entities;
 [Table("ShipmentInbound", Schema = "dbo")]
 public sealed class ShipmentInboundEntity
 {
-	/// <summary>
-	/// 資料型態（例如：「海運」、「空運」）。
-	/// </summary>
-	[Column("DataType")]
+    /// <summary>
+    /// 入庫資料 Id。
+    /// </summary>
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    [Column("Id")]
+    public int Id { get; set; }
+
+    /// <summary>
+    /// 資料型態（例如：「海運」、「空運」）。
+    /// </summary>
+    [Column("DataType")]
 	public string DataType { get; set; } = string.Empty;
 
 	/// <summary>
@@ -21,12 +28,6 @@ public sealed class ShipmentInboundEntity
 	/// </summary>
 	[Column("InboundDate")]
 	public DateTime InboundDate { get; set; }
-
-    /// <summary>
-    /// 入庫資料 Id。
-    /// </summary>
-    [Column("Id")]
-    public int Id { get; set; }
 
 	/// <summary>
 	/// 出庫日期。

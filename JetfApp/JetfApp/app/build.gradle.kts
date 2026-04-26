@@ -37,7 +37,7 @@ val apiBaseUrl = project.propertyOrDefault("API_BASE_URL", "http://localhost:526
 val normalizedApiBaseUrl = if (apiBaseUrl.endsWith('/')) apiBaseUrl else "$apiBaseUrl/"
 val releaseApiBaseUrl = "https://service.jet-f.com/PdtPortalAPI/"
 val hmacKey = project.propertyOrDefault("PDT_HMAC_KEY", "")
-val appVersionName = "0.0.3"
+val appVersionName = "0.0.4"
 
 android {
     namespace = "com.example.jetfapp"
