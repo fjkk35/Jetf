@@ -1,4 +1,4 @@
-namespace PdtPortalApi.Models.Dtos;
+﻿namespace PdtPortalApi.Models.Dtos;
 
 /// <summary>
 /// 空運原單資料傳輸物件。
@@ -9,6 +9,16 @@ public sealed class AirOrderOriginalDto
     /// 單號。
     /// </summary>
     public string TrackingNo { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 原單物流貨號。
+    /// </summary>
+    public string OriginalJetfSerial { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 原單分提單號。
+    /// </summary>
+    public string OriginalTrackingNo { get; set; } = string.Empty;
 
     /// <summary>
     /// 進口人姓名或收件人名稱。

@@ -65,6 +65,18 @@ public sealed class ShipmentInboundEntity
 	public string ReturnTrackingNo { get; set; } = string.Empty;
 
 	/// <summary>
+	/// 原單物流貨號。
+	/// </summary>
+	[Column("OriginalJetfSerial")]
+	public string OriginalJetfSerial { get; set; } = string.Empty;
+
+	/// <summary>
+	/// 原單分提單號。
+	/// </summary>
+	[Column("OriginalTrackingNo")]
+	public string OriginalTrackingNo { get; set; } = string.Empty;
+
+	/// <summary>
 	/// 尺寸。
 	/// </summary>
 	[Column("Size")]

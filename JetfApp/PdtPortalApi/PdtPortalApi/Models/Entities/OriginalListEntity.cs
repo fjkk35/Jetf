@@ -1,5 +1,6 @@
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace PdtPortalApi.Models.Entities;
 
@@ -10,6 +11,10 @@ namespace PdtPortalApi.Models.Entities;
 [Table("ORIGINALLIST", Schema = "dbo")]
 public sealed class OriginalListEntity
 {
+    [Key]
+    [Column("ROW_ID")]
+    public int Id { get; set; }
+
     /// <summary>
     /// 提單號或配送單號。
     /// </summary>

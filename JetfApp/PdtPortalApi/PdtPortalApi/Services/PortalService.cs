@@ -152,23 +152,57 @@ public sealed class PortalService(
             var hasOriginalData = seaData is not null || airData is not null;
             var dataType = seaData is not null ? "海運" : airData is not null ? "空運" : string.Empty;
             var size = string.IsNullOrWhiteSpace(request.Size) ? "小" : request.Size.Trim();
- 
- 			var entity = new ShipmentInboundEntity
- 			{
- 				DataType = dataType,
+
+            var originalJetfSerial = string.Empty;
+            var originalTrackingNo = string.Empty;
+            var custCode = string.Empty;
+            var transNo = string.Empty;
+            var transName = string.Empty;
+            var importer = string.Empty;
+            var importerPhone = string.Empty;
+            var importerAddr = string.Empty;
+
+            switch (dataType)
+            {
+                case "海運":
+                    originalJetfSerial = seaData?.OriginalJetfSerial ?? string.Empty;
+                    originalTrackingNo = seaData?.OriginalTrackingNo ?? string.Empty;
+                    custCode = seaData?.CustCode ?? string.Empty;
+                    transName = seaData?.TransName ?? string.Empty;
+                    importer = seaData?.Importer ?? string.Empty;
+                    importerPhone = seaData?.ImporterPhone ?? string.Empty;
+                    importerAddr = seaData?.ImporterAddr ?? string.Empty;
+                    break;
+
+                case "空運":
+                    originalJetfSerial = airData?.OriginalJetfSerial ?? string.Empty;
+                    originalTrackingNo = airData?.OriginalTrackingNo ?? string.Empty;
+                    custCode = airData?.CustCode ?? string.Empty;
+                    transNo = airData?.TransNo ?? string.Empty;
+                    importer = airData?.Importer ?? string.Empty;
+                    importerPhone = airData?.ImporterPhone ?? string.Empty;
+                    importerAddr = airData?.ImporterAddr ?? string.Empty;
+                    break;
+            }
+
+			var entity = new ShipmentInboundEntity
+			{
+				DataType = dataType,
                 InboundDate = request.InboundDate.LocalDateTime,
 				TrackingNo = request.TrackingNo,
 				SeqNo = request.SeqNo,
  				LocationCode = request.LocationCode,
  				SourceType = request.SourceType,
  				ReturnTrackingNo = request.ReturnTrackingNo ?? string.Empty,
+                OriginalJetfSerial = originalJetfSerial,
+                OriginalTrackingNo = originalTrackingNo,
                 Size = size,
- 				CustCode = seaData?.CustCode ?? airData?.CustCode ?? string.Empty,
- 				TransNo = airData?.TransNo ?? string.Empty,
- 				TransName = seaData?.TransName ?? string.Empty,
-				Importer = seaData?.Importer ?? airData?.Importer ?? string.Empty,
-				ImporterPhone = seaData?.ImporterPhone ?? airData?.ImporterPhone ?? string.Empty,
-				ImporterAddr = seaData?.ImporterAddr ?? airData?.ImporterAddr ?? string.Empty,
+ 				CustCode = custCode,
+ 				TransNo = transNo,
+ 				TransName = transName,
+				Importer = importer,
+				ImporterPhone = importerPhone,
+				ImporterAddr = importerAddr,
 				IsOrderOriginal = hasOriginalData,
                 UploadOpe = request.UploadOpe ?? string.Empty,
 				CreatedTime = DateTime.Now,
@@ -455,6 +489,8 @@ public sealed class PortalService(
                 .Select(entity => new SeaOrderOriginalDto
                 {
                     TrackingNo = entity.JetfSerial,
+                    OriginalJetfSerial = entity.JetfSerial,
+                    OriginalTrackingNo = entity.BlNo,
                     ImporterAddr = entity.ImporterAddr,
                     ImporterPhone = entity.ImporterPhone,
                     Importer = entity.Importer,
@@ -482,10 +518,12 @@ public sealed class PortalService(
         {
             return await _dataCenterDbContext.OriginalLists
                 .AsNoTracking()
-                .Where(entity => entity.TrackingNo == trackingNo)
+                .Where(entity => entity.TrackingNo == trackingNo || entity.DeliveryNo == trackingNo)
                 .Select(entity => new AirOrderOriginalDto
                 {
                     TrackingNo = entity.TrackingNo,
+                    OriginalJetfSerial = entity.DeliveryNo,
+                    OriginalTrackingNo = entity.TrackingNo,
                     Importer = entity.Importer,
                     ImporterPhone = entity.ImporterPhone,
                     ImporterAddr = entity.ImporterAddr,
