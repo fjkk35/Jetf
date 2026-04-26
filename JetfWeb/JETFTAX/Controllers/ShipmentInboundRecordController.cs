@@ -112,28 +112,6 @@ namespace JETFTAX.Controllers
             return Json(list, JsonRequestBehavior.AllowGet);
         }
 
-        [HttpGet]
-        [UserAuthorize(Authority.ShipmentInboundRecord)]
-        public JsonResult GetLocationHistory(int shipmentInboundId)
-        {
-            try
-            {
-                var result = _shipmentInboundRecordService.GetLocationHistory(shipmentInboundId);
-
-                return Json(new
-                {
-                    Data = result
-                }, JsonRequestBehavior.AllowGet);
-            }
-            catch (Exception ex)
-            {
-                return Json(new
-                {
-                    error = ex.Message
-                }, JsonRequestBehavior.AllowGet);
-            }
-        }
-
         /// <summary>
         /// 取得客戶清單
         /// </summary>

@@ -1,96 +1,96 @@
-using Service.EnumTax;
+ï»¿using Service.EnumTax;
 using System;
 
 namespace Service.Services.ShipmentInboundProcess.Domain
 {
     /// <summary>
-    /// ³f¥ó¤J®w³B²z¸Ô²Ó¸ê®Æ¼Ò«¬
-    /// ¥]§t¤w³B²z©Î±ı³B²z®É©Ò»İ°O¿ıªº²Ó¸`
+    /// è²¨ä»¶å…¥åº«è™•ç†è©³ç´°è³‡æ–™æ¨¡å‹
+    /// åŒ…å«å·²è™•ç†æˆ–æ¬²è™•ç†æ™‚æ‰€éœ€è¨˜éŒ„çš„ç´°ç¯€
     /// </summary>
     public class ShipmentInboundProcessDetailModel
     {
         /// <summary>
-        /// ¥DÁä Id
+        /// ä¸»éµ Id
         /// </summary>
         public int Id { get; set; }
 
         /// <summary>
-        /// ³B²zÃş«¬
+        /// è™•ç†é¡å‹
         /// </summary>
         public ShipmentInboundProcessType? ProcessType { get; set; }
 
         /// <summary>
-        /// ­«¥X¬£¥ó¤½¥q¥N½X
+        /// é‡å‡ºæ´¾ä»¶å…¬å¸ä»£ç¢¼
         /// </summary>
         public ShipmentInboundProcessTransNo? ProcessTransNo { get; set; }
 
         /// <summary>
-        /// ¦¬¥ó¤H©m¦W
+        /// æ”¶ä»¶äººå§“å
         /// </summary>
         public string ProcessImporter { get; set; }
 
         /// <summary>
-        /// ¦¬¥ó¤H¹q¸Ü
+        /// æ”¶ä»¶äººé›»è©±
         /// </summary>
         public string ProcessImporterPhone { get; set; }
 
         /// <summary>
-        /// ¦¬¥ó¤H¦a§}
+        /// æ”¶ä»¶äººåœ°å€
         /// </summary>
         public string ProcessImporterAddr { get; set; }
 
         /// <summary>
-        /// ªù¥«©±¸¹
+        /// é–€å¸‚åº—è™Ÿ
         /// </summary>
         public string StoreCode { get; set; }
 
         /// <summary>
-        /// ªù¥«¦WºÙ
+        /// é–€å¸‚åç¨±
         /// </summary>
         public string StoreName { get; set; }
 
         /// <summary>
-        /// µ|ª÷
+        /// ç¨…é‡‘
         /// </summary>
-        public decimal? Tax { get; set; }
+        public int? Tax { get; set; }
 
         /// <summary>
-        /// ³øÃö¶O
+        /// å ±é—œè²»
         /// </summary>
-        public decimal? Ccfee { get; set; }
+        public int? Ccfee { get; set; }
 
         /// <summary>
-        /// ¨ì¥I´Ú
+        /// åˆ°ä»˜æ¬¾
         /// </summary>
-        public decimal? Cod { get; set; }
+        public int? Cod { get; set; }
 
         /// <summary>
-        /// ­«¥X¹B¶O¤ä¥I¤è¥N½X
+        /// é‡å‡ºé‹è²»æ”¯ä»˜æ–¹ä»£ç¢¼
         /// </summary>
         public ShipmentInboundFreightPayerNo? FreightPayerNo { get; set; }
 
         /// <summary>
-        /// ­«¥X¹B¶O
+        /// é‡å‡ºé‹è²»
         /// </summary>
-        public decimal? FreightFee { get; set; }
+        public int? FreightFee { get; set; }
 
         /// <summary>
-        /// ¤âÄò¶O
+        /// æ‰‹çºŒè²»
         /// </summary>
-        public decimal? Fee { get; set; }
+        public int? Fee { get; set; }
 
         /// <summary>
-        /// ¨®µP¸¹½X
+        /// è»Šç‰Œè™Ÿç¢¼
         /// </summary>
         public string CarNo { get; set; }
 
         /// <summary>
-        /// ¹w­p¦Û¨ú®É¶¡
+        /// é è¨ˆè‡ªå–æ™‚é–“
         /// </summary>
         public DateTime? PickupTime { get; set; }
 
         /// <summary>
-        /// ³Æµù
+        /// å‚™è¨»
         /// </summary>
         public string Remark { get; set; }
     }

@@ -450,35 +450,6 @@
         return [year, month, day].join('-');
     }
 
-    // 顯示儲位歷史紀錄 Modal
-    $scope.showLocationHistoryModal = function (shipmentInboundId, trackingNo, locationCode) {
-        if (!shipmentInboundId) {
-            alert('資料錯誤');
-            return;
-        }
-
-        $scope.currentTrackingNo = trackingNo;
-        $scope.currentLocationCode = locationCode;
-        $scope.locationHistory = [];
-
-        $http.get(Router.action('ShipmentInboundRecord', 'GetLocationHistory'), {
-            params: { shipmentInboundId: shipmentInboundId }
-        })
-            .then(function (response) {
-                if (response.data.error) {
-                    alert('查詢失敗: ' + response.data.error);
-                    return;
-                }
-
-                $scope.locationHistory = response.data.Data || [];
-                $('#locationHistoryModal').modal('show');
-            })
-            .catch(function (error) {
-                console.error('查詢儲位歷史失敗:', error);
-                alert('查詢儲位歷史失敗，請稍後再試');
-            });
-    };
-
     // 頁面載入時執行初始化
     $scope.init();
 }]);

@@ -51,6 +51,12 @@
     <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Dapper.2.1.35\lib\net461\Dapper.dll</HintPath>
     </Reference>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.5.1\lib\net45\EntityFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.5.1\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    </Reference>
     <Reference Include="FluentFTP, Version=52.0.0.0, Culture=neutral, PublicKeyToken=f4af092b1d8df44f, processorArchitecture=MSIL">
       <HintPath>..\packages\FluentFTP.52.0.0\lib\net472\FluentFTP.dll</HintPath>
     </Reference>
@@ -220,6 +226,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\Models\DataCenter\OriginalListEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\SeaOrderOriginalEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\SysCustEntity.cs" />
+    <Compile Include="Data\Models\Jetf\CustomerMasterEntity.cs" />
+    <Compile Include="Data\Models\Jetf\FeeMasterEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ShipmentInboundEditHistoryEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ShipmentInboundEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ShipmentInboundExceptionEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ShipmentInboundLocationHistoryEntity.cs" />
     <Compile Include="EnumTax\Authority.cs" />
     <Compile Include="EnumTax\AuthorityPartner.cs" />
     <Compile Include="EnumTax\CacheName.cs" />
@@ -629,6 +644,18 @@
     <Compile Include="Services\WorkDay\WorkDayService.cs" />
     <Compile Include="Services\WorkLoad\SeaWorkLoadService.cs" />
     <Compile Include="Services\WorkLoad\WorkLoadService.cs" />
+    <Compile Include="Data\Models\Jetf\CustomerMasterEntity.cs" />
+    <Compile Include="Data\DataCenterDbContext.cs" />
+    <Compile Include="Data\Models\Jetf\FeeMasterEntity.cs" />
+    <Compile Include="Data\JetfDbContext.cs" />
+    <Compile Include="Data\Models\DataCenter\OriginalListEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\SeaOrderOriginalEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ShipmentInboundEditHistoryEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ShipmentInboundEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ShipmentInboundExceptionEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ShipmentInboundLocationHistoryEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\SysCustEntity.cs" />
+    <Compile Include="Extensions\QueryableExtensions.cs" />
     <Compile Include="_BaseService.cs" />
   </ItemGroup>
   <ItemGroup>

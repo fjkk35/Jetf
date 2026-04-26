@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data.Entity;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Service.Data;
 using Service.Services;
 
 namespace Service
@@ -30,6 +32,85 @@ namespace Service
         protected string GetUserId()
         {
             return UserContextService.GetUserId();
+        }
+
+        protected JetfDbContext CreateJetfDbContext()
+        {
+            return new JetfDbContext();
+        }
+
+        protected DataCenterDbContext CreateDataCenterDbContext()
+        {
+            return new DataCenterDbContext();
+        }
+
+        protected Dictionary<string, string> GetAirCustomerNames(IEnumerable<string> custCodes)
+        {
+            var codes = (custCodes ?? Enumerable.Empty<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct()
+                .ToList();
+
+            if (!codes.Any())
+            {
+                return new Dictionary<string, string>();
+            }
+
+            using (var db = CreateDataCenterDbContext())
+            {
+                return db.SysCusts
+                    .AsNoTracking()
+                    .Where(x => x.CustType == "AIR" && !string.IsNullOrEmpty(x.OldCode) && codes.Contains(x.OldCode))
+                    .GroupBy(x => x.OldCode)
+                    .ToDictionary(g => g.Key, g => g.Select(x => x.CustName).FirstOrDefault() ?? string.Empty);
+            }
+        }
+
+        protected Dictionary<string, string> GetSeaCustomerNames(IEnumerable<string> custCodes)
+        {
+            var codes = (custCodes ?? Enumerable.Empty<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct()
+                .ToList();
+
+            if (!codes.Any())
+            {
+                return new Dictionary<string, string>();
+            }
+
+            using (var db = CreateDataCenterDbContext())
+            {
+                return db.SysCusts
+                    .AsNoTracking()
+                    .Where(x => x.CustType == "SEA" && codes.Contains(x.CustCode))
+                    .GroupBy(x => x.CustCode)
+                    .ToDictionary(g => g.Key, g => g.Select(x => x.CustName).FirstOrDefault() ?? string.Empty);
+            }
+        }
+
+        protected Dictionary<string, string> GetAirTransNames(IEnumerable<string> transNos)
+        {
+            var codes = (transNos ?? Enumerable.Empty<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct()
+                .ToList();
+
+            if (!codes.Any())
+            {
+                return new Dictionary<string, string>();
+            }
+
+            using (var db = CreateJetfDbContext())
+            {
+                return db.CustomerMasters
+                    .AsNoTracking()
+                    .Where(x => x.TranType == "空運" && codes.Contains(x.TransNo))
+                    .GroupBy(x => x.TransNo)
+                    .ToDictionary(g => g.Key, g => g.Select(x => x.TransName).FirstOrDefault() ?? string.Empty);
+            }
         }
 
 

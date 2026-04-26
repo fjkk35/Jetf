@@ -1,13 +1,13 @@
-﻿using Dapper;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using Service.EnumTax;
 using Service.Extensions;
 using Service.Services.ShipmentInboundPick.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace Service.Services.ShipmentInboundPick
 {
@@ -15,55 +15,60 @@ namespace Service.Services.ShipmentInboundPick
     {
         public List<ShipmentInboundPickModel> GetData(ShipmentInboundPickRequest request)
         {
-            var parameters = new DynamicParameters();
-
-            var sql = new StringBuilder();
-            sql.AppendLine("SELECT ");
-            sql.AppendLine(@"   sib.TrackingNo,
-                                sib.SeqNo,
-                                sib.LocationCode,
-                                sib.ProcessType,
-                                sib.ProcessImporter,
-                                sib.ProcessImporterPhone,
-                                sib.ProcessImporterAddr,
-                                sib.StoreCode,
-                                sib.StoreName,
-                                sib.Tax,
-                                sib.CcFee, 
-                                sib.ProcessFee,
-                                sib.FreightFee,
-                                sib.CustCode,
-                                sib.DataType,
-                                sib.ProcessTransNo,
-                                sib.Remark");
-            sql.AppendLine("FROM [jetf].[dbo].[ShipmentInbound] sib");
-            sql.AppendLine("WHERE 1=1 AND sib.ProcessType !='9' ");
-
-            if (!string.IsNullOrWhiteSpace(request.ProcessTimeStart) && DateTime.TryParse(request.ProcessTimeStart, out var startDate))
+            using (var db = CreateJetfDbContext())
             {
-                sql.AppendLine("AND sib.ProcessTime >= @ProcessTimeStart");
-                parameters.Add("ProcessTimeStart", startDate);
+                var query = db.ShipmentInbounds
+                    .AsNoTracking()
+                    .Where(x => x.ProcessType != (byte)ShipmentInboundProcessType.TempData);
+
+                if (!string.IsNullOrWhiteSpace(request.ProcessTimeStart)
+                    && DateTime.TryParse(request.ProcessTimeStart, out var startDate))
+                {
+                    query = query.WhereIf(true, x => x.ProcessTime >= startDate);
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.ProcessTimeEnd)
+                    && DateTime.TryParse(request.ProcessTimeEnd, out var endDate))
+                {
+                    var processTimeEnd = endDate.AddDays(1);
+                    query = query.WhereIf(true, x => x.ProcessTime < processTimeEnd);
+                }
+
+                var custCodes = request.CustCodes?
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Select(x => x.Trim())
+                    .Distinct()
+                    .ToList();
+
+                query = query.WhereIf(custCodes?.Any() == true, x => custCodes.Contains(x.CustCode));
+
+                var data = query
+                    .OrderBy(x => x.LocationCode)
+                    .Select(x => new ShipmentInboundPickModel
+                    {
+                        TrackingNo = x.TrackingNo,
+                        SeqNo = x.SeqNo,
+                        LocationCode = x.LocationCode,
+                        ProcessType = (ShipmentInboundProcessType)(x.ProcessType ?? 0),
+                        ProcessImporter = x.ProcessImporter,
+                        ProcessImporterPhone = x.ProcessImporterPhone,
+                        ProcessImporterAddr = x.ProcessImporterAddr,
+                        StoreCode = x.StoreCode,
+                        StoreName = x.StoreName,
+                        Tax = x.Tax ?? 0,
+                        Ccfee = x.Ccfee ?? 0,
+                        ProcessFee = x.ProcessFee ?? 0,
+                        FreightFee = (int)(x.FreightFee ?? 0),
+                        CustCode = x.CustCode,
+                        DataType = x.DataType,
+                        ProcessTransNo = (ShipmentInboundProcessTransNo)(x.ProcessTransNo ?? 0),
+                        Remark = x.Remark
+                    })
+                    .ToList();
+
+                FillCustomerNames(data);
+                return data;
             }
-
-            if (!string.IsNullOrWhiteSpace(request.ProcessTimeEnd) && DateTime.TryParse(request.ProcessTimeEnd, out var endDate))
-            {
-                sql.AppendLine("AND sib.ProcessTime < @ProcessTimeEnd");
-                parameters.Add("ProcessTimeEnd", endDate.AddDays(1));
-            }
-
-            if (request.CustCodes != null && request.CustCodes.Any())
-            {
-                sql.AppendLine("AND sib.CustCode IN @CustCodes");
-                parameters.Add("CustCodes", request.CustCodes);
-            }
-
-            sql.AppendLine("ORDER BY sib.LocationCode");
-
-            var data = conn.Query<ShipmentInboundPickModel>(sql.ToString(), parameters).ToList();
-            
-            FillCustomerNames(data);
-            
-            return data;
         }
 
         private void FillCustomerNames(List<ShipmentInboundPickModel> data)
@@ -78,8 +83,8 @@ namespace Service.Services.ShipmentInboundPick
                                    .Distinct()
                                    .ToList();
 
-            var airCustNames = GetAirCustNames(airCustCodes);
-            var seaCustNames = GetSeaCustNames(seaCustCodes);
+            var airCustNames = GetAirCustomerNames(airCustCodes);
+            var seaCustNames = GetSeaCustomerNames(seaCustCodes);
 
             foreach (var item in data)
             {
@@ -95,32 +100,6 @@ namespace Service.Services.ShipmentInboundPick
                     }
                 }
             }
-        }
-
-        private Dictionary<string, string> GetAirCustNames(List<string> custCodes)
-        {
-            if (!custCodes.Any())
-                return new Dictionary<string, string>();
-
-            var sql = "SELECT distinct OLD_CODE as Cust_Code, Cust_Name FROM DATA_CENTER.dbo.SYS_CUST WHERE CUST_TYPE='AIR' AND OLD_CODE > ''";
-            var custs = conn.Query<dynamic>(sql).ToList();
-            return custs.ToDictionary(
-                x => (string)x.Cust_Code,
-                x => (string)x.Cust_Name
-            );
-        }
-
-        private Dictionary<string, string> GetSeaCustNames(List<string> custCodes)
-        {
-            if (!custCodes.Any())
-                return new Dictionary<string, string>();
-
-            var sql = "SELECT distinct Cust_Code, Cust_Name FROM DATA_CENTER.dbo.SYS_CUST WHERE CUST_TYPE='SEA'";
-            var custs = conn.Query<dynamic>(sql).ToList();
-            return custs.ToDictionary(
-                x => (string)x.Cust_Code,
-                x => (string)x.Cust_Name
-            );
         }
 
         public byte[] ExportToExcel(List<ShipmentInboundPickModel> data)

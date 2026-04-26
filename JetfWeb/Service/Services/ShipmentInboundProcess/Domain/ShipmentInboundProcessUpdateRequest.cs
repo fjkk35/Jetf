@@ -1,4 +1,4 @@
-namespace Service.Services.ShipmentInboundProcess.Domain
+﻿namespace Service.Services.ShipmentInboundProcess.Domain
 {
     public class ShipmentInboundProcessUpdateRequest
     {
@@ -11,7 +11,7 @@ namespace Service.Services.ShipmentInboundProcess.Domain
         public string StoreCode { get; set; }
         public string StoreName { get; set; }
         public byte? FreightPayerNo { get; set; }
-        public decimal? FreightFee { get; set; }
+        public int? FreightFee { get; set; }
         public int Fee { get; set; }
         public string CarNo { get; set; }
         public string PickupTime { get; set; }

@@ -5,88 +5,93 @@ using System;
 namespace Service.Services.ShipmentInboundProcess.Domain
 {
     /// <summary>
-    /// ³f¥ó¤J®w³B²zÅã¥Ü¼Ò«¬
-    /// ¥Î©ó«eºÝ¬d¸ß¦CªíÅã¥Ü»P«áÄò³B²z§@·~
+    /// ï¿½fï¿½ï¿½Jï¿½wï¿½Bï¿½zï¿½ï¿½Ü¼Ò«ï¿½
+    /// ï¿½Î©ï¿½eï¿½Ý¬dï¿½ß¦Cï¿½ï¿½ï¿½ï¿½Ü»Pï¿½ï¿½ï¿½ï¿½Bï¿½zï¿½@ï¿½~
     /// </summary>
     public class ShipmentInboundProcessModel
     {
         /// <summary>
-        /// ¥DÁä Id
+        /// ï¿½Dï¿½ï¿½ Id
         /// </summary>
         public int Id { get; set; }
 
         /// <summary>
-        /// ¤J®w¤é´Á
+        /// ï¿½Jï¿½wï¿½ï¿½ï¿½
         /// </summary>
         public DateTime InboundDate { get; set; }
 
         /// <summary>
-        /// ¶i¤f¤è¦¡¡]¨Ò¦p®ü¹B¡BªÅ¹B¡^
+        /// ï¿½iï¿½fï¿½è¦¡ï¿½]ï¿½Ò¦pï¿½ï¿½ï¿½Bï¿½Bï¿½Å¹Bï¿½^
         /// </summary>
         public string DataType { get; set; }
 
         /// <summary>
-        /// «È¤á¥N½X
+        /// ï¿½È¤ï¿½Nï¿½X
         /// </summary>
         public string CustCode { get; set; }
 
         /// <summary>
-        /// «È¤á¦WºÙ
+        /// ï¿½È¤ï¿½Wï¿½ï¿½
         /// </summary>
         public string CustName { get; set; }
 
         /// <summary>
-        /// ¬£¥ó¤½¥q¥N½X(ªÅ¹B¤~¦³)
+        /// ï¿½ï¿½ï¿½ó¤½¥qï¿½Nï¿½X(ï¿½Å¹Bï¿½~ï¿½ï¿½)
         /// </summary>
         public string TransNo { get; set; }
 
         /// <summary>
-        /// ¬£¥ó¤½¥q¦WºÙ
+        /// ï¿½ï¿½ï¿½ó¤½¥qï¿½Wï¿½ï¿½
         /// </summary>
         public string TransName { get; set; }
 
         /// <summary>
-        /// °lÂÜ³æ¸¹©Î°lÂÜ¸¹
+        /// ï¿½lï¿½Ü³æ¸¹ï¿½Î°lï¿½Ü¸ï¿½
         /// </summary>
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// ³f¥ó¨Ó·½Ãþ«¬
+        /// ï¿½fï¿½ï¿½Ó·ï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         public ShipmentInboundSourceType SourceType { get; set; }
 
         /// <summary>
-        /// ³f¥ó¨Ó·½¦WºÙ
+        /// ï¿½fï¿½ï¿½Ó·ï¿½ï¿½Wï¿½ï¿½
         /// </summary>
         public string SourceTypeName => SourceType.ToDescription();
 
         /// <summary>
-        /// °h¥ó­ì¦]¡]«O¯d¡^
+        /// ï¿½hï¿½ï¿½ï¿½]ï¿½]ï¿½Oï¿½dï¿½^
         /// </summary>
         public string ReturnReason { get; set; }
 
         /// <summary>
-        /// ³B²zÃþ«¬
+        /// ï¿½ï¿½ï¿½Xï¿½æ¸¹
+        /// </summary>
+        public string ReturnTrackingNo { get; set; }
+
+        /// <summary>
+        /// ï¿½Bï¿½zï¿½ï¿½ï¿½ï¿½
         /// </summary>
         public ShipmentInboundProcessType? ProcessType { get; set; }
 
         /// <summary>
-        /// ¥H©öÅª¤å¦r§e²{ªº³B²zÃþ«¬¦WºÙ
+        /// ï¿½Hï¿½ï¿½Åªï¿½ï¿½rï¿½eï¿½{ï¿½ï¿½ï¿½Bï¿½zï¿½ï¿½ï¿½ï¿½ï¿½Wï¿½ï¿½
         /// </summary>
         public string ProcessTypeName => ProcessType?.ToDescription();
 
         /// <summary>
-        /// µ|ª÷
+        /// ï¿½|ï¿½ï¿½
         /// </summary>
         public decimal? Tax { get; set; }
 
         /// <summary>
-        /// ³øÃö¶O
+        /// ï¿½ï¿½ï¿½ï¿½ï¿½O
         /// </summary>
         public decimal? Ccfee { get; set; }
 
         /// <summary>
-        /// ¨ì¥I´Ú
+        /// ï¿½ï¿½Iï¿½ï¿½
         /// </summary>
         public decimal? Cod { get; set; }
     }

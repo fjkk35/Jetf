@@ -1,4 +1,3 @@
-﻿using Dapper;
 using NPOI.SS.Formula.Functions;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
@@ -8,9 +7,9 @@ using Service.Services.ShipmentInboundProcess.Domain;
 using Service.Services.ShipmentInboundRecord.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace Service.Services.ShipmentInboundRecord
 {
@@ -28,211 +27,225 @@ namespace Service.Services.ShipmentInboundRecord
                 return null;
             }
 
-            var sql = @"
-                SELECT [Id]
-                      ,[DataType]
-                      ,[InboundDate]
-                      ,[CustCode]
-                      ,[TransNo]
-                      ,[TrackingNo]
-                      ,[SourceType]
-                      ,[SeqNo]
-                      ,[LocationCode]
-                      ,[ProcessType]
-                      ,[ReturnReason]
-                      ,[ReturnTrackingNo]
-                      ,[FreightPayerNo]
-                      ,[Tax]
-                      ,[Fee]
-                      ,[Ccfee]
-                      ,[Cod]
-                      ,[FreightFee]
-                      ,[ProcessFee]
-                      ,[ProcessTransNo]
-                      ,[ProcessTime]
-                      ,[ProcessOpe]
-                      ,[Remark]
-                      ,[ProcessImporter]
-                      ,[ProcessImporterPhone]
-                      ,[ProcessImporterAddr]
-                      ,[StoreCode]
-                      ,[StoreName]
-                      ,[CarNo]
-                      ,[PickupTime]
-                      ,[OutboundDate]
-                      ,[OutboundTime]
-                      ,[OutboundOpe]
-                      ,[OutboundTrackingNo]
-                      ,[WarehouseProcessType]
-                      ,[WarehouseProcessTime]
-                      ,[WarehouseProcessOpe]
-                FROM [jetf].[dbo].[ShipmentInbound]
-                WHERE [Id] = @Id";
-
-            var data = conn.QueryFirstOrDefault<ShipmentInboundRecordModel>(sql, new { Id = id });
-
-            if (data != null)
+            using (var db = CreateJetfDbContext())
             {
-                FillCustomerAndTransNames(new List<ShipmentInboundRecordModel> { data });
-            }
+                var data = db.ShipmentInbounds
+                    .AsNoTracking()
+                    .Where(x => x.Id == id)
+                    .Select(x => new ShipmentInboundRecordModel
+                    {
+                        Id = x.Id,
+                        DataType = x.DataType,
+                        InboundDate = x.InboundDate,
+                        CustCode = x.CustCode,
+                        TransNo = x.TransNo,
+                        TrackingNo = x.TrackingNo,
+                        SourceType = x.SourceType.HasValue
+                            ? (ShipmentInboundSourceType)x.SourceType.Value
+                            : default(ShipmentInboundSourceType),
+                        SeqNo = x.SeqNo,
+                        LocationCode = x.LocationCode,
+                        ProcessType = x.ProcessType.HasValue ? (ShipmentInboundProcessType?)x.ProcessType.Value : null,
+                        ReturnReason = x.ReturnReason,
+                        ReturnTrackingNo = x.ReturnTrackingNo,
+                        FreightPayerNo = x.FreightPayerNo.HasValue ? (ShipmentInboundFreightPayerNo?)x.FreightPayerNo.Value : null,
+                        Tax = x.Tax ?? 0,
+                        Fee = x.Fee ?? 0,
+                        Ccfee = x.Ccfee ?? 0,
+                        Cod = x.Cod ?? 0,
+                        FreightFee = (int)(x.FreightFee ?? 0),
+                        ProcessTransNo = x.ProcessTransNo.HasValue ? (ShipmentInboundProcessTransNo?)x.ProcessTransNo.Value : null,
+                        ProcessTime = x.ProcessTime,
+                        ProcessOpe = x.ProcessOpe,
+                        Remark = x.Remark,
+                        ProcessImporter = x.ProcessImporter,
+                        ProcessImporterPhone = x.ProcessImporterPhone,
+                        ProcessImporterAddr = x.ProcessImporterAddr,
+                        StoreCode = x.StoreCode,
+                        StoreName = x.StoreName,
+                        CarNo = x.CarNo,
+                        PickupTime = x.PickupTime,
+                        OutboundDate = x.OutboundDate,
+                        OutboundTime = x.OutboundTime,
+                        OutboundOpe = x.OutboundOpe,
+                        OutboundTrackingNo = x.OutboundTrackingNo,
+                        WarehouseProcessType = x.WarehouseProcessType.HasValue ? (WarehouseProcessType?)x.WarehouseProcessType.Value : null,
+                        WarehouseProcessTime = x.WarehouseProcessTime,
+                        WarehouseProcessOpe = x.WarehouseProcessOpe
+                    })
+                    .FirstOrDefault();
 
-            return data;
+                if (data == null)
+                {
+                    return null;
+                }
+
+                FillCustomerAndTransNames(new List<ShipmentInboundRecordModel> { data });
+
+                var exceptions = db.ShipmentInboundExceptions
+                    .AsNoTracking()
+                    .Where(x => x.ShipmentInboundId == id)
+                    .OrderByDescending(x => x.CreatedTime)
+                    .ThenByDescending(x => x.Id)
+                    .Select(x => new
+                    {
+                        x.CreatedTime,
+                        x.Reason,
+                        x.FilePath
+                    })
+                    .ToList();
+
+                var latestExceptionTime = exceptions
+                    .Select(x => (DateTime?)x.CreatedTime)
+                    .FirstOrDefault();
+
+                var latestExceptions = exceptions;
+                if (latestExceptionTime.HasValue)
+                {
+                    latestExceptions = exceptions
+                        .Where(x => x.CreatedTime == latestExceptionTime.Value)
+                        .ToList();
+                }
+                else
+                {
+                    latestExceptions = exceptions.Take(0).ToList();
+                }
+
+                data.ExceptionReason = latestExceptions
+                    .Select(x => x.Reason)
+                    .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
+                data.ExceptionFilePaths = latestExceptions
+                    .Select(x => x.FilePath)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToList();
+
+                return data;
+            }
         }
 
         public ShipmentInboundRecordResponse GetData(ShipmentInboundRecordRequest request)
         {
-            var parameters = new DynamicParameters();
-
-            var countSql = new StringBuilder();
-            countSql.AppendLine("SELECT COUNT(1) FROM [jetf].[dbo].[ShipmentInbound]");
-            BuildWhereConditions(countSql, request, parameters);
-
-            var sql = new StringBuilder();
-            sql.AppendLine("SELECT [Id]");
-            sql.AppendLine("      ,[DataType]");
-            sql.AppendLine("      ,[InboundDate]");
-            sql.AppendLine("      ,[CustCode]");
-            sql.AppendLine("      ,[TransNo]");
-            sql.AppendLine("      ,[TrackingNo]");
-            sql.AppendLine("      ,[SourceType]");
-            sql.AppendLine("      ,[SeqNo]");
-            sql.AppendLine("      ,[LocationCode]");
-            sql.AppendLine("      ,[ProcessType]");
-            sql.AppendLine("      ,[ReturnTrackingNo]");
-            sql.AppendLine("      ,[FreightPayerNo]");
-            sql.AppendLine("      ,[Tax]");
-            sql.AppendLine("      ,[Fee]");
-            sql.AppendLine("      ,[Ccfee]");
-            sql.AppendLine("      ,[Cod]");
-            sql.AppendLine("      ,[FreightFee]");
-            sql.AppendLine("      ,[ProcessTransNo]");
-            sql.AppendLine("      ,[ProcessTime]");
-            sql.AppendLine("      ,[ProcessOpe]");
-            sql.AppendLine("      ,[Remark]");
-            sql.AppendLine("      ,[ProcessImporter]");
-            sql.AppendLine("      ,[ProcessImporterPhone]");
-            sql.AppendLine("      ,[ProcessImporterAddr]");
-            sql.AppendLine("      ,[StoreCode]");
-            sql.AppendLine("      ,[StoreName]");
-            sql.AppendLine("      ,[CarNo]");
-            sql.AppendLine("      ,[PickupTime]");
-            sql.AppendLine("      ,[OutboundDate]");
-            sql.AppendLine("      ,[OutboundTime]");
-            sql.AppendLine("      ,[OutboundOpe]");
-            sql.AppendLine("      ,[OutboundTrackingNo]");
-            sql.AppendLine("      ,[WarehouseProcessType]");
-            sql.AppendLine("      ,[WarehouseProcessTime]");
-            sql.AppendLine("      ,[WarehouseProcessOpe]");
-            sql.AppendLine("FROM [jetf].[dbo].[ShipmentInbound]");
-            BuildWhereConditions(sql, request, parameters);
-
-            sql.AppendLine("ORDER BY [InboundDate] DESC");
-            sql.AppendLine($"OFFSET {(request.Page - 1) * request.PageSize} ROWS");
-            sql.AppendLine($"FETCH NEXT {request.PageSize} ROWS ONLY");
-
-            var totalCount = conn.QueryFirstOrDefault<int>(countSql.ToString(), parameters);
-            var data = conn.Query<ShipmentInboundRecordModel>(sql.ToString(), parameters).ToList();
-
-            FillCustomerAndTransNames(data);
-
-            return new ShipmentInboundRecordResponse
+            using (var db = CreateJetfDbContext())
             {
-                Data = data,
-                TotalCount = totalCount
-            };
+                var query = BuildWhereConditions(db.ShipmentInbounds.AsNoTracking(), request);
+                var totalCount = query.Count();
+                var data = query
+                    .OrderByDescending(x => x.InboundDate)
+                    .Skip((request.Page - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .Select(x => new ShipmentInboundRecordModel
+                    {
+                        Id = x.Id,
+                        DataType = x.DataType,
+                        InboundDate = x.InboundDate,
+                        CustCode = x.CustCode,
+                        TransNo = x.TransNo,
+                        TrackingNo = x.TrackingNo,
+                        SourceType = x.SourceType.HasValue ? (ShipmentInboundSourceType)x.SourceType.Value : default(ShipmentInboundSourceType),
+                        SeqNo = x.SeqNo,
+                        LocationCode = x.LocationCode,
+                        ProcessType = x.ProcessType.HasValue ? (ShipmentInboundProcessType?)x.ProcessType.Value : null,
+                        ReturnTrackingNo = x.ReturnTrackingNo,
+                        FreightPayerNo = x.FreightPayerNo.HasValue ? (ShipmentInboundFreightPayerNo?)x.FreightPayerNo.Value : null,
+                        Tax = x.Tax ?? 0,
+                        Fee = x.Fee ?? 0,
+                        Ccfee = x.Ccfee ?? 0,
+                        Cod = x.Cod ?? 0,
+                        FreightFee = (int)(x.FreightFee ?? 0),
+                        ProcessTransNo = x.ProcessTransNo.HasValue ? (ShipmentInboundProcessTransNo?)x.ProcessTransNo.Value : null,
+                        ProcessTime = x.ProcessTime,
+                        ProcessOpe = x.ProcessOpe,
+                        Remark = x.Remark,
+                        ProcessImporter = x.ProcessImporter,
+                        ProcessImporterPhone = x.ProcessImporterPhone,
+                        ProcessImporterAddr = x.ProcessImporterAddr,
+                        StoreCode = x.StoreCode,
+                        StoreName = x.StoreName,
+                        CarNo = x.CarNo,
+                        PickupTime = x.PickupTime,
+                        OutboundDate = x.OutboundDate,
+                        OutboundTime = x.OutboundTime,
+                        OutboundOpe = x.OutboundOpe,
+                        OutboundTrackingNo = x.OutboundTrackingNo,
+                        WarehouseProcessType = x.WarehouseProcessType.HasValue ? (WarehouseProcessType?)x.WarehouseProcessType.Value : null,
+                        WarehouseProcessTime = x.WarehouseProcessTime,
+                        WarehouseProcessOpe = x.WarehouseProcessOpe
+                    })
+                    .ToList();
+
+                FillCustomerAndTransNames(data);
+
+                return new ShipmentInboundRecordResponse
+                {
+                    Data = data,
+                    TotalCount = totalCount
+                };
+            }
         }
 
-        private void BuildWhereConditions(StringBuilder sql, ShipmentInboundRecordRequest request, DynamicParameters parameters)
+        private IQueryable<Data.ShipmentInboundEntity> BuildWhereConditions(
+            IQueryable<Data.ShipmentInboundEntity> query,
+            ShipmentInboundRecordRequest request)
         {
-            sql.AppendLine("WHERE 1=1");
+            query = query.WhereIf(DateTime.TryParse(request.InboundDateStart, out var startDate), x => x.InboundDate >= startDate);
 
-
-            sql.WhereIf(DateTime.TryParse(request.InboundDateStart, out var startDate), "[InboundDate] >= @InboundDateStart", parameters, p =>
+            if (DateTime.TryParse(request.InboundDateEnd, out var endDate))
             {
-                p.Add("InboundDateStart", startDate);
-            });
+                var inboundDateEnd = endDate.AddDays(1);
+                query = query.WhereIf(true, x => x.InboundDate < inboundDateEnd);
+            }
 
-            sql.WhereIf(DateTime.TryParse(request.InboundDateEnd, out var endDate), "[InboundDate] < @InboundDateEnd", parameters, p =>
-            {
-                p.Add("InboundDateEnd", endDate.AddDays(+1));
-            });
+            query = query.WhereIf(!string.IsNullOrWhiteSpace(request.DataType), x => x.DataType == request.DataType);
 
-            sql.WhereIf(!string.IsNullOrWhiteSpace(request.DataType), "[DataType] = @DataType", parameters, p =>
+            if (byte.TryParse(request.ProcessType, out var processType))
             {
-                p.Add("DataType", request.DataType);
-            });
+                query = query.WhereIf(true, x => x.ProcessType == processType);
+            }
 
-            sql.WhereIf(!string.IsNullOrWhiteSpace(request.ProcessType), "[ProcessType] = @ProcessType", parameters, p =>
+            if (!string.IsNullOrWhiteSpace(request.LocationCode))
             {
-                p.Add("ProcessType", request.ProcessType);
-            });
+                query = query.WhereIf(true, x => x.LocationCode.Contains(request.LocationCode));
+            }
 
-            sql.WhereIf(!string.IsNullOrWhiteSpace(request.LocationCode), "[LocationCode] LIKE @LocationCode", parameters, p =>
+            if (byte.TryParse(request.WarehouseProcessType, out var warehouseProcessType))
             {
-                p.Add("LocationCode", $"%{request.LocationCode}%");
-            });
+                query = query.WhereIf(true, x => x.WarehouseProcessType == warehouseProcessType);
+            }
 
-            sql.WhereIf(!string.IsNullOrWhiteSpace(request.WarehouseProcessType), "[WarehouseProcessType] = @WarehouseProcessType", parameters, p =>
-            {
-                p.Add("WarehouseProcessType", request.WarehouseProcessType);
-            });
+            var custCodes = request.CustCodes?
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct()
+                .ToList();
 
-            // 客戶
-            sql.WhereIf(request.CustCodes?.Any() == true, "[CustCode] IN @CustCodes", parameters, p =>
-            {
-                p.Add("CustCodes", request.CustCodes);
-            });
+            query = query.WhereIf(custCodes?.Any() == true, x => custCodes.Contains(x.CustCode));
 
-            sql.WhereIf(!string.IsNullOrWhiteSpace(request.SourceType), "[SourceType] = @SourceType", parameters, p =>
+            if (byte.TryParse(request.SourceType, out var sourceType))
             {
-                p.Add("SourceType", request.SourceType);
-            });
+                query = query.WhereIf(true, x => x.SourceType == sourceType);
+            }
 
-            sql.WhereIf(!string.IsNullOrWhiteSpace(request.TrackingNo), "[TrackingNo] LIKE @TrackingNo", parameters, p =>
+            if (!string.IsNullOrWhiteSpace(request.TrackingNo))
             {
-                p.Add("TrackingNo", $"%{request.TrackingNo}%");
-            });
+                query = query.WhereIf(true, x => x.TrackingNo.Contains(request.TrackingNo));
+            }
+
+            return query;
         }
 
         private Dictionary<string, string> GetAirCustNames(List<string> custCodes)
         {
-            if (!custCodes.Any())
-                return new Dictionary<string, string>();
-
-            var sql = "SELECT distinct OLD_CODE as Cust_Code, Cust_Name FROM DATA_CENTER.dbo.SYS_CUST WHERE CUST_TYPE='AIR' AND OLD_CODE > ''";
-            var custs = conn.Query<dynamic>(sql).ToList();
-            return custs.ToDictionary(
-                x => (string)x.Cust_Code,
-                x => (string)x.Cust_Name
-            );
+            return GetAirCustomerNames(custCodes);
         }
 
         private Dictionary<string, string> GetSeaCustNames(List<string> custCodes)
         {
-            if (!custCodes.Any())
-                return new Dictionary<string, string>();
-
-            var sql = "SELECT distinct Cust_Code, Cust_Name FROM DATA_CENTER.dbo.SYS_CUST WHERE CUST_TYPE='SEA'";
-            var custs = conn.Query<dynamic>(sql).ToList();
-            return custs.ToDictionary(
-                x => (string)x.Cust_Code,
-                x => (string)x.Cust_Name
-            );
+            return GetSeaCustomerNames(custCodes);
         }
 
         private Dictionary<string, string> GetAirTransNames(List<string> transNos)
         {
-            if (!transNos.Any())
-                return new Dictionary<string, string>();
-
-            var sql = "SELECT distinct TRANS_NO, TRANS_NAME FROM [jetf].[dbo].customer_master WHERE TRAN_TYPE='空運'";
-            var transList = conn.Query<dynamic>(sql).ToList();
-            return transList
-                .GroupBy(x => (string)x.TRANS_NO)
-                .ToDictionary(
-                    g => g.Key,
-                    g => (string)g.First().TRANS_NAME
-                );
+            return base.GetAirTransNames(transNos);
         }
 
         private void FillCustomerAndTransNames(List<ShipmentInboundRecordModel> data)
@@ -278,58 +291,44 @@ namespace Service.Services.ShipmentInboundRecord
         }
 
         /// <summary>
-        /// 取得儲位歷史紀錄
-        /// </summary>
-        /// <param name="shipmentInboundId">ShipmentInbound 的 Id</param>
-        /// <returns>儲位歷史紀錄列表</returns>
-        public List<ShipmentInboundLocationHistoryModel> GetLocationHistory(int shipmentInboundId)
-        {
-            if (shipmentInboundId <= 0)
-            {
-                return new List<ShipmentInboundLocationHistoryModel>();
-            }
-
-            var sql = @"
-                SELECT 
-                    Id,
-                    ShipmentInboundId,
-                    OldLocationCode,
-                    NewLocationCode,
-                    CreatedOpe,
-                    CreatedTime
-                FROM [jetf].[dbo].[ShipmentInboundLocationHistory]
-                WHERE ShipmentInboundId = @ShipmentInboundId
-                ORDER BY CreatedTime DESC";
-
-            var result = conn.Query<ShipmentInboundLocationHistoryModel>(sql, new { ShipmentInboundId = shipmentInboundId }).ToList();
-
-            return result;
-        }
-
-        /// <summary>
         /// 取得客戶清單
         /// </summary>
         public Dictionary<string,List<SelectListModel>> GetCustList()
         {
-            var sql = @"
-                SELECT * FROM (
-                    SELECT DISTINCT Cust_Type,Cust_Code, Cust_Name FROM DATA_CENTER.dbo.SYS_CUST
-                    WHERE CUST_TYPE='SEA' 
-                    UNION ALL
-                    SELECT DISTINCT Cust_Type,OLD_CODE AS Cust_Code, Cust_Name FROM DATA_CENTER.dbo.SYS_CUST
-                    WHERE CUST_TYPE='AIR' AND OLD_CODE > ''
-                ) a
-                ORDER BY Cust_Code";
+            using (var db = CreateDataCenterDbContext())
+            {
+                var seaData = db.SysCusts
+                    .AsNoTracking()
+                    .Where(x => x.CustType == "SEA")
+                    .Select(x => new ShipmentInboundCustomerModel
+                    {
+                        Cust_Type = x.CustType,
+                        Cust_Code = x.CustCode,
+                        Cust_Name = x.CustName
+                    });
 
-            var data = conn.Query<ShipmentInboundCustomerModel>(sql).ToList();
+                var airData = db.SysCusts
+                    .AsNoTracking()
+                    .Where(x => x.CustType == "AIR" && !string.IsNullOrEmpty(x.OldCode))
+                    .Select(x => new ShipmentInboundCustomerModel
+                    {
+                        Cust_Type = x.CustType,
+                        Cust_Code = x.OldCode,
+                        Cust_Name = x.CustName
+                    });
 
-            return data.GroupBy(r => r.TypeName)
-                            .ToDictionary(g => g.Key, g => g.Select(x => new SelectListModel
-                            {
-                                 Value = x.Cust_Code,
-                                 Text = x.Cust_Name
-                            })
-                            .ToList());
+                var data = seaData
+                    .Concat(airData)
+                    .OrderBy(x => x.Cust_Code)
+                    .ToList();
+
+                return data.GroupBy(r => r.TypeName)
+                    .ToDictionary(g => g.Key, g => g.Select(x => new SelectListModel
+                    {
+                        Value = x.Cust_Code,
+                        Text = x.Cust_Name
+                    }).ToList());
+            }
         }
 
         /// <summary>
@@ -515,40 +514,50 @@ namespace Service.Services.ShipmentInboundRecord
                 throw new ArgumentException("不允許修改此欄位");
             }
 
-            var querySql = $@"
-                SELECT [{request.FieldName}]
-                FROM [jetf].[dbo].[ShipmentInbound]
-                WHERE [Id] = @Id";
-
-            var oldValue = conn.QueryFirstOrDefault<int?>(querySql, new { Id = request.Id });
-
-            if (oldValue == request.NewValue)
+            using (var db = CreateJetfDbContext())
             {
-                return;
+                var entity = db.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
+                if (entity == null)
+                {
+                    throw new ArgumentException("查無資料");
+                }
+
+                int? oldValue;
+                switch (request.FieldName)
+                {
+                    case "Cod":
+                        oldValue = entity.Cod;
+                        entity.Cod = request.NewValue;
+                        break;
+                    case "Tax":
+                        oldValue = entity.Tax;
+                        entity.Tax = request.NewValue;
+                        break;
+                    case "Ccfee":
+                        oldValue = entity.Ccfee;
+                        entity.Ccfee = request.NewValue;
+                        break;
+                    default:
+                        throw new ArgumentException("不允許修改此欄位");
+                }
+
+                if (oldValue == request.NewValue)
+                {
+                    return;
+                }
+
+                db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                {
+                    ShipmentInboundId = request.Id,
+                    FieldName = request.FieldName,
+                    OldValue = oldValue?.ToString(),
+                    NewValue = request.NewValue.ToString(),
+                    EditTime = DateTime.Now,
+                    EditUser = GetUserId()
+                });
+
+                db.SaveChanges();
             }
-
-            var updateSql = $@"
-                UPDATE [jetf].[dbo].[ShipmentInbound]
-                SET [{request.FieldName}] = @NewValue
-                WHERE [Id] = @Id";
-
-            conn.Execute(updateSql, new { Id = request.Id, NewValue = request.NewValue });
-
-            var insertHistorySql = @"
-                INSERT INTO [jetf].[dbo].[ShipmentInboundEditHistory]
-                ([ShipmentInboundId], [FieldName], [OldValue], [NewValue], [EditTime], [EditUser])
-                VALUES
-                (@ShipmentInboundId, @FieldName, @OldValue, @NewValue, @EditTime, @EditUser)";
-
-            conn.Execute(insertHistorySql, new
-            {
-                ShipmentInboundId = request.Id,
-                FieldName = request.FieldName,
-                OldValue = oldValue?.ToString(),
-                NewValue = request.NewValue.ToString(),
-                EditTime = DateTime.Now,
-                EditUser = GetUserId()
-            });
         }
 
         /// <summary>
@@ -561,22 +570,24 @@ namespace Service.Services.ShipmentInboundRecord
                 return new List<ShipmentInboundEditHistoryModel>();
             }
 
-            var sql = @"
-                SELECT 
-                    [Id],
-                    [ShipmentInboundId],
-                    [FieldName],
-                    [OldValue],
-                    [NewValue],
-                    [EditTime],
-                    [EditUser]
-                FROM [jetf].[dbo].[ShipmentInboundEditHistory]
-                WHERE [ShipmentInboundId] = @ShipmentInboundId
-                ORDER BY [EditTime] DESC";
-
-            var result = conn.Query<ShipmentInboundEditHistoryModel>(sql, new { ShipmentInboundId = shipmentInboundId }).ToList();
-
-            return result;
+            using (var db = CreateJetfDbContext())
+            {
+                return db.ShipmentInboundEditHistories
+                    .AsNoTracking()
+                    .Where(x => x.ShipmentInboundId == shipmentInboundId)
+                    .OrderByDescending(x => x.EditTime)
+                    .Select(x => new ShipmentInboundEditHistoryModel
+                    {
+                        Id = x.Id,
+                        ShipmentInboundId = x.ShipmentInboundId,
+                        FieldName = x.FieldName,
+                        OldValue = x.OldValue,
+                        NewValue = x.NewValue,
+                        EditTime = x.EditTime,
+                        EditUser = x.EditUser
+                    })
+                    .ToList();
+            }
         }
     }
 }

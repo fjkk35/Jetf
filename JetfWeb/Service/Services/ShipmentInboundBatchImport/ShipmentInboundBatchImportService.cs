@@ -1,5 +1,4 @@
-﻿using Dapper;
-using NPOI.SS.UserModel;
+﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.EnumTax;
 using Service.Extensions;
@@ -9,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-using System.Data;
+using System.Data.Entity;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -210,24 +209,26 @@ namespace Service.Services.ShipmentInboundBatchImport
             if (trackingNos.Count == 0)
                 return new Dictionary<string, ShipmentOrderData>();
 
-            var sql = @"
-                SELECT * FROM (
-                    SELECT 
-                        JETF_SERIAL as TrackingNo,
-                        IM_ADD as ImporterAddr,
-                        IM_PHONENO as ImporterPhone,
-                        IMPORTER as Importer,
-                        DESPATCH_NAME as CustCode,
-                        TRANS_NAME as TransName,
-                        ROW_NUMBER() OVER (PARTITION BY JETF_SERIAL ORDER BY GW DESC) as RowNum
-                    FROM [DATA_CENTER].[dbo].[SEA_ORDER_ORIGINAL]
-                    WHERE JETF_SERIAL IN @TrackingNos
-                ) AS T
-                WHERE RowNum = 1";
-
-            var data = conn.Query<ShipmentOrderData>(sql, new { TrackingNos = trackingNos });
-            
-            return data.ToDictionary(x => x.TrackingNo, x => x);
+            using (var db = CreateDataCenterDbContext())
+            {
+                return db.SeaOrderOriginals
+                    .AsNoTracking()
+                    .Where(x => trackingNos.Contains(x.JetfSerial))
+                    .GroupBy(x => x.JetfSerial)
+                    .Select(g => g
+                        .OrderByDescending(x => x.Gw ?? 0)
+                        .Select(x => new ShipmentOrderData
+                        {
+                            TrackingNo = x.JetfSerial,
+                            ImporterAddr = x.ImporterAddr,
+                            ImporterPhone = x.ImporterPhone,
+                            Importer = x.Importer,
+                            CustCode = x.CustCode,
+                            TransName = x.TransName
+                        })
+                        .FirstOrDefault())
+                    .ToDictionary(x => x.TrackingNo, x => x);
+            }
         }
 
         /// <summary>
@@ -240,21 +241,23 @@ namespace Service.Services.ShipmentInboundBatchImport
             if (trackingNos.Count == 0)
                 return new Dictionary<string, ShipmentOrderData>();
 
-            var sql = @"
-                SELECT 
-                        TRACKINGNO as TrackingNo,
-                        RECIPIENT as Importer,
-                        RECPHONE as ImporterPhone,
-                        RECADDRESS as ImporterAddr,
-                        DESPATCHNO as CustCode,
-                        CLEARANCEWAREHOUSING as TransNo
-                        FROM [DATA_CENTER].[dbo].[ORIGINALLIST]
-                        WHERE TRACKINGNO IN @TrackingNos
-            ";
-
-            var data = conn.Query<ShipmentOrderData>(sql, new { TrackingNos = trackingNos });
-            
-            return data.GroupBy(x => x.TrackingNo).ToDictionary(x => x.Key, x => x.First());
+            using (var db = CreateDataCenterDbContext())
+            {
+                return db.OriginalLists
+                    .AsNoTracking()
+                    .Where(x => trackingNos.Contains(x.TrackingNo))
+                    .GroupBy(x => x.TrackingNo)
+                    .Select(g => g.Select(x => new ShipmentOrderData
+                    {
+                        TrackingNo = x.TrackingNo,
+                        Importer = x.Importer,
+                        ImporterPhone = x.ImporterPhone,
+                        ImporterAddr = x.ImporterAddr,
+                        CustCode = x.CustCode,
+                        TransNo = x.TransNo.ToString()
+                    }).FirstOrDefault())
+                    .ToDictionary(x => x.TrackingNo, x => x);
+            }
         }
 
         /// <summary>
@@ -267,22 +270,24 @@ namespace Service.Services.ShipmentInboundBatchImport
             if (trackingNos.Count == 0)
                 return new Dictionary<string, ShipmentOrderData>();
 
-            var sql = @"
-                        SELECT 
-                        DELIVERYNO as DeliveryNo,
-                        TRACKINGNO as TrackingNo,
-                        RECIPIENT as Importer,
-                        RECPHONE as ImporterPhone,
-                        RECADDRESS as ImporterAddr,
-                        DESPATCHNO as CustCode,
-                        CLEARANCEWAREHOUSING as TransNo
-                        FROM [DATA_CENTER].[dbo].[ORIGINALLIST]
-                        WHERE DELIVERYNO IN @TrackingNos
-            ";
-
-            var data = conn.Query<ShipmentOrderData>(sql, new { TrackingNos = trackingNos });
-
-            return data.GroupBy(x => x.DeliveryNo).ToDictionary(x => x.Key, x => x.First());
+            using (var db = CreateDataCenterDbContext())
+            {
+                return db.OriginalLists
+                    .AsNoTracking()
+                    .Where(x => trackingNos.Contains(x.DeliveryNo))
+                    .GroupBy(x => x.DeliveryNo)
+                    .Select(g => g.Select(x => new ShipmentOrderData
+                    {
+                        DeliveryNo = x.DeliveryNo,
+                        TrackingNo = x.TrackingNo,
+                        Importer = x.Importer,
+                        ImporterPhone = x.ImporterPhone,
+                        ImporterAddr = x.ImporterAddr,
+                        CustCode = x.CustCode,
+                        TransNo = x.TransNo.ToString()
+                    }).FirstOrDefault())
+                    .ToDictionary(x => x.DeliveryNo, x => x);
+            }
         }
 
         /// <summary>
@@ -295,19 +300,21 @@ namespace Service.Services.ShipmentInboundBatchImport
             if (trackingNos.Count == 0)
                 return new Dictionary<string, ShipmentFeeData>();
 
-            var sql = @"
-                SELECT 
-                    DLV_INV as TrackingNo,
-                    (TAX1 + TAX2) as Tax,
-                    CCFEE as Ccfee,
-                    COD as Cod,
-                    FEE as Fee
-                FROM jetf.dbo.FEE_MASTER 
-                WHERE Download = '1' AND DLV_INV IN @TrackingNos";
-
-            var data = conn.Query<ShipmentFeeData>(sql, new { TrackingNos = trackingNos });
-
-            return data.ToDictionary(x => x.TrackingNo, x => x);
+            using (var db = CreateJetfDbContext())
+            {
+                return db.FeeMasters
+                    .AsNoTracking()
+                    .Where(x => x.Download == "1" && trackingNos.Contains(x.TrackingNo) && x.IncludeTax =="N")
+                    .Select(x => new ShipmentFeeData
+                    {
+                        TrackingNo = x.TrackingNo,
+                        Tax = (x.Tax1 ?? 0) + (x.Tax2 ?? 0),
+                        Ccfee = x.Ccfee,
+                        Cod = x.Cod,
+                        Fee = x.Fee
+                    })
+                    .ToDictionary(x => x.TrackingNo, x => x);
+            }
         }
 
         /// <summary>
@@ -358,20 +365,22 @@ namespace Service.Services.ShipmentInboundBatchImport
 
             var trackingNos = validList.Select(x => x.TrackingNo).Distinct().ToList();
             var threeDaysAgo = DateTime.Now.Date.AddDays(-3);
+            Dictionary<string, List<DateTime?>> existingDict;
 
-            var sql = @"
-                SELECT TrackingNo, OutboundDate
-                FROM ShipmentInbound 
-                WHERE TrackingNo IN @TrackingNos";
-
-            var existingData = conn.Query<dynamic>(sql, new { TrackingNos = trackingNos }).ToList();
-
-            var existingDict = existingData
-                .GroupBy(x => (string)x.TrackingNo)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.Select(x => (DateTime?)x.OutboundDate).ToList()
-                );
+            using (var db = CreateJetfDbContext())
+            {
+                existingDict = db.ShipmentInbounds
+                    .AsNoTracking()
+                    .Where(x => trackingNos.Contains(x.TrackingNo))
+                    .Select(x => new
+                    {
+                        x.TrackingNo,
+                        x.OutboundDate
+                    })
+                    .ToList()
+                    .GroupBy(x => x.TrackingNo)
+                    .ToDictionary(g => g.Key, g => g.Select(x => x.OutboundDate).ToList());
+            }
 
             foreach (var shipment in validList)
             {
@@ -431,31 +440,49 @@ namespace Service.Services.ShipmentInboundBatchImport
         /// <param name="shipmentInboundList">貨件入庫資料列表</param>
         private void InsertShipmentInbound(List<ShipmentInboundModel> shipmentInboundList)
         {
-            var sql = @"
-                INSERT INTO ShipmentInbound 
-                (DataType, InboundDate, TrackingNo, SeqNo, LocationCode, SourceType, ReturnTrackingNo, Size, 
-                 CustCode, TransNo, TransName, Importer, ImporterPhone, ImporterAddr, 
-                 Tax, Ccfee, Cod, Fee, ReturnReason,IsOrderOriginal, UploadOpe, CreatedTime)
-                VALUES 
-                (@DataType, @InboundDate, @TrackingNo, @SeqNo, @LocationCode, @SourceType, @ReturnTrackingNo, @Size,
-                 @CustCode, @TransNo, @TransName, @Importer, @ImporterPhone, @ImporterAddr,
-                 @Tax, @Ccfee, @Cod, @Fee, @ReturnReason,@IsOrderOriginal, @UploadOpe, GETDATE())";
-
-            conn.Open();
-            using (var transaction = conn.BeginTransaction())
+            using (var db = CreateJetfDbContext())
             {
-                try
+                using (var transaction = db.Database.BeginTransaction())
                 {
-                    conn.Execute(sql, shipmentInboundList, transaction);
-                    transaction.Commit();
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
+                    try
+                    {
+                        var entities = shipmentInboundList.Select(x => new Data.ShipmentInboundEntity
+                        {
+                            DataType = x.DataType,
+                            InboundDate = x.InboundDate,
+                            TrackingNo = x.TrackingNo,
+                            SeqNo = x.SeqNo,
+                            LocationCode = x.LocationCode,
+                            SourceType = byte.TryParse(x.SourceType, out var sourceType) ? (byte?)sourceType : null,
+                            ReturnTrackingNo = x.ReturnTrackingNo,
+                            Size = x.Size,
+                            CustCode = x.CustCode,
+                            TransNo = x.TransNo,
+                            TransName = x.TransName,
+                            Importer = x.Importer,
+                            ImporterPhone = x.ImporterPhone,
+                            ImporterAddr = x.ImporterAddr,
+                            Tax = x.Tax,
+                            Ccfee = x.Ccfee,
+                            Cod = x.Cod,
+                            Fee = x.Fee,
+                            ReturnReason = x.ReturnReason,
+                            IsOrderOriginal = x.IsOrderOriginal,
+                            UploadOpe = x.UploadOpe,
+                            CreatedTime = DateTime.Now
+                        }).ToList();
+
+                        db.ShipmentInbounds.AddRange(entities);
+                        db.SaveChanges();
+                        transaction.Commit();
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
                 }
             }
-            conn.Close();
         }
     }
 }

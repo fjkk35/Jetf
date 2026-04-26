@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Dapper;
+using Service.Extensions;
 using Service.Services.ShipmentInboundLocationTransfer.Domain;
 
 namespace Service.Services.ShipmentInboundLocationTransfer
@@ -17,38 +16,31 @@ namespace Service.Services.ShipmentInboundLocationTransfer
         /// <returns>儲位資料列表</returns>
         public LocationTransferResponse GetData(LocationTransferRequest request)
         {
-            var sql = @"
-                        SELECT 
-                            Id,
-                            TrackingNo,
-                            LocationCode
-                        FROM [jetf].[dbo].[ShipmentInbound]
-                        WHERE OutboundDate IS NULL
-                    ";
-
-            var parameters = new DynamicParameters();
-
-            if (!string.IsNullOrWhiteSpace(request.LocationCode))
+            using (var db = CreateJetfDbContext())
             {
-                sql += " AND LocationCode = @LocationCode";
-                parameters.Add("LocationCode", request.LocationCode);
+                var query = db.ShipmentInbounds
+                    .AsNoTracking()
+                    .Where(x => !x.OutboundDate.HasValue);
+
+                query = query.WhereIf(!string.IsNullOrWhiteSpace(request.LocationCode), x => x.LocationCode == request.LocationCode);
+                query = query.WhereIf(!string.IsNullOrWhiteSpace(request.TrackingNo), x => x.TrackingNo == request.TrackingNo);
+
+                var data = query
+                    .OrderBy(x => x.Id)
+                    .Select(x => new LocationTransferModel
+                    {
+                        Id = x.Id,
+                        TrackingNo = x.TrackingNo,
+                        LocationCode = x.LocationCode
+                    })
+                    .ToList();
+
+                return new LocationTransferResponse
+                {
+                    Data = data,
+                    TotalCount = data.Count
+                };
             }
-
-            if (!string.IsNullOrWhiteSpace(request.TrackingNo))
-            {
-                sql += " AND TrackingNo = @TrackingNo";
-                parameters.Add("TrackingNo", request.TrackingNo);
-            }
-
-            sql += " ORDER BY Id";
-
-            var data = conn.Query<LocationTransferModel>(sql, parameters).ToList();
-
-            return new LocationTransferResponse
-            {
-                Data = data,
-                TotalCount = data.Count
-            };
         }
 
         /// <summary>
@@ -69,64 +61,43 @@ namespace Service.Services.ShipmentInboundLocationTransfer
 
             var userId = GetUserId();
 
-            var selectSql = @"
-                SELECT 
-                    Id,
-                    LocationCode
-                FROM [jetf].[dbo].[ShipmentInbound]
-                WHERE Id IN @Ids";
-
-            var existingData = conn.Query<LocationTransferModel>(selectSql, new { Ids = request.Ids }).ToList();
-
-            if (existingData.Count == 0)
+            using (var db = CreateJetfDbContext())
             {
-                throw new Exception("查無資料");
-            }
-
-            var updateSql = @"
-                UPDATE [jetf].[dbo].[ShipmentInbound]
-                SET LocationCode = @NewLocationCode
-                WHERE Id = @Id";
-
-            var insertHistorySql = @"
-                INSERT INTO [jetf].[dbo].[ShipmentInboundLocationHistory]
-                (ShipmentInboundId, OldLocationCode, NewLocationCode, CreatedOpe, CreatedTime)
-                VALUES
-                (@ShipmentInboundId, @OldLocationCode, @NewLocationCode, @CreatedOpe, @CreatedTime)";
-
-            conn.Open();
-            using (var transaction = conn.BeginTransaction())
-            {
-                try
+                using (var transaction = db.Database.BeginTransaction())
                 {
-                    foreach (var item in existingData)
+                    try
                     {
-                        conn.Execute(updateSql, new
-                        {
-                            Id = item.Id,
-                            NewLocationCode = request.NewLocationCode
-                        }, transaction);
+                        var existingData = db.ShipmentInbounds
+                            .Where(x => request.Ids.Contains(x.Id))
+                            .ToList();
 
-                        conn.Execute(insertHistorySql, new
+                        if (existingData.Count == 0)
                         {
-                            ShipmentInboundId = item.Id,
-                            OldLocationCode = item.LocationCode,
-                            NewLocationCode = request.NewLocationCode,
-                            CreatedOpe = GetUserId(),
-                            CreatedTime = DateTime.Now
-                        }, transaction);
+                            throw new Exception("查無資料");
+                        }
+
+                        foreach (var item in existingData)
+                        {
+                            db.ShipmentInboundLocationHistories.Add(new Data.ShipmentInboundLocationHistoryEntity
+                            {
+                                ShipmentInboundId = item.Id,
+                                OldLocationCode = item.LocationCode,
+                                NewLocationCode = request.NewLocationCode,
+                                CreatedOpe = userId,
+                                CreatedTime = DateTime.Now
+                            });
+
+                            item.LocationCode = request.NewLocationCode;
+                        }
+
+                        db.SaveChanges();
+                        transaction.Commit();
                     }
-
-                    transaction.Commit();
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
-                }
-                finally
-                {
-                    conn.Close();
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
                 }
             }
         }

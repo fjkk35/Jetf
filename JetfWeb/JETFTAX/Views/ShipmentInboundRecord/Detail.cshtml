@@ -1,5 +1,5 @@
-@{
-    ViewBag.Title = "≥f•Û∏‘≤”∏ÍÆ∆";
+Ôªø@{
+    ViewBag.Title = "Ë≤®‰ª∂Ë©≥Á¥∞Ë≥áÊñô";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -164,6 +164,38 @@
         border-collapse: collapse;
     }
 
+    .exception-gallery {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .exception-image-card {
+        width: 220px;
+    }
+
+    .exception-image-link {
+        display: block;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        overflow: hidden;
+        background-color: #fff;
+    }
+
+    .exception-image {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        display: block;
+        background-color: #f8f9fa;
+    }
+
+    .exception-image-path {
+        margin-top: 8px;
+        font-size: 0.95rem;
+        word-break: break-all;
+    }
+
         .history-table th {
             background-color: #f8f9fa;
             padding: 10px;
@@ -190,45 +222,45 @@
     <div class="row">
         <div class="col-12">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span class="headtype">≥f•Û∏‘≤”∏ÍÆ∆</span>
+                <span class="headtype">Ë≤®‰ª∂Ë©≥Á¥∞Ë≥áÊñô</span>
                 <button class="edit-history-btn" ng-click="showEditHistory()">
-                    <i class="fa fa-history"></i>ΩsøË¨ˆø˝
+                    <i class="fa fa-history"></i>Á∑®ËºØÁ¥ÄÈåÑ
                 </button>
             </div>
             <hr />
 
-            <!-- ∏¸§J§§¥£•‹ -->
+            <!-- ËºâÂÖ•‰∏≠ -->
             <div ng-show="loading" class="text-center">
                 <i class="fa fa-spinner fa-spin fa-3x"></i>
-                <p>∏¸§J§§...</p>
+                <p>ËºâÂÖ•‰∏≠...</p>
             </div>
 
-            <!-- ø˘ª~∞TÆß -->
+            <!-- ÈåØË™§Ë®äÊÅØ -->
             <div ng-show="errorMessage && !loading" class="alert alert-danger">
                 <i class="fa fa-exclamation-triangle mr-2"></i>{{errorMessage}}
             </div>
 
-            <!-- ∏‘≤”∏ÍÆ∆ -->
+            <!-- Ë©≥Á¥∞Ë≥áÊñô -->
             <div ng-show="data && !loading" class="detail-container">
-                <!-- ∞Ú•ª∏ÍÆ∆ -->
+                <!-- Âü∫Êú¨Ë≥áÊñô -->
                 <div class="detail-section">
                     <h4 class="section-title">
-                        <i class="fa fa-info-circle mr-2"></i>∞Ú•ª∏ÍÆ∆
+                        <i class="fa fa-info-circle mr-2"></i>Âü∫Êú¨Ë≥áÊñô
                     </h4>
 
                     <div class="detail-grid">
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">≥Ê∏π°G</div>
+                                <div class="detail-label">ÂñÆËôüÔºö</div>
                                 <div class="detail-value detail-value-highlight">{{data.TrackingNo}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">∂i§f§Ë¶°°G</div>
+                                <div class="detail-label">ÈÄ≤Âè£ÊñπÂºèÔºö</div>
                                 <div class="detail-value">
-                                    <span class="badge badge-custom" ng-class="data.DataType == 'Æ¸πB' ? 'badge-primary' : 'badge-info'">
+                                    <span class="badge badge-custom" ng-class="data.DataType == 'Êµ∑ÈÅã' ? 'badge-primary' : 'badge-info'">
                                         {{data.DataType}}
                                     </span>
                                 </div>
@@ -237,14 +269,14 @@
 
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">§JÆw§È¥¡°G</div>
+                                <div class="detail-label">ÂÖ•Â∫´Êó•ÊúüÔºö</div>
                                 <div class="detail-value">{{data.InboundDate | customDate}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">´»§·°G</div>
+                                <div class="detail-label">ÂÆ¢Êà∂Ôºö</div>
                                 <div class="detail-value">
                                     {{data.CustName || data.CustCode}}
                                     <span ng-if="data.CustCode && data.CustName" class="text-muted">({{data.CustCode}})</span>
@@ -254,7 +286,7 @@
 
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">¨£•Û§Ω•q°G</div>
+                                <div class="detail-label">Ê¥æ‰ª∂ÂÖ¨Âè∏Ôºö</div>
                                 <div class="detail-value">
                                     {{data.TransName || data.TransNo}}
                                     <span ng-if="data.TransNo && data.TransName" class="text-muted">({{data.TransNo}})</span>
@@ -264,7 +296,7 @@
 
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">≥f•Û®”∑Ω°G</div>
+                                <div class="detail-label">Ë≤®‰ª∂‰æÜÊ∫êÔºö</div>
                                 <div class="detail-value">
                                     <span class="badge badge-custom badge-secondary">{{data.SourceTypeName}}</span>
                                 </div>
@@ -273,14 +305,14 @@
 
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">¨y§Ù∏π°G</div>
+                                <div class="detail-label">ÊµÅÊ∞¥Á∑®ËôüÔºö</div>
                                 <div class="detail-value">{{data.SeqNo}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">¿x¶Ï°G</div>
+                                <div class="detail-label">ÂÑ≤‰ΩçÔºö</div>
                                 <div class="detail-value">
                                     <span class="badge badge-custom badge-warning">{{data.LocationCode}}</span>
                                 </div>
@@ -288,23 +320,56 @@
                         </div>
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">∞h•Û≠Ï¶]°G</div>
+                                <div class="detail-label">ÈÄÄ‰ª∂ÂéüÂõ†Ôºö</div>
                                 <div class="detail-value">{{data.ReturnReason}}</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ≥B≤z∏Í∞T -->
+                <div class="detail-section" ng-if="data.ExceptionReason || (data.ExceptionFilePaths && data.ExceptionFilePaths.length > 0)">
+                    <h4 class="section-title">
+                        <i class="fa fa-exclamation-circle mr-2"></i>Áï∞Â∏∏Ë≥áË®ä
+                    </h4>
+
+                    <div class="detail-grid">
+                        <div class="detail-col-full" ng-if="data.ExceptionReason">
+                            <div class="detail-row">
+                                <div class="detail-label">Áï∞Â∏∏ÂéüÂõ†Ôºö</div>
+                                <div class="detail-value">{{data.ExceptionReason}}</div>
+                            </div>
+                        </div>
+
+                        <div class="detail-col-full" ng-if="data.ExceptionFilePaths && data.ExceptionFilePaths.length > 0">
+                            <div class="detail-row" style="align-items: flex-start;">
+                                <div class="detail-label">ÂúñÁâáÔºö</div>
+                                <div class="detail-value">
+                                    <div class="exception-gallery">
+                                        <div class="exception-image-card" ng-repeat="filePath in data.ExceptionFilePaths track by $index">
+                                            <a class="exception-image-link" ng-href="{{filePath}}" target="_blank" rel="noopener noreferrer">
+                                                <img class="exception-image" ng-src="{{filePath}}" alt="Áï∞Â∏∏ÂúñÁâá {{$index + 1}}" />
+                                            </a>
+                                            <div class="exception-image-path">
+                                                <a ng-href="{{filePath}}" target="_blank" rel="noopener noreferrer">{{filePath}}</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ËôïÁêÜË≥áË®ä -->
                 <div class="detail-section">
                     <h4 class="section-title">
-                        <i class="fa fa-cogs mr-2"></i>≥B≤z∏Í∞T
+                        <i class="fa fa-cogs mr-2"></i>ËôïÁêÜË≥áË®ä
                     </h4>
                     <div class="detail-grid">
-                        <!-- ≥B≤z§Ë¶°°B´»™A≥B≤z§È¥¡°B´»™A≥B≤z§H -->
+                        <!-- ËôïÁêÜÊñπÂºè„ÄÅÂÆ¢ÊúçËôïÁêÜÊôÇÈñì„ÄÅÂÆ¢ÊúçËôïÁêÜ‰∫∫ -->
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">≥B≤z§Ë¶°°G</div>
+                                <div class="detail-label">ËôïÁêÜÊñπÂºèÔºö</div>
                                 <div class="detail-value">
                                     <span class="badge badge-custom badge-success">{{data.ProcessTypeName}}</span>
                                 </div>
@@ -313,138 +378,138 @@
 
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">´»™A≥B≤z§È¥¡°G</div>
+                                <div class="detail-label">ÂÆ¢ÊúçËôïÁêÜÊôÇÈñìÔºö</div>
                                 <div class="detail-value">{{data.ProcessTime | customDateTime}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">´»™A≥B≤z§H°G</div>
+                                <div class="detail-label">ÂÆ¢ÊúçËôïÁêÜ‰∫∫Ôºö</div>
                                 <div class="detail-value">{{data.ProcessOpe}}</div>
                             </div>
                         </div>
 
-                        <!-- ∂}∑s≥Ê∏π≠´•X (1) ©Œ º»¶s∏ÍÆ∆ (9) -->
+                        <!-- ÈñãÊñ∞ÂñÆËôüÈáçÂá∫ (1) Ëàá Êö´Â≠òË≥áÊñô (9) -->
                         <div class="detail-col" ng-if="data.ProcessType == 1 || data.ProcessType == 9">
                             <div class="detail-row">
-                                <div class="detail-label">≠´•X¨£•Û§Ω•q°G</div>
+                                <div class="detail-label">ÈáçÂá∫Ê¥æ‰ª∂ÂÖ¨Âè∏Ôºö</div>
                                 <div class="detail-value">{{data.ProcessTransName}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col" ng-if="data.ProcessType == 1 || data.ProcessType == 9">
                             <div class="detail-row">
-                                <div class="detail-label">¶¨•Û§H°G</div>
+                                <div class="detail-label">Êî∂‰ª∂‰∫∫Ôºö</div>
                                 <div class="detail-value">{{data.ProcessImporter}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col" ng-if="data.ProcessType == 1 || data.ProcessType == 9">
                             <div class="detail-row">
-                                <div class="detail-label">πq∏‹°G</div>
+                                <div class="detail-label">ÈõªË©±Ôºö</div>
                                 <div class="detail-value">{{data.ProcessImporterPhone }}</div>
                             </div>
                         </div>
 
                         <div class="detail-col-full" ng-if="(data.ProcessType == 1 || data.ProcessType == 9) && data.ProcessTransNo != 3">
                             <div class="detail-row">
-                                <div class="detail-label">¶v∞t¶aß}°G</div>
+                                <div class="detail-label">ÂØÑÈÄÅÂú∞ÂùÄÔºö</div>
                                 <div class="detail-value">{{data.ProcessImporterAddr}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col" ng-if="(data.ProcessType == 1 || data.ProcessType == 9) && data.ProcessTransNo == 3">
                             <div class="detail-row">
-                                <div class="detail-label">™˘•´©±∏π°G</div>
+                                <div class="detail-label">ÈñÄÂ∏ÇÂ∫óËôüÔºö</div>
                                 <div class="detail-value">{{data.StoreCode}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col" ng-if="(data.ProcessType == 1 || data.ProcessType == 9) && data.ProcessTransNo == 3">
                             <div class="detail-row">
-                                <div class="detail-label">™˘•´¶W∫Ÿ°G</div>
+                                <div class="detail-label">ÈñÄÂ∏ÇÂêçÁ®±Ôºö</div>
                                 <div class="detail-value">{{data.StoreName }}</div>
                             </div>
                         </div>
 
                         <div class="detail-col" ng-if="data.ProcessType == 1 || data.ProcessType == 9">
                             <div class="detail-row">
-                                <div class="detail-label">≠´•XπB∂O§‰•I§Ë°G</div>
+                                <div class="detail-label">ÈáçÂá∫ÈÅãË≤ªÊîØ‰ªòÊñπÔºö</div>
                                 <div class="detail-value">{{data.FreightPayerName }}</div>
                             </div>
                         </div>
 
-                        <!-- ¶€¥£ (4) -->
+                        <!-- Ëá™Âèñ (4) -->
                         <div class="detail-col" ng-if="data.ProcessType == 4">
                             <div class="detail-row">
-                                <div class="detail-label">¶¨•Û§H°G</div>
+                                <div class="detail-label">Êî∂‰ª∂‰∫∫Ôºö</div>
                                 <div class="detail-value">{{data.ProcessImporter}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col" ng-if="data.ProcessType == 4">
                             <div class="detail-row">
-                                <div class="detail-label">πq∏‹°G</div>
+                                <div class="detail-label">ÈõªË©±Ôºö</div>
                                 <div class="detail-value">{{data.ProcessImporterPhone}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col" ng-if="data.ProcessType == 4">
                             <div class="detail-row">
-                                <div class="detail-label">πw≠p¶€®˙§È¥¡°G</div>
+                                <div class="detail-label">È†êË®àËá™ÂèñÊó•ÊúüÔºö</div>
                                 <div class="detail-value">{{data.PickupTime | customDate}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col" ng-if="data.ProcessType == 4">
                             <div class="detail-row">
-                                <div class="detail-label">®ÆµP∏πΩX°G</div>
+                                <div class="detail-label">ËªäÁâåËôüÁ¢ºÔºö</div>
                                 <div class="detail-value">{{data.CarNo}}</div>
                             </div>
                         </div>
 
-                        <!-- ≥∆µ˘ (©“¶≥√˛´¨≥£≈„•‹) -->
+                        <!-- ÂÇôË®ªÔºàÊâÄÊúâËôïÁêÜÊñπÂºèÈ°ØÁ§∫Ôºâ -->
                         <div class="detail-col-full">
                             <div class="detail-row">
-                                <div class="detail-label">≥∆µ˘°G</div>
+                                <div class="detail-label">ÂÇôË®ªÔºö</div>
                                 <div class="detail-value">{{data.Remark}}</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- •XÆw∏Í∞T -->
+                <!-- Âá∫Â∫´Ë≥áË®ä -->
                 <div class="detail-section">
                     <h4 class="section-title">
-                        <i class="fa fa-truck mr-2"></i>•XÆw∏Í∞T
+                        <i class="fa fa-truck mr-2"></i>Âá∫Â∫´Ë≥áË®ä
                     </h4>
 
                     <div class="detail-grid">
                         <div class="detail-col" ng-if="data.OutboundDate">
                             <div class="detail-row">
-                                <div class="detail-label">•XÆw§È¥¡°G</div>
+                                <div class="detail-label">Âá∫Â∫´Êó•ÊúüÔºö</div>
                                 <div class="detail-value">{{data.OutboundDate | customDate}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col" ng-if="data.OutboundTime">
                             <div class="detail-row">
-                                <div class="detail-label">•XÆwæﬁß@§È°G</div>
+                                <div class="detail-label">Âá∫Â∫´Êìç‰ΩúÊó•Ôºö</div>
                                 <div class="detail-value">{{data.OutboundTime | customDateTime}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col" ng-if="data.OutboundOpe">
                             <div class="detail-row">
-                                <div class="detail-label">•XÆwæﬁß@§H°G</div>
+                                <div class="detail-label">Âá∫Â∫´Êìç‰Ωú‰∫∫Ôºö</div>
                                 <div class="detail-value">{{data.OutboundOpe}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col" ng-if="data.OutboundTrackingNo">
                             <div class="detail-row">
-                                <div class="detail-label">≠´•X≥Ê∏π°G</div>
+                                <div class="detail-label">Âá∫Â∫´ÂñÆËôüÔºö</div>
                                 <div class="detail-value">
                                     <span class="badge badge-custom badge-info">{{data.OutboundTrackingNo}}</span>
                                 </div>
@@ -453,16 +518,16 @@
                     </div>
                 </div>
 
-                <!-- ≠‹Æw™¨∫A -->
+                <!-- ÂÄâÂ∫´ÁãÄÊÖã -->
                 <div class="detail-section">
                     <h4 class="section-title">
-                        <i class="fa fa-warehouse mr-2"></i>≠‹Æw™¨∫A
+                        <i class="fa fa-warehouse mr-2"></i>ÂÄâÂ∫´ÁãÄÊÖã
                     </h4>
 
                     <div class="detail-grid">
                         <div class="detail-col" ng-if="data.WarehouseProcessType != null">
                             <div class="detail-row">
-                                <div class="detail-label">≠‹Æw™¨∫A°G</div>
+                                <div class="detail-label">ÂÄâÂ∫´ÁãÄÊÖãÔºö</div>
                                 <div class="detail-value">
                                     <span class="badge badge-custom badge-dark">{{data.WarehouseProcessName}}</span>
                                 </div>
@@ -471,30 +536,30 @@
 
                         <div class="detail-col" ng-if="data.WarehouseProcessTime">
                             <div class="detail-row">
-                                <div class="detail-label">≠‹Æw™¨∫Aæﬁß@§È°G</div>
+                                <div class="detail-label">ÂÄâÂ∫´ÁãÄÊÖãÊìç‰ΩúÊó•Ôºö</div>
                                 <div class="detail-value">{{data.WarehouseProcessTime | customDateTime}}</div>
                             </div>
                         </div>
 
                         <div class="detail-col" ng-if="data.WarehouseProcessOpe">
                             <div class="detail-row">
-                                <div class="detail-label">≠‹Æw™¨∫Aæﬁß@§H°G</div>
+                                <div class="detail-label">ÂÄâÂ∫´ÁãÄÊÖãÊìç‰Ωú‰∫∫Ôºö</div>
                                 <div class="detail-value">{{data.WarehouseProcessOpe}}</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ∂O•Œ∏Í∞T -->
+                <!-- Ë≤ªÁî®Ë≥áË®ä -->
                 <div class="detail-section">
                     <h4 class="section-title">
-                        <i class="fa fa-dollar-sign mr-2"></i>∂O•Œ∏Í∞T
+                        <i class="fa fa-dollar-sign mr-2"></i>Ë≤ªÁî®Ë≥áË®ä
                     </h4>
 
                     <div class="detail-grid" ng-if="data.FreightPayerNo != null">
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">πB∂O§‰•I§Ë°G</div>
+                                <div class="detail-label">ÈÅãË≤ªÊîØ‰ªòÊñπÔºö</div>
                                 <div class="detail-value">
                                     <span class="badge badge-custom badge-primary">{{data.FreightPayerName}}</span>
                                 </div>
@@ -505,9 +570,9 @@
                     <div class="detail-grid">
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">®Ï•I¥⁄°G</div>
+                                <div class="detail-label">Âà∞‰ªòÊ¨æÔºö</div>
                                 <div class="detail-value editable-field" ng-click="editAmount('Cod', data.Cod)">
-                                    {{data.Cod | number}} §∏
+                                    {{data.Cod | number}} ÂÖÉ
                                     <i class="fa fa-edit"></i>
                                 </div>
                             </div>
@@ -515,16 +580,16 @@
 
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">πB∂O°G</div>
-                                <div class="detail-value">{{data.FreightFee | number}} §∏</div>
+                                <div class="detail-label">ÈÅãË≤ªÔºö</div>
+                                <div class="detail-value">{{data.FreightFee | number}} ÂÖÉ</div>
                             </div>
                         </div>
 
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">µ|™˜°G</div>
+                                <div class="detail-label">Á®ÖÈáëÔºö</div>
                                 <div class="detail-value editable-field" ng-click="editAmount('Tax', data.Tax)">
-                                    {{data.Tax | number}} §∏
+                                    {{data.Tax | number}} ÂÖÉ
                                     <i class="fa fa-edit"></i>
                                 </div>
                             </div>
@@ -532,9 +597,9 @@
 
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">≥¯√ˆ∂O°G</div>
+                                <div class="detail-label">Â†±ÈóúË≤ªÔºö</div>
                                 <div class="detail-value editable-field" ng-click="editAmount('Ccfee', data.Ccfee)">
-                                    {{data.Ccfee | number}} §∏
+                                    {{data.Ccfee | number}} ÂÖÉ
                                     <i class="fa fa-edit"></i>
                                 </div>
                             </div>
@@ -542,16 +607,16 @@
 
                         <div class="detail-col">
                             <div class="detail-row">
-                                <div class="detail-label">§‚ƒÚ∂O°G</div>
-                                <div class="detail-value">{{data.DisplayFee | number}} §∏</div>
+                                <div class="detail-label">ÊâãÁ∫åË≤ªÔºö</div>
+                                <div class="detail-value">{{data.DisplayFee | number}} ÂÖÉ</div>
                             </div>
                         </div>
 
                         <div class="detail-col-full">
                             <div class="amount-section">
                                 <div class="amount-row">
-                                    <span class="amount-label">•N¶¨¥⁄¡`™˜√B°G</span>
-                                    <span class="amount-value">{{data.TotalAmount | number}} §∏</span>
+                                    <span class="amount-label">Á∏ΩÈáëÈ°çÔºö</span>
+                                    <span class="amount-value">{{data.TotalAmount | number}} ÂÖÉ</span>
                                 </div>
                             </div>
                         </div>
@@ -561,36 +626,36 @@
         </div>
     </div>
 
-    <!-- ΩsøË™˜√Bºuµ° -->
+    <!-- Á∑®ËºØÈáëÈ°çË¶ñÁ™ó -->
     <div class="modal fade" id="editAmountModal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">ΩsøË {{editFieldNameText}}</h5>
+                    <h5 class="modal-title">Á∑®ËºØ {{editFieldNameText}}</h5>
                     <button type="button" class="close" data-dismiss="modal">
                         <span>&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label>Ω–øÈ§J∑s™∫™˜√B°G</label>
+                        <label>Ë´ãËº∏ÂÖ•Êñ∞ÁöÑÈáëÈ°çÔºö</label>
                         <input type="number" class="form-control" ng-model="newAmount" min="0" />
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">®˙Æ¯</button>
-                    <button type="button" class="btn btn-primary" ng-click="saveAmount()">ΩT©w</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">ÂèñÊ∂à</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveAmount()">Á¢∫ÂÆö</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ΩsøË¨ˆø˝ºuµ° -->
+    <!-- Á∑®ËºØÁ¥ÄÈåÑË¶ñÁ™ó -->
     <div class="modal fade" id="editHistoryModal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">ΩsøË¨ˆø˝</h5>
+                    <h5 class="modal-title">Á∑®ËºØÁ¥ÄÈåÑ</h5>
                     <button type="button" class="close" data-dismiss="modal">
                         <span>&times;</span>
                     </button>
@@ -599,11 +664,11 @@
                     <table class="history-table" ng-if="historyData.length > 0">
                         <thead>
                             <tr>
-                                <th>ƒÊ¶Ï¶W∫Ÿ</th>
-                                <th>¬¬≠»</th>
-                                <th>∑s≠»</th>
-                                <th>ΩsøËÆ…∂°</th>
-                                <th>ΩsøË§H≠˚</th>
+                                <th>Ê¨Ñ‰ΩçÂêçÁ®±</th>
+                                <th>ËàäÂÄº</th>
+                                <th>Êñ∞ÂÄº</th>
+                                <th>Á∑®ËºØÊôÇÈñì</th>
+                                <th>Á∑®ËºØ‰∫∫Âì°</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -617,11 +682,11 @@
                         </tbody>
                     </table>
                     <div ng-if="historyData.length === 0" class="text-center text-muted py-4">
-                        º»µLΩsøË¨ˆø˝
+                        ÁõÆÂâçÁÑ°Á∑®ËºØÁ¥ÄÈåÑ
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">√ˆ≥¨</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">ÈóúÈñâ</button>
                 </div>
             </div>
         </div>

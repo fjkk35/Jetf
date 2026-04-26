@@ -1,6 +1,7 @@
-﻿using Service.EnumTax;
+using Service.EnumTax;
 using Service.Extensions;
 using System;
+using System.Collections.Generic;
 
 namespace Service.Services.ShipmentInboundRecord.Domain
 {
@@ -237,5 +238,20 @@ namespace Service.Services.ShipmentInboundRecord.Domain
                 return Tax + Ccfee + Cod + Fee;
             }
         }
+
+        /// <summary>
+        /// 明細頁顯示的手續費。
+        /// </summary>
+        public int DisplayFee => Fee;
+
+        /// <summary>
+        /// 最新異常原因。
+        /// </summary>
+        public string ExceptionReason { get; set; }
+
+        /// <summary>
+        /// 異常圖片列表。
+        /// </summary>
+        public List<string> ExceptionFilePaths { get; set; } = new List<string>();
     }
 }

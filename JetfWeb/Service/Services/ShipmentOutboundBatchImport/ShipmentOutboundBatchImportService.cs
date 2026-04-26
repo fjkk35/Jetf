@@ -1,4 +1,3 @@
-﻿using Dapper;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.EnumTax;
@@ -7,6 +6,7 @@ using Service.Models;
 using Service.Services.ShipmentOutboundBatchImport.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.IO;
 using System.Linq;
 
@@ -149,15 +149,20 @@ namespace Service.Services.ShipmentOutboundBatchImport
                 return;
 
             var trackingNos = validList.Select(x => x.TrackingNo).Distinct().ToList();
+            Dictionary<string, ShipmentInboundProcessType> existingDict;
 
-            var sql = @"
-                SELECT TrackingNo, ProcessType 
-                FROM [jetf].[dbo].[ShipmentInbound]
-                WHERE OutboundDate IS NULL AND TrackingNo IN @TrackingNos";
-
-            var existingData = conn.Query<ShipmentOutboundModel>(sql, new { TrackingNos = trackingNos }).ToList();
-
-            var existingDict = existingData.ToDictionary(x => x.TrackingNo, x => x.ProcessType);
+            using (var db = CreateJetfDbContext())
+            {
+                existingDict = db.ShipmentInbounds
+                    .AsNoTracking()
+                    .Where(x => !x.OutboundDate.HasValue && trackingNos.Contains(x.TrackingNo) && x.ProcessType.HasValue)
+                    .Select(x => new
+                    {
+                        x.TrackingNo,
+                        ProcessType = (ShipmentInboundProcessType)x.ProcessType.Value
+                    })
+                    .ToDictionary(x => x.TrackingNo, x => x.ProcessType);
+            }
 
             foreach (var shipment in validList)
             {
@@ -202,15 +207,6 @@ namespace Service.Services.ShipmentOutboundBatchImport
         private void UpdateShipmentOutbound(List<ShipmentOutboundModel> shipmentOutboundList)
         {
             var trackingNos = shipmentOutboundList.Select(x => x.TrackingNo).Distinct().ToList();
-
-            var getIdSql = @"
-                SELECT Id, TrackingNo
-                FROM [jetf].[dbo].[ShipmentInbound]
-                WHERE TrackingNo IN @TrackingNos AND OutboundDate IS NULL";
-
-            var shipmentInboundIds = conn.Query<dynamic>(getIdSql, new { TrackingNos = trackingNos })
-                .ToDictionary(x => (string)x.TrackingNo, x => (int)x.Id);
-
             var updateSql = @"
                 UPDATE [jetf].[dbo].[ShipmentInbound]
                 SET OutboundDate = @OutboundDate,
@@ -230,40 +226,53 @@ namespace Service.Services.ShipmentOutboundBatchImport
 
             var userId = GetUserId();
 
-            conn.Open();
-            using (var transaction = conn.BeginTransaction())
+            using (var db = CreateJetfDbContext())
             {
-                try
+                using (var transaction = db.Database.BeginTransaction())
                 {
-                    conn.Execute(updateSql, shipmentOutboundList, transaction);
-
-                    foreach (var shipment in shipmentOutboundList)
+                    try
                     {
-                        if (shipmentInboundIds.ContainsKey(shipment.TrackingNo))
-                        {
-                            var shipmentInboundId = shipmentInboundIds[shipment.TrackingNo];
+                        var shipmentInboundIds = db.ShipmentInbounds
+                            .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
+                            .ToDictionary(x => x.TrackingNo, x => x);
 
-                            conn.Execute(insertHistorySql, new
+                        foreach (var shipment in shipmentOutboundList)
+                        {
+                            if (!shipmentInboundIds.ContainsKey(shipment.TrackingNo))
                             {
-                                ShipmentInboundId = shipmentInboundId,
+                                continue;
+                            }
+
+                            var entity = shipmentInboundIds[shipment.TrackingNo];
+                            entity.OutboundDate = shipment.OutboundDate;
+                            entity.OutboundTrackingNo = shipment.OutboundTrackingNo;
+                            entity.OutboundTime = DateTime.Now;
+                            entity.OutboundOpe = shipment.OutboundOpe;
+                            entity.WarehouseProcessType = 1;
+                            entity.WarehouseProcessTime = DateTime.Now;
+                            entity.WarehouseProcessOpe = shipment.OutboundOpe;
+
+                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                            {
+                                ShipmentInboundId = entity.Id,
                                 FieldName = "出庫日期",
                                 OldValue = string.Empty,
                                 NewValue = shipment.OutboundDate.ToString("yyyy/MM/dd"),
                                 EditTime = DateTime.Now,
                                 EditUser = userId
-                            }, transaction);
+                            });
                         }
-                    }
 
-                    transaction.Commit();
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
+                        db.SaveChanges();
+                        transaction.Commit();
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
                 }
             }
-            conn.Close();
         }
     }
 }

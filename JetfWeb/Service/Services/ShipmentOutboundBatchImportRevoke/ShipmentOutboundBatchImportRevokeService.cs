@@ -1,4 +1,3 @@
-﻿using Dapper;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.Extensions;
@@ -6,7 +5,7 @@ using Service.Models;
 using Service.Services.ShipmentOutboundBatchImportRevoke.Domain;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Data.Entity;
 using System.IO;
 using System.Linq;
 
@@ -113,25 +112,15 @@ namespace Service.Services.ShipmentOutboundBatchImportRevoke
             var trackingNos = revokeList.Select(x => x.TrackingNo).Distinct().ToList();
 
             var threeDaysAgo = DateTime.Now.Date.AddDays(-3);
+            Dictionary<string, Data.ShipmentInboundEntity> dataDict;
 
-            var sql = @"
-                SELECT 
-                    Id,
-                    TrackingNo,
-                    OutboundDate,
-                    OutboundTrackingNo
-                FROM [jetf].[dbo].[ShipmentInbound]
-                WHERE TrackingNo IN @TrackingNos 
-                AND OutboundDate IS NOT NULL";
-
-            conn.Open();
-            var existingData = conn.Query<dynamic>(sql, new { TrackingNos = trackingNos }).ToList();
-            conn.Close();
-
-            var dataDict = existingData.ToDictionary(
-                x => (string)x.TrackingNo,
-                x => x
-            );
+            using (var db = CreateJetfDbContext())
+            {
+                dataDict = db.ShipmentInbounds
+                    .AsNoTracking()
+                    .Where(x => trackingNos.Contains(x.TrackingNo) && x.OutboundDate.HasValue)
+                    .ToDictionary(x => x.TrackingNo, x => x);
+            }
 
             foreach (var revoke in revokeList)
             {
@@ -150,9 +139,9 @@ namespace Service.Services.ShipmentOutboundBatchImportRevoke
                 }
 
                 var data = dataDict[revoke.TrackingNo];
-                revoke.ShipmentInboundId = (int)data.Id;
-                revoke.OutboundDate = (DateTime?)data.OutboundDate;
-                revoke.OutboundTrackingNo = (string)data.OutboundTrackingNo;
+                revoke.ShipmentInboundId = data.Id;
+                revoke.OutboundDate = data.OutboundDate;
+                revoke.OutboundTrackingNo = data.OutboundTrackingNo;
 
                 if (revoke.OutboundDate.HasValue && revoke.OutboundDate.Value.Date < threeDaysAgo)
                 {
@@ -176,53 +165,58 @@ namespace Service.Services.ShipmentOutboundBatchImportRevoke
             if (successList.Count == 0)
                 return;
 
-            var updateSql = @"
-                UPDATE [jetf].[dbo].[ShipmentInbound]
-                SET 
-                    OutboundDate = NULL,
-                    OutboundTrackingNo = NULL,
-                    OutboundTime = NULL,
-                    OutboundOpe = NULL,
-                    WarehouseProcessType = NULL,
-                    WarehouseProcessTime = NULL,
-                    WarehouseProcessOpe = NULL
-                WHERE Id = @Id";
+            var ids = successList
+                .Where(x => x.ShipmentInboundId.HasValue)
+                .Select(x => x.ShipmentInboundId.Value)
+                .ToList();
 
-            var insertHistorySql = @"
-                INSERT INTO [jetf].[dbo].[ShipmentInboundEditHistory]
-                ([ShipmentInboundId], [FieldName], [OldValue], [NewValue], [EditTime], [EditUser])
-                VALUES
-                (@ShipmentInboundId, @FieldName, @OldValue, @NewValue, @EditTime, @EditUser)";
-
-            conn.Open();
-            using (var transaction = conn.BeginTransaction())
+            using (var db = CreateJetfDbContext())
             {
-                try
+                using (var transaction = db.Database.BeginTransaction())
                 {
-                    foreach (var item in successList)
+                    try
                     {
-                        conn.Execute(updateSql, new { Id = item.ShipmentInboundId }, transaction);
+                        var entities = db.ShipmentInbounds
+                            .Where(x => ids.Contains(x.Id))
+                            .ToDictionary(x => x.Id, x => x);
 
-                        conn.Execute(insertHistorySql, new
+                        foreach (var item in successList)
                         {
-                            ShipmentInboundId = item.ShipmentInboundId,
-                            FieldName = "出庫日期",
-                            OldValue = item.OutboundDate.HasValue ? item.OutboundDate.Value.ToString("yyyy/MM/dd") : string.Empty,
-                            NewValue = string.Empty,
-                            EditTime = DateTime.Now,
-                            EditUser = GetUserId()
-                        }, transaction);
-                    }
+                            if (!item.ShipmentInboundId.HasValue || !entities.ContainsKey(item.ShipmentInboundId.Value))
+                            {
+                                continue;
+                            }
 
-                    transaction.Commit();
-                }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
+                            var entity = entities[item.ShipmentInboundId.Value];
+                            entity.OutboundDate = null;
+                            entity.OutboundTrackingNo = null;
+                            entity.OutboundTime = null;
+                            entity.OutboundOpe = null;
+                            entity.WarehouseProcessType = null;
+                            entity.WarehouseProcessTime = null;
+                            entity.WarehouseProcessOpe = null;
+
+                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                            {
+                                ShipmentInboundId = item.ShipmentInboundId.Value,
+                                FieldName = "出庫日期",
+                                OldValue = item.OutboundDate.HasValue ? item.OutboundDate.Value.ToString("yyyy/MM/dd") : string.Empty,
+                                NewValue = string.Empty,
+                                EditTime = DateTime.Now,
+                                EditUser = GetUserId()
+                            });
+                        }
+
+                        db.SaveChanges();
+                        transaction.Commit();
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
                 }
             }
-            conn.Close();
         }
     }
 }

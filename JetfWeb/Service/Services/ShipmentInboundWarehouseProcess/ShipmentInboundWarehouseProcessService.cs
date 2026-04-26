@@ -1,4 +1,3 @@
-﻿using Dapper;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.EnumTax;
@@ -7,7 +6,7 @@ using Service.Models;
 using Service.Services.ShipmentInboundWarehouseProcess.Domain;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using System.Data.Entity;
 using System.IO;
 using System.Linq;
 
@@ -25,19 +24,22 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
                 return new List<ShipmentInboundWarehouseProcessModel>();
             }
 
-            string sql = @"
-                SELECT Id
-                      ,[TrackingNo]
-	                  ,[WarehouseProcessType]
-	                  ,[WarehouseProcessTime]
-	                  ,[WarehouseProcessOpe]
-                FROM [jetf].[dbo].[ShipmentInbound]
-                WHERE TrackingNo = @TrackingNo ";
-
-            using (var connection = new SqlConnection(conn.ConnectionString))
+            using (var db = CreateJetfDbContext())
             {
-                var result = connection.Query<ShipmentInboundWarehouseProcessModel>(sql, new { TrackingNo = request.TrackingNo }).ToList();
-                return result;
+                return db.ShipmentInbounds
+                    .AsNoTracking()
+                    .Where(x => x.TrackingNo == request.TrackingNo)
+                    .Select(x => new ShipmentInboundWarehouseProcessModel
+                    {
+                        Id = x.Id,
+                        TrackingNo = x.TrackingNo,
+                        WarehouseProcessType = x.WarehouseProcessType.HasValue
+                            ? (WarehouseProcessType?)x.WarehouseProcessType.Value
+                            : null,
+                        WarehouseProcessTime = x.WarehouseProcessTime,
+                        WarehouseProcessOpe = x.WarehouseProcessOpe
+                    })
+                    .ToList();
             }
         }
 
@@ -46,22 +48,16 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
         /// </summary>
         public void UpdateProcessType(ShipmentInboundWarehouseProcessUpdateRequest request)
         {
-            var getOldValueSql = @"
-                SELECT Id, WarehouseProcessType,OutboundTime
-                FROM [jetf].[dbo].[ShipmentInbound]
-                WHERE Id = @Id";
-
             var userId = GetUserId();
 
-            using (var connection = new SqlConnection(conn.ConnectionString))
+            using (var db = CreateJetfDbContext())
             {
-                connection.Open();
-                using (var tx = connection.BeginTransaction())
+                using (var tx = db.Database.BeginTransaction())
                 {
                     try
                     {
-                        var existing = connection.QueryFirstOrDefault<dynamic>(getOldValueSql, new { Id = request.Id }, tx);
-                        
+                        var existing = db.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
+
                         if (existing == null)
                         {
                             throw new Exception("查無此資料");
@@ -72,30 +68,19 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
                             throw new Exception("已有出庫日期，更新倉庫處理狀態失敗");
                         }
 
-                        var oldWarehouseProcessType = (byte?)existing.WarehouseProcessType;
-
-                        string updateSql = @"
-                UPDATE [jetf].[dbo].[ShipmentInbound]
-                SET [WarehouseProcessType] = @WarehouseProcessType,
-                    [WarehouseProcessTime] = GETDATE(),
-                    [WarehouseProcessOpe] = @WarehouseProcessOpe
-                WHERE Id = @Id";
-
-                        connection.Execute(updateSql, new
-                        {
-                            Id = request.Id,
-                            WarehouseProcessType = request.WarehouseProcessType,
-                            WarehouseProcessOpe = userId
-                        }, tx);
+                        var oldWarehouseProcessType = existing.WarehouseProcessType;
+                        existing.WarehouseProcessType = (byte)request.WarehouseProcessType;
+                        existing.WarehouseProcessTime = DateTime.Now;
+                        existing.WarehouseProcessOpe = userId;
 
                         InsertWarehouseProcessTypeHistory(
-                            connection, 
-                            tx, 
-                            request.Id, 
-                            oldWarehouseProcessType, 
-                            (byte)request.WarehouseProcessType, 
+                            db,
+                            request.Id,
+                            oldWarehouseProcessType,
+                            (byte)request.WarehouseProcessType,
                             userId);
 
+                        db.SaveChanges();
                         tx.Commit();
                     }
                     catch
@@ -136,56 +121,40 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
             var userId = GetUserId();
 
             var trackingNos = rows.Select(x => x.TrackingNo).Distinct().ToList();
-            var getOldValuesSql = @"
-SELECT Id, TrackingNo, WarehouseProcessType
-FROM [jetf].[dbo].[ShipmentInbound]
-WHERE [TrackingNo] IN @TrackingNos";
-
-            const string updateSql = @"
-UPDATE [jetf].[dbo].[ShipmentInbound]
-SET [WarehouseProcessType] = @WarehouseProcessType,
-    [WarehouseProcessTime] = GETDATE(),
-    [WarehouseProcessOpe] = @WarehouseProcessOpe
-WHERE [TrackingNo] = @TrackingNo";
-
-            using (var connection = new SqlConnection(conn.ConnectionString))
+            using (var db = CreateJetfDbContext())
             {
-                connection.Open();
+                var existingData = db.ShipmentInbounds
+                    .Where(x => trackingNos.Contains(x.TrackingNo))
+                    .ToDictionary(x => x.TrackingNo, x => x);
 
-                var existingData = connection.Query<dynamic>(getOldValuesSql, new { TrackingNos = trackingNos })
-                    .ToDictionary(x => (string)x.TrackingNo, x => x);
-
-                using (var tx = connection.BeginTransaction())
+                using (var tx = db.Database.BeginTransaction())
                 {
                     try
                     {
                         foreach (var row in rows)
                         {
                             var newProcessType = row.WarehouseProcessTypeText.ToEnumValueByDescription<WarehouseProcessType>();
-                            
-                            connection.Execute(updateSql, new
-                            {
-                                TrackingNo = row.TrackingNo,
-                                WarehouseProcessType = (byte)newProcessType.Value,
-                                WarehouseProcessOpe = userId
-                            }, tx);
 
                             if (existingData.ContainsKey(row.TrackingNo))
                             {
                                 var existing = existingData[row.TrackingNo];
-                                var oldWarehouseProcessType = (byte?)existing.WarehouseProcessType;
-                                var shipmentInboundId = (int)existing.Id;
+                                var oldWarehouseProcessType = existing.WarehouseProcessType;
+                                var shipmentInboundId = existing.Id;
+
+                                existing.WarehouseProcessType = (byte)newProcessType.Value;
+                                existing.WarehouseProcessTime = DateTime.Now;
+                                existing.WarehouseProcessOpe = userId;
 
                                 InsertWarehouseProcessTypeHistory(
-                                    connection, 
-                                    tx, 
-                                    shipmentInboundId, 
-                                    oldWarehouseProcessType, 
-                                    (byte)newProcessType.Value, 
+                                    db,
+                                    shipmentInboundId,
+                                    oldWarehouseProcessType,
+                                    (byte)newProcessType.Value,
                                     userId);
                             }
                         }
 
+                        db.SaveChanges();
                         tx.Commit();
                     }
                     catch
@@ -210,11 +179,10 @@ WHERE [TrackingNo] = @TrackingNo";
         /// <param name="newValue">新值</param>
         /// <param name="userId">使用者Id</param>
         private void InsertWarehouseProcessTypeHistory(
-            SqlConnection connection, 
-            SqlTransaction transaction, 
-            int shipmentInboundId, 
-            byte? oldValue, 
-            byte newValue, 
+            Data.JetfDbContext db,
+            int shipmentInboundId,
+            byte? oldValue,
+            byte newValue,
             string userId)
         {
             if (oldValue == newValue)
@@ -227,13 +195,7 @@ WHERE [TrackingNo] = @TrackingNo";
                 : string.Empty;
             var newValueText = ((WarehouseProcessType)newValue).ToDescription();
 
-            var insertHistorySql = @"
-INSERT INTO [jetf].[dbo].[ShipmentInboundEditHistory]
-([ShipmentInboundId], [FieldName], [OldValue], [NewValue], [EditTime], [EditUser])
-VALUES
-(@ShipmentInboundId, @FieldName, @OldValue, @NewValue, @EditTime, @EditUser)";
-
-            connection.Execute(insertHistorySql, new
+            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
             {
                 ShipmentInboundId = shipmentInboundId,
                 FieldName = "倉庫處理狀態",
@@ -241,7 +203,7 @@ VALUES
                 NewValue = newValueText,
                 EditTime = DateTime.Now,
                 EditUser = userId
-            }, transaction);
+            });
         }
 
         private List<ShipmentInboundWarehouseProcessBatchUploadErrorModel> ValidateBatchUploadRows(List<ShipmentInboundWarehouseProcessBatchUploadRowModel> rows)
@@ -297,14 +259,13 @@ VALUES
 
             if (trackingNos.Any())
             {
-                const string sql = @"
-SELECT [TrackingNo]
-FROM [jetf].[dbo].[ShipmentInbound]
-WHERE [TrackingNo] IN @TrackingNos";
-
-                using (var connection = new SqlConnection(conn.ConnectionString))
+                using (var db = CreateJetfDbContext())
                 {
-                    var existing = connection.Query<string>(sql, new { TrackingNos = trackingNos }).ToList();
+                    var existing = db.ShipmentInbounds
+                        .AsNoTracking()
+                        .Where(x => trackingNos.Contains(x.TrackingNo))
+                        .Select(x => x.TrackingNo)
+                        .ToList();
                     var existingSet = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
 
                     foreach (var row in rows)

@@ -1,4 +1,3 @@
-﻿using Dapper;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.EnumTax;
@@ -7,9 +6,9 @@ using Service.Models;
 using Service.Services.ShipmentInboundProcess.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace Service.Services.ShipmentInboundProcess
 {
@@ -17,129 +16,95 @@ namespace Service.Services.ShipmentInboundProcess
     {
         public ShipmentInboundProcessResponse GetData(ShipmentInboundProcessRequest request)
         {
-            var parameters = new DynamicParameters();
-
-            var countSql = new StringBuilder();
-            countSql.AppendLine("SELECT COUNT(1) FROM [jetf].[dbo].[ShipmentInbound]");
-            BuildWhereConditions(countSql, request, parameters);
-
-            var sql = new StringBuilder();
-            sql.AppendLine("SELECT [Id]");
-            sql.AppendLine("      ,[DataType]");
-            sql.AppendLine("      ,[InboundDate]");
-            sql.AppendLine("      ,[TrackingNo]");
-            sql.AppendLine("      ,[SourceType]");
-            sql.AppendLine("      ,[ReturnTrackingNo]");
-            sql.AppendLine("      ,[CustCode]");
-            sql.AppendLine("      ,[TransNo]");
-            sql.AppendLine("      ,[TransName]");
-            sql.AppendLine("      ,[ReturnReason]");
-            sql.AppendLine("      ,[ProcessType]");
-            sql.AppendLine("      ,[Tax]");
-            sql.AppendLine("      ,[Ccfee]");
-            sql.AppendLine("      ,[Cod]");
-            sql.AppendLine("FROM [jetf].[dbo].[ShipmentInbound]");
-            BuildWhereConditions(sql, request, parameters);
-
-            sql.AppendLine("ORDER BY [InboundDate] DESC");
-            sql.AppendLine($"OFFSET {(request.Page - 1) * request.PageSize} ROWS");
-            sql.AppendLine($"FETCH NEXT {request.PageSize} ROWS ONLY");
-
-            var totalCount = conn.QueryFirstOrDefault<int>(countSql.ToString(), parameters);
-            var data = conn.Query<ShipmentInboundProcessModel>(sql.ToString(), parameters).ToList();
-
-            FillCustomerAndTransNames(data);
-
-            return new ShipmentInboundProcessResponse
+            using (var db = CreateJetfDbContext())
             {
-                Data = data,
-                TotalCount = totalCount
-            };
+                var query = BuildWhereConditions(db.ShipmentInbounds.AsNoTracking(), request);
+                var totalCount = query.Count();
+                var data = query
+                    .OrderByDescending(x => x.InboundDate)
+                    .Skip((request.Page - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .Select(x => new ShipmentInboundProcessModel
+                    {
+                        Id = x.Id,
+                        DataType = x.DataType,
+                        InboundDate = x.InboundDate,
+                        TrackingNo = x.TrackingNo,
+                        SourceType = x.SourceType.HasValue
+                            ? (ShipmentInboundSourceType)x.SourceType.Value
+                            : default(ShipmentInboundSourceType),
+                        ReturnTrackingNo = x.ReturnTrackingNo,
+                        CustCode = x.CustCode,
+                        TransNo = x.TransNo,
+                        TransName = x.TransName,
+                        ReturnReason = x.ReturnReason,
+                        ProcessType = x.ProcessType.HasValue
+                            ? (ShipmentInboundProcessType?)x.ProcessType.Value
+                            : null,
+                        Tax = x.Tax,
+                        Ccfee = x.Ccfee,
+                        Cod = x.Cod
+                    })
+                    .ToList();
+
+                FillCustomerAndTransNames(data);
+
+                return new ShipmentInboundProcessResponse
+                {
+                    Data = data,
+                    TotalCount = totalCount
+                };
+            }
         }
 
         public bool UpdateProcessType(ShipmentInboundProcessUpdateRequest request)
         {
-            var checkSql = @"
-                SELECT OutboundDate, ProcessType, Tax, Ccfee, Cod, Fee
-                FROM [jetf].[dbo].[ShipmentInbound] 
-                WHERE [Id] = @Id";
-
-            var existing = conn.QueryFirstOrDefault<dynamic>(checkSql, new { Id = request.Id });
-
-            if (existing == null)
-            {
-                throw new Exception("查無此資料");
-            }
-
-            var outboundDate = (DateTime?)existing.OutboundDate;
-            if (outboundDate.HasValue)
-            {
-                throw new Exception($"重出日期 {outboundDate.Value:yyyy/MM/dd}，無法更新資料");
-            }
-
-            var oldProcessType = (int?)existing.ProcessType;
-            var oldTax = (int?)existing.Tax;
-            var oldCcfee = (int?)existing.Ccfee;
-            var oldCod = (int?)existing.Cod;
-            var oldFee = (int?)existing.Fee;
             var userId = GetUserId();
 
-            var sql = new StringBuilder();
-            sql.AppendLine("UPDATE [jetf].[dbo].[ShipmentInbound]");
-            sql.AppendLine("SET [ProcessType] = @ProcessType");
-            sql.AppendLine("   ,[ProcessTransNo] = @ProcessTransNo");
-            sql.AppendLine("   ,[ProcessImporter] = @ProcessImporter");
-            sql.AppendLine("   ,[ProcessImporterPhone] = @ProcessImporterPhone");
-            sql.AppendLine("   ,[ProcessImporterAddr] = @ProcessImporterAddr");
-            sql.AppendLine("   ,[StoreCode] = @StoreCode");
-            sql.AppendLine("   ,[StoreName] = @StoreName");
-            sql.AppendLine("   ,[FreightPayerNo] = @FreightPayerNo");
-            sql.AppendLine("   ,[FreightFee] = @FreightFee");
-            sql.AppendLine("   ,[Fee] = @Fee");
-            sql.AppendLine("   ,[CarNo] = @CarNo");
-            sql.AppendLine("   ,[PickupTime] = @PickupTime");
-            sql.AppendLine("   ,[Remark] = @Remark");
-            sql.AppendLine("   ,[Tax] = @Tax");
-            sql.AppendLine("   ,[Ccfee] = @Ccfee");
-            sql.AppendLine("   ,[Cod] = @Cod");
-            sql.AppendLine("   ,[ProcessTime] = GETDATE()");
-            sql.AppendLine("   ,[ProcessOpe] = @ProcessOpe");
-            sql.AppendLine("WHERE [Id] = @Id");
-
-            var parameters = new DynamicParameters();
-            parameters.Add("Id", request.Id);
-            parameters.Add("ProcessType", request.ProcessType);
-            parameters.Add("ProcessTransNo", request.ProcessTransNo);
-            parameters.Add("ProcessImporter", request.ProcessImporter);
-            parameters.Add("ProcessImporterPhone", request.ProcessImporterPhone);
-            parameters.Add("ProcessImporterAddr", request.ProcessImporterAddr);
-            parameters.Add("StoreCode", request.StoreCode);
-            parameters.Add("StoreName", request.StoreName);
-            parameters.Add("FreightPayerNo", request.FreightPayerNo);
-            parameters.Add("FreightFee", request.FreightFee);
-            parameters.Add("Fee", request.Fee);
-            parameters.Add("CarNo", request.CarNo);
-            parameters.Add("PickupTime", request.PickupTime);
-            parameters.Add("Remark", request.Remark);
-            parameters.Add("Tax", request.Tax);
-            parameters.Add("Ccfee", request.Ccfee);
-            parameters.Add("Cod", request.Cod);
-            parameters.Add("ProcessOpe", userId);
-
-            const string insertHistorySql = @"
-INSERT INTO [jetf].[dbo].[ShipmentInboundEditHistory]
-([ShipmentInboundId], [FieldName], [OldValue], [NewValue], [EditTime], [EditUser])
-VALUES
-(@ShipmentInboundId, @FieldName, @OldValue, @NewValue, @EditTime, @EditUser)";
-
-            using (var connection = new System.Data.SqlClient.SqlConnection(conn.ConnectionString))
+            using (var db = CreateJetfDbContext())
             {
-                connection.Open();
-                using (var tx = connection.BeginTransaction())
+                using (var tx = db.Database.BeginTransaction())
                 {
                     try
                     {
-                        connection.Execute(sql.ToString(), parameters, tx);
+                        var existing = db.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
+
+                        if (existing == null)
+                        {
+                            throw new Exception("查無此資料");
+                        }
+
+                        if (existing.OutboundDate.HasValue)
+                        {
+                            throw new Exception($"重出日期 {existing.OutboundDate.Value:yyyy/MM/dd}，無法更新資料");
+                        }
+
+                        var oldProcessType = existing.ProcessType;
+                        var oldTax = existing.Tax;
+                        var oldCcfee = existing.Ccfee;
+                        var oldCod = existing.Cod;
+                        var oldFee = existing.Fee;
+
+                        existing.ProcessType = request.ProcessType;
+                        existing.ProcessTransNo = request.ProcessTransNo;
+                        existing.ProcessImporter = request.ProcessImporter;
+                        existing.ProcessImporterPhone = request.ProcessImporterPhone;
+                        existing.ProcessImporterAddr = request.ProcessImporterAddr;
+                        existing.StoreCode = request.StoreCode;
+                        existing.StoreName = request.StoreName;
+                        existing.FreightPayerNo = request.FreightPayerNo;
+                        existing.FreightFee = request.FreightFee;
+                        existing.Fee = request.Fee;
+                        existing.CarNo = request.CarNo;
+                        existing.PickupTime = DateTime.TryParse(request.PickupTime, out var pickupTime)
+                            ? pickupTime
+                            : (DateTime?)null;
+                        existing.Remark = request.Remark;
+                        existing.Tax = request.Tax;
+                        existing.Ccfee = request.Ccfee;
+                        existing.Cod = request.Cod;
+                        existing.ProcessTime = DateTime.Now;
+                        existing.ProcessOpe = userId;
 
                         if (oldProcessType != request.ProcessType)
                         {
@@ -148,7 +113,7 @@ VALUES
                                 : string.Empty;
                             var newValueText = ((ShipmentInboundProcessType)request.ProcessType).ToDescription();
 
-                            connection.Execute(insertHistorySql, new
+                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = request.Id,
                                 FieldName = "處理方式",
@@ -156,12 +121,12 @@ VALUES
                                 NewValue = newValueText,
                                 EditTime = DateTime.Now,
                                 EditUser = userId
-                            }, tx);
+                            });
                         }
 
                         if (oldTax != request.Tax)
                         {
-                            connection.Execute(insertHistorySql, new
+                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = request.Id,
                                 FieldName = "稅金",
@@ -169,12 +134,12 @@ VALUES
                                 NewValue = request.Tax.ToString(),
                                 EditTime = DateTime.Now,
                                 EditUser = userId
-                            }, tx);
+                            });
                         }
 
                         if (oldCcfee != request.Ccfee)
                         {
-                            connection.Execute(insertHistorySql, new
+                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = request.Id,
                                 FieldName = "報關費",
@@ -182,12 +147,12 @@ VALUES
                                 NewValue = request.Ccfee.ToString(),
                                 EditTime = DateTime.Now,
                                 EditUser = userId
-                            }, tx);
+                            });
                         }
 
                         if (oldCod != request.Cod)
                         {
-                            connection.Execute(insertHistorySql, new
+                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = request.Id,
                                 FieldName = "到付款",
@@ -195,12 +160,12 @@ VALUES
                                 NewValue = request.Cod.ToString(),
                                 EditTime = DateTime.Now,
                                 EditUser = userId
-                            }, tx);
+                            });
                         }
 
                         if (oldFee != request.Fee)
                         {
-                            connection.Execute(insertHistorySql, new
+                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = request.Id,
                                 FieldName = "手續費",
@@ -208,9 +173,10 @@ VALUES
                                 NewValue = request.Fee.ToString(),
                                 EditTime = DateTime.Now,
                                 EditUser = userId
-                            }, tx);
+                            });
                         }
 
+                        db.SaveChanges();
                         tx.Commit();
                         return true;
                     }
@@ -225,31 +191,33 @@ VALUES
 
         public ShipmentInboundProcessDetailModel GetDetailById(int id)
         {
-            var sql = @"
-                SELECT [Id]
-                      ,[ProcessType]
-                      ,[ProcessTransNo]
-                      ,[ProcessImporter]
-                      ,[ProcessImporterPhone]
-                      ,[ProcessImporterAddr]
-                      ,[StoreCode]
-                      ,[StoreName]
-                      ,[Tax]
-                      ,[Ccfee]
-                      ,[Cod]
-                      ,[FreightPayerNo]
-                      ,[FreightFee]
-                      ,[Fee]
-                      ,[CarNo]
-                      ,[PickupTime]
-                      ,[Remark]
-                FROM [jetf].[dbo].[ShipmentInbound]
-                WHERE [Id] = @Id";
-
-            var parameters = new DynamicParameters();
-            parameters.Add("Id", id);
-
-            return conn.QueryFirstOrDefault<ShipmentInboundProcessDetailModel>(sql, parameters);
+            using (var db = CreateJetfDbContext())
+            {
+                return db.ShipmentInbounds
+                    .AsNoTracking()
+                    .Where(x => x.Id == id)
+                    .Select(x => new ShipmentInboundProcessDetailModel
+                    {
+                        Id = x.Id,
+                        ProcessType = x.ProcessType.HasValue ? (ShipmentInboundProcessType?)x.ProcessType.Value : null,
+                        ProcessTransNo = x.ProcessTransNo.HasValue ? (ShipmentInboundProcessTransNo?)x.ProcessTransNo.Value : null,
+                        ProcessImporter = x.ProcessImporter,
+                        ProcessImporterPhone = x.ProcessImporterPhone,
+                        ProcessImporterAddr = x.ProcessImporterAddr,
+                        StoreCode = x.StoreCode,
+                        StoreName = x.StoreName,
+                        Tax = x.Tax,
+                        Ccfee = x.Ccfee,
+                        Cod = x.Cod,
+                        FreightPayerNo = x.FreightPayerNo.HasValue ? (ShipmentInboundFreightPayerNo?)x.FreightPayerNo.Value : null,
+                        FreightFee = x.FreightFee,
+                        Fee = x.Fee,
+                        CarNo = x.CarNo,
+                        PickupTime = x.PickupTime,
+                        Remark = x.Remark
+                    })
+                    .FirstOrDefault();
+            }
         }
 
         /// <summary>
@@ -266,30 +234,17 @@ VALUES
                 }).ToList();
         }
 
-        private void BuildWhereConditions(StringBuilder sql, ShipmentInboundProcessRequest request, DynamicParameters parameters)
+        private IQueryable<Data.ShipmentInboundEntity> BuildWhereConditions(
+            IQueryable<Data.ShipmentInboundEntity> query,
+            ShipmentInboundProcessRequest request)
         {
-            sql.AppendLine("WHERE 1=1");
-
-            sql.WhereIf(
-                    !string.IsNullOrWhiteSpace(request.DataType),
-                    "[DataType] = @DataType",
-                    parameters,
-                    p => p.Add("DataType", request.DataType)
-                );
-
-            sql.WhereIf(
+            query = query.WhereIf(!string.IsNullOrWhiteSpace(request.DataType), x => x.DataType == request.DataType);
+            query = query.WhereIf(
                 DateTime.TryParse(request.InboundDateStart, out var startDate),
-                "[InboundDate] >= @InboundDateStart",
-                parameters,
-                p => p.Add("InboundDateStart", startDate)
-            );
-
-            sql.WhereIf(
+                x => x.InboundDate >= startDate);
+            query = query.WhereIf(
                 DateTime.TryParse(request.InboundDateEnd, out var endDate),
-                "[InboundDate] <= @InboundDateEnd",
-                parameters,
-                p => p.Add("InboundDateEnd", endDate)
-            );
+                x => x.InboundDate <= endDate);
 
             if (request.CustCodes?.Any() == true)
             {
@@ -299,72 +254,36 @@ VALUES
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToArray();
 
-                sql.WhereIf(
-                    custCodes.Length > 0,
-                    "[CustCode] IN @CustCodes",
-                    parameters,
-                    p => p.Add("CustCodes", custCodes)
-                );
+                query = query.WhereIf(custCodes.Length > 0, x => custCodes.Contains(x.CustCode));
             }
 
-            sql.WhereIf(
-                request.SourceType.HasValue,
-                "[SourceType] = @SourceType",
-                parameters,
-                p => p.Add("SourceType", request.SourceType.Value)
-            );
-
-            sql.WhereIf(
-                !string.IsNullOrWhiteSpace(request.TrackingNo),
-                "[TrackingNo] = @TrackingNo",
-                parameters,
-                p => p.Add("TrackingNo", request.TrackingNo)
-            );
+            query = query.WhereIf(request.SourceType.HasValue, x => x.SourceType == request.SourceType.Value);
+            query = query.WhereIf(!string.IsNullOrWhiteSpace(request.TrackingNo), x => x.TrackingNo == request.TrackingNo);
 
             // 結案條件處理，不包含開箱確認內容物狀況、暫存資料
-            sql.WhereIf(request.IsClosed == true, "([ProcessType] IS NOT NULL AND [ProcessType] NOT IN (7,8, 9))");
-            sql.WhereIf(request.IsClosed == false, "([ProcessTime] IS NULL OR [ProcessType] IN (7,8, 9))");
+            query = query.WhereIf(
+                request.IsClosed == true,
+                x => x.ProcessType.HasValue && x.ProcessType != 7 && x.ProcessType != 8 && x.ProcessType != 9);
+            query = query.WhereIf(
+                request.IsClosed == false,
+                x => !x.ProcessTime.HasValue || x.ProcessType == 7 || x.ProcessType == 8 || x.ProcessType == 9);
+
+            return query;
         }
 
         private Dictionary<string, string> GetAirCustNames(List<string> custCodes)
         {
-            if (!custCodes.Any())
-                return new Dictionary<string, string>();
-
-            var sql = "SELECT distinct OLD_CODE as Cust_Code, Cust_Name FROM DATA_CENTER.dbo.SYS_CUST WHERE CUST_TYPE='AIR' AND OLD_CODE > ''";
-            var custs = conn.Query<dynamic>(sql).ToList();
-            return custs.ToDictionary(
-                x => (string)x.Cust_Code,
-                x => (string)x.Cust_Name
-            );
+            return GetAirCustomerNames(custCodes);
         }
 
         private Dictionary<string, string> GetSeaCustNames(List<string> custCodes)
         {
-            if (!custCodes.Any())
-                return new Dictionary<string, string>();
-
-            var sql = "SELECT distinct Cust_Code, Cust_Name FROM DATA_CENTER.dbo.SYS_CUST WHERE CUST_TYPE='SEA'";
-            var custs = conn.Query<dynamic>(sql).ToList();
-            return custs.ToDictionary(
-                x => (string)x.Cust_Code,
-                x => (string)x.Cust_Name
-            );
+            return GetSeaCustomerNames(custCodes);
         }
 
         private Dictionary<string, string> GetAirTransNames(List<string> transNos)
         {
-            if (!transNos.Any())
-                return new Dictionary<string, string>();
-
-            var sql = "SELECT distinct TRANS_NO, TRANS_NAME FROM [jetf].[dbo].customer_master WHERE TRAN_TYPE='空運'";
-            var transList = conn.Query<dynamic>(sql).ToList();
-            return transList
-                .GroupBy(x => (string)x.TRANS_NO)
-                .ToDictionary(
-                    g => g.Key,
-                    g => (string)g.First().TRANS_NAME
-                );
+            return base.GetAirTransNames(transNos);
         }
 
         private void FillCustomerAndTransNames(List<ShipmentInboundProcessModel> data)
@@ -503,34 +422,13 @@ VALUES
             var userId = GetUserId();
 
             var trackingNos = rows.Select(x => x.TrackingNo).Distinct().ToList();
-            var existingDataSql = @"
-SELECT Id, TrackingNo, ProcessType
-FROM [jetf].[dbo].[ShipmentInbound]
-WHERE [TrackingNo] IN @TrackingNos
-  AND [OutboundDate] IS NULL";
-
-            var existingData = conn.Query<dynamic>(existingDataSql, new { TrackingNos = trackingNos })
-                .ToDictionary(x => (string)x.TrackingNo, x => x);
-
-            const string updateSql = @"
-UPDATE [jetf].[dbo].[ShipmentInbound]
-SET [ProcessType] = @ProcessType,
-    [Remark] = @Remark,
-    [ProcessTime] = GETDATE(),
-    [ProcessOpe] = @ProcessOpe
-WHERE [TrackingNo] = @TrackingNo
-  AND [OutboundDate] IS NULL";
-
-            const string insertHistorySql = @"
-INSERT INTO [jetf].[dbo].[ShipmentInboundEditHistory]
-([ShipmentInboundId], [FieldName], [OldValue], [NewValue], [EditTime], [EditUser])
-VALUES
-(@ShipmentInboundId, @FieldName, @OldValue, @NewValue, @EditTime, @EditUser)";
-
-            using (var connection = new System.Data.SqlClient.SqlConnection(conn.ConnectionString))
+            using (var db = CreateJetfDbContext())
             {
-                connection.Open();
-                using (var tx = connection.BeginTransaction())
+                var existingData = db.ShipmentInbounds
+                    .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
+                    .ToDictionary(x => x.TrackingNo, x => x);
+
+                using (var tx = db.Database.BeginTransaction())
                 {
                     try
                     {
@@ -538,19 +436,16 @@ VALUES
                         {
                             int? newProcessType = row.ProcessTypeText.ToEnumValueByDescription<ShipmentInboundProcessType>();
 
-                            connection.Execute(updateSql, new
-                            {
-                                TrackingNo = row.TrackingNo,
-                                ProcessType = newProcessType.Value,
-                                Remark = row.Remark,
-                                ProcessOpe = userId
-                            }, tx);
-
                             if (existingData.ContainsKey(row.TrackingNo))
                             {
                                 var existing = existingData[row.TrackingNo];
-                                var oldProcessType = (int?)existing.ProcessType;
-                                var shipmentInboundId = (int)existing.Id;
+                                var oldProcessType = existing.ProcessType;
+                                var shipmentInboundId = existing.Id;
+
+                                existing.ProcessType = (byte)newProcessType.Value;
+                                existing.Remark = row.Remark;
+                                existing.ProcessTime = DateTime.Now;
+                                existing.ProcessOpe = userId;
 
                                 if (oldProcessType != newProcessType.Value)
                                 {
@@ -559,7 +454,7 @@ VALUES
                                         : string.Empty;
                                     var newValueText = ((ShipmentInboundProcessType)newProcessType.Value).ToDescription();
 
-                                    connection.Execute(insertHistorySql, new
+                                    db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                                     {
                                         ShipmentInboundId = shipmentInboundId,
                                         FieldName = "處理方式",
@@ -567,11 +462,12 @@ VALUES
                                         NewValue = newValueText,
                                         EditTime = DateTime.Now,
                                         EditUser = userId
-                                    }, tx);
+                                    });
                                 }
                             }
                         }
 
+                        db.SaveChanges();
                         tx.Commit();
                     }
                     catch
@@ -640,13 +536,15 @@ VALUES
 
             if (trackingNos.Any())
             {
-                const string sql = @"
-SELECT [TrackingNo]
-FROM [jetf].[dbo].[ShipmentInbound]
-WHERE [TrackingNo] IN @TrackingNos
-  AND [OutboundDate] IS NULL";
-
-                var existing = conn.Query<string>(sql, new { TrackingNos = trackingNos }).ToList();
+                List<string> existing;
+                using (var db = CreateJetfDbContext())
+                {
+                    existing = db.ShipmentInbounds
+                        .AsNoTracking()
+                        .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
+                        .Select(x => x.TrackingNo)
+                        .ToList();
+                }
                 var existingSet = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
 
                 foreach (var row in rows)
@@ -755,24 +653,22 @@ WHERE [TrackingNo] IN @TrackingNos
         /// </summary>
         public void UpdateReturnReason(int id, string returnReason)
         {
-            var checkSql = @"
-                SELECT OutboundDate 
-                FROM [jetf].[dbo].[ShipmentInbound] 
-                WHERE [Id] = @Id";
-
-            var outboundDate = conn.QueryFirstOrDefault<DateTime?>(checkSql, new { Id = id });
-
-            if (outboundDate.HasValue)
+            using (var db = CreateJetfDbContext())
             {
-                throw new Exception($"出庫日期 {outboundDate.Value:yyyy/MM/dd}，無法更新資料");
+                var entity = db.ShipmentInbounds.FirstOrDefault(x => x.Id == id);
+                if (entity == null)
+                {
+                    throw new Exception("查無此資料");
+                }
+
+                if (entity.OutboundDate.HasValue)
+                {
+                    throw new Exception($"出庫日期 {entity.OutboundDate.Value:yyyy/MM/dd}，無法更新資料");
+                }
+
+                entity.ReturnReason = returnReason;
+                db.SaveChanges();
             }
-
-            var sql = @"
-                UPDATE [jetf].[dbo].[ShipmentInbound]
-                SET [ReturnReason] = @ReturnReason
-                WHERE [Id] = @Id";
-
-            conn.Execute(sql, new { Id = id, ReturnReason = returnReason });
         }
 
         /// <summary>
@@ -801,30 +697,26 @@ WHERE [TrackingNo] IN @TrackingNos
                 return res;
             }
 
-            var userId = GetUserId();
-
-            const string updateSql = @"
-UPDATE [jetf].[dbo].[ShipmentInbound]
-SET [ReturnReason] = @ReturnReason
-WHERE [TrackingNo] = @TrackingNo
-  AND [OutboundDate] IS NULL";
-
-            using (var connection = new System.Data.SqlClient.SqlConnection(conn.ConnectionString))
+            using (var db = CreateJetfDbContext())
             {
-                connection.Open();
-                using (var tx = connection.BeginTransaction())
+                var trackingNos = rows.Select(x => x.TrackingNo).Distinct().ToList();
+                var entities = db.ShipmentInbounds
+                    .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
+                    .ToDictionary(x => x.TrackingNo, x => x);
+
+                using (var tx = db.Database.BeginTransaction())
                 {
                     try
                     {
                         foreach (var row in rows)
                         {
-                            connection.Execute(updateSql, new
+                            if (entities.ContainsKey(row.TrackingNo))
                             {
-                                TrackingNo = row.TrackingNo,
-                                ReturnReason = row.ReturnReason
-                            }, tx);
+                                entities[row.TrackingNo].ReturnReason = row.ReturnReason;
+                            }
                         }
 
+                        db.SaveChanges();
                         tx.Commit();
                     }
                     catch
@@ -865,13 +757,15 @@ WHERE [TrackingNo] = @TrackingNo
 
             if (trackingNos.Any())
             {
-                const string sql = @"
-SELECT [TrackingNo]
-FROM [jetf].[dbo].[ShipmentInbound]
-WHERE [TrackingNo] IN @TrackingNos
-  AND [OutboundDate] IS NULL";
-
-                var existing = conn.Query<string>(sql, new { TrackingNos = trackingNos }).ToList();
+                List<string> existing;
+                using (var db = CreateJetfDbContext())
+                {
+                    existing = db.ShipmentInbounds
+                        .AsNoTracking()
+                        .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
+                        .Select(x => x.TrackingNo)
+                        .ToList();
+                }
                 var existingSet = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
 
                 foreach (var row in rows)
