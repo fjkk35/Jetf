@@ -7,6 +7,7 @@
     $scope.newAmount = 0;
     $scope.currentFieldName = '';
     $scope.historyData = [];
+    $scope.currentLightboxImage = '';
 
     // 從 URL 取得 id 參數
     function getQueryParam(name) {
@@ -150,6 +151,19 @@
                     icon: "error"
                 });
             });
+    };
+
+    $scope.openLightbox = function (filePath, $event) {
+        if ($event) {
+            $event.preventDefault();
+            $event.stopPropagation();
+        }
+
+        $scope.currentLightboxImage = filePath || '';
+    };
+
+    $scope.closeLightbox = function () {
+        $scope.currentLightboxImage = '';
     };
 
     // 關閉視窗

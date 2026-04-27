@@ -180,12 +180,37 @@
         border-radius: 6px;
         overflow: hidden;
         background-color: #fff;
+        cursor: zoom-in;
+        padding: 8px;
+    }
+
+    .exception-lightbox {
+        position: fixed;
+        inset: 0;
+        z-index: 1050;
+        background: rgba(0, 0, 0, 0.78);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+        cursor: zoom-out;
+    }
+
+    .exception-lightbox-image {
+        max-width: min(92vw, 1400px);
+        max-height: 92vh;
+        width: auto;
+        height: auto;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+        border-radius: 8px;
+        background-color: #fff;
     }
 
     .exception-image {
         width: 100%;
         height: 180px;
-        object-fit: cover;
+        object-fit: contain;
+        object-position: center;
         display: block;
         background-color: #f8f9fa;
     }
@@ -327,33 +352,31 @@
                     </div>
                 </div>
 
-                <div class="detail-section" ng-if="data.ExceptionReason || (data.ExceptionFilePaths && data.ExceptionFilePaths.length > 0)">
+                <div class="detail-section">
                     <h4 class="section-title">
                         <i class="fa fa-exclamation-circle mr-2"></i>異常資訊
                     </h4>
 
                     <div class="detail-grid">
-                        <div class="detail-col-full" ng-if="data.ExceptionReason">
+                        <div class="detail-col-full">
                             <div class="detail-row">
                                 <div class="detail-label">異常原因：</div>
-                                <div class="detail-value">{{data.ExceptionReason}}</div>
+                                <div class="detail-value">{{data.ExceptionReason || '無'}}</div>
                             </div>
                         </div>
 
-                        <div class="detail-col-full" ng-if="data.ExceptionFilePaths && data.ExceptionFilePaths.length > 0">
+                        <div class="detail-col-full">
                             <div class="detail-row" style="align-items: flex-start;">
                                 <div class="detail-label">圖片：</div>
                                 <div class="detail-value">
-                                    <div class="exception-gallery">
+                                    <div class="exception-gallery" ng-if="data.ExceptionFilePaths && data.ExceptionFilePaths.length > 0">
                                         <div class="exception-image-card" ng-repeat="filePath in data.ExceptionFilePaths track by $index">
-                                            <a class="exception-image-link" ng-href="{{filePath}}" target="_blank" rel="noopener noreferrer">
+                                            <a class="exception-image-link" href="" ng-click="openLightbox(filePath, $event)">
                                                 <img class="exception-image" ng-src="{{filePath}}" alt="異常圖片 {{$index + 1}}" />
                                             </a>
-                                            <div class="exception-image-path">
-                                                <a ng-href="{{filePath}}" target="_blank" rel="noopener noreferrer">{{filePath}}</a>
-                                            </div>
                                         </div>
                                     </div>
+                                    <div ng-if="!data.ExceptionFilePaths || data.ExceptionFilePaths.length === 0">無</div>
                                 </div>
                             </div>
                         </div>
@@ -624,6 +647,10 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="exception-lightbox" ng-show="currentLightboxImage" ng-click="closeLightbox()">
+        <img class="exception-lightbox-image" ng-src="{{currentLightboxImage}}" alt="異常圖片放大檢視" />
     </div>
 
     <!-- 編輯金額視窗 -->

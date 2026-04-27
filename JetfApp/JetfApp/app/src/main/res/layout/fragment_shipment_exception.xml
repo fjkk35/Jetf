@@ -80,7 +80,7 @@
             android:layout_marginTop="12dp"
             android:adjustViewBounds="true"
             android:contentDescription="@string/content_description_exception_photo"
-            android:scaleType="centerCrop"
+            android:scaleType="fitCenter"
             android:visibility="gone"
             tools:src="@android:drawable/ic_menu_camera"
             tools:visibility="visible" />

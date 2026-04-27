@@ -51,11 +51,55 @@ namespace JETFTAX.Controllers
                     return Json(new { error = "查無資料" }, JsonRequestBehavior.AllowGet);
                 }
 
-                return Json(new { Data = data }, JsonRequestBehavior.AllowGet);
+                data.ExceptionFilePaths = data.ExceptionFilePaths
+                    .Select(ToImageDataUrl)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToList();
+
+                return new JsonResult
+                {
+                    Data = new { Data = data },
+                    JsonRequestBehavior = JsonRequestBehavior.AllowGet,
+                    MaxJsonLength = int.MaxValue
+                };
             }
             catch (Exception ex)
             {
                 return Json(new { error = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        private string ToImageDataUrl(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                return null;
+            }
+
+            try
+            {
+                var physicalPath = filePath;
+                if (!Path.IsPathRooted(physicalPath))
+                {
+                    var relativePath = filePath.StartsWith("~")
+                        ? filePath
+                        : "~/" + filePath.TrimStart('~', '/', '\\').Replace('\\', '/');
+
+                    physicalPath = Server.MapPath(relativePath);
+                }
+
+                if (!System.IO.File.Exists(physicalPath))
+                {
+                    return null;
+                }
+
+                var mimeType = System.Web.MimeMapping.GetMimeMapping(physicalPath);
+                var fileBytes = System.IO.File.ReadAllBytes(physicalPath);
+                return $"data:{mimeType};base64,{Convert.ToBase64String(fileBytes)}";
+            }
+            catch
+            {
+                return null;
             }
         }
 

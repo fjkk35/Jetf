@@ -89,6 +89,7 @@ namespace Service.Services.ShipmentInboundRecord
                     .ThenByDescending(x => x.Id)
                     .Select(x => new
                     {
+                        x.Id,
                         x.CreatedTime,
                         x.Reason,
                         x.FilePath
@@ -114,12 +115,40 @@ namespace Service.Services.ShipmentInboundRecord
                 data.ExceptionReason = latestExceptions
                     .Select(x => x.Reason)
                     .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
-                data.ExceptionFilePaths = latestExceptions
+                data.ExceptionFilePaths = exceptions
                     .Select(x => x.FilePath)
                     .Where(x => !string.IsNullOrWhiteSpace(x))
                     .ToList();
 
                 return data;
+            }
+        }
+
+        public string GetExceptionImagePath(int shipmentInboundId, int imageIndex)
+        {
+            if (shipmentInboundId <= 0 || imageIndex < 0)
+            {
+                return null;
+            }
+
+            using (var db = CreateJetfDbContext())
+            {
+                var filePaths = db.ShipmentInboundExceptions
+                    .AsNoTracking()
+                    .Where(x => x.ShipmentInboundId == shipmentInboundId)
+                    .OrderByDescending(x => x.CreatedTime)
+                    .ThenByDescending(x => x.Id)
+                    .Select(x => x.FilePath)
+                    .ToList()
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToList();
+
+                if (imageIndex >= filePaths.Count)
+                {
+                    return null;
+                }
+
+                return filePaths[imageIndex];
             }
         }
 

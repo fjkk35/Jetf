@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import android.os.Bundle
 import android.util.Base64
@@ -34,6 +36,7 @@ import com.example.jetfapp.viewmodel.ShipmentExceptionEvent
 import com.example.jetfapp.viewmodel.ShipmentExceptionViewModel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
+import java.io.IOException
 import kotlinx.coroutines.launch
 
 class ShipmentExceptionFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHandler {
@@ -349,7 +352,8 @@ class ShipmentExceptionFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeS
             inSampleSize = calculateInSampleSize(boundsOptions, 1280, 1280)
             inJustDecodeBounds = false
         }
-        return BitmapFactory.decodeFile(photoFile.absolutePath, previewOptions)
+        val decodedBitmap = BitmapFactory.decodeFile(photoFile.absolutePath, previewOptions) ?: return null
+        return applyPhotoOrientation(photoFile, decodedBitmap)
     }
 
     private fun calculateInSampleSize(
@@ -371,6 +375,45 @@ class ShipmentExceptionFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeS
         }
 
         return inSampleSize.coerceAtLeast(1)
+    }
+
+    private fun applyPhotoOrientation(photoFile: File, bitmap: Bitmap): Bitmap {
+        val orientation = try {
+            ExifInterface(photoFile.absolutePath).getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL
+            )
+        } catch (_: IOException) {
+            return bitmap
+        }
+
+        val matrix = Matrix().apply {
+            when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> postRotate(90f)
+                ExifInterface.ORIENTATION_ROTATE_180 -> postRotate(180f)
+                ExifInterface.ORIENTATION_ROTATE_270 -> postRotate(270f)
+                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> postScale(-1f, 1f)
+                ExifInterface.ORIENTATION_FLIP_VERTICAL -> postScale(1f, -1f)
+                ExifInterface.ORIENTATION_TRANSPOSE -> {
+                    postRotate(90f)
+                    postScale(-1f, 1f)
+                }
+                ExifInterface.ORIENTATION_TRANSVERSE -> {
+                    postRotate(270f)
+                    postScale(-1f, 1f)
+                }
+            }
+        }
+
+        if (matrix.isIdentity) {
+            return bitmap
+        }
+
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true).also {
+            if (it != bitmap) {
+                bitmap.recycle()
+            }
+        }
     }
 
     private fun deleteCurrentPhotoFile() {
