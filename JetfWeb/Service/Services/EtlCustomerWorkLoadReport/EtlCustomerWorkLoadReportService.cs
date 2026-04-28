@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using NPOI.SS.Formula.Functions;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using NPOI.XSSF.UserModel;
@@ -433,18 +434,27 @@ namespace Service.Services.EtlCustomerWorkLoadReport
         private List<SignOutTimeModel> GetSignOutDateList(List<CustWorkLoadDetailModel> details, string transName, string mainnumber)
         {
             return details
-                .Where(t => t.TransName == transName &&
-                           t.Mainnumber == mainnumber &&
-                           t.SignOutTime.HasValue)
-                .GroupBy(t => new { t.TransName, t.Mainnumber, t.SignOutDate })
-                .Select(g => new SignOutTimeModel
-                {
-                    SignOutTime = g.Min(t => t.SignOutTime.Value),
-                    ArrivalTime = g.Where(t => !string.IsNullOrEmpty(t.ArrivalTime)).Min(m => m.ArrivalTime),
-                    TotalBlNo = g.Select(t => t.BlNo).Distinct().Count()
-                })
-                .OrderBy(x => x.SignOutTime)
-                .ToList();
+                    .Where(t => t.TransName == transName &&
+                               t.Mainnumber == mainnumber &&
+                               t.SignOutTime.HasValue)
+                    .GroupBy(t => new
+                    {
+                        t.TransName,
+                        t.Mainnumber,
+                        TimeRange = t.TransName == "SPX"
+                            ? (t.SignOutTime.Value.Hour >= 9 && t.SignOutTime.Value.Hour < 13 ? 1
+                                : t.SignOutTime.Value.Hour >= 13 && t.SignOutTime.Value.Hour < 18 ? 2 : 3)
+                            : (t.SignOutTime.Value.Hour >= 9 && t.SignOutTime.Value.Hour < 13 ? 1 : 2)
+                    })
+                    .Select(g => new SignOutTimeModel
+                    {
+                        SignOutTime = g.Min(t => t.SignOutTime.Value),
+                        ArrivalTime = g.Where(t => !string.IsNullOrEmpty(t.ArrivalTime))
+                                       .Min(m => m.ArrivalTime),
+                        TotalBlNo = g.Select(t => t.BlNo).Distinct().Count()
+                    })
+                    .OrderBy(x => x.SignOutTime)
+                    .ToList();
         }
 
         #endregion
@@ -580,8 +590,8 @@ namespace Service.Services.EtlCustomerWorkLoadReport
                 })
                 .ToList();
             // 出倉時間明細
-            // SPX   第一個時段 9~12 第二個時段 12~21 第三個時段 21~隔天9
-            // HL/FM 第一個時段 9~15 第二個時段 16~08
+            // SPX   第一個時段 9~13 第二個時段 13~18 第三個時段 18~隔天9
+            // HL/FM 第一個時段 9~13 第二個時段 13~08
             var signOutTimeDetail = signOutTimeGroup.Select(t => new
             {
                 DataDate = t.SignOutTime.AddHours(-9).ToString("yyyyMMdd"),
@@ -591,9 +601,9 @@ namespace Service.Services.EtlCustomerWorkLoadReport
                 t.SignOutTime,
                 t.ArrivalTime,
                 TimeRange = t.TransName == "SPX"
-                    ? (t.SignOutTime.Hour >= 9 && t.SignOutTime.Hour < 12 ? 1
-                        : t.SignOutTime.Hour >= 12 && t.SignOutTime.Hour < 21 ? 2 : 3)
-                    : (t.SignOutTime.Hour >= 9 && t.SignOutTime.Hour < 16 ? 1 : 2)
+                    ? (t.SignOutTime.Hour >= 9 && t.SignOutTime.Hour < 13 ? 1
+                        : t.SignOutTime.Hour >= 13 && t.SignOutTime.Hour < 18 ? 2 : 3)
+                    : (t.SignOutTime.Hour >= 9 && t.SignOutTime.Hour < 13 ? 1 : 2)
             }).ToList();
 
             // 出倉時間結果
