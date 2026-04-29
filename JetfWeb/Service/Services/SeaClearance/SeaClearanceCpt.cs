@@ -68,7 +68,7 @@ namespace Service.Services.SeaClearance
             var relCondCdSql = @"
                 SELECT TOP 1 RelCondCd 
                 FROM jetf.dbo.SeaClearanceGb301
-                WHERE Id = @SeaClearanceDetailId
+                WHERE SeaClearanceDetailId = @SeaClearanceDetailId
             ";
             model.Gb301RelCondCd = conn.QueryFirstOrDefault<string>(relCondCdSql, new { SeaClearanceDetailId = seaClearanceDetailId });
 
@@ -183,7 +183,7 @@ namespace Service.Services.SeaClearance
                         // 檢查是否已存在資料
                         var checkRelCondCdSql = @"
                                             SELECT RelCondCd FROM jetf.dbo.SeaClearanceGb301 
-                                            WHERE Id = @SeaClearanceDetailId";
+                                            WHERE SeaClearanceDetailId = @SeaClearanceDetailId";
                         var existingRelCondCd = conn.QueryFirstOrDefault<string>(checkRelCondCdSql, new
                         {
                             SeaClearanceDetailId = request.SeaClearanceDetailId
@@ -192,7 +192,7 @@ namespace Service.Services.SeaClearance
                         // 查無資料，新增一筆新的
                         if (string.IsNullOrEmpty(existingRelCondCd))
                         {
-                            var insertRelCondCdSql = "INSERT INTO jetf.dbo.SeaClearanceGb301 (Id, RelCondCd) VALUES (@SeaClearanceDetailId, @RelCondCd)";
+                            var insertRelCondCdSql = "INSERT INTO jetf.dbo.SeaClearanceGb301 (SeaClearanceDetailId, RelCondCd) VALUES (@SeaClearanceDetailId, @RelCondCd)";
                             conn.Execute(insertRelCondCdSql, new
                             {
                                 SeaClearanceDetailId = request.SeaClearanceDetailId,
@@ -202,7 +202,7 @@ namespace Service.Services.SeaClearance
                         else if (existingRelCondCd != gb301Result.RelCondCd)
                         {
                             // 有資料但不同，才需要更新
-                            var updateRelCondCdSql = "UPDATE jetf.dbo.SeaClearanceGb301 SET RelCondCd = @RelCondCd WHERE Id = @SeaClearanceDetailId";
+                            var updateRelCondCdSql = "UPDATE jetf.dbo.SeaClearanceGb301 SET RelCondCd = @RelCondCd WHERE SeaClearanceDetailId = @SeaClearanceDetailId";
                             conn.Execute(updateRelCondCdSql, new
                             {
                                 SeaClearanceDetailId = request.SeaClearanceDetailId,
