@@ -245,6 +245,10 @@ public sealed class PortalService(
             var matchingInbounds = await _jetfDbContext.ShipmentInbounds
                 .AsNoTracking()
                 .Where(entity => entity.SeqNo == seqNo && entity.OutboundTime == null)
+                .Select(entity => new
+                {
+                    entity.Id
+                })
                 .ToListAsync(cancellationToken);
 
             if (matchingInbounds.Count == 0)
@@ -305,12 +309,19 @@ public sealed class PortalService(
     {
         try
         {
+            await using var transaction = await _jetfDbContext.Database.BeginTransactionAsync(cancellationToken);
             var seqNo = request.SeqNo.Trim();
             var newLocationCode = NormalizeLocationCode(request.LocationCode);
             var editUser = request.EditUser.Trim();
 
             var matchingInbounds = await _jetfDbContext.ShipmentInbounds
+                .AsNoTracking()
                 .Where(entity => entity.SeqNo == seqNo && entity.OutboundTime == null)
+                .Select(entity => new
+                {
+                    entity.Id,
+                    entity.LocationCode
+                })
                 .ToListAsync(cancellationToken);
 
             if (matchingInbounds.Count == 0)
@@ -328,7 +339,7 @@ public sealed class PortalService(
             }
 
             var inbound = matchingInbounds[0];
-            var oldLocationCode = inbound.LocationCode.Trim();
+            var oldLocationCode = inbound.LocationCode?.Trim() ?? string.Empty;
             if (string.Equals(oldLocationCode, newLocationCode, StringComparison.OrdinalIgnoreCase))
             {
                 return ServiceResult.Fail(
@@ -336,13 +347,29 @@ public sealed class PortalService(
                     "新儲位與原儲位相同，無需更新");
             }
 
-            inbound.LocationCode = newLocationCode;
+            var updatedRows = await _jetfDbContext.ShipmentInbounds
+                .Where(entity => entity.Id == inbound.Id)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(entity => entity.LocationCode, newLocationCode),
+                    cancellationToken);
+
+            if (updatedRows <= 0)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return ServiceResult.Fail("UPDATE_FAILED", "儲位調撥失敗");
+            }
+
             await AddLocationEditHistoryAsync(inbound.Id, oldLocationCode, newLocationCode, editUser, cancellationToken);
 
             var affectedRows = await _jetfDbContext.SaveChangesAsync(cancellationToken);
-            return affectedRows > 0
-                ? ServiceResult.Success($"儲位調撥成功\n流水號：{seqNo}\n新儲位：{newLocationCode}")
-                : ServiceResult.Fail("UPDATE_FAILED", "儲位調撥失敗");
+            if (affectedRows <= 0)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return ServiceResult.Fail("UPDATE_FAILED", "儲位調撥失敗");
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+            return ServiceResult.Success($"儲位調撥成功\n流水號：{seqNo}\n新儲位：{newLocationCode}");
         }
         catch (Exception exception)
         {
@@ -431,7 +458,13 @@ public sealed class PortalService(
             }
 
             var matchingInbounds = await _jetfDbContext.ShipmentInbounds
+                .AsNoTracking()
                 .Where(entity => entity.LocationCode == oldLocationCode && entity.OutboundTime == null)
+                .Select(entity => new
+                {
+                    entity.Id,
+                    entity.LocationCode
+                })
                 .ToListAsync(cancellationToken);
 
             if (matchingInbounds.Count == 0)
@@ -441,10 +474,22 @@ public sealed class PortalService(
                     "查無符合條件的入庫資料");
             }
 
+            var inboundIds = matchingInbounds.Select(inbound => inbound.Id).ToList();
+            var updatedRows = await _jetfDbContext.ShipmentInbounds
+                .Where(entity => inboundIds.Contains(entity.Id))
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(entity => entity.LocationCode, newLocationCode),
+                    cancellationToken);
+
+            if (updatedRows != matchingInbounds.Count)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return ServiceResult.Fail("UPDATE_FAILED", "整板儲位調撥失敗");
+            }
+
             foreach (var inbound in matchingInbounds)
             {
-                var originalLocationCode = inbound.LocationCode.Trim();
-                inbound.LocationCode = newLocationCode;
+                var originalLocationCode = inbound.LocationCode?.Trim() ?? string.Empty;
                 await AddLocationEditHistoryAsync(inbound.Id, originalLocationCode, newLocationCode, editUser, cancellationToken);
             }
 
