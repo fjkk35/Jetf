@@ -231,6 +231,12 @@
     <Compile Include="Data\Models\DataCenter\SysCustEntity.cs" />
     <Compile Include="Data\Models\Jetf\CustomerMasterEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterEntity.cs" />
+    <Compile Include="Data\Models\Jetf\AbnormalStateEntity.cs" />
+    <Compile Include="Data\Models\Jetf\CustomsBrokerEntity.cs" />
+    <Compile Include="Data\Models\Jetf\CustomsBrokerageEntity.cs" />
+    <Compile Include="Data\Models\Jetf\SeaClearanceDetailEntity.cs" />
+    <Compile Include="Data\Models\Jetf\SeaClearanceDetailOriginalMappingEntity.cs" />
+    <Compile Include="Data\Models\Jetf\SeaClearanceFeeEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundEditHistoryEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundExceptionEntity.cs" />
@@ -516,6 +522,7 @@
     <Compile Include="Services\SeaClearance\Domain\SeaClearanceDetailResponse.cs" />
     <Compile Include="Services\SeaClearance\Domain\SeaClearanceRequest.cs" />
     <Compile Include="Services\SeaClearance\Domain\SeaClearanceResponse.cs" />
+    <Compile Include="Services\SeaClearance\Domain\SeaClearanceListQueryItem.cs" />
     <Compile Include="Services\SeaClearance\SeaClearanceAbnormalState.cs" />
     <Compile Include="Services\SeaClearance\SeaClearanceApprovalCategory.cs" />
     <Compile Include="Services\SeaClearance\SeaClearanceCpt.cs" />

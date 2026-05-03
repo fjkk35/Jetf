@@ -66,6 +66,11 @@ namespace Service.Services.SeaClearance
         /// </summary>
         public int? AbnormalStateId { get; set; }
 
+        /// <summary>
+        /// 指定的明細 Id 清單。
+        /// </summary>
+        public List<int> SeaClearanceDetailIds { get; set; }
+
         public int Page { get; set; }
 
         public int PageSize { get; set; }

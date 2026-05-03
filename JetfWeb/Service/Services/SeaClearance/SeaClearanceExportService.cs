@@ -33,8 +33,16 @@ namespace Service.Services.SeaClearance
         /// </summary>
         public IWorkbook SeaClearanceExcel(SeaClearanceRequest request)
         {
-            var list = GetSeaClearance(request);
-            var ids = list.Select(r => r.Id).ToList();
+            var ids = GetFilteredSeaClearanceDetailIds(request);
+            if (!ids.Any())
+            {
+                return Excel(new List<SeaClearanceDetailQueryModel>());
+            }
+
+            var list = GetSeaClearance(new SeaClearanceRequest
+            {
+                SeaClearanceDetailIds = ids
+            });
 
             //簽審類別
             var approvalCategoriesDic = GetDetailApprovalCategories(ids);

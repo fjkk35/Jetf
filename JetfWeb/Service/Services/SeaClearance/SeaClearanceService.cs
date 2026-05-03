@@ -4,6 +4,7 @@ using Microsoft.VisualBasic.ApplicationServices;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Org.BouncyCastle.Asn1.Ocsp;
+using Service.Data;
 using Service.EnumTax;
 using Service.Extensions;
 using Service.Helpers;
@@ -20,6 +21,7 @@ using Service.Services.SeaClearanceDetailEditHistory;
 using Service.Services.ShipmentInboundProcess.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Net;
@@ -35,6 +37,8 @@ namespace Service.Services.SeaClearance
 {
     public partial class SeaClearanceService : _BaseService
     {
+        // SeaClearanceListQueryItem moved to Service.Services.SeaClearance.Domain.SeaClearanceListQueryItem
+
         private readonly SeaClearanceDetailEditHistoryService _editHistoryService;
         private readonly CustomsBrokerService _customsBrokerService;
         private readonly CptPortalApi _cptPortalApi;
@@ -50,101 +54,20 @@ namespace Service.Services.SeaClearance
 
         public SeaClearanceResponse GetData(SeaClearanceRequest request)
         {
-            var parameters = new DynamicParameters();
+            request = request ?? new SeaClearanceRequest();
 
-            var mainSql = @"
-                 SELECT COUNT(*) FROM (
-                        {0}
-                    ) AS Filtered;
-                
-                SELECT * FROM (
-                       {0}
-                   ) AS Filtered
-                ORDER BY Id  
-                OFFSET @Offset ROWS
-                FETCH NEXT @PageSize ROWS ONLY
-            ";
-
-            //SQL 查詢
-            var sql = @"
-                SELECT 
-                a.Id,a.DataDate,a.MainNumber,a.TrackingNo,a.DeclNo,a.SignOutTime,
-				c.CreateDate, c.Modifyby, c.Post_Entry, c.Eta, c.Cust_Code,d.Cust_Name, c.Piece, c.Importer,c.Jetf_Serial,
-				c.Item_Name,
-                f.StepName
-				FROM [jetf].[dbo].[SeaClearanceDetail] a 
-                LEFT JOIN [jetf].[dbo].SeaClearanceDetailOriginalMapping c ON a.Id = c.SeaClearanceDetailId
-                LEFT JOIN [DATA_CENTER].[dbo].[SYS_CUST] d ON c.Cust_Code = d.CUST_CODE
-                LEFT JOIN [jetf].[dbo].[SeaClearanceFee] e ON c.Cust_Code = e.CustCode
-				LEFT JOIN [jetf].[dbo].[Step] f ON a.CurrentStepId = f.Id
-                where IsSucess = '1' and c.Gw > 0 
-            ";
-
-            //分提單號
-            if (!string.IsNullOrEmpty(request.TrackingNo))
+            using (var db = CreateJetfDbContext())
             {
-                sql += " and a.TrackingNo = @TrackingNo";
-                parameters.Add("TrackingNo", request.TrackingNo);
-            }
-
-            //報單號碼
-            if (!string.IsNullOrEmpty(request.DeclNo))
-            {
-                sql += " and a.DeclNo = @DeclNo";
-                parameters.Add("DeclNo", request.DeclNo);
-            }
-
-            //報關方式
-            if (request.PostEntry.HasValue)
-            {
-                sql += " and c.Post_Entry = @PostEntry";
-                parameters.Add("PostEntry", request.PostEntry.ToDescription());
-            }
-
-            //客戶
-            if (!string.IsNullOrEmpty(request.CustCode))
-            {
-                sql += " and c.Cust_Code = @CustCode";
-                parameters.Add("CustCode", request.CustCode);
-            }
-
-            //原單申報人
-            if (!string.IsNullOrEmpty(request.Importer))
-            {
-                sql += " and c.Importer = @Importer";
-                parameters.Add("Importer", request.Importer);
-            }
-
-            //倉別
-            if (request.Type.HasValue)
-            {
-                sql += " and c.Modifyby = @Type";
-                parameters.Add("Type", request.Type.ToDescription());
-            }
-
-            //步驟
-            if (request.StepId.HasValue)
-            {
-                sql += " and (a.CurrentStepId = @StepId OR (@StepId = 2 AND a.CurrentStepId IS NULL))";
-                parameters.Add("StepId", request.StepId.Value);
-            }
-
-            //異常狀態
-            if (request.AbnormalStateId.HasValue)
-            {
-                sql += " and a.CurrentAbnormalStateId = @AbnormalStateId";
-                parameters.Add("AbnormalStateId", request.AbnormalStateId.Value);
-            }
-
-            mainSql = string.Format(mainSql, sql);
-
-            parameters.Add("Offset", (request.Page - 1) * request.PageSize);
-            parameters.Add("PageSize", request.PageSize);
-
-            using (var query = conn.QueryMultiple(mainSql, parameters))
-            {
-                var totalCount = query.ReadFirst<int>();
-                var data = query.Read<SeaClearanceModel>().ToList();
+                var page = request.Page > 0 ? request.Page : 1;
+                var pageSize = request.PageSize > 0 ? request.PageSize : 10;
+                var query = BuildSeaClearanceListQuery(db, request);
+                var totalCount = query.Count();
+                var pageItems = query
+                    .OrderBy(x => x.Id)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+                var data = MapSeaClearanceList(pageItems);
 
                 return new SeaClearanceResponse
                 {
@@ -152,6 +75,113 @@ namespace Service.Services.SeaClearance
                     Data = data
                 };
             }
+        }
+
+        private IQueryable<SeaClearanceListQueryItem> BuildSeaClearanceListQuery(JetfDbContext db, SeaClearanceRequest request)
+        {
+            request = request ?? new SeaClearanceRequest();
+
+            var trackingNo = string.IsNullOrWhiteSpace(request.TrackingNo) ? null : request.TrackingNo.Trim();
+            var declNo = string.IsNullOrWhiteSpace(request.DeclNo) ? null : request.DeclNo.Trim();
+            var custCode = string.IsNullOrWhiteSpace(request.CustCode) ? null : request.CustCode.Trim();
+            var importer = string.IsNullOrWhiteSpace(request.Importer) ? null : request.Importer.Trim();
+            var postEntry = request.PostEntry.HasValue ? request.PostEntry.ToDescription() : null;
+            var warehouseType = request.Type.HasValue ? request.Type.ToDescription() : null;
+            var detailIds = request.SeaClearanceDetailIds;
+
+            var query =
+                from detail in db.SeaClearanceDetails.AsNoTracking()
+                let original = db.SeaClearanceDetailOriginalMappings
+                    .Where(x => x.SeaClearanceDetailId == detail.Id && x.Gw.HasValue && x.Gw.Value > 0)
+                    .OrderByDescending(x => x.Gw)
+                    .ThenByDescending(x => x.SeaOrderOriginalId)
+                    .FirstOrDefault()
+                where detail.IsSucess && original != null
+                select new SeaClearanceListQueryItem
+                {
+                    Id = detail.Id,
+                    SeaClearanceId = detail.SeaClearanceId,
+                    DataDate = detail.DataDate,
+                    MainNumber = detail.MainNumber,
+                    TrackingNo = detail.TrackingNo,
+                    DeclNo = detail.DeclNo,
+                    SignOutTime = detail.SignOutTime,
+                    CreateDate = original.CreateDate,
+                    Modifyby = original.Modifyby,
+                    PostEntry = original.Post_Entry,
+                    Eta = original.Eta,
+                    CustCode = original.Cust_Code,
+                    Piece = original.Piece,
+                    Importer = original.Importer,
+                    JetfSerial = original.Jetf_Serial,
+                    ItemName = original.Item_Name,
+                    CurrentStepId = detail.CurrentStepId,
+                    CurrentAbnormalStateId = detail.CurrentAbnormalStateId
+                };
+
+            query = query.WhereIf(request.SeaClearanceId.HasValue, x => x.SeaClearanceId == request.SeaClearanceId.Value);
+            query = query.WhereIf(request.SeaClearanceDetailId.HasValue, x => x.Id == request.SeaClearanceDetailId.Value);
+            query = query.WhereIf(detailIds != null && detailIds.Any(), x => detailIds.Contains(x.Id));
+            query = query.WhereIf(!string.IsNullOrWhiteSpace(trackingNo), x => x.TrackingNo == trackingNo);
+            query = query.WhereIf(!string.IsNullOrWhiteSpace(declNo), x => x.DeclNo == declNo);
+            query = query.WhereIf(!string.IsNullOrWhiteSpace(postEntry), x => x.PostEntry == postEntry);
+            query = query.WhereIf(!string.IsNullOrWhiteSpace(custCode), x => x.CustCode == custCode);
+            query = query.WhereIf(!string.IsNullOrWhiteSpace(importer), x => x.Importer == importer);
+            query = query.WhereIf(!string.IsNullOrWhiteSpace(warehouseType), x => x.Modifyby == warehouseType);
+
+            if (request.StepId.HasValue)
+            {
+                var stepId = request.StepId.Value;
+                query = query.Where(x => x.CurrentStepId == stepId || (stepId == 2 && !x.CurrentStepId.HasValue));
+            }
+
+            query = query.WhereIf(request.AbnormalStateId.HasValue, x => x.CurrentAbnormalStateId == request.AbnormalStateId.Value);
+
+            return query;
+        }
+
+        private List<int> GetFilteredSeaClearanceDetailIds(SeaClearanceRequest request)
+        {
+            using (var db = CreateJetfDbContext())
+            {
+                return BuildSeaClearanceListQuery(db, request)
+                    .OrderBy(x => x.Id)
+                    .Select(x => x.Id)
+                    .ToList();
+            }
+        }
+
+        private List<SeaClearanceModel> MapSeaClearanceList(List<SeaClearanceListQueryItem> items)
+        {
+            var stepNameMap = GetAllSteps()
+                .GroupBy(x => x.Id)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.StepName).FirstOrDefault() ?? string.Empty);
+            var customerNameMap = GetSeaCustomerNames(items.Select(x => x.CustCode));
+
+            return items.Select(x => new SeaClearanceModel
+            {
+                Id = x.Id,
+                DataDate = x.DataDate,
+                MainNumber = x.MainNumber,
+                TrackingNo = x.TrackingNo,
+                DeclNo = x.DeclNo,
+                CreateDate = x.CreateDate,
+                Modifyby = x.Modifyby,
+                Post_Entry = x.PostEntry,
+                Eta = x.Eta,
+                Cust_Code = x.CustCode,
+                Cust_Name = !string.IsNullOrWhiteSpace(x.CustCode) && customerNameMap.TryGetValue(x.CustCode, out var customerName)
+                    ? customerName
+                    : string.Empty,
+                Piece = x.Piece,
+                Importer = x.Importer,
+                Jetf_Serial = x.JetfSerial,
+                Item_Name = x.ItemName,
+                SignOutTime = x.SignOutTime,
+                StepName = x.CurrentStepId.HasValue && stepNameMap.TryGetValue(x.CurrentStepId.Value, out var stepName)
+                    ? stepName
+                    : string.Empty
+            }).ToList();
         }
 
         public SeaClearanceDetailQueryModel GetDetail(int id)
@@ -666,207 +696,282 @@ namespace Service.Services.SeaClearance
         /// <returns></returns>
         List<SeaClearanceDetailQueryModel> GetSeaClearance(SeaClearanceRequest request)
         {
-            var parameters = new DynamicParameters();
+            request = request ?? new SeaClearanceRequest();
 
-            var sql = @"
-                select 
-                    a.Id, a.DataDate, a.MainNumber, a.MftNo, a.TrackingNo, a.Memo, 
-                    a.ImportDate, a.DeclNo, a.ProDateTime, a.CrtDateTime, a.IsSeaOrderOriginal, a.Tax,
-                    a.CustomsBrokerId, f.Name as CustomsBrokerName,
-                    a.CustomsBrokerageId, g.Name as CustomsBrokerageName,
-                    a.SignInTime, a.SignOutTime,
-                    a.ContactEmail, a.ContactChangeData,
-                    a.CurrentStepId,
-                    a.CurrentAbnormalStateId,
-                    h.AbnormalStateName as CurrentAbnormalStateName,
-                    a.IsCustomsHold, a.CustomsHold,
-                    --a.InspectionType, a.ProcessingPersonnel, a.ReceivedOriginalMenu, 
-                    --a.DocumentDeliveryMenu, a.ContactChangeData, a.ContactEmail,
-                    -- SeaOrderOriginal 相關欄位
-                    c.SeaClearanceDetailId, c.CreateDate, c.Modifyby, c.Post_Entry, c.Eta, 
-                    c.Cust_Code, d.Cust_Name, c.Piece, c.Importer, c.Im_Phoneno,c.Importer_Id, c.CC, 
-                    c.Tax_Payment, c.Jetf_Serial, c.Gw,
-                    -- Fee 相關欄位
-                    e.G1Fee, e.MoveWarehouseFee, e.TransferG1Fee, e.TransferWarehouseFee, e.X2Fee
-                from [jetf].[dbo].[SeaClearanceDetail] a 
-                left join [jetf].[dbo].SeaClearanceDetailOriginalMapping c on a.Id = c.SeaClearanceDetailId
-                left join [DATA_CENTER].[dbo].[SYS_CUST] d on c.Cust_Code = d.CUST_CODE
-                left join [jetf].[dbo].[SeaClearanceFee] e on c.Cust_Code = e.CustCode
-                left join [jetf].[dbo].[CustomsBroker] f on a.CustomsBrokerId = f.Id
-                left join [jetf].[dbo].[CustomsBrokerage] g on a.CustomsBrokerageId = g.Id
-                left join [jetf].[dbo].[AbnormalState] h on a.CurrentAbnormalStateId = h.Id
-                where a.IsSucess = '1'
-            ";
-
-            //上傳Id
-            if (request.SeaClearanceId.HasValue)
+            if (request.SeaClearanceDetailIds != null && !request.SeaClearanceDetailIds.Any())
             {
-                sql += " and a.SeaClearanceId = @SeaClearanceId";
-                parameters.Add("SeaClearanceId", request.SeaClearanceId.Value);
+                return new List<SeaClearanceDetailQueryModel>();
             }
 
-            //明細Id
-            if (request.SeaClearanceDetailId.HasValue)
+            var trackingNo = string.IsNullOrWhiteSpace(request.TrackingNo) ? null : request.TrackingNo.Trim();
+            var declNo = string.IsNullOrWhiteSpace(request.DeclNo) ? null : request.DeclNo.Trim();
+            var custCode = string.IsNullOrWhiteSpace(request.CustCode) ? null : request.CustCode.Trim();
+            var importer = string.IsNullOrWhiteSpace(request.Importer) ? null : request.Importer.Trim();
+            var warehouseType = request.Type.HasValue ? request.Type.ToDescription() : null;
+            var postEntry = request.PostEntry.HasValue ? request.PostEntry.ToDescription() : null;
+
+            using (var db = CreateJetfDbContext())
             {
-                sql += " and a.Id = @SeaClearanceDetailId";
-                parameters.Add("SeaClearanceDetailId", request.SeaClearanceDetailId.Value);
-            }
+                IQueryable<SeaClearanceDetailEntity> detailQuery = db.SeaClearanceDetails
+                    .AsNoTracking()
+                    .Where(x => x.IsSucess);
 
-            //分提單號
-            if (!string.IsNullOrEmpty(request.TrackingNo))
-            {
-                sql += " and a.TrackingNo = @TrackingNo";
-                parameters.Add("TrackingNo", request.TrackingNo);
-            }
+                detailQuery = detailQuery.WhereIf(request.SeaClearanceId.HasValue, x => x.SeaClearanceId == request.SeaClearanceId.Value);
+                detailQuery = detailQuery.WhereIf(request.SeaClearanceDetailId.HasValue, x => x.Id == request.SeaClearanceDetailId.Value);
+                detailQuery = detailQuery.WhereIf(request.SeaClearanceDetailIds != null && request.SeaClearanceDetailIds.Any(), x => request.SeaClearanceDetailIds.Contains(x.Id));
+                detailQuery = detailQuery.WhereIf(!string.IsNullOrWhiteSpace(trackingNo), x => x.TrackingNo == trackingNo);
+                detailQuery = detailQuery.WhereIf(!string.IsNullOrWhiteSpace(declNo), x => x.DeclNo == declNo);
 
-            //報單號碼
-            if (!string.IsNullOrEmpty(request.DeclNo))
-            {
-                sql += " and a.DeclNo = @DeclNo";
-                parameters.Add("DeclNo", request.DeclNo);
-            }
+                IQueryable<SeaClearanceDetailOriginalMappingEntity> originalQuery = db.SeaClearanceDetailOriginalMappings.AsNoTracking();
+                var hasOriginalFilter = false;
 
-            //客戶
-            if (!string.IsNullOrEmpty(request.CustCode))
-            {
-                sql += " and c.Cust_Code = @CustCode";
-                parameters.Add("CustCode", request.CustCode);
-            }
-
-            //原單申報人
-            if (!string.IsNullOrEmpty(request.Importer))
-            {
-                sql += " and c.Importer = @Importer";
-                parameters.Add("Importer", request.Importer);
-            }
-
-            //倉別
-            if (request.Type.HasValue)
-            {
-                sql += " and c.Modifyby = @Type";
-                parameters.Add("Type", request.Type.ToDescription());
-            }
-
-            //報關方式
-            if (request.PostEntry.HasValue)
-            {
-                sql += " and c.Post_Entry = @PostEntry";
-                parameters.Add("PostEntry", request.PostEntry.ToDescription());
-            }
-
-            var queryResult = conn.Query<SeaClearanceDetailQueryModel, SeaOrderOriginalModel, (SeaClearanceDetailQueryModel detail, SeaOrderOriginalModel original)>(sql,
-                (detail, original) => (detail, original),
-                parameters,
-                splitOn: "SeaClearanceDetailId").ToList();
-
-            //GroupBY
-            var list = queryResult
-                .GroupBy(x => x.detail.Id)
-                .Select(g =>
+                if (!string.IsNullOrWhiteSpace(custCode))
                 {
-                    var detail = g.First().detail;
-                    detail.SeaOrderOriginals = g
-                        .Where(x => x.original != null && x.original.SeaClearanceDetailId > 0)
-                        .Select(x => x.original)
-                        .OrderByDescending(x => x.Gw)
-                        .ToList();
-                    return detail;
-                })
-                .ToList();
-
-            //捷利原單申報人收費方式
-            var sjlTaxPayments = GetSeaClearanceSjlTaxPayment();
-            //客戶收費方式
-            var seaClearanceCustTaxPayments = GetSeaClearanceCustTaxPayment();
-
-            foreach (var item in list)
-            {
-                CalculateDeadlines(item);
-
-                var seaOrderOriginal = item.SeaOrderOriginals.FirstOrDefault(x => x.Gw > 0);
-
-                //到倉天數，倉日期-入倉日期+1
-                //若未有出倉日期: 今日日期(查的當天)-入倉日期+1
-                //出倉、入倉都未有值代0
-                if (item.SignInTime.HasValue)
-                {
-                    // 只取日期部分，包含當日所以 +1
-                    var startDate = item.SignInTime.Value.Date;
-                    var endDate = item.SignOutTime.HasValue ? item.SignOutTime.Value.Date : DateTime.Now.Date;
-
-                    var days = (endDate - startDate).Days + 1;
-
-                    // 若計算結果為負，改為 0（資料異常安全處理）
-                    item.WarehouseDays = days > 0 ? days : 0;
-                }
-                else
-                {
-                    // 未有入倉日期時回傳 0
-                    item.WarehouseDays = 0;
+                    originalQuery = originalQuery.Where(x => x.Cust_Code == custCode);
+                    hasOriginalFilter = true;
                 }
 
-
-                //報關費用1
-                switch (seaOrderOriginal?.Post_Entry)
+                if (!string.IsNullOrWhiteSpace(importer))
                 {
-                    case "G1":
-                        item.ClearanceFee = seaOrderOriginal?.G1Fee ?? 0;
-                        break;
-                    case "轉G1":
-                        item.ClearanceFee = seaOrderOriginal?.TransferG1Fee ?? 0;
-                        break;
-                    case "移倉":
-                        item.ClearanceFee = seaOrderOriginal?.MoveWarehouseFee ?? 0;
-                        break;
-                    case "轉移倉":
-                        item.ClearanceFee = seaOrderOriginal?.MoveWarehouseFee ?? 0;
-                        break;
-                    case "X2":
-                    case "X3":
-                        item.ClearanceFee = seaOrderOriginal?.X2Fee ?? 0;
-                        break;
-                    default:
-                        item.ClearanceFee = 0;
-                        break;
+                    originalQuery = originalQuery.Where(x => x.Importer == importer);
+                    hasOriginalFilter = true;
                 }
 
-                //收費方式
-                if (seaOrderOriginal?.Cust_Name == "捷利")
+                if (!string.IsNullOrWhiteSpace(warehouseType))
                 {
-                    var sjlTaxPayment = sjlTaxPayments.FirstOrDefault(x => x.Importer == seaOrderOriginal.Importer);
-                    if (sjlTaxPayment != null)
+                    originalQuery = originalQuery.Where(x => x.Modifyby == warehouseType);
+                    hasOriginalFilter = true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(postEntry))
+                {
+                    originalQuery = originalQuery.Where(x => x.Post_Entry == postEntry);
+                    hasOriginalFilter = true;
+                }
+
+                if (hasOriginalFilter)
+                {
+                    var matchedDetailIds = originalQuery.Select(x => x.SeaClearanceDetailId);
+                    detailQuery = detailQuery.Where(x => matchedDetailIds.Contains(x.Id));
+                }
+
+                var detailIds = detailQuery
+                    .OrderBy(x => x.Id)
+                    .Select(x => x.Id)
+                    .ToList();
+
+                if (!detailIds.Any())
+                {
+                    return new List<SeaClearanceDetailQueryModel>();
+                }
+
+                var list = detailQuery
+                    .OrderBy(x => x.Id)
+                    .Select(x => new SeaClearanceDetailQueryModel
                     {
-                        seaOrderOriginal.Tax_Payment = sjlTaxPayment.TaxPayment.ToDescription();
+                        Id = x.Id,
+                        DataDate = x.DataDate,
+                        MainNumber = x.MainNumber,
+                        MftNo = x.MftNo,
+                        TrackingNo = x.TrackingNo,
+                        Memo = x.Memo,
+                        ImportDate = x.ImportDate,
+                        DeclNo = x.DeclNo,
+                        ProDateTime = x.ProDateTime,
+                        CrtDateTime = x.CrtDateTime ?? DateTime.MinValue,
+                        IsSeaOrderOriginal = x.IsSeaOrderOriginal ?? false,
+                        Tax = x.Tax,
+                        CustomsBrokerId = x.CustomsBrokerId,
+                        CustomsBrokerName = db.CustomsBrokers
+                            .Where(y => y.Id == x.CustomsBrokerId)
+                            .Select(y => y.Name)
+                            .FirstOrDefault(),
+                        CustomsBrokerageId = x.CustomsBrokerageId,
+                        CustomsBrokerageName = db.CustomsBrokerages
+                            .Where(y => y.Id == x.CustomsBrokerageId)
+                            .Select(y => y.Name)
+                            .FirstOrDefault(),
+                        SignInTime = x.SignInTime,
+                        SignOutTime = x.SignOutTime,
+                        ContactEmail = x.ContactEmail,
+                        ContactChangeData = x.ContactChangeData,
+                        CurrentStepId = x.CurrentStepId,
+                        CurrentAbnormalStateId = x.CurrentAbnormalStateId,
+                        CurrentAbnormalStateName = db.AbnormalStates
+                            .Where(y => y.Id == x.CurrentAbnormalStateId)
+                            .Select(y => y.AbnormalStateName)
+                            .FirstOrDefault(),
+                        IsCustomsHold = x.IsCustomsHold ?? false,
+                        CustomsHold = x.CustomsHold,
+                        IsSucess = x.IsSucess
+                    })
+                    .ToList();
+
+                var originalRows = db.SeaClearanceDetailOriginalMappings
+                    .AsNoTracking()
+                    .Where(x => detailIds.Contains(x.SeaClearanceDetailId))
+                    .OrderBy(x => x.SeaClearanceDetailId)
+                    .ThenByDescending(x => x.Gw)
+                    .ThenByDescending(x => x.SeaOrderOriginalId)
+                    .Select(x => new
+                    {
+                        x.SeaClearanceDetailId,
+                        x.SeaOrderOriginalId,
+                        x.CreateDate,
+                        x.Modifyby,
+                        x.Post_Entry,
+                        x.Eta,
+                        x.Cust_Code,
+                        x.Piece,
+                        x.Importer,
+                        x.Im_Phoneno,
+                        x.Importer_Id,
+                        x.CC,
+                        x.Tax_Payment,
+                        x.Item_Name,
+                        x.Jetf_Serial,
+                        x.Gw
+                    })
+                    .ToList();
+
+                var customerNameMap = GetSeaCustomerNames(originalRows.Select(x => x.Cust_Code));
+
+                var feeCustCodes = originalRows
+                    .Select(x => x.Cust_Code)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct()
+                    .ToList();
+
+                var feeMap = db.SeaClearanceFees
+                    .AsNoTracking()
+                    .Where(x => feeCustCodes.Contains(x.CustCode))
+                    .GroupBy(x => x.CustCode)
+                    .ToDictionary(g => g.Key, g => g.FirstOrDefault());
+
+                var originalsByDetailId = originalRows
+                    .Select(x =>
+                    {
+                        feeMap.TryGetValue(x.Cust_Code ?? string.Empty, out var fee);
+                        return new SeaOrderOriginalModel
+                        {
+                            SeaClearanceDetailId = x.SeaClearanceDetailId,
+                            SeaOrderOriginalId = x.SeaOrderOriginalId,
+                            CreateDate = x.CreateDate,
+                            Modifyby = x.Modifyby,
+                            Post_Entry = x.Post_Entry,
+                            Eta = x.Eta,
+                            Cust_Code = x.Cust_Code,
+                            Cust_Name = !string.IsNullOrWhiteSpace(x.Cust_Code) && customerNameMap.TryGetValue(x.Cust_Code, out var custName)
+                                ? custName
+                                : string.Empty,
+                            Piece = x.Piece,
+                            Importer = x.Importer,
+                            Im_Phoneno = x.Im_Phoneno,
+                            Importer_Id = x.Importer_Id,
+                            CC = x.CC,
+                            Tax_Payment = x.Tax_Payment,
+                            Jetf_Serial = x.Jetf_Serial,
+                            Item_Name = x.Item_Name,
+                            Gw = x.Gw ?? 0,
+                            G1Fee = fee != null ? (int?)fee.G1Fee : null,
+                            MoveWarehouseFee = fee != null ? (int?)fee.MoveWarehouseFee : null,
+                            TransferG1Fee = fee != null ? (int?)fee.TransferG1Fee : null,
+                            TransferWarehouseFee = fee != null ? (int?)fee.TransferWarehouseFee : null,
+                            X2Fee = fee != null ? (int?)fee.X2Fee : null
+                        };
+                    })
+                    .GroupBy(x => x.SeaClearanceDetailId)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                foreach (var detail in list)
+                {
+                    detail.SeaOrderOriginals = originalsByDetailId.TryGetValue(detail.Id, out var originals)
+                        ? originals
+                        : new List<SeaOrderOriginalModel>();
+                }
+
+                //捷利原單申報人收費方式
+                var sjlTaxPayments = GetSeaClearanceSjlTaxPayment();
+                //客戶收費方式
+                var seaClearanceCustTaxPayments = GetSeaClearanceCustTaxPayment();
+
+                foreach (var item in list)
+                {
+                    CalculateDeadlines(item);
+
+                    var seaOrderOriginal = item.SeaOrderOriginals.FirstOrDefault(x => x.Gw > 0);
+
+                    //到倉天數，倉日期-入倉日期+1
+                    //若未有出倉日期: 今日日期(查的當天)-入倉日期+1
+                    //出倉、入倉都未有值代0
+                    if (item.SignInTime.HasValue)
+                    {
+                        var startDate = item.SignInTime.Value.Date;
+                        var endDate = item.SignOutTime.HasValue ? item.SignOutTime.Value.Date : DateTime.Now.Date;
+                        var days = (endDate - startDate).Days + 1;
+                        item.WarehouseDays = days > 0 ? days : 0;
                     }
                     else
                     {
-                        switch (seaOrderOriginal?.Tax_Payment)
+                        item.WarehouseDays = 0;
+                    }
+
+                    switch (seaOrderOriginal?.Post_Entry)
+                    {
+                        case "G1":
+                            item.ClearanceFee = seaOrderOriginal?.G1Fee ?? 0;
+                            break;
+                        case "轉G1":
+                            item.ClearanceFee = seaOrderOriginal?.TransferG1Fee ?? 0;
+                            break;
+                        case "移倉":
+                            item.ClearanceFee = seaOrderOriginal?.MoveWarehouseFee ?? 0;
+                            break;
+                        case "轉移倉":
+                            item.ClearanceFee = seaOrderOriginal?.MoveWarehouseFee ?? 0;
+                            break;
+                        case "X2":
+                        case "X3":
+                            item.ClearanceFee = seaOrderOriginal?.X2Fee ?? 0;
+                            break;
+                        default:
+                            item.ClearanceFee = 0;
+                            break;
+                    }
+
+                    if (seaOrderOriginal?.Cust_Name == "捷利")
+                    {
+                        var sjlTaxPayment = sjlTaxPayments.FirstOrDefault(x => x.Importer == seaOrderOriginal.Importer);
+                        if (sjlTaxPayment != null)
                         {
-                            case "P":
-                                seaOrderOriginal.Tax_Payment = "客戶";
-                                break;
-                            case "C":
-                            case "Y":
-                                seaOrderOriginal.Tax_Payment = "代收";
-                                break;
-                                //case "D":
-                                //    seaOrderOriginal.Tax_Payment = "匯款";
-                                //    break;
+                            seaOrderOriginal.Tax_Payment = sjlTaxPayment.TaxPayment.ToDescription();
+                        }
+                        else
+                        {
+                            switch (seaOrderOriginal?.Tax_Payment)
+                            {
+                                case "P":
+                                    seaOrderOriginal.Tax_Payment = "客戶";
+                                    break;
+                                case "C":
+                                case "Y":
+                                    seaOrderOriginal.Tax_Payment = "代收";
+                                    break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        var seaClearanceCustTaxPayment = seaClearanceCustTaxPayments.FirstOrDefault(x => x.CustCode == seaOrderOriginal?.Cust_Code);
+                        if (seaClearanceCustTaxPayment != null)
+                        {
+                            seaOrderOriginal.Tax_Payment = seaClearanceCustTaxPayment.TaxPayment.ToDescription();
                         }
                     }
                 }
-                else
-                {
-                    //客戶收費方式
-                    var seaClearanceCustTaxPayment = seaClearanceCustTaxPayments.FirstOrDefault(x => x.CustCode == seaOrderOriginal?.Cust_Code);
-                    if (seaClearanceCustTaxPayment != null)
-                    {
-                        seaOrderOriginal.Tax_Payment = seaClearanceCustTaxPayment.TaxPayment.ToDescription();
-                    }
-                }
-            }
 
-            return list;
+                return list;
+            }
         }
 
         /// <summary>
