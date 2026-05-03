@@ -48,6 +48,11 @@ namespace Service.Services.ShipmentInboundRecord.Domain
         public string TrackingNo { get; set; }
 
         /// <summary>
+        /// 是否為原始貨件
+        /// </summary>
+        public bool IsOrderOriginal { get; set; }
+
+        /// <summary>
         /// 退件原因
         /// </summary>
         public string ReturnReason { get; set; }
@@ -71,6 +76,11 @@ namespace Service.Services.ShipmentInboundRecord.Domain
         /// 儲位
         /// </summary>
         public string LocationCode { get; set; }
+
+        /// <summary>
+        /// 尺寸
+        /// </summary>
+        public string Size { get; set; }
 
         /// <summary>
         /// 處理方式
@@ -253,5 +263,30 @@ namespace Service.Services.ShipmentInboundRecord.Domain
         /// 異常圖片列表。
         /// </summary>
         public List<string> ExceptionFilePaths { get; set; } = new List<string>();
+
+        /// <summary>
+        /// 異常圖片明細。
+        /// </summary>
+        public List<ShipmentInboundExceptionImageModel> ExceptionImages { get; set; } = new List<ShipmentInboundExceptionImageModel>();
+    }
+
+    public class ShipmentInboundExceptionImageModel
+    {
+        /// <summary>
+        /// 圖片路徑
+        /// </summary>
+        public string FilePath { get; set; }
+
+        /// <summary>
+        /// 前端顯示圖片網址
+        /// </summary>
+        public string ImageUrl { get; set; }
+
+        /// <summary>
+        /// 上傳時間
+        /// </summary>
+        public DateTime? CreatedTime { get; set; }
+
+        public string CreatedTimeText => CreatedTime?.ToString("yyyy/MM/dd HH:mm:ss") ?? string.Empty;
     }
 }

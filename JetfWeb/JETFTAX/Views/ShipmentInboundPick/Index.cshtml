@@ -63,6 +63,20 @@
             </div>
         </div>
 
+        <div class="row mb-3 align-items-center">
+            <div class="form-group row col-lg-4 mb-0">
+                <label for="processType" class="col-lg-4 col-form-label text-right">處理方式</label>
+                <div class="col-lg-8">
+                    <select id="processType"
+                            class="form-control"
+                            ng-model="searchForm.processType">
+                        <option value="">全部</option>
+                        <option ng-repeat="type in processTypeList" value="{{type.Value}}">{{type.Text}}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
         <!-- 按鈕區 -->
         <div class="row">
             <div class="col-lg-12 text-right">

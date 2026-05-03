@@ -7,7 +7,8 @@
 
     $scope.searchForm = {
         locationCode: '',
-        trackingNo: ''
+        trackingNo: '',
+        seqNo: ''
     };
 
     $scope.selectedItems = [];
@@ -26,10 +27,11 @@
 
     $scope.search = function () {
         if (!$scope.searchForm.locationCode || $scope.searchForm.locationCode.trim() === '') {
-            if (!$scope.searchForm.trackingNo || $scope.searchForm.trackingNo.trim() === '') {
+            if ((!$scope.searchForm.trackingNo || $scope.searchForm.trackingNo.trim() === '')
+                && (!$scope.searchForm.seqNo || $scope.searchForm.seqNo.trim() === '')) {
                 swal({
                     title: "提醒",
-                    text: "請輸入儲位或單號",
+                    text: "請輸入儲位、單號或流水號",
                     icon: "warning"
                 });
                 return;
@@ -45,7 +47,8 @@
 
         var searchRequest = {
             LocationCode: $scope.searchForm.locationCode,
-            TrackingNo: $scope.searchForm.trackingNo
+            TrackingNo: $scope.searchForm.trackingNo,
+            SeqNo: $scope.searchForm.seqNo
         };
 
         $http.post(Router.action('ShipmentInboundLocationTransfer', 'SearchData'), searchRequest)
@@ -86,7 +89,8 @@
     $scope.clearSearch = function () {
         $scope.searchForm = {
             locationCode: '',
-            trackingNo: ''
+            trackingNo: '',
+            seqNo: ''
         };
         $scope.data = [];
         $scope.isSearched = false;

@@ -1,18 +1,23 @@
 namespace Service.Services.ShipmentInboundLocationTransfer.Domain
 {
     /// <summary>
-    /// Àx¦ì½Õ¼·¬d¸ß½Ğ¨D¼Ò«¬
+    /// å„²ä½èª¿æ’¥æŸ¥è©¢è«‹æ±‚æ¨¡å‹
     /// </summary>
     public class LocationTransferRequest
     {
         /// <summary>
-        /// Àx¦ì
+        /// å„²ä½
         /// </summary>
         public string LocationCode { get; set; }
 
         /// <summary>
-        /// ³æ¸¹
+        /// å–®è™Ÿ
         /// </summary>
         public string TrackingNo { get; set; }
+
+        /// <summary>
+        /// æµæ°´è™Ÿ
+        /// </summary>
+        public string SeqNo { get; set; }
     }
 }

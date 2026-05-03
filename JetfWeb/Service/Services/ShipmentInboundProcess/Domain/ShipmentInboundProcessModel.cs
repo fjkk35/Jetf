@@ -5,93 +5,93 @@ using System;
 namespace Service.Services.ShipmentInboundProcess.Domain
 {
     /// <summary>
-    /// �f��J�w�B�z��ܼҫ�
-    /// �Ω�e�ݬd�ߦC����ܻP����B�z�@�~
+    /// 貨件回倉處理顯示模型
+    /// 用於前端查詢列表顯示與單筆處理作業
     /// </summary>
     public class ShipmentInboundProcessModel
     {
         /// <summary>
-        /// �D�� Id
+        /// 主鍵 Id
         /// </summary>
         public int Id { get; set; }
 
         /// <summary>
-        /// �J�w���
+        /// 入庫日期
         /// </summary>
         public DateTime InboundDate { get; set; }
 
         /// <summary>
-        /// �i�f�覡�]�Ҧp���B�B�ŹB�^
+        /// 進口方式(例如海運、空運)
         /// </summary>
         public string DataType { get; set; }
 
         /// <summary>
-        /// �Ȥ�N�X
+        /// 客戶代碼
         /// </summary>
         public string CustCode { get; set; }
 
         /// <summary>
-        /// �Ȥ�W��
+        /// 客戶名稱
         /// </summary>
         public string CustName { get; set; }
 
         /// <summary>
-        /// ���󤽥q�N�X(�ŹB�~��)
+        /// 派件公司代碼(空運常用)
         /// </summary>
         public string TransNo { get; set; }
 
         /// <summary>
-        /// ���󤽥q�W��
+        /// 派件公司名稱
         /// </summary>
         public string TransName { get; set; }
 
         /// <summary>
-        /// �l�ܳ渹�ΰl�ܸ�
+        /// 單號
         /// </summary>
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// �f��ӷ�����
+        /// 貨件來源
         /// </summary>
         public ShipmentInboundSourceType SourceType { get; set; }
 
         /// <summary>
-        /// �f��ӷ��W��
+        /// 貨件來源名稱
         /// </summary>
         public string SourceTypeName => SourceType.ToDescription();
 
         /// <summary>
-        /// �h���]�]�O�d�^
+        /// 退件原因(保留)
         /// </summary>
         public string ReturnReason { get; set; }
 
         /// <summary>
-        /// ���X�渹
+        /// 重出單號
         /// </summary>
         public string ReturnTrackingNo { get; set; }
 
         /// <summary>
-        /// �B�z����
+        /// 處理方式
         /// </summary>
         public ShipmentInboundProcessType? ProcessType { get; set; }
 
         /// <summary>
-        /// �H��Ū��r�e�{���B�z�����W��
+        /// 處理方式名稱
         /// </summary>
         public string ProcessTypeName => ProcessType?.ToDescription();
 
         /// <summary>
-        /// �|��
+        /// 稅金
         /// </summary>
         public decimal? Tax { get; set; }
 
         /// <summary>
-        /// �����O
+        /// 報關費
         /// </summary>
         public decimal? Ccfee { get; set; }
 
         /// <summary>
-        /// ��I��
+        /// 到付款
         /// </summary>
         public decimal? Cod { get; set; }
     }

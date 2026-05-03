@@ -1,4 +1,4 @@
-using NPOI.SS.UserModel;
+﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.EnumTax;
 using Service.Extensions;
@@ -19,7 +19,8 @@ namespace Service.Services.ShipmentInboundPick
             {
                 var query = db.ShipmentInbounds
                     .AsNoTracking()
-                    .Where(x => x.ProcessType != (byte)ShipmentInboundProcessType.TempData);
+                    .Where(x => x.ProcessType != ShipmentInboundProcessType.TempData)
+                    .Where(x => !x.WarehouseProcessType.HasValue);
 
                 if (!string.IsNullOrWhiteSpace(request.ProcessTimeStart)
                     && DateTime.TryParse(request.ProcessTimeStart, out var startDate))
@@ -41,6 +42,8 @@ namespace Service.Services.ShipmentInboundPick
                     .ToList();
 
                 query = query.WhereIf(custCodes?.Any() == true, x => custCodes.Contains(x.CustCode));
+
+                query = query.WhereIf(request.ProcessType.HasValue, x => x.ProcessType == request.ProcessType);
 
                 var data = query
                     .OrderBy(x => x.LocationCode)
@@ -149,7 +152,7 @@ namespace Service.Services.ShipmentInboundPick
             }
 
             //AutoSize+20字元
-            sheet.AutoSizeColumns(headers.Count, scale: 1,minWidth:20);
+            sheet.AutoSizeColumns(headers.Count, scale: 1, minWidth: 20);
         }
 
         /// <summary>
@@ -163,15 +166,15 @@ namespace Service.Services.ShipmentInboundPick
         {
             ISheet sheet = workbook.CreateSheet("派件公司格式(新竹)");
 
-            var filteredData = data.Where(x => x.ProcessType == EnumTax.ShipmentInboundProcessType.NewTrackingNo 
+            var filteredData = data.Where(x => x.ProcessType == EnumTax.ShipmentInboundProcessType.NewTrackingNo
                                             && x.ProcessTransNo == EnumTax.ShipmentInboundProcessTransNo.Hct).ToList();
 
             IRow headerRow = sheet.CreateRow(0);
-            var headers = new List<string> 
-            { 
-                "序號", "訂單號", "收件人姓名", "收件人地址", "收件人電話", 
-                "託運備註中文限制", "商品別編號", "商品數量", "才積/重量/總長(30/60/90/120..)", 
-                "代收貨款", "指定配送日期", "指定配送時間", "稅金", "代收手續費" 
+            var headers = new List<string>
+            {
+                "序號", "訂單號", "收件人姓名", "收件人地址", "收件人電話",
+                "託運備註中文限制", "商品別編號", "商品數量", "才積/重量/總長(30/60/90/120..)",
+                "代收貨款", "指定配送日期", "指定配送時間", "稅金", "代收手續費"
             };
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
@@ -185,7 +188,7 @@ namespace Service.Services.ShipmentInboundPick
                 NpoiCell.CreateCell(dataRow, 2, item.ProcessImporter, dataStyle);
                 NpoiCell.CreateCell(dataRow, 3, item.ProcessImporterAddr, dataStyle);
                 NpoiCell.CreateCell(dataRow, 4, item.ProcessImporterPhone, dataStyle);
-                NpoiCell.CreateCell(dataRow, 5, "", dataStyle);
+                NpoiCell.CreateCell(dataRow, 5, BuildHctRemark(item), dataStyle);
                 NpoiCell.CreateCell(dataRow, 6, "", dataStyle);
                 NpoiCell.CreateIntCell(dataRow, 7, 1, dataStyle);
                 NpoiCell.CreateIntCell(dataRow, 8, 5, dataStyle);
@@ -218,16 +221,16 @@ namespace Service.Services.ShipmentInboundPick
         {
             ISheet sheet = workbook.CreateSheet("派件公司格式(黑貓)");
 
-            var filteredData = data.Where(x => x.ProcessType == EnumTax.ShipmentInboundProcessType.NewTrackingNo 
+            var filteredData = data.Where(x => x.ProcessType == EnumTax.ShipmentInboundProcessType.NewTrackingNo
                                             && x.ProcessTransNo == EnumTax.ShipmentInboundProcessTransNo.TCat).ToList();
 
             IRow headerRow = sheet.CreateRow(0);
-            var headers = new List<string> 
-            { 
-                "出貨日期", "訂單編號", "收件人姓名", "收件人地址", "收件人電話", 
-                "備註", "託運單號", "預定配達日", "配達時段", "品名", 
-                "代收貨款", "契客代號", "溫層", "尺寸", "寄件人姓名", 
-                "寄件人地址", "寄件人電話", "稅金", "代收手續費" 
+            var headers = new List<string>
+            {
+                "出貨日期", "訂單編號", "收件人姓名", "收件人地址", "收件人電話",
+                "備註", "託運單號", "預定配達日", "配達時段", "品名",
+                "代收貨款", "契客代號", "溫層", "尺寸", "寄件人姓名",
+                "寄件人地址", "寄件人電話", "稅金", "代收手續費"
             };
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
@@ -270,14 +273,14 @@ namespace Service.Services.ShipmentInboundPick
         {
             ISheet sheet = workbook.CreateSheet("派件公司格式(超商)");
 
-            var filteredData = data.Where(x => x.ProcessType == EnumTax.ShipmentInboundProcessType.NewTrackingNo 
+            var filteredData = data.Where(x => x.ProcessType == EnumTax.ShipmentInboundProcessType.NewTrackingNo
                                             && x.ProcessTransNo == EnumTax.ShipmentInboundProcessTransNo.SevenEleven).ToList();
 
             IRow headerRow = sheet.CreateRow(0);
-            var headers = new List<string> 
-            { 
-                "單號", "收件人姓名", "收件人地址", "收件人電話", 
-                "門市店號", "門市名稱", "代收貨款", "稅金" 
+            var headers = new List<string>
+            {
+                "單號", "收件人姓名", "收件人地址", "收件人電話",
+                "門市店號", "門市名稱", "代收貨款", "稅金"
             };
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
@@ -304,13 +307,13 @@ namespace Service.Services.ShipmentInboundPick
         {
             ISheet sheet = workbook.CreateSheet("派件公司格式(郵局)");
 
-            var filteredData = data.Where(x => x.ProcessType == EnumTax.ShipmentInboundProcessType.NewTrackingNo 
+            var filteredData = data.Where(x => x.ProcessType == EnumTax.ShipmentInboundProcessType.NewTrackingNo
                                             && x.ProcessTransNo == EnumTax.ShipmentInboundProcessTransNo.Post).ToList();
 
             IRow headerRow = sheet.CreateRow(0);
-            var headers = new List<string> 
-            { 
-                "單號", "收件人姓名", "收件人地址", "收件人電話", "稅金", "代收手續費" 
+            var headers = new List<string>
+            {
+                "單號", "收件人姓名", "收件人地址", "收件人電話", "稅金", "代收手續費"
             };
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
@@ -351,6 +354,13 @@ namespace Service.Services.ShipmentInboundPick
                 SenderName = "捷豐國際物流股份有限公司",
                 SenderPhone = "03-2522568"
             };
+        }
+
+        private string BuildHctRemark(ShipmentInboundPickModel item)
+        {
+            var seqNo = item?.SeqNo ?? string.Empty;
+            var locationCode = item?.LocationCode ?? string.Empty;
+            return $"{seqNo}_{locationCode}";
         }
 
         private class TCatSenderInfo

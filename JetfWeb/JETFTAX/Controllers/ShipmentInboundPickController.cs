@@ -1,4 +1,5 @@
 ﻿using Service.EnumTax;
+using Service.Extensions;
 using Service.Services.ShipmentInboundPick;
 using Service.Services.ShipmentInboundPick.Domain;
 using System;
@@ -21,6 +22,21 @@ namespace JETFTAX.Controllers
         public ActionResult Index()
         {
             return View();
+        }
+
+        [HttpGet]
+        [UserAuthorize(Authority.ShipmentInboundPick)]
+        public JsonResult GetProcessTypeList()
+        {
+            var list = Enum.GetValues(typeof(ShipmentInboundProcessType))
+                .Cast<ShipmentInboundProcessType>()
+                .Select(item => new
+                {
+                    Value = (byte)item,
+                    Text = item.ToDescription()
+                }).ToList();
+
+            return Json(list, JsonRequestBehavior.AllowGet);
         }
 
         [HttpPost]

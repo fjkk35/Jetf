@@ -41,7 +41,8 @@
         trackingNo: '',
         isClosed: '',
         inboundDateStart: new Date(),
-        inboundDateEnd: new Date()
+        inboundDateEnd: new Date(),
+        unknownShipmentOnly: false
     };
 
     // 進口方式下拉選單
@@ -480,6 +481,7 @@
             SourceType: $scope.searchForm.sourceType ? parseInt($scope.searchForm.sourceType) : null,
             TrackingNo: $scope.searchForm.trackingNo,
             IsClosed: isClosed,
+            IsOrderOriginal: $scope.searchForm.unknownShipmentOnly ? false : null,
             InboundDateStart: dateStart,
             InboundDateEnd: dateEnd
         };
@@ -557,7 +559,8 @@
             trackingNo: '',
             isClosed: '',
             inboundDateStart: new Date(),
-            inboundDateEnd: new Date()
+            inboundDateEnd: new Date(),
+            unknownShipmentOnly: false
         };
 
         $scope.customerSelectAll = true;

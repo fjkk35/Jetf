@@ -51,10 +51,15 @@ namespace JETFTAX.Controllers
                     return Json(new { error = "查無資料" }, JsonRequestBehavior.AllowGet);
                 }
 
-                data.ExceptionFilePaths = data.ExceptionFilePaths
-                    .Select(ToImageDataUrl)
-                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                data.ExceptionImages = data.ExceptionImages
+                    .Select(x =>
+                    {
+                        x.ImageUrl = ToImageDataUrl(x.FilePath);
+                        return x;
+                    })
+                    .Where(x => !string.IsNullOrWhiteSpace(x.ImageUrl))
                     .ToList();
+                data.ExceptionFilePaths = data.ExceptionImages.Select(x => x.ImageUrl).ToList();
 
                 return new JsonResult
                 {
@@ -224,6 +229,24 @@ namespace JETFTAX.Controllers
             try
             {
                 _shipmentInboundRecordService.UpdateAmount(request);
+                return Json(new { success = true }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        /// <summary>
+        /// 更新單號
+        /// </summary>
+        [HttpPost]
+        [UserAuthorize(Authority.ShipmentInboundRecord)]
+        public JsonResult UpdateTrackingNo(UpdateTrackingNoRequest request)
+        {
+            try
+            {
+                _shipmentInboundRecordService.UpdateTrackingNo(request);
                 return Json(new { success = true }, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)

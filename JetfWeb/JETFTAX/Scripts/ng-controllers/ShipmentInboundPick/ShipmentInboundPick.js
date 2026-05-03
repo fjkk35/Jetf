@@ -3,6 +3,7 @@
     $scope.data = [];
     $scope.loading = false;
     $scope.isSearched = false;
+    $scope.processTypeList = [];
 
     // 日期選擇器狀態
     $scope.startDatePopup = { opened: false };
@@ -24,7 +25,8 @@
     // 查詢條件
     $scope.searchForm = {
         processTimeStart: new Date(today),
-        processTimeEnd: new Date(today)
+        processTimeEnd: new Date(today),
+        processType: ''
     };
 
     // customer-multi-select 需要的變數
@@ -32,6 +34,21 @@
     $scope.selectedCustCodes = [];
     $scope.customerDisplayText = '';
     $scope.customerDisplayFullText = '';
+
+    $scope.init = function () {
+        $scope.loadProcessTypeList();
+    };
+
+    $scope.loadProcessTypeList = function () {
+        $http.get(Router.action('ShipmentInboundPick', 'GetProcessTypeList'))
+            .then(function (response) {
+                $scope.processTypeList = response.data || [];
+            })
+            .catch(function (error) {
+                console.error('載入處理方式清單失敗:', error);
+                alert('載入處理方式清單失敗');
+            });
+    };
 
     // 開啟開始日期選擇器
     $scope.openStartDatePopup = function () {
@@ -55,7 +72,8 @@
 
         $scope.searchForm = {
             processTimeStart: new Date(today),
-            processTimeEnd: new Date(today)
+            processTimeEnd: new Date(today),
+            processType: ''
         };
         
         $scope.customerSelectAll = true;
@@ -84,6 +102,7 @@
         var request = {
             ProcessTimeStart: formatDate($scope.searchForm.processTimeStart),
             ProcessTimeEnd: formatDate($scope.searchForm.processTimeEnd),
+            ProcessType: $scope.searchForm.processType,
             CustCodes: ($scope.selectedCustCodes && $scope.selectedCustCodes.length > 0) ? $scope.selectedCustCodes : null
         };
 
@@ -111,6 +130,7 @@
         var request = {
             ProcessTimeStart: formatDate($scope.searchForm.processTimeStart),
             ProcessTimeEnd: formatDate($scope.searchForm.processTimeEnd),
+            ProcessType: $scope.searchForm.processType,
             CustCodes: ($scope.selectedCustCodes && $scope.selectedCustCodes.length > 0) ? $scope.selectedCustCodes : null
         };
 
@@ -156,4 +176,6 @@
 
         return [year, month, day].join('-');
     }
+
+    $scope.init();
 }]);

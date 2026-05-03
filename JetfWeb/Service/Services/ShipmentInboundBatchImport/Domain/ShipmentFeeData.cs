@@ -1,7 +1,7 @@
 namespace Service.Services.ShipmentInboundBatchImport.Domain
 {
     /// <summary>
-    /// µ|ª÷¸ê®ÆÃþ§O
+    /// ç¨…é‡‘è³‡æ–™æ¨¡åž‹
     /// </summary>
     public class ShipmentFeeData
     {

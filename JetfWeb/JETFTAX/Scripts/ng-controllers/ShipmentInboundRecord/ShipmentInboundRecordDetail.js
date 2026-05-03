@@ -1,4 +1,4 @@
-﻿mainApp.controller('ShipmentInboundRecordDetailController', ['$scope', '$http', '$location', function ($scope, $http, $location) {
+﻿mainApp.controller('ShipmentInboundRecordDetailController', ['$scope', '$http', '$location', '$timeout', function ($scope, $http, $location, $timeout) {
     // 初始化資料
     $scope.data = null;
     $scope.loading = true;
@@ -7,7 +7,56 @@
     $scope.newAmount = 0;
     $scope.currentFieldName = '';
     $scope.historyData = [];
-    $scope.currentLightboxImage = '';
+    $scope.editTrackingNo = '';
+    $scope.savingTrackingNo = false;
+
+    var exceptionViewer = null;
+
+    function destroyExceptionViewer() {
+        if (exceptionViewer) {
+            try { exceptionViewer.viewer('destroy'); } catch (e) { }
+            exceptionViewer = null;
+        }
+    }
+
+    function initExceptionViewer() {
+        $timeout(function () {
+            var gallery = document.getElementById('exceptionImageGallery');
+            if (!gallery || !gallery.querySelector('img')) {
+                destroyExceptionViewer();
+                return;
+            }
+
+            if (typeof $.fn.viewer === 'undefined') {
+                $timeout(initExceptionViewer, 100);
+                return;
+            }
+
+            destroyExceptionViewer();
+            exceptionViewer = $(gallery);
+            exceptionViewer.viewer({
+                navbar: false,
+                title: false,
+                transition: true,
+                rotatable: true,
+                scalable: true,
+                zoomable: true,
+                toolbar: {
+                    zoomIn: 1,
+                    zoomOut: 1,
+                    oneToOne: 1,
+                    reset: 1,
+                    prev: 0,
+                    play: 0,
+                    next: 0,
+                    rotateLeft: 1,
+                    rotateRight: 1,
+                    flipHorizontal: 0,
+                    flipVertical: 0
+                }
+            });
+        }, 0);
+    }
 
     // 從 URL 取得 id 參數
     function getQueryParam(name) {
@@ -39,6 +88,7 @@
                 }
 
                 $scope.data = response.data.Data;
+                    initExceptionViewer();
             })
             .catch(function (error) {
                 console.error('載入詳細資料失敗:', error);
@@ -46,6 +96,61 @@
             })
             .finally(function () {
                 $scope.loading = false;
+            });
+    };
+
+    $scope.openTrackingNoDialog = function () {
+        $scope.editTrackingNo = $scope.data && $scope.data.TrackingNo ? $scope.data.TrackingNo : '';
+        $('#editTrackingNoModal').modal('show');
+    };
+
+    $scope.saveTrackingNo = function () {
+        var trackingNo = ($scope.editTrackingNo || '').trim();
+        if (!trackingNo) {
+            swal({
+                title: '錯誤',
+                text: '請輸入新單號',
+                icon: 'error'
+            });
+            return;
+        }
+
+        var id = getQueryParam('id');
+        $scope.savingTrackingNo = true;
+
+        $http.post(Router.action('ShipmentInboundRecord', 'UpdateTrackingNo'), {
+            Id: parseInt(id),
+            NewTrackingNo: trackingNo
+        })
+            .then(function (response) {
+                if (response.data.error) {
+                    swal({
+                        title: '錯誤',
+                        text: response.data.error,
+                        icon: 'error'
+                    });
+                    return;
+                }
+
+                swal({
+                    title: '成功',
+                    text: '單號更新成功',
+                    icon: 'success'
+                }).then(function () {
+                    $('#editTrackingNoModal').modal('hide');
+                    $scope.loadDetail();
+                });
+            })
+            .catch(function (error) {
+                console.error('更新單號失敗:', error);
+                swal({
+                    title: '錯誤',
+                    text: '更新單號失敗，請稍後再試',
+                    icon: 'error'
+                });
+            })
+            .finally(function () {
+                $scope.savingTrackingNo = false;
             });
     };
 
@@ -153,19 +258,6 @@
             });
     };
 
-    $scope.openLightbox = function (filePath, $event) {
-        if ($event) {
-            $event.preventDefault();
-            $event.stopPropagation();
-        }
-
-        $scope.currentLightboxImage = filePath || '';
-    };
-
-    $scope.closeLightbox = function () {
-        $scope.currentLightboxImage = '';
-    };
-
     // 關閉視窗
     $scope.closeWindow = function () {
         window.close();
@@ -175,6 +267,10 @@
     $scope.backToList = function () {
         window.location = Router.action('ShipmentInboundRecord', 'Index');
     };
+
+    $scope.$on('$destroy', function () {
+        destroyExceptionViewer();
+    });
 
     // 頁面載入時執行
     $scope.loadDetail();

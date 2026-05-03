@@ -3,27 +3,27 @@ using System;
 namespace Service.Services.ShipmentInboundRecord.Domain
 {
     /// <summary>
-    /// ³f¥ó¤J®w½s¿è¾ú¥v°O¿ı
+    /// è²¨ä»¶å…¥åº«ç·¨è¼¯ç´€éŒ„
     /// </summary>
     public class ShipmentInboundEditHistoryModel
     {
         /// <summary>
-        /// ¥DÁä Id
+        /// ä¸»éµ Id
         /// </summary>
         public int Id { get; set; }
 
         /// <summary>
-        /// ³f¥ó¤J®w Id
+        /// è²¨ä»¶å…¥åº« Id
         /// </summary>
         public int ShipmentInboundId { get; set; }
 
         /// <summary>
-        /// Äæ¦ì¦WºÙ
+        /// æ¬„ä½åç¨±
         /// </summary>
         public string FieldName { get; set; }
 
         /// <summary>
-        /// Äæ¦ì¦WºÙ¡]¤¤¤åÅã¥Ü¡^
+        /// æ¬„ä½åç¨±(ä¸­æ–‡é¡¯ç¤º)
         /// </summary>
         public string FieldNameText
         {
@@ -31,12 +31,14 @@ namespace Service.Services.ShipmentInboundRecord.Domain
             {
                 switch (FieldName)
                 {
+                    case "TrackingNo":
+                        return "å–®è™Ÿ";
                     case "Cod":
-                        return "¨ì¥I´Ú";
+                        return "åˆ°ä»˜æ¬¾";
                     case "Tax":
-                        return "µ|ª÷";
+                        return "ç¨…é‡‘";
                     case "Ccfee":
-                        return "³øÃö¶O";
+                        return "å ±é—œè²»";
                     default:
                         return FieldName;
                 }
@@ -44,22 +46,22 @@ namespace Service.Services.ShipmentInboundRecord.Domain
         }
 
         /// <summary>
-        /// ÂÂ­È
+        /// èˆŠå€¼
         /// </summary>
         public string OldValue { get; set; }
 
         /// <summary>
-        /// ·s­È
+        /// æ–°å€¼
         /// </summary>
         public string NewValue { get; set; }
 
         /// <summary>
-        /// ½s¿è®É¶¡
+        /// ç·¨è¼¯æ™‚é–“
         /// </summary>
         public DateTime EditTime { get; set; }
 
         /// <summary>
-        /// ½s¿è¤H­û
+        /// ç·¨è¼¯äººå“¡
         /// </summary>
         public string EditUser { get; set; }
     }

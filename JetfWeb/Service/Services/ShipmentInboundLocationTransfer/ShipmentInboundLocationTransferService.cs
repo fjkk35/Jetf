@@ -24,6 +24,7 @@ namespace Service.Services.ShipmentInboundLocationTransfer
 
                 query = query.WhereIf(!string.IsNullOrWhiteSpace(request.LocationCode), x => x.LocationCode == request.LocationCode);
                 query = query.WhereIf(!string.IsNullOrWhiteSpace(request.TrackingNo), x => x.TrackingNo == request.TrackingNo);
+                query = query.WhereIf(!string.IsNullOrWhiteSpace(request.SeqNo), x => x.SeqNo == request.SeqNo);
 
                 var data = query
                     .OrderBy(x => x.Id)

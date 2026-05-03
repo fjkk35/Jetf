@@ -3,6 +3,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+
 <style>
     .detail-container {
         background-color: #ffffff;
@@ -174,36 +175,19 @@
         width: 220px;
     }
 
+    .exception-image-meta {
+        margin-top: 8px;
+        font-size: 0.95rem;
+        color: #6c757d;
+    }
+
     .exception-image-link {
         display: block;
         border: 1px solid #dee2e6;
         border-radius: 6px;
         overflow: hidden;
         background-color: #fff;
-        cursor: zoom-in;
         padding: 8px;
-    }
-
-    .exception-lightbox {
-        position: fixed;
-        inset: 0;
-        z-index: 1050;
-        background: rgba(0, 0, 0, 0.78);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 30px;
-        cursor: zoom-out;
-    }
-
-    .exception-lightbox-image {
-        max-width: min(92vw, 1400px);
-        max-height: 92vh;
-        width: auto;
-        height: auto;
-        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
-        border-radius: 8px;
-        background-color: #fff;
     }
 
     .exception-image {
@@ -213,6 +197,7 @@
         object-position: center;
         display: block;
         background-color: #f8f9fa;
+        cursor: zoom-in;
     }
 
     .exception-image-path {
@@ -221,26 +206,40 @@
         word-break: break-all;
     }
 
-        .history-table th {
-            background-color: #f8f9fa;
-            padding: 10px;
-            text-align: left;
-            border-bottom: 2px solid #dee2e6;
-            font-weight: 600;
-        }
+    .history-table th {
+        background-color: #f8f9fa;
+        padding: 10px;
+        text-align: left;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+    }
 
-        .history-table td {
-            padding: 10px;
-            border-bottom: 1px solid #dee2e6;
-        }
+    .history-table td {
+        padding: 10px;
+        border-bottom: 1px solid #dee2e6;
+    }
 
-        .history-table tbody tr:last-child td {
-            border-bottom: none;
-        }
+    .history-table tbody tr:last-child td {
+        border-bottom: none;
+    }
 
-        .history-table tbody tr:hover {
-            background-color: #f8f9fa;
-        }
+    .history-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .tracking-no-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .tracking-no-edit-btn {
+        border: none;
+        background: transparent;
+        color: #007bff;
+        padding: 0;
+        line-height: 1;
+    }
 </style>
 
 <div ng-controller="ShipmentInboundRecordDetailController" class="container-fluid">
@@ -277,7 +276,16 @@
                         <div class="detail-col">
                             <div class="detail-row">
                                 <div class="detail-label">單號：</div>
-                                <div class="detail-value detail-value-highlight">{{data.TrackingNo}}</div>
+                                <div class="detail-value detail-value-highlight tracking-no-wrap">
+                                    <span>{{data.TrackingNo}}</span>
+                                    <button type="button"
+                                            class="tracking-no-edit-btn"
+                                            ng-if="data.IsOrderOriginal === false"
+                                            ng-click="openTrackingNoDialog()"
+                                            title="修改單號">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -369,14 +377,15 @@
                             <div class="detail-row" style="align-items: flex-start;">
                                 <div class="detail-label">圖片：</div>
                                 <div class="detail-value">
-                                    <div class="exception-gallery" ng-if="data.ExceptionFilePaths && data.ExceptionFilePaths.length > 0">
-                                        <div class="exception-image-card" ng-repeat="filePath in data.ExceptionFilePaths track by $index">
-                                            <a class="exception-image-link" href="" ng-click="openLightbox(filePath, $event)">
-                                                <img class="exception-image" ng-src="{{filePath}}" alt="異常圖片 {{$index + 1}}" />
-                                            </a>
+                                    <div id="exceptionImageGallery" class="exception-gallery" ng-if="data.ExceptionImages && data.ExceptionImages.length > 0">
+                                        <div class="exception-image-card" ng-repeat="image in data.ExceptionImages track by $index">
+                                            <div class="exception-image-link">
+                                                <img class="exception-image" ng-src="{{image.ImageUrl}}" alt="異常圖片 {{$index + 1}}" />
+                                            </div>
+                                            <div class="exception-image-meta">{{image.CreatedTimeText}}</div>
                                         </div>
                                     </div>
-                                    <div ng-if="!data.ExceptionFilePaths || data.ExceptionFilePaths.length === 0">無</div>
+                                    <div ng-if="!data.ExceptionImages || data.ExceptionImages.length === 0">無</div>
                                 </div>
                             </div>
                         </div>
@@ -649,10 +658,6 @@
         </div>
     </div>
 
-    <div class="exception-lightbox" ng-show="currentLightboxImage" ng-click="closeLightbox()">
-        <img class="exception-lightbox-image" ng-src="{{currentLightboxImage}}" alt="異常圖片放大檢視" />
-    </div>
-
     <!-- 編輯金額視窗 -->
     <div class="modal fade" id="editAmountModal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
@@ -672,6 +677,36 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
                     <button type="button" class="btn btn-primary" ng-click="saveAmount()">確定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editTrackingNoModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">修改單號</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-0">
+                        <label>新單號</label>
+                        <input type="text"
+                               class="form-control"
+                               ng-model="editTrackingNo"
+                               ng-keydown="$event.keyCode === 13 && saveTrackingNo()"
+                               placeholder="請輸入新單號" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-disabled="savingTrackingNo">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveTrackingNo()" ng-disabled="savingTrackingNo">
+                        <i class="fa fa-spinner fa-spin" ng-show="savingTrackingNo"></i>
+                        {{savingTrackingNo ? '儲存中...' : '確定'}}
+                    </button>
                 </div>
             </div>
         </div>
@@ -719,3 +754,10 @@
         </div>
     </div>
 </div>
+
+<link rel="stylesheet" href="@Url.Content("~/Content/viewer/viewer.css")" />
+
+@section scripts {
+    <script src="@Url.Content("~/Scripts/lib/viewer/viewer.js")"></script>
+}
+

@@ -3,52 +3,57 @@ namespace Service.Services.ShipmentInboundProcess.Domain
     public class ShipmentInboundProcessRequest
     {
         /// <summary>
-        /// ¶i¤f¤è¦¡
+        /// é€²å£æ–¹å¼
         /// </summary>
         public string DataType { get; set; }
 
         /// <summary>
-        /// ¤J®w¤é´Á(°_)¡A®æ¦¡¡Gyyyy-MM-dd
+        /// å…¥åº«æ—¥æœŸ(èµ·)ï¼Œæ ¼å¼ï¼šyyyy-MM-dd
         /// </summary>
         public string InboundDateStart { get; set; }
 
         /// <summary>
-        /// ¤J®w¤é´Á(¨´)¡A®æ¦¡¡Gyyyy-MM-dd
+        /// å…¥åº«æ—¥æœŸ(è¿„)ï¼Œæ ¼å¼ï¼šyyyy-MM-dd
         /// </summary>
         public string InboundDateEnd { get; set; }
 
         /// <summary>
-        /// «È¤á¥N½X(³æ¿ï¡A¬Û®eÂÂª©)
+        /// å®¢æˆ¶ä»£ç¢¼(å–®ä¸€ï¼Œç›¸å®¹èˆŠç‰ˆ)
         /// </summary>
         public string CustCode { get; set; }
 
         /// <summary>
-        /// «È¤á¥N½X(¦h¿ï)
+        /// å®¢æˆ¶ä»£ç¢¼(å¤šé¸)
         /// </summary>
         public string[] CustCodes { get; set; }
 
         /// <summary>
-        /// ³fª«¨Ó·½
+        /// è²¨ä»¶ä¾†æº
         /// </summary>
         public int? SourceType { get; set; }
 
         /// <summary>
-        /// ³æ¸¹
+        /// å–®è™Ÿ
         /// </summary>
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// µ²®×ª¬ºA¡Gnull-¥ş³¡¡Atrue-¬O¡Afalse-§_
+        /// çµæ¡ˆç‹€æ…‹ï¼šnull=å…¨éƒ¨ï¼Œtrue=æ˜¯ï¼Œfalse=å¦
         /// </summary>
         public bool? IsClosed { get; set; }
 
         /// <summary>
-        /// ­¶½X
+        /// æ˜¯å¦åŸå§‹è²¨ä»¶
+        /// </summary>
+        public bool? IsOrderOriginal { get; set; }
+
+        /// <summary>
+        /// é ç¢¼
         /// </summary>
         public int Page { get; set; }
 
         /// <summary>
-        /// ¨C­¶µ§¼Æ
+        /// æ¯é ç­†æ•¸
         /// </summary>
         public int PageSize { get; set; }
     }

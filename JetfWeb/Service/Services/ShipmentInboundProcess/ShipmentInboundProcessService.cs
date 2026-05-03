@@ -84,8 +84,9 @@ namespace Service.Services.ShipmentInboundProcess
                         var oldCcfee = existing.Ccfee;
                         var oldCod = existing.Cod;
                         var oldFee = existing.Fee;
+                        var newProcessType = (ShipmentInboundProcessType)request.ProcessType;
 
-                        existing.ProcessType = request.ProcessType;
+                        existing.ProcessType = newProcessType;
                         existing.ProcessTransNo = request.ProcessTransNo;
                         existing.ProcessImporter = request.ProcessImporter;
                         existing.ProcessImporterPhone = request.ProcessImporterPhone;
@@ -106,12 +107,12 @@ namespace Service.Services.ShipmentInboundProcess
                         existing.ProcessTime = DateTime.Now;
                         existing.ProcessOpe = userId;
 
-                        if (oldProcessType != request.ProcessType)
+                        if (oldProcessType != newProcessType)
                         {
                             var oldValueText = oldProcessType.HasValue
-                                ? ((ShipmentInboundProcessType)oldProcessType.Value).ToDescription()
+                                ? oldProcessType.Value.ToDescription()
                                 : string.Empty;
-                            var newValueText = ((ShipmentInboundProcessType)request.ProcessType).ToDescription();
+                            var newValueText = newProcessType.ToDescription();
 
                             db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
@@ -259,14 +260,21 @@ namespace Service.Services.ShipmentInboundProcess
 
             query = query.WhereIf(request.SourceType.HasValue, x => x.SourceType == request.SourceType.Value);
             query = query.WhereIf(!string.IsNullOrWhiteSpace(request.TrackingNo), x => x.TrackingNo == request.TrackingNo);
+            query = query.WhereIf(request.IsOrderOriginal.HasValue, x => x.IsOrderOriginal == request.IsOrderOriginal.Value);
 
             // 結案條件處理，不包含開箱確認內容物狀況、暫存資料
             query = query.WhereIf(
                 request.IsClosed == true,
-                x => x.ProcessType.HasValue && x.ProcessType != 7 && x.ProcessType != 8 && x.ProcessType != 9);
+                x => x.ProcessType.HasValue
+                    && x.ProcessType != ShipmentInboundProcessType.InspectContents
+                    && x.ProcessType != ShipmentInboundProcessType.ConfirmOuterLabel
+                    && x.ProcessType != ShipmentInboundProcessType.TempData);
             query = query.WhereIf(
                 request.IsClosed == false,
-                x => !x.ProcessTime.HasValue || x.ProcessType == 7 || x.ProcessType == 8 || x.ProcessType == 9);
+                x => !x.ProcessTime.HasValue
+                    || x.ProcessType == ShipmentInboundProcessType.InspectContents
+                    || x.ProcessType == ShipmentInboundProcessType.ConfirmOuterLabel
+                    || x.ProcessType == ShipmentInboundProcessType.TempData);
 
             return query;
         }
@@ -441,18 +449,19 @@ namespace Service.Services.ShipmentInboundProcess
                                 var existing = existingData[row.TrackingNo];
                                 var oldProcessType = existing.ProcessType;
                                 var shipmentInboundId = existing.Id;
+                                var targetProcessType = (ShipmentInboundProcessType)newProcessType.Value;
 
-                                existing.ProcessType = (byte)newProcessType.Value;
+                                existing.ProcessType = targetProcessType;
                                 existing.Remark = row.Remark;
                                 existing.ProcessTime = DateTime.Now;
                                 existing.ProcessOpe = userId;
 
-                                if (oldProcessType != newProcessType.Value)
+                                if (oldProcessType != targetProcessType)
                                 {
                                     var oldValueText = oldProcessType.HasValue
-                                        ? ((ShipmentInboundProcessType)oldProcessType.Value).ToDescription()
+                                        ? oldProcessType.Value.ToDescription()
                                         : string.Empty;
-                                    var newValueText = ((ShipmentInboundProcessType)newProcessType.Value).ToDescription();
+                                    var newValueText = targetProcessType.ToDescription();
 
                                     db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                                     {

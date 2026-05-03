@@ -563,6 +563,7 @@
     <Compile Include="Services\ShipmentInboundBatchImport\Domain\ShipmentInboundModel.cs" />
     <Compile Include="Services\ShipmentInboundBatchImport\Domain\ShipmentOrderData.cs" />
     <Compile Include="Services\ShipmentInboundBatchImport\ShipmentInboundBatchImportService.cs" />
+    <Compile Include="Services\ShipmentInboundCommon\ShipmentInboundTrackingNoService.cs" />
     <Compile Include="Services\ShipmentInboundLocationTransfer\Domain\LocationHistoryModel.cs" />
     <Compile Include="Services\ShipmentInboundLocationTransfer\Domain\LocationTransferModel.cs" />
     <Compile Include="Services\ShipmentInboundLocationTransfer\Domain\LocationTransferRequest.cs" />
@@ -591,6 +592,7 @@
     <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundRecordRequest.cs" />
     <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundRecordResponse.cs" />
     <Compile Include="Services\ShipmentInboundRecord\Domain\UpdateAmountRequest.cs" />
+    <Compile Include="Services\ShipmentInboundRecord\Domain\UpdateTrackingNoRequest.cs" />
     <Compile Include="Services\ShipmentInboundRecord\ShipmentInboundRecordService.cs" />
     <Compile Include="Services\ShipmentInboundWarehouseProcess\Domain\ShipmentInboundWarehouseProcessBatchUploadErrorModel.cs" />
     <Compile Include="Services\ShipmentInboundWarehouseProcess\Domain\ShipmentInboundWarehouseProcessBatchUploadRowModel.cs" />

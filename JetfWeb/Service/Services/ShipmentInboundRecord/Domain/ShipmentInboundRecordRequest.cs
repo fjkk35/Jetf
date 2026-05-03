@@ -6,62 +6,67 @@ namespace Service.Services.ShipmentInboundRecord.Domain
     public class ShipmentInboundRecordRequest
     {
         /// <summary>
-        /// ¤J®w¤é´Á(°_)
+        /// å…¥åº«æ—¥æœŸ(èµ·)
         /// </summary>
         public string InboundDateStart { get; set; }
 
         /// <summary>
-        /// ¤J®w¤é´Á(¨´)
+        /// å…¥åº«æ—¥æœŸ(è¿„)
         /// </summary>
         public string InboundDateEnd { get; set; }
 
         /// <summary>
-        /// ³B²z¤è¦¡
+        /// è™•ç†æ–¹å¼
         /// </summary>
         public string ProcessType { get; set; }
 
         /// <summary>
-        /// Àx¦ì
+        /// å„²ä½
         /// </summary>
         public string LocationCode { get; set; }
 
         /// <summary>
-        /// «È¤á¥N½X(³æ¿ï¡FÂÂÄæ¦ì«O¯d¬Û®e)
+        /// å®¢æˆ¶ä»£ç¢¼(å–®ä¸€ï¼Œä¿ç•™èˆŠç‰ˆç›¸å®¹)
         /// </summary>
         public string CustCode { get; set; }
 
         /// <summary>
-        /// «È¤á¥N½X(¦h¿ï)
+        /// å®¢æˆ¶ä»£ç¢¼(å¤šé¸)
         /// </summary>
         public List<string> CustCodes { get; set; }
 
         /// <summary>
-        /// ³fª«¨Ó·½
+        /// è²¨ä»¶ä¾†æº
         /// </summary>
         public string SourceType { get; set; }
 
         /// <summary>
-        /// ³æ¸¹
+        /// å–®è™Ÿ
         /// </summary>
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// ¶i¤f¤è¦¡(®ü¹B/ªÅ¹B)
+        /// é€²å£æ–¹å¼(æµ·é‹/ç©ºé‹)
         /// </summary>
         public string DataType { get; set; }
 
         /// <summary>
-        /// ­Ü®wª¬ºA
+        /// å€‰åº«ç‹€æ…‹
         /// </summary>
         public string WarehouseProcessType { get; set; }
 
         /// <summary>
-        /// ¥Ø«e­¶½X
+        /// æ˜¯å¦åŸå§‹è²¨ä»¶
+        /// </summary>
+        public bool? IsOrderOriginal { get; set; }
+
+        /// <summary>
+        /// ç›®å‰é ç¢¼
         /// </summary>
         public int Page { get; set; }
 
         /// <summary>
-        /// ¨C­¶µ§¼Æ
+        /// æ¯é ç­†æ•¸
         /// </summary>
         public int PageSize { get; set; }
     }

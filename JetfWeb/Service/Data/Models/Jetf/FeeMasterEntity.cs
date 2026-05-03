@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Service.Data
@@ -10,11 +10,11 @@ namespace Service.Data
     public sealed class FeeMasterEntity
     {
         /// <summary>
-        /// 追蹤單號。
+        /// 物流貨號。
         /// </summary>
         [Key]
         [Column("DLV_INV")]
-        public string TrackingNo { get; set; }
+        public string DlvInv { get; set; }
 
         /// <summary>
         /// 下載註記。

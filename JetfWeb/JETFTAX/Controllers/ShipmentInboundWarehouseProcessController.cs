@@ -60,6 +60,9 @@ namespace JETFTAX.Controllers
         {
             var list = Enum.GetValues(typeof(WarehouseProcessType))
                 .Cast<WarehouseProcessType>()
+                .Where(item => item == WarehouseProcessType.PendingDisposal
+                    || item == WarehouseProcessType.PendingReturn
+                    || item == WarehouseProcessType.OnHold)
                 .Select(item => new
                 {
                     Value = (byte)item,

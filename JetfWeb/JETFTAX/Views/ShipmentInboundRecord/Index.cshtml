@@ -72,7 +72,10 @@
     }
 
     .col-date {
-        max-width: 150px;
+        min-width: 180px;
+        max-width: 180px;
+        white-space: nowrap;
+        word-break: normal;
     }
 
     .col-customer {
@@ -141,6 +144,26 @@
 
     .col-outbound-no {
         max-width: 180px;
+    }
+
+    .unknown-shipment-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .unknown-shipment-checkbox {
+        width: 22px;
+        height: 22px;
+        cursor: pointer;
+    }
+
+    .unknown-shipment-label {
+        margin-bottom: 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
     }
 
     /* 放大 checkbox（Bootstrap custom-control） */
@@ -306,6 +329,19 @@
                     </select>
                 </div>
             </div>
+
+            <div class="form-group row col-lg-3 mb-0">
+                <label class="col-lg-4 col-form-label text-right"></label>
+                <div class="col-lg-8 d-flex align-items-center">
+                    <div class="unknown-shipment-toggle">
+                        <input type="checkbox"
+                               id="recordUnknownShipmentOnly"
+                               class="unknown-shipment-checkbox"
+                               ng-model="searchForm.unknownShipmentOnly" />
+                        <label for="recordUnknownShipmentOnly" class="unknown-shipment-label">只查不明貨件</label>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- 按鈕區 -->
@@ -403,6 +439,7 @@
                                     <th class="col-remark" ng-show="visibleColumns.remark">備註</th>
                                     <th class="col-seq-no" ng-show="visibleColumns.seqNo">流水號</th>
                                     <th class="col-location" ng-show="visibleColumns.locationCode">儲位</th>
+                                    <th ng-show="visibleColumns.size">尺寸</th>
                                     <th class="col-outbound-no" ng-show="visibleColumns.outboundTrackingNo">重出單號</th>
                                     <th ng-show="visibleColumns.cod">到付款</th>
                                     <th ng-show="visibleColumns.freightFee">運費</th>
@@ -417,7 +454,7 @@
                                 </tr>
                                 <tr ng-repeat="item in data">
                                     <td class="col-seq" ng-show="visibleColumns.seq">{{(currentPage - 1) * pageSize + $index + 1}}</td>
-                                    <td class="col-date" ng-show="visibleColumns.inboundDate">{{item.InboundDate | customDate}}</td>
+                                    <td class="col-date" ng-show="visibleColumns.inboundDate">{{item.InboundDate | customDateTime}}</td>
                                     <td ng-show="visibleColumns.dataType">{{item.DataType}}</td>
                                     <td class="col-customer" ng-show="visibleColumns.customer">{{item.CustName || item.CustCode}}</td>
                                     <td class="col-tracking-no fixed-column">
@@ -449,6 +486,7 @@
                                     <td class="col-remark" ng-show="visibleColumns.remark">{{item.Remark}}</td>
                                     <td class="col-seq-no" ng-show="visibleColumns.seqNo">{{item.SeqNo}}</td>
                                     <td class="col-location" ng-show="visibleColumns.locationCode">{{item.LocationCode}}</td>
+                                    <td ng-show="visibleColumns.size">{{item.Size}}</td>
                                     <td class="col-outbound-no" ng-show="visibleColumns.outboundTrackingNo">{{item.OutboundTrackingNo}}</td>
                                     <td ng-show="visibleColumns.cod">{{item.Cod | number}}</td>
                                     <td ng-show="visibleColumns.freightFee">{{item.FreightFee | number}}</td>

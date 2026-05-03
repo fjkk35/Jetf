@@ -1,8 +1,10 @@
-using NPOI.SS.Formula.Functions;
+﻿using NPOI.SS.Formula.Functions;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.EnumTax;
 using Service.Extensions;
+using Service.Services.ShipmentInboundBatchImport.Domain;
+using Service.Services.ShipmentInboundCommon;
 using Service.Services.ShipmentInboundProcess.Domain;
 using Service.Services.ShipmentInboundRecord.Domain;
 using System;
@@ -15,6 +17,8 @@ namespace Service.Services.ShipmentInboundRecord
 {
     public class ShipmentInboundRecordService : _BaseService
     {
+        private readonly ShipmentInboundTrackingNoService _trackingNoService = new ShipmentInboundTrackingNoService();
+
         /// <summary>
         /// 根據 Id 取得貨件詳細資料
         /// </summary>
@@ -39,12 +43,15 @@ namespace Service.Services.ShipmentInboundRecord
                         InboundDate = x.InboundDate,
                         CustCode = x.CustCode,
                         TransNo = x.TransNo,
+                        TransName = x.TransName,
                         TrackingNo = x.TrackingNo,
+                        IsOrderOriginal = x.IsOrderOriginal,
                         SourceType = x.SourceType.HasValue
                             ? (ShipmentInboundSourceType)x.SourceType.Value
                             : default(ShipmentInboundSourceType),
                         SeqNo = x.SeqNo,
                         LocationCode = x.LocationCode,
+                        Size = x.Size,
                         ProcessType = x.ProcessType.HasValue ? (ShipmentInboundProcessType?)x.ProcessType.Value : null,
                         ReturnReason = x.ReturnReason,
                         ReturnTrackingNo = x.ReturnTrackingNo,
@@ -119,6 +126,14 @@ namespace Service.Services.ShipmentInboundRecord
                     .Select(x => x.FilePath)
                     .Where(x => !string.IsNullOrWhiteSpace(x))
                     .ToList();
+                data.ExceptionImages = exceptions
+                    .Where(x => !string.IsNullOrWhiteSpace(x.FilePath))
+                    .Select(x => new ShipmentInboundExceptionImageModel
+                    {
+                        FilePath = x.FilePath,
+                        CreatedTime = x.CreatedTime
+                    })
+                    .ToList();
 
                 return data;
             }
@@ -169,10 +184,13 @@ namespace Service.Services.ShipmentInboundRecord
                         InboundDate = x.InboundDate,
                         CustCode = x.CustCode,
                         TransNo = x.TransNo,
+                        TransName = x.TransName,
                         TrackingNo = x.TrackingNo,
+                        IsOrderOriginal = x.IsOrderOriginal,
                         SourceType = x.SourceType.HasValue ? (ShipmentInboundSourceType)x.SourceType.Value : default(ShipmentInboundSourceType),
                         SeqNo = x.SeqNo,
                         LocationCode = x.LocationCode,
+                        Size = x.Size,
                         ProcessType = x.ProcessType.HasValue ? (ShipmentInboundProcessType?)x.ProcessType.Value : null,
                         ReturnTrackingNo = x.ReturnTrackingNo,
                         FreightPayerNo = x.FreightPayerNo.HasValue ? (ShipmentInboundFreightPayerNo?)x.FreightPayerNo.Value : null,
@@ -228,7 +246,8 @@ namespace Service.Services.ShipmentInboundRecord
 
             if (byte.TryParse(request.ProcessType, out var processType))
             {
-                query = query.WhereIf(true, x => x.ProcessType == processType);
+                var targetProcessType = (ShipmentInboundProcessType)processType;
+                query = query.WhereIf(true, x => x.ProcessType == targetProcessType);
             }
 
             if (!string.IsNullOrWhiteSpace(request.LocationCode))
@@ -239,6 +258,11 @@ namespace Service.Services.ShipmentInboundRecord
             if (byte.TryParse(request.WarehouseProcessType, out var warehouseProcessType))
             {
                 query = query.WhereIf(true, x => x.WarehouseProcessType == warehouseProcessType);
+            }
+
+            if (request.IsOrderOriginal.HasValue)
+            {
+                query = query.WhereIf(true, x => x.IsOrderOriginal == request.IsOrderOriginal.Value);
             }
 
             var custCodes = request.CustCodes?
@@ -394,6 +418,7 @@ namespace Service.Services.ShipmentInboundRecord
                 TrackingNo = request.TrackingNo,
                 DataType = request.DataType,
                 WarehouseProcessType = request.WarehouseProcessType,
+                IsOrderOriginal = request.IsOrderOriginal,
                 Page = 1,
                 PageSize = 100000
             };
@@ -581,6 +606,95 @@ namespace Service.Services.ShipmentInboundRecord
                     FieldName = request.FieldName,
                     OldValue = oldValue?.ToString(),
                     NewValue = request.NewValue.ToString(),
+                    EditTime = DateTime.Now,
+                    EditUser = GetUserId()
+                });
+
+                db.SaveChanges();
+            }
+        }
+
+        /// <summary>
+        /// 更新單號，並套用與批量上傳相同的單號補資料與重複檢查規則
+        /// </summary>
+        public void UpdateTrackingNo(UpdateTrackingNoRequest request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            if (request.Id <= 0)
+            {
+                throw new ArgumentException("Id 不可為空");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.NewTrackingNo))
+            {
+                throw new ArgumentException("新單號不可為空");
+            }
+
+            using (var db = CreateJetfDbContext())
+            {
+                var entity = db.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
+                if (entity == null)
+                {
+                    throw new ArgumentException("查無資料");
+                }
+
+                if (entity.IsOrderOriginal)
+                {
+                    throw new InvalidOperationException("只有不明貨件可修改單號");
+                }
+
+                var newTrackingNo = request.NewTrackingNo.Trim();
+                if (string.Equals(entity.TrackingNo, newTrackingNo, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                var shipment = new ShipmentInboundModel
+                {
+                    InboundDate = entity.InboundDate,
+                    TrackingNo = newTrackingNo,
+                    LocationCode = entity.LocationCode,
+                    SourceType = entity.SourceType.HasValue
+                        ? ((ShipmentInboundSourceType)entity.SourceType.Value).ToDescription()
+                        : null
+                };
+
+                var shipmentInboundList = new List<ShipmentInboundModel> { shipment };
+                _trackingNoService.EnrichShipmentData(shipmentInboundList);
+                _trackingNoService.CheckDuplicateData(shipmentInboundList, new[] { entity.Id }, false, false);
+
+                if (shipment.UploadStatus != "成功")
+                {
+                    throw new InvalidOperationException(shipment.FailReason);
+                }
+
+                var oldTrackingNo = entity.TrackingNo;
+                entity.TrackingNo = shipment.TrackingNo;
+                entity.DataType = shipment.DataType;
+                entity.OriginalJetfSerial = shipment.OriginalJetfSerial;
+                entity.OriginalTrackingNo = shipment.OriginalTrackingNo;
+                entity.CustCode = shipment.CustCode;
+                entity.TransNo = shipment.TransNo;
+                entity.TransName = shipment.TransName;
+                entity.Importer = shipment.Importer;
+                entity.ImporterPhone = shipment.ImporterPhone;
+                entity.ImporterAddr = shipment.ImporterAddr;
+                entity.Tax = shipment.Tax;
+                entity.Ccfee = shipment.Ccfee;
+                entity.Cod = shipment.Cod;
+                entity.Fee = shipment.Fee;
+                entity.IsOrderOriginal = shipment.IsOrderOriginal;
+
+                db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                {
+                    ShipmentInboundId = entity.Id,
+                    FieldName = "TrackingNo",
+                    OldValue = oldTrackingNo,
+                    NewValue = shipment.TrackingNo,
                     EditTime = DateTime.Now,
                     EditUser = GetUserId()
                 });

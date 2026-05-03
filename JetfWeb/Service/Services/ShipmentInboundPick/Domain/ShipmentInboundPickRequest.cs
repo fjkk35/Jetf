@@ -1,3 +1,4 @@
+ï»¿using Service.EnumTax;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,9 +11,10 @@ namespace Service.Services.ShipmentInboundPick.Domain
     {
         public string ProcessTimeStart { get; set; }
         public string ProcessTimeEnd { get; set; }
+        public ShipmentInboundProcessType? ProcessType { get; set; }
         
         /// <summary>
-        /// «È¤á¥N½X²M³æ
+        /// å®¢æˆ¶
         /// </summary>
         public List<string> CustCodes { get; set; }
     }

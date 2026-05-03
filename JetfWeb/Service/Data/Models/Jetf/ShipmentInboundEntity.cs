@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Service.EnumTax;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -165,7 +166,7 @@ namespace Service.Data
         /// 貨件處理方式代碼。
         /// </summary>
         [Column("ProcessType")]
-        public byte? ProcessType { get; set; }
+        public ShipmentInboundProcessType? ProcessType { get; set; }
 
         /// <summary>
         /// 重出派件公司代碼。

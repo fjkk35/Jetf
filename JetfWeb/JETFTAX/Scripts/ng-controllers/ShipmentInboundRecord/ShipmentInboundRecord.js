@@ -11,7 +11,7 @@
     $scope.totalPages = 0;
 
     // 欄位顯示/隱藏設定 (Cookie)
-    var columnSettingCookieKey = 'ShipmentInboundRecord_ColumnVisible';
+    var columnSettingCookieKey = 'ShipmentInboundRecord_ColumnVisible_v2';
 
     $scope.columnOptions = [
         { key: 'seq', title: '序號', locked: false },
@@ -39,6 +39,7 @@
         { key: 'remark', title: '備註', locked: false },
         { key: 'seqNo', title: '流水號', locked: false },
         { key: 'locationCode', title: '儲位', locked: false },
+        { key: 'size', title: '尺寸', locked: false },
         { key: 'outboundTrackingNo', title: '重出單號', locked: false },
         { key: 'cod', title: '到付款', locked: false },
         { key: 'freightFee', title: '運費', locked: false },
@@ -149,10 +150,6 @@
         showWeeks: false
     };
 
-    // 設定預設日期為今天
-    var today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     // 進口方式下拉選單
     $scope.dataTypes = [
         { Value: '海運', Text: '海運' },
@@ -161,15 +158,16 @@
 
     // 查詢條件
     $scope.searchForm = {
-        inboundDateStart: new Date(today),
-        inboundDateEnd: new Date(today),
+        inboundDateStart: null,
+        inboundDateEnd: null,
         custCode: '',
         sourceType: '',
         trackingNo: '',
         processType: '',
         locationCode: '',
         dataType: '',
-        warehouseProcessType: ''
+        warehouseProcessType: '',
+        unknownShipmentOnly: false
     };
 
     // 客戶多選輸出（由 customerMultiSelect directive 寫入）
@@ -246,19 +244,17 @@
 
     // 清除查詢條件
     $scope.clearSearch = function () {
-        var today = new Date();
-        today.setHours(0, 0, 0, 0);
-
         $scope.searchForm = {
-            inboundDateStart: new Date(today),
-            inboundDateEnd: new Date(today),
+            inboundDateStart: null,
+            inboundDateEnd: null,
             custCode: '',
             sourceType: '',
             trackingNo: '',
             processType: '',
             locationCode: '',
             dataType: '',
-            warehouseProcessType: ''
+            warehouseProcessType: '',
+            unknownShipmentOnly: false
         };
 
         // directive 預設即全選；這裡只重置輸出綁定即可
@@ -274,12 +270,7 @@
 
     // 載入資料
     $scope.loadData = function () {
-        if (!$scope.searchForm.inboundDateStart || !$scope.searchForm.inboundDateEnd) {
-            alert('請選擇入庫日期區間');
-            return;
-        }
-
-        if ($scope.searchForm.inboundDateStart > $scope.searchForm.inboundDateEnd) {
+        if ($scope.searchForm.inboundDateStart && $scope.searchForm.inboundDateEnd && $scope.searchForm.inboundDateStart > $scope.searchForm.inboundDateEnd) {
             alert('開始日期不可大於結束日期');
             return;
         }
@@ -297,6 +288,7 @@
             LocationCode: $scope.searchForm.locationCode,
             DataType: $scope.searchForm.dataType,
             WarehouseProcessType: $scope.searchForm.warehouseProcessType,
+            IsOrderOriginal: $scope.searchForm.unknownShipmentOnly ? false : null,
             Page: $scope.currentPage,
             PageSize: parseInt($scope.pageSize)
         };
@@ -326,12 +318,7 @@
 
     // 下載Excel
     $scope.downloadExcel = function () {
-        if (!$scope.searchForm.inboundDateStart || !$scope.searchForm.inboundDateEnd) {
-            alert('請選擇入庫日期區間');
-            return;
-        }
-
-        if ($scope.searchForm.inboundDateStart > $scope.searchForm.inboundDateEnd) {
+        if ($scope.searchForm.inboundDateStart && $scope.searchForm.inboundDateEnd && $scope.searchForm.inboundDateStart > $scope.searchForm.inboundDateEnd) {
             alert('開始日期不可大於結束日期');
             return;
         }
@@ -347,6 +334,7 @@
             LocationCode: $scope.searchForm.locationCode,
             DataType: $scope.searchForm.dataType,
             WarehouseProcessType: $scope.searchForm.warehouseProcessType,
+            IsOrderOriginal: $scope.searchForm.unknownShipmentOnly ? false : null,
             Page: 1,
             PageSize: 10
         };
