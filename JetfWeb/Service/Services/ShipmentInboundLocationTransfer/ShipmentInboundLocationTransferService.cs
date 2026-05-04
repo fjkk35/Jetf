@@ -79,13 +79,14 @@ namespace Service.Services.ShipmentInboundLocationTransfer
 
                         foreach (var item in existingData)
                         {
-                            db.ShipmentInboundLocationHistories.Add(new Data.ShipmentInboundLocationHistoryEntity
+                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = item.Id,
-                                OldLocationCode = item.LocationCode,
-                                NewLocationCode = request.NewLocationCode,
-                                CreatedOpe = userId,
-                                CreatedTime = DateTime.Now
+                                FieldName = "儲位",
+                                OldValue = item.LocationCode,
+                                NewValue = request.NewLocationCode,
+                                EditUser = userId,
+                                EditTime = DateTime.Now
                             });
 
                             item.LocationCode = request.NewLocationCode;
