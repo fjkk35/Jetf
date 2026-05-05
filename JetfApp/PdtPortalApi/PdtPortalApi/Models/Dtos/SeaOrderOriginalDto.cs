@@ -16,6 +16,11 @@ public sealed class SeaOrderOriginalDto
     public string OriginalJetfSerial { get; set; } = string.Empty;
 
     /// <summary>
+    /// 主號。
+    /// </summary>
+    public string MainNumber { get; set; } = string.Empty;
+
+    /// <summary>
     /// 原單分提單號。
     /// </summary>
     public string OriginalTrackingNo { get; set; } = string.Empty;
@@ -44,4 +49,9 @@ public sealed class SeaOrderOriginalDto
     /// 承運商名稱。
     /// </summary>
     public string TransName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 到付款。
+    /// </summary>
+    public int Cc { get; set; }
 }

@@ -7,13 +7,18 @@ namespace PdtPortalApi.Models.Entities;
 /// <summary>
 /// 海運原單實體。
 /// </summary>
-[Keyless]
 [Table("SEA_ORDER_ORIGINAL", Schema = "dbo")]
 public sealed class SeaOrderOriginalEntity
 {
     [Key]
     [Column("ROW_ID")]
     public int Id { get; set; }
+
+    /// <summary>
+    /// 主號
+    /// </summary>
+    [Column("MAINNUMBER")]
+    public string MainNumber { get; set; }
 
     /// <summary>
     /// 分提單號
@@ -62,4 +67,10 @@ public sealed class SeaOrderOriginalEntity
     /// </summary>
     [Column("GW")]
     public decimal Gw { get; set; }
+
+    /// <summary>
+    /// 到付款。
+    /// </summary>
+    [Column("CC")]
+    public decimal? CC { get; set; }
 }

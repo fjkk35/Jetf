@@ -6,11 +6,6 @@
 public sealed class FeeMasterDto
 {
     /// <summary>
-    /// 單號。
-    /// </summary>
-    public string TrackingNo { get; set; } = string.Empty;
-
-    /// <summary>
     /// 稅金。
     /// </summary>
     public int Tax { get; set; }

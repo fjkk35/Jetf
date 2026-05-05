@@ -72,6 +72,12 @@ public sealed class ShipmentInboundEntity
 	public string? OriginalJetfSerial { get; set; } = string.Empty;
 
 	/// <summary>
+	/// 主號。
+	/// </summary>
+	[Column("MainNumber")]
+	public string? MainNumber { get; set; } = string.Empty;
+
+	/// <summary>
 	/// 原單分提單號。
 	/// </summary>
 	[Column("OriginalTrackingNo")]

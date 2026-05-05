@@ -148,12 +148,12 @@ public sealed class PortalService(
                 ? await GetAirDataAsync(request.TrackingNo, cancellationToken)
                 : null;
 
-            var feeData = await GetFeeDataAsync(request.TrackingNo, cancellationToken);
             var hasOriginalData = seaData is not null || airData is not null;
             var dataType = seaData is not null ? "海運" : airData is not null ? "空運" : string.Empty;
             var size = string.IsNullOrWhiteSpace(request.Size) ? "小" : request.Size.Trim();
 
             var originalJetfSerial = string.Empty;
+            var mainNumber = string.Empty;
             var originalTrackingNo = string.Empty;
             var custCode = string.Empty;
             var transNo = string.Empty;
@@ -161,29 +161,40 @@ public sealed class PortalService(
             var importer = string.Empty;
             var importerPhone = string.Empty;
             var importerAddr = string.Empty;
+            var sourceCod = 0;
 
             switch (dataType)
             {
                 case "海運":
                     originalJetfSerial = seaData?.OriginalJetfSerial ?? string.Empty;
+                    mainNumber = seaData?.MainNumber ?? string.Empty;
                     originalTrackingNo = seaData?.OriginalTrackingNo ?? string.Empty;
                     custCode = seaData?.CustCode ?? string.Empty;
                     transName = seaData?.TransName ?? string.Empty;
                     importer = seaData?.Importer ?? string.Empty;
                     importerPhone = seaData?.ImporterPhone ?? string.Empty;
                     importerAddr = seaData?.ImporterAddr ?? string.Empty;
+                    sourceCod = seaData?.Cc ?? 0;
                     break;
 
                 case "空運":
                     originalJetfSerial = airData?.OriginalJetfSerial ?? string.Empty;
+                    mainNumber = airData?.MainNumber ?? string.Empty;
                     originalTrackingNo = airData?.OriginalTrackingNo ?? string.Empty;
                     custCode = airData?.CustCode ?? string.Empty;
                     transNo = airData?.TransNo ?? string.Empty;
                     importer = airData?.Importer ?? string.Empty;
                     importerPhone = airData?.ImporterPhone ?? string.Empty;
                     importerAddr = airData?.ImporterAddr ?? string.Empty;
+                    sourceCod = airData?.Cc ?? 0;
                     break;
             }
+
+            var feeData = string.IsNullOrWhiteSpace(originalJetfSerial)
+                ? null
+                : await GetFeeDataAsync(originalJetfSerial, cancellationToken);
+            var cod = feeData?.Cod ?? sourceCod;
+            var fee = feeData is not null || cod > 0 ? 30 : 0;
 
 			var entity = new ShipmentInboundEntity
 			{
@@ -195,6 +206,7 @@ public sealed class PortalService(
  				SourceType = request.SourceType,
  				ReturnTrackingNo = request.ReturnTrackingNo ?? string.Empty,
                 OriginalJetfSerial = originalJetfSerial,
+                MainNumber = mainNumber,
                 OriginalTrackingNo = originalTrackingNo,
                 Size = size,
  				CustCode = custCode,
@@ -208,8 +220,8 @@ public sealed class PortalService(
 				CreatedTime = DateTime.Now,
 				Tax = feeData?.Tax ?? 0,
 				Ccfee = feeData?.Ccfee ?? 0,
-				Cod = feeData?.Cod ?? 0,
-				Fee = feeData?.Fee ?? 0,
+				Cod = cod,
+				Fee = fee,
             };
 
 			await _jetfDbContext.ShipmentInbounds.AddAsync(entity, cancellationToken);
@@ -527,22 +539,43 @@ public sealed class PortalService(
     {
         try
         {
-            return await _dataCenterDbContext.SeaOrderOriginals
+            var seaData = await _dataCenterDbContext.SeaOrderOriginals
                 .AsNoTracking()
                 .Where(entity => entity.JetfSerial == trackingNo)
                 .OrderByDescending(entity => entity.Gw)
-                .Select(entity => new SeaOrderOriginalDto
+                .Select(entity => new
                 {
                     TrackingNo = entity.JetfSerial,
                     OriginalJetfSerial = entity.JetfSerial,
+                    MainNumber = entity.MainNumber,
                     OriginalTrackingNo = entity.BlNo,
                     ImporterAddr = entity.ImporterAddr,
                     ImporterPhone = entity.ImporterPhone,
                     Importer = entity.Importer,
                     CustCode = entity.CustCode,
-                    TransName = entity.TransName
+                    TransName = entity.TransName,
+                    Cc = entity.CC
                 })
                 .FirstOrDefaultAsync(cancellationToken);
+
+            if (seaData is null)
+            {
+                return null;
+            }
+
+            return new SeaOrderOriginalDto
+            {
+                TrackingNo = seaData.TrackingNo,
+                OriginalJetfSerial = seaData.OriginalJetfSerial,
+                MainNumber = seaData.MainNumber,
+                OriginalTrackingNo = seaData.OriginalTrackingNo,
+                ImporterAddr = seaData.ImporterAddr,
+                ImporterPhone = seaData.ImporterPhone,
+                Importer = seaData.Importer,
+                CustCode = seaData.CustCode,
+                TransName = seaData.TransName,
+                Cc = ConvertCcToCod(seaData.Cc)
+            };
         }
         catch (Exception exception)
         {
@@ -568,12 +601,14 @@ public sealed class PortalService(
                 {
                     TrackingNo = entity.TrackingNo,
                     OriginalJetfSerial = entity.DeliveryNo,
+                    MainNumber = entity.MainNumber,
                     OriginalTrackingNo = entity.TrackingNo,
                     Importer = entity.Importer,
                     ImporterPhone = entity.ImporterPhone,
                     ImporterAddr = entity.ImporterAddr,
                     CustCode = entity.CustCode,
-                    TransNo = entity.TransNo
+                    TransNo = entity.TransNo,
+                    Cc = entity.CC
                 })
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -586,12 +621,14 @@ public sealed class PortalService(
             {
                 TrackingNo = airData.TrackingNo,
                 OriginalJetfSerial = airData.OriginalJetfSerial,
+                MainNumber = airData.MainNumber,
                 OriginalTrackingNo = airData.OriginalTrackingNo,
                 Importer = airData.Importer,
                 ImporterPhone = airData.ImporterPhone,
                 ImporterAddr = airData.ImporterAddr,
                 CustCode = airData.CustCode,
-                TransNo = airData.TransNo?.ToString() ?? string.Empty
+                TransNo = airData.TransNo?.ToString() ?? string.Empty,
+                Cc = ConvertCcToCod(airData.Cc)
             };
         }
         catch (Exception exception)
@@ -607,16 +644,15 @@ public sealed class PortalService(
     /// <param name="trackingNo">單號。</param>
     /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>費用資料；若不存在則回傳 null。</returns>
-    private async Task<FeeMasterDto?> GetFeeDataAsync(string trackingNo, CancellationToken cancellationToken)
+    private async Task<FeeMasterDto?> GetFeeDataAsync(string dlvInv, CancellationToken cancellationToken)
     {
         try
         {
             return await _jetfDbContext.FeeMasters
                 .AsNoTracking()
-                .Where(entity => entity.Download == "1" && entity.IncludeTax == "N" && entity.TrackingNo == trackingNo)
+                .Where(entity => entity.Download == "1" && entity.IncludeTax == "N" && entity.DlvInv == dlvInv)
                 .Select(entity => new FeeMasterDto
                 {
-                    TrackingNo = entity.TrackingNo,
                     Tax = (entity.Tax1 ?? 0) + (entity.Tax2 ?? 0),
                     Ccfee = entity.Ccfee ?? 0,
                     Cod = entity.Cod ?? 0,
@@ -629,6 +665,24 @@ public sealed class PortalService(
             _logger.LogError(exception, "查詢費用資料失敗，TrackingNo: {TrackingNo}", trackingNo);
             throw;
         }
+    }
+
+    private static int ConvertCcToCod(decimal? value)
+    {
+        return value.HasValue ? (int)value.Value : 0;
+    }
+
+    private static int ConvertCcToCod(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return 0;
+        }
+
+        return decimal.TryParse(value.Trim(), NumberStyles.Number, CultureInfo.InvariantCulture, out var invariantValue)
+            || decimal.TryParse(value.Trim(), NumberStyles.Number, CultureInfo.CurrentCulture, out invariantValue)
+            ? (int)invariantValue
+            : 0;
     }
 
     /// <summary>

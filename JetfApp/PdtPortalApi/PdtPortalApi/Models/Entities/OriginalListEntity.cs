@@ -7,13 +7,18 @@ namespace PdtPortalApi.Models.Entities;
 /// <summary>
 /// 空運原單實體。
 /// </summary>
-[Keyless]
 [Table("ORIGINALLIST", Schema = "dbo")]
 public sealed class OriginalListEntity
 {
     [Key]
     [Column("ROW_ID")]
     public int Id { get; set; }
+
+    /// <summary>
+    /// 主號
+    /// </summary>
+    [Column("MAINNUMBER")]
+    public string MainNumber { get; set; } = string.Empty;
 
     /// <summary>
     /// 提單號或配送單號。
@@ -56,4 +61,10 @@ public sealed class OriginalListEntity
     /// </summary>
     [Column("CLEARANCEWAREHOUSING")]
     public int? TransNo { get; set; }
+
+    /// <summary>
+    /// 到付款。
+    /// </summary>
+    [Column("CC")]
+    public string CC { get; set; }
 }

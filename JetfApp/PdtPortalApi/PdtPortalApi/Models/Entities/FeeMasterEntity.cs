@@ -14,7 +14,7 @@ public sealed class FeeMasterEntity
     /// 單號。
     /// </summary>
     [Column("DLV_INV")]
-    public string TrackingNo { get; set; } = string.Empty;
+    public string DlvInv { get; set; } = string.Empty;
 
     /// <summary>
     /// 下載狀態。
