@@ -662,7 +662,7 @@ public sealed class PortalService(
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "查詢費用資料失敗，TrackingNo: {TrackingNo}", trackingNo);
+            _logger.LogError(exception, "查詢稅金資料失敗，dlvInv: {dlvInv}", dlvInv);
             throw;
         }
     }
