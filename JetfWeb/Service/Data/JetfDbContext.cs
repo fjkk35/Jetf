@@ -32,6 +32,8 @@ namespace Service.Data
 
         public DbSet<ShipmentInboundExceptionEntity> ShipmentInboundExceptions { get; set; }
 
+        public DbSet<ShipmentInboundExceptionReasonEntity> ShipmentInboundExceptionReasons { get; set; }
+
         public DbSet<ShipmentInboundEditHistoryEntity> ShipmentInboundEditHistories { get; set; }
 
         public DbSet<ShipmentInboundLocationHistoryEntity> ShipmentInboundLocationHistories { get; set; }

@@ -8,7 +8,7 @@ namespace Service.Data
     /// Jetf 貨件異常資料。
     /// </summary>
     [Table("ShipmentInboundException", Schema = "dbo")]
-    public sealed class ShipmentInboundExceptionEntity
+    public class ShipmentInboundExceptionEntity
     {
         /// <summary>
         /// 異常資料主鍵。
@@ -32,8 +32,11 @@ namespace Service.Data
         /// <summary>
         /// 異常原因。
         /// </summary>
-        [Column("Reason")]
-        public string Reason { get; set; }
+        [Column("ExceptionReasonId")]
+        public int? ExceptionReasonId { get; set; }
+
+        [ForeignKey(nameof(ExceptionReasonId))]
+        public virtual ShipmentInboundExceptionReasonEntity ExceptionReason { get; set; }
 
         /// <summary>
         /// 異常圖片檔案路徑。

@@ -240,6 +240,7 @@
     <Compile Include="Data\Models\Jetf\ShipmentInboundEditHistoryEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundExceptionEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ShipmentInboundExceptionReasonEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundLocationHistoryEntity.cs" />
     <Compile Include="EnumTax\Authority.cs" />
     <Compile Include="EnumTax\AuthorityPartner.cs" />

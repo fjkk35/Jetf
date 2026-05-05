@@ -89,51 +89,57 @@ namespace Service.Services.ShipmentInboundRecord
 
                 FillCustomerAndTransNames(new List<ShipmentInboundRecordModel> { data });
 
-                var exceptions = db.ShipmentInboundExceptions
-                    .AsNoTracking()
-                    .Where(x => x.ShipmentInboundId == id)
-                    .OrderByDescending(x => x.CreatedTime)
-                    .ThenByDescending(x => x.Id)
-                    .Select(x => new
-                    {
-                        x.Id,
-                        x.CreatedTime,
-                        x.Reason,
-                        x.FilePath
-                    })
-                    .ToList();
+                var lazyLoadingEnabled = db.Configuration.LazyLoadingEnabled;
+                var proxyCreationEnabled = db.Configuration.ProxyCreationEnabled;
 
-                var latestExceptionTime = exceptions
-                    .Select(x => (DateTime?)x.CreatedTime)
-                    .FirstOrDefault();
-
-                var latestExceptions = exceptions;
-                if (latestExceptionTime.HasValue)
+                try
                 {
-                    latestExceptions = exceptions
-                        .Where(x => x.CreatedTime == latestExceptionTime.Value)
+                    db.Configuration.LazyLoadingEnabled = true;
+                    db.Configuration.ProxyCreationEnabled = true;
+
+                    var exceptions = db.ShipmentInboundExceptions
+                        .Where(x => x.ShipmentInboundId == id)
+                        .OrderByDescending(x => x.CreatedTime)
+                        .ThenByDescending(x => x.Id)
+                        .ToList();
+
+                    var latestExceptionTime = exceptions
+                        .Select(x => (DateTime?)x.CreatedTime)
+                        .FirstOrDefault();
+
+                    var latestExceptions = exceptions;
+                    if (latestExceptionTime.HasValue)
+                    {
+                        latestExceptions = exceptions
+                            .Where(x => x.CreatedTime == latestExceptionTime.Value)
+                            .ToList();
+                    }
+                    else
+                    {
+                        latestExceptions = exceptions.Take(0).ToList();
+                    }
+
+                    data.ExceptionReason = latestExceptions
+                        .Select(x => x.ExceptionReason == null ? null : x.ExceptionReason.Reason)
+                        .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
+                    data.ExceptionFilePaths = exceptions
+                        .Select(x => x.FilePath)
+                        .Where(x => !string.IsNullOrWhiteSpace(x))
+                        .ToList();
+                    data.ExceptionImages = exceptions
+                        .Where(x => !string.IsNullOrWhiteSpace(x.FilePath))
+                        .Select(x => new ShipmentInboundExceptionImageModel
+                        {
+                            FilePath = x.FilePath,
+                            CreatedTime = x.CreatedTime
+                        })
                         .ToList();
                 }
-                else
+                finally
                 {
-                    latestExceptions = exceptions.Take(0).ToList();
+                    db.Configuration.LazyLoadingEnabled = lazyLoadingEnabled;
+                    db.Configuration.ProxyCreationEnabled = proxyCreationEnabled;
                 }
-
-                data.ExceptionReason = latestExceptions
-                    .Select(x => x.Reason)
-                    .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
-                data.ExceptionFilePaths = exceptions
-                    .Select(x => x.FilePath)
-                    .Where(x => !string.IsNullOrWhiteSpace(x))
-                    .ToList();
-                data.ExceptionImages = exceptions
-                    .Where(x => !string.IsNullOrWhiteSpace(x.FilePath))
-                    .Select(x => new ShipmentInboundExceptionImageModel
-                    {
-                        FilePath = x.FilePath,
-                        CreatedTime = x.CreatedTime
-                    })
-                    .ToList();
 
                 return data;
             }
