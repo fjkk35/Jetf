@@ -603,10 +603,11 @@
                         <div class="detail-col">
                             <div class="detail-row">
                                 <div class="detail-label">到付款：</div>
-                                <div class="detail-value editable-field" ng-click="editAmount('Cod', data.Cod)">
+                                <div class="detail-value editable-field" ng-if="!data.OutboundDate" ng-click="editAmount('Cod', data.Cod)">
                                     {{data.Cod | number}} 元
                                     <i class="fa fa-edit"></i>
                                 </div>
+                                <div class="detail-value" ng-if="data.OutboundDate">{{data.Cod | number}} 元</div>
                             </div>
                         </div>
 
@@ -620,20 +621,22 @@
                         <div class="detail-col">
                             <div class="detail-row">
                                 <div class="detail-label">稅金：</div>
-                                <div class="detail-value editable-field" ng-click="editAmount('Tax', data.Tax)">
+                                <div class="detail-value editable-field" ng-if="!data.OutboundDate" ng-click="editAmount('Tax', data.Tax)">
                                     {{data.Tax | number}} 元
                                     <i class="fa fa-edit"></i>
                                 </div>
+                                <div class="detail-value" ng-if="data.OutboundDate">{{data.Tax | number}} 元</div>
                             </div>
                         </div>
 
                         <div class="detail-col">
                             <div class="detail-row">
                                 <div class="detail-label">報關費：</div>
-                                <div class="detail-value editable-field" ng-click="editAmount('Ccfee', data.Ccfee)">
+                                <div class="detail-value editable-field" ng-if="!data.OutboundDate" ng-click="editAmount('Ccfee', data.Ccfee)">
                                     {{data.Ccfee | number}} 元
                                     <i class="fa fa-edit"></i>
                                 </div>
+                                <div class="detail-value" ng-if="data.OutboundDate">{{data.Ccfee | number}} 元</div>
                             </div>
                         </div>
 

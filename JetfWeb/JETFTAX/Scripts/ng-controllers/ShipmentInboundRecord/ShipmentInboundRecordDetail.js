@@ -156,6 +156,15 @@
 
     // 編輯金額
     $scope.editAmount = function (fieldName, currentValue) {
+        if ($scope.data && $scope.data.OutboundDate) {
+            swal({
+                title: "錯誤",
+                text: "已有出庫日期，稅金、到付款、報關費不可調整",
+                icon: "error"
+            });
+            return;
+        }
+
         $scope.currentFieldName = fieldName;
         $scope.newAmount = currentValue;
 

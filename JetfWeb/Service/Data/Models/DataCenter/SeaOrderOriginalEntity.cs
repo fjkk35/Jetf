@@ -14,6 +14,12 @@ namespace Service.Data
         public int Id { get; set; }
 
         /// <summary>
+        /// 主號
+        /// </summary>
+        [Column("MAINNUMBER")]
+        public string MainNumber { get; set; }
+
+        /// <summary>
         /// 分提單號
         /// </summary>
         [Column("BL_NO")]
@@ -60,5 +66,12 @@ namespace Service.Data
         /// </summary>
         [Column("GW")]
         public decimal? Gw { get; set; }
+
+        /// <summary>
+        /// 到付款。
+        /// </summary>
+        [Column("CC")]
+        public decimal? CC { get; set; }
+
     }
 }

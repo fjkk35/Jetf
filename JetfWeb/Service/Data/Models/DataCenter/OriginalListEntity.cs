@@ -14,7 +14,13 @@ namespace Service.Data
         public int Id { get; set; }
 
         /// <summary>
-        /// 追蹤單號。
+        /// 主號
+        /// </summary>
+        [Column("MAINNUMBER")]
+        public string MainNumber { get; set; }
+
+        /// <summary>
+        /// 分提單號。
         /// </summary>
         [Column("TRACKINGNO")]
         public string TrackingNo { get; set; }
@@ -54,5 +60,11 @@ namespace Service.Data
         /// </summary>
         [Column("CLEARANCEWAREHOUSING")]
         public int TransNo { get; set; }
+
+        /// <summary>
+        /// 到付款。
+        /// </summary>
+        [Column("CC")]
+        public string CC { get; set; }
     }
 }

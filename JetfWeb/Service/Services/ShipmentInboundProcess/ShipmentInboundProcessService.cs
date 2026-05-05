@@ -582,7 +582,7 @@ namespace Service.Services.ShipmentInboundProcess
 
         private bool IsAllowedBatchProcessType(int processType)
         {
-            // 僅允許：TransferFromOriginal(2)、ReturnToSite(3)、Destroy(5)、AddToReturnShipment(6)、InspectContents(7)、ConfirmOuterLabel(8)、TempData(9)
+            // 僅允許：TransferFromOriginal(2)、ReturnToSite(3)、Destroy(5)、AddToReturnShipment(6)、InspectContents(7)、ConfirmOuterLabel(8)、TempData(9)、TransferBySystem(10)
             var allowedTypes = new[] {
                 (int)ShipmentInboundProcessType.TransferFromOriginal,
                 (int)ShipmentInboundProcessType.ReturnToSite,
@@ -590,7 +590,8 @@ namespace Service.Services.ShipmentInboundProcess
                 (int)ShipmentInboundProcessType.AddToReturnShipment,
                 (int)ShipmentInboundProcessType.InspectContents,
                 (int)ShipmentInboundProcessType.ConfirmOuterLabel,
-                (int)ShipmentInboundProcessType.TempData
+                (int)ShipmentInboundProcessType.TempData,
+                (int)ShipmentInboundProcessType.TransferBySystem
             };
 
             return allowedTypes.Contains(processType);

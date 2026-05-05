@@ -61,7 +61,13 @@ namespace Service.EnumTax
         /// 暫存資料
         /// </summary>
         [Description("暫存資料")]
-        TempData = 9
+        TempData = 9,
+
+        /// <summary>
+        /// 過系統轉出
+        /// </summary>
+        [Description("過系統轉出")]
+        TransferBySystem = 10
 
     }
 }

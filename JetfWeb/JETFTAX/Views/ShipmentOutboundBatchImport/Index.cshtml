@@ -42,6 +42,7 @@
                             <th>原單號</th>
                             <th>轉出日期</th>
                             <th>新物流單號</th>
+                            <th>處理狀態</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -54,6 +55,7 @@
                             <td>{{ item.TrackingNo }}</td>
                             <td>{{ item.OutboundDate | customDate }}</td>
                             <td>{{ item.OutboundTrackingNo }}</td>
+                            <td>{{ item.WarehouseProcessTypeText }}</td>
                         </tr>
                     </tbody>
                 </table>

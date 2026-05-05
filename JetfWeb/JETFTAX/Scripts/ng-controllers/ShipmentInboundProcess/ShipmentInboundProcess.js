@@ -1,4 +1,6 @@
 ﻿mainApp.controller('ShipmentInboundProcessController', function ($scope, $http) {
+    var remarkOnlyProcessTypes = [2, 3, 5, 6, 7, 8, 10];
+
     // 初始化資料
     $scope.data = [];
     $scope.loading = false;
@@ -40,8 +42,8 @@
         sourceType: '',
         trackingNo: '',
         isClosed: '',
-        inboundDateStart: new Date(),
-        inboundDateEnd: new Date(),
+        inboundDateStart: null,
+        inboundDateEnd: null,
         unknownShipmentOnly: false
     };
 
@@ -213,7 +215,7 @@
         }
 
         // 處理方式為 2,3,5,6,7,8 時，清空收件人相關欄位
-        if ([2, 3, 5, 6, 7, 8].indexOf($scope.processForm.processType) > -1) {
+        if (remarkOnlyProcessTypes.indexOf($scope.processForm.processType) > -1) {
             $scope.processForm.processImporter = '';
             $scope.processForm.processImporterPhone = '';
             $scope.processForm.processImporterAddr = '';
@@ -221,7 +223,7 @@
 
         // 更新 Modal 標題
         var processTypeName = $scope.processTypeList.find(function (t) {
-            return t.value == $scope.processForm.processType;
+            return t.Value == $scope.processForm.processType;
         });
 
         if (processTypeName) {
@@ -457,16 +459,22 @@
 
     // 建立查詢參數的共用方法
     $scope.buildSearchRequest = function (includePaging) {
-        var startDate = new Date($scope.searchForm.inboundDateStart);
-        var endDate = new Date($scope.searchForm.inboundDateEnd);
+        var dateStart = null;
+        var dateEnd = null;
 
-        var dateStart = startDate.getFullYear() + '-' +
-            String(startDate.getMonth() + 1).padStart(2, '0') + '-' +
-            String(startDate.getDate()).padStart(2, '0');
+        if ($scope.searchForm.inboundDateStart) {
+            var startDate = new Date($scope.searchForm.inboundDateStart);
+            dateStart = startDate.getFullYear() + '-' +
+                String(startDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(startDate.getDate()).padStart(2, '0');
+        }
 
-        var dateEnd = endDate.getFullYear() + '-' +
-            String(endDate.getMonth() + 1).padStart(2, '0') + '-' +
-            String(endDate.getDate()).padStart(2, '0');
+        if ($scope.searchForm.inboundDateEnd) {
+            var endDate = new Date($scope.searchForm.inboundDateEnd);
+            dateEnd = endDate.getFullYear() + '-' +
+                String(endDate.getMonth() + 1).padStart(2, '0') + '-' +
+                String(endDate.getDate()).padStart(2, '0');
+        }
 
         var isClosed = null;
         if ($scope.searchForm.isClosed === 'true') {
@@ -496,15 +504,6 @@
 
     // 執行查詢
     $scope.search = function () {
-        if (!$scope.searchForm.inboundDateStart || !$scope.searchForm.inboundDateEnd) {
-            swal({
-                title: "提醒",
-                text: "請選擇入庫日期",
-                icon: "warning"
-            });
-            return;
-        }
-
         $scope.currentPage = 1;
         $scope.isSearched = true;
         $scope.loadData();
@@ -558,8 +557,8 @@
             sourceType: '',
             trackingNo: '',
             isClosed: '',
-            inboundDateStart: new Date(),
-            inboundDateEnd: new Date(),
+            inboundDateStart: null,
+            inboundDateEnd: null,
             unknownShipmentOnly: false
         };
 
@@ -577,15 +576,6 @@
 
     // 匯出 Excel
     $scope.exportExcel = function () {
-        if (!$scope.searchForm.inboundDateStart || !$scope.searchForm.inboundDateEnd) {
-            swal({
-                title: "提醒",
-                text: "請選擇入庫日期",
-                icon: "warning"
-            });
-            return;
-        }
-
         $scope.exporting = true;
 
         var request = $scope.buildSearchRequest(false);

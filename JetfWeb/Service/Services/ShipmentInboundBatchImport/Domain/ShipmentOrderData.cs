@@ -6,6 +6,7 @@
     public class ShipmentOrderData
     {
         public string DeliveryNo { get; set; }
+        public string MainNumber { get; set; }
         public string TrackingNo { get; set; }
         public string OriginalJetfSerial { get; set; }
         public string OriginalTrackingNo { get; set; }
@@ -15,5 +16,6 @@
         public string CustCode { get; set; }
         public string TransName { get; set; }
         public string TransNo { get; set; }
+        public int FallbackCod { get; set; }
     }
 }

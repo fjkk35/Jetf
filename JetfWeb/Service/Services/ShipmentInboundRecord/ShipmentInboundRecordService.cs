@@ -576,6 +576,11 @@ namespace Service.Services.ShipmentInboundRecord
                     throw new ArgumentException("查無資料");
                 }
 
+                if (entity.OutboundDate.HasValue)
+                {
+                    throw new InvalidOperationException("已有出庫日期，稅金、到付款、報關費不可調整");
+                }
+
                 int? oldValue;
                 switch (request.FieldName)
                 {
@@ -595,20 +600,50 @@ namespace Service.Services.ShipmentInboundRecord
                         throw new ArgumentException("不允許修改此欄位");
                 }
 
-                if (oldValue == request.NewValue)
+                var hasAmountChanged = oldValue != request.NewValue;
+                var editTime = DateTime.Now;
+                var editUser = GetUserId();
+
+                if (hasAmountChanged)
+                {
+                    db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                    {
+                        ShipmentInboundId = request.Id,
+                        FieldName = request.FieldName,
+                        OldValue = oldValue?.ToString(),
+                        NewValue = request.NewValue.ToString(),
+                        EditTime = editTime,
+                        EditUser = editUser
+                    });
+                }
+
+                var hasAnyAmount = (entity.Cod ?? 0) > 0
+                    || (entity.Ccfee ?? 0) > 0
+                    || (entity.FreightFee ?? 0) > 0
+                    || (entity.Tax ?? 0) > 0;
+                var targetFee = hasAnyAmount ? 30 : 0;
+                var shouldUpdateFee = (entity.Fee ?? 0) != targetFee;
+
+                if (shouldUpdateFee)
+                {
+                    var oldFee = entity.Fee;
+                    entity.Fee = targetFee;
+
+                    db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                    {
+                        ShipmentInboundId = request.Id,
+                        FieldName = "手續費",
+                        OldValue = oldFee?.ToString(),
+                        NewValue = targetFee.ToString(),
+                        EditTime = editTime,
+                        EditUser = editUser
+                    });
+                }
+
+                if (!hasAmountChanged && !shouldUpdateFee)
                 {
                     return;
                 }
-
-                db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
-                {
-                    ShipmentInboundId = request.Id,
-                    FieldName = request.FieldName,
-                    OldValue = oldValue?.ToString(),
-                    NewValue = request.NewValue.ToString(),
-                    EditTime = DateTime.Now,
-                    EditUser = GetUserId()
-                });
 
                 db.SaveChanges();
             }
@@ -675,6 +710,7 @@ namespace Service.Services.ShipmentInboundRecord
                 var oldTrackingNo = entity.TrackingNo;
                 entity.TrackingNo = shipment.TrackingNo;
                 entity.DataType = shipment.DataType;
+                entity.MainNumber = shipment.MainNumber;
                 entity.OriginalJetfSerial = shipment.OriginalJetfSerial;
                 entity.OriginalTrackingNo = shipment.OriginalTrackingNo;
                 entity.CustCode = shipment.CustCode;

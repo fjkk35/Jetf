@@ -1,4 +1,4 @@
-using NPOI.SS.UserModel;
+﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.EnumTax;
 using Service.Extensions;
@@ -89,6 +89,7 @@ namespace Service.Services.ShipmentOutboundBatchImport
                         TrackingNo = row.GetCellData(0),
                         OutboundDate = ParseDate(row.GetCellData(1)),
                         OutboundTrackingNo = row.GetCellData(2),
+                        WarehouseProcessTypeText = row.GetCellData(3),
                         OutboundOpe = GetUserId()
                     };
 
@@ -139,6 +140,36 @@ namespace Service.Services.ShipmentOutboundBatchImport
                     shipment.FailReason = "轉出日期為空";
                     continue;
                 }
+
+                if (string.IsNullOrWhiteSpace(shipment.WarehouseProcessTypeText))
+                {
+                    shipment.UploadStatus = "失敗";
+                    shipment.FailReason = "處理狀態為空";
+                    continue;
+                }
+
+                var warehouseProcessTypeValue = shipment.WarehouseProcessTypeText
+                    .Trim()
+                    .ToEnumValueByDescription<WarehouseProcessType>();
+
+                if (!warehouseProcessTypeValue.HasValue)
+                {
+                    shipment.UploadStatus = "失敗";
+                    shipment.FailReason = "處理狀態只允許填入：已出庫、已銷毀、已退運";
+                    continue;
+                }
+
+                var warehouseProcessType = (WarehouseProcessType)warehouseProcessTypeValue.Value;
+                if (warehouseProcessType != WarehouseProcessType.OutBound
+                    && warehouseProcessType != WarehouseProcessType.Disposed
+                    && warehouseProcessType != WarehouseProcessType.Returned)
+                {
+                    shipment.UploadStatus = "失敗";
+                    shipment.FailReason = "處理狀態只允許填入：已出庫、已銷毀、已退運";
+                    continue;
+                }
+
+                shipment.WarehouseProcessType = warehouseProcessType;
             }
 
             var validList = shipmentOutboundList
@@ -248,7 +279,7 @@ namespace Service.Services.ShipmentOutboundBatchImport
                             entity.OutboundTrackingNo = shipment.OutboundTrackingNo;
                             entity.OutboundTime = DateTime.Now;
                             entity.OutboundOpe = shipment.OutboundOpe;
-                            entity.WarehouseProcessType = 1;
+                            entity.WarehouseProcessType = (byte)shipment.WarehouseProcessType.Value;
                             entity.WarehouseProcessTime = DateTime.Now;
                             entity.WarehouseProcessOpe = shipment.OutboundOpe;
 

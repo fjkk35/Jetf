@@ -23,6 +23,11 @@ namespace Service.Services.ShipmentInboundBatchImport.Domain
         public DateTime InboundDate { get; set; }
 
         /// <summary>
+        /// 主號。
+        /// </summary>
+        public string MainNumber { get; set; }
+
+        /// <summary>
         /// 單號。
         /// </summary>
         public string TrackingNo { get; set; }

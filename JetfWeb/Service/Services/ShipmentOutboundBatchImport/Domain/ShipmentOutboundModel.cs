@@ -12,6 +12,8 @@ namespace Service.Services.ShipmentOutboundBatchImport.Domain
         public string TrackingNo { get; set; }
         public DateTime OutboundDate { get; set; }
         public string OutboundTrackingNo { get; set; }
+        public string WarehouseProcessTypeText { get; set; }
+        public WarehouseProcessType? WarehouseProcessType { get; set; }
         public string OutboundOpe { get; set; }
         public ShipmentInboundProcessType ProcessType { get; set; }
         public string UploadStatus { get; set; }

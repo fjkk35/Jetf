@@ -180,6 +180,7 @@ namespace Service.Services.ShipmentInboundBatchImport
                         {
                             DataType = x.DataType,
                             InboundDate = x.InboundDate,
+                            MainNumber = x.MainNumber,
                             TrackingNo = x.TrackingNo,
                             OriginalJetfSerial = x.OriginalJetfSerial,
                             OriginalTrackingNo = x.OriginalTrackingNo,

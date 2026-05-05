@@ -31,6 +31,12 @@ namespace Service.Data
         public DateTime InboundDate { get; set; }
 
         /// <summary>
+        /// 主號。
+        /// </summary>
+        [Column("MainNumber")]
+        public string MainNumber { get; set; }
+
+        /// <summary>
         /// 貨件追蹤單號。
         /// </summary>
         [Column("TrackingNo")]

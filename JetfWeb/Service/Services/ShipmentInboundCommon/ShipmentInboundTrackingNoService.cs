@@ -4,6 +4,7 @@ using Service.Services.ShipmentInboundBatchImport.Domain;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
+using System.Globalization;
 using System.Linq;
 
 namespace Service.Services.ShipmentInboundCommon
@@ -31,7 +32,15 @@ namespace Service.Services.ShipmentInboundCommon
             var seaData = QuerySeaOrderData(trackingNos);
             var airData = QueryAirOrderData(trackingNos);
             var airDataByDeliveryNo = QueryAirOrderDataByDeliveryNo(trackingNos);
-            var feeData = QueryFeeData(trackingNos);
+            var originalJetfSerials = seaData.Values
+                .Concat(airData.Values)
+                .Concat(airDataByDeliveryNo.Values)
+                .Where(x => !string.IsNullOrWhiteSpace(x.OriginalJetfSerial))
+                .Select(x => x.OriginalJetfSerial)
+                .Distinct()
+                .ToList();
+
+            var feeData = QueryFeeData(originalJetfSerials);
 
             foreach (var shipment in shipmentInboundList)
             {
@@ -45,11 +54,15 @@ namespace Service.Services.ShipmentInboundCommon
                 var trackingNo = shipment.TrackingNo.Trim();
                 shipment.TrackingNo = trackingNo;
 
+                ShipmentOrderData orderData = null;
+
                 if (seaData.ContainsKey(trackingNo))
                 {
                     var seaOrder = seaData[trackingNo];
+                    orderData = seaOrder;
                     shipment.DataType = "海運";
                     shipment.IsOrderOriginal = true;
+                    shipment.MainNumber = seaOrder.MainNumber;
                     shipment.OriginalJetfSerial = seaOrder.OriginalJetfSerial;
                     shipment.OriginalTrackingNo = seaOrder.OriginalTrackingNo;
                     shipment.ImporterAddr = seaOrder.ImporterAddr;
@@ -61,8 +74,10 @@ namespace Service.Services.ShipmentInboundCommon
                 else if (airData.ContainsKey(trackingNo))
                 {
                     var airOrder = airData[trackingNo];
+                    orderData = airOrder;
                     shipment.DataType = "空運";
                     shipment.IsOrderOriginal = true;
+                    shipment.MainNumber = airOrder.MainNumber;
                     shipment.OriginalJetfSerial = airOrder.OriginalJetfSerial;
                     shipment.OriginalTrackingNo = airOrder.OriginalTrackingNo;
                     shipment.Importer = airOrder.Importer;
@@ -74,8 +89,10 @@ namespace Service.Services.ShipmentInboundCommon
                 else if (airDataByDeliveryNo.ContainsKey(trackingNo))
                 {
                     var airOrder = airDataByDeliveryNo[trackingNo];
+                    orderData = airOrder;
                     shipment.DataType = "空運";
                     shipment.IsOrderOriginal = true;
+                    shipment.MainNumber = airOrder.MainNumber;
                     shipment.OriginalJetfSerial = airOrder.OriginalJetfSerial;
                     shipment.OriginalTrackingNo = airOrder.OriginalTrackingNo;
                     shipment.Importer = airOrder.Importer;
@@ -85,13 +102,19 @@ namespace Service.Services.ShipmentInboundCommon
                     shipment.TransNo = airOrder.TransNo;
                 }
 
-                if (feeData.ContainsKey(trackingNo))
+                if (!string.IsNullOrWhiteSpace(shipment.OriginalJetfSerial)
+                    && feeData.ContainsKey(shipment.OriginalJetfSerial))
                 {
-                    var fee = feeData[trackingNo];
+                    var fee = feeData[shipment.OriginalJetfSerial];
                     shipment.Tax = fee.Tax ?? 0;
                     shipment.Ccfee = fee.Ccfee ?? 0;
                     shipment.Cod = fee.Cod ?? 0;
                     shipment.Fee = 30;
+                }
+                else if (orderData != null)
+                {
+                    shipment.Cod = orderData.FallbackCod;
+                    shipment.Fee = shipment.Cod > 0 ? 30 : 0;
                 }
             }
         }
@@ -210,6 +233,7 @@ namespace Service.Services.ShipmentInboundCommon
         private void ResetResolvedFields(ShipmentInboundModel shipment)
         {
             shipment.DataType = null;
+            shipment.MainNumber = null;
             shipment.OriginalJetfSerial = null;
             shipment.OriginalTrackingNo = null;
             shipment.CustCode = null;
@@ -229,21 +253,39 @@ namespace Service.Services.ShipmentInboundCommon
         {
             using (var db = CreateDataCenterDbContext())
             {
-                return db.SeaOrderOriginals
+                var data = db.SeaOrderOriginals
                     .AsNoTracking()
                     .Where(x => trackingNos.Contains(x.JetfSerial))
+                    .Select(x => new
+                    {
+                        x.JetfSerial,
+                        x.MainNumber,
+                        x.BlNo,
+                        x.ImporterAddr,
+                        x.ImporterPhone,
+                        x.Importer,
+                        x.CustCode,
+                        x.TransName,
+                        x.Gw,
+                        x.CC
+                    })
+                    .ToList();
+
+                return data
                     .GroupBy(x => x.JetfSerial)
                     .Select(g => g.OrderByDescending(x => x.Gw ?? 0)
                         .Select(x => new ShipmentOrderData
                         {
                             TrackingNo = x.JetfSerial,
+                            MainNumber = x.MainNumber,
                             OriginalJetfSerial = x.JetfSerial,
                             OriginalTrackingNo = x.BlNo,
                             ImporterAddr = x.ImporterAddr,
                             ImporterPhone = x.ImporterPhone,
                             Importer = x.Importer,
                             CustCode = x.CustCode,
-                            TransName = x.TransName
+                            TransName = x.TransName,
+                            FallbackCod = ParseAmountToInt(x.CC)
                         })
                         .FirstOrDefault())
                     .ToDictionary(x => x.TrackingNo, x => x);
@@ -254,12 +296,28 @@ namespace Service.Services.ShipmentInboundCommon
         {
             using (var db = CreateDataCenterDbContext())
             {
-                return db.OriginalLists
+                var data = db.OriginalLists
                     .AsNoTracking()
                     .Where(x => trackingNos.Contains(x.TrackingNo))
+                    .Select(x => new
+                    {
+                        x.MainNumber,
+                        x.TrackingNo,
+                        x.DeliveryNo,
+                        x.Importer,
+                        x.ImporterPhone,
+                        x.ImporterAddr,
+                        x.CustCode,
+                        x.TransNo,
+                        x.CC
+                    })
+                    .ToList();
+
+                return data
                     .GroupBy(x => x.TrackingNo)
                     .Select(g => g.Select(x => new ShipmentOrderData
                     {
+                        MainNumber = x.MainNumber,
                         TrackingNo = x.TrackingNo,
                         OriginalJetfSerial = x.DeliveryNo,
                         OriginalTrackingNo = x.TrackingNo,
@@ -267,7 +325,8 @@ namespace Service.Services.ShipmentInboundCommon
                         ImporterPhone = x.ImporterPhone,
                         ImporterAddr = x.ImporterAddr,
                         CustCode = x.CustCode,
-                        TransNo = x.TransNo.ToString()
+                        TransNo = x.TransNo.ToString(),
+                        FallbackCod = ParseAmountToInt(x.CC)
                     }).FirstOrDefault())
                     .ToDictionary(x => x.TrackingNo, x => x);
             }
@@ -277,12 +336,28 @@ namespace Service.Services.ShipmentInboundCommon
         {
             using (var db = CreateDataCenterDbContext())
             {
-                return db.OriginalLists
+                var data = db.OriginalLists
                     .AsNoTracking()
                     .Where(x => trackingNos.Contains(x.DeliveryNo))
+                    .Select(x => new
+                    {
+                        x.MainNumber,
+                        x.DeliveryNo,
+                        x.TrackingNo,
+                        x.Importer,
+                        x.ImporterPhone,
+                        x.ImporterAddr,
+                        x.CustCode,
+                        x.TransNo,
+                        x.CC
+                    })
+                    .ToList();
+
+                return data
                     .GroupBy(x => x.DeliveryNo)
                     .Select(g => g.Select(x => new ShipmentOrderData
                     {
+                        MainNumber = x.MainNumber,
                         DeliveryNo = x.DeliveryNo,
                         TrackingNo = x.TrackingNo,
                         OriginalJetfSerial = x.DeliveryNo,
@@ -291,19 +366,25 @@ namespace Service.Services.ShipmentInboundCommon
                         ImporterPhone = x.ImporterPhone,
                         ImporterAddr = x.ImporterAddr,
                         CustCode = x.CustCode,
-                        TransNo = x.TransNo.ToString()
+                        TransNo = x.TransNo.ToString(),
+                        FallbackCod = ParseAmountToInt(x.CC)
                     }).FirstOrDefault())
                     .ToDictionary(x => x.DeliveryNo, x => x);
             }
         }
 
-        private Dictionary<string, ShipmentFeeData> QueryFeeData(List<string> trackingNos)
+        private Dictionary<string, ShipmentFeeData> QueryFeeData(List<string> originalJetfSerials)
         {
+            if (originalJetfSerials == null || originalJetfSerials.Count == 0)
+            {
+                return new Dictionary<string, ShipmentFeeData>();
+            }
+
             using (var db = CreateJetfDbContext())
             {
-                return db.FeeMasters
+                var data = db.FeeMasters
                     .AsNoTracking()
-                    .Where(x => x.Download == "1" && trackingNos.Contains(x.DlvInv) && x.IncludeTax == "N")
+                    .Where(x => x.Download == "1" && originalJetfSerials.Contains(x.DlvInv) && x.IncludeTax == "N")
                     .Select(x => new ShipmentFeeData
                     {
                         TrackingNo = x.DlvInv,
@@ -312,8 +393,38 @@ namespace Service.Services.ShipmentInboundCommon
                         Cod = x.Cod,
                         Fee = x.Fee
                     })
+                    .ToList();
+
+                return data
+                    .GroupBy(x => x.TrackingNo)
+                    .Select(g => g.First())
                     .ToDictionary(x => x.TrackingNo, x => x);
             }
+        }
+
+        private int ParseAmountToInt(decimal? amount)
+        {
+            return amount.HasValue ? decimal.ToInt32(decimal.Truncate(amount.Value)) : 0;
+        }
+
+        private int ParseAmountToInt(string amount)
+        {
+            if (string.IsNullOrWhiteSpace(amount))
+            {
+                return 0;
+            }
+
+            if (decimal.TryParse(amount, NumberStyles.Any, CultureInfo.CurrentCulture, out var currentCultureValue))
+            {
+                return decimal.ToInt32(decimal.Truncate(currentCultureValue));
+            }
+
+            if (decimal.TryParse(amount, NumberStyles.Any, CultureInfo.InvariantCulture, out var invariantCultureValue))
+            {
+                return decimal.ToInt32(decimal.Truncate(invariantCultureValue));
+            }
+
+            return 0;
         }
     }
 }
