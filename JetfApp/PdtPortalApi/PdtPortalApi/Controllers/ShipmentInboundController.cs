@@ -129,6 +129,33 @@ public sealed class ShipmentInboundController(
     }
 
     /// <summary>
+    /// 取得異常原因清單。
+    /// </summary>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>異常原因清單。</returns>
+    [HttpGet("exception-reasons")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ShipmentInboundExceptionReasonDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ShipmentInboundExceptionReasonDto>>), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<ShipmentInboundExceptionReasonDto>>>> GetExceptionReasonsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var data = await _portalService.GetShipmentInboundExceptionReasonsAsync(cancellationToken);
+            return Ok(ApiResponse<IReadOnlyList<ShipmentInboundExceptionReasonDto>>.Ok(data));
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "查詢異常原因 API 執行失敗");
+            return StatusCode(
+                StatusCodes.Status500InternalServerError,
+                ApiResponse<IReadOnlyList<ShipmentInboundExceptionReasonDto>>.Fail(
+                    "INTERNAL_SERVER_ERROR",
+                    "查詢異常原因時發生未預期錯誤",
+                    StatusCodes.Status500InternalServerError));
+        }
+    }
+
+    /// <summary>
     /// 寫入異常件資料。
     /// </summary>
     /// <param name="request">異常件請求。</param>

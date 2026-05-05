@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.jetfapp.data.model.ApiResult
+import com.example.jetfapp.data.model.ExceptionReason
 import com.example.jetfapp.data.model.ShipmentInboundExceptionRequest
 import com.example.jetfapp.data.repository.ShipmentInboundRepository
 import com.example.jetfapp.di.ServiceLocator
@@ -19,6 +20,9 @@ import kotlinx.coroutines.launch
 data class ShipmentExceptionUiState(
     val seqNo: String = "",
     val reason: String = "",
+    val exceptionReasonId: Int? = null,
+    val exceptionReasons: List<ExceptionReason> = emptyList(),
+    val isLoadingReasons: Boolean = false,
     val photoPreview: Bitmap? = null,
     val photoBase64: String? = null,
     val isSubmitting: Boolean = false,
@@ -51,9 +55,48 @@ class ShipmentExceptionViewModel(
         }
     }
 
-    fun updateReason(reason: String) {
+    fun loadExceptionReasons() {
+        val currentState = _uiState.value
+        if (currentState.isLoadingReasons || currentState.exceptionReasons.isNotEmpty()) {
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingReasons = true, message = null) }
+
+            when (val result = repository.getExceptionReasons()) {
+                is ApiResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            exceptionReasons = result.data,
+                            isLoadingReasons = false,
+                            message = null
+                        )
+                    }
+                }
+
+                is ApiResult.Failure -> {
+                    _uiState.update {
+                        it.copy(
+                            exceptionReasons = emptyList(),
+                            exceptionReasonId = null,
+                            reason = "",
+                            isLoadingReasons = false,
+                            message = result.message
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun updateReason(reason: ExceptionReason) {
         _uiState.update {
-            it.copy(reason = reason.trim(), message = null)
+            it.copy(
+                reason = reason.reason.trim(),
+                exceptionReasonId = reason.id,
+                message = null
+            )
         }
     }
 
@@ -84,7 +127,7 @@ class ShipmentExceptionViewModel(
     fun submit() {
         val currentState = _uiState.value
         val seqNo = currentState.seqNo.trim()
-        val reason = currentState.reason.trim()
+        val exceptionReasonId = currentState.exceptionReasonId
         val photoBase64 = currentState.photoBase64
 
         when {
@@ -93,7 +136,7 @@ class ShipmentExceptionViewModel(
                 return
             }
 
-            reason.isBlank() -> {
+            exceptionReasonId == null -> {
                 _events.tryEmit(ShipmentExceptionEvent.ShowUploadResultDialog("請選擇異常原因。", false))
                 return
             }
@@ -116,7 +159,7 @@ class ShipmentExceptionViewModel(
                 val result = repository.submitInboundException(
                     ShipmentInboundExceptionRequest(
                         seqNo = seqNo,
-                        reason = reason,
+                        exceptionReasonId = exceptionReasonId,
                         photo = photoBase64,
                         uploadOpe = uploadOperator
                     )
@@ -146,7 +189,8 @@ class ShipmentExceptionViewModel(
     }
 
     fun nextItem() {
-        _uiState.value = ShipmentExceptionUiState()
+        val exceptionReasons = _uiState.value.exceptionReasons
+        _uiState.value = ShipmentExceptionUiState(exceptionReasons = exceptionReasons)
     }
 
     companion object {

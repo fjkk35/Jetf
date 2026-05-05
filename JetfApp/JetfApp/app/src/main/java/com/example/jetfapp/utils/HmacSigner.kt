@@ -39,7 +39,7 @@ object HmacSigner {
         val payload = buildString {
             appendLine(timestamp)
             appendLine(request.seqNo)
-            appendLine(request.reason)
+            appendLine(request.exceptionReasonId)
             appendLine(request.photo)
             append(request.uploadOpe)
         }

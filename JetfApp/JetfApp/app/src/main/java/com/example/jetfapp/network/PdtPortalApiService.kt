@@ -2,6 +2,7 @@ package com.example.jetfapp.network
 
 import com.example.jetfapp.data.model.ApiEnvelope
 import com.example.jetfapp.data.model.BatchUpdateLocationCodeRequest
+import com.example.jetfapp.data.model.ExceptionReason
 import com.example.jetfapp.data.model.GetBatchLocationUpdateCountRequest
 import com.example.jetfapp.data.model.LoginRequest
 import com.example.jetfapp.data.model.ShipmentInboundExceptionRequest
@@ -29,6 +30,9 @@ interface PdtPortalApiService {
 
     @GET("api/shipmentinbound/source-types")
     suspend fun getSourceTypes(): ApiEnvelope<List<SourceType>>
+
+    @GET("api/shipmentinbound/exception-reasons")
+    suspend fun getExceptionReasons(): ApiEnvelope<List<ExceptionReason>>
 
     @POST("api/shipmentinbound/check")
     suspend fun checkShipment(

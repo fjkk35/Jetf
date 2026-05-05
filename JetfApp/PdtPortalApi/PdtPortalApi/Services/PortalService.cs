@@ -14,7 +14,7 @@ public sealed class PortalService(
     DataCenterDbContext dataCenterDbContext,
     ILogger<PortalService> logger) : IPortalService
 {
-    private const string ExceptionPhotoDirectory = @"D:\UploadPdt";
+    private const string ExceptionPhotoDirectory = @"F:\UploadPdt";
     private const string LocationFieldName = "儲位";
     private readonly JetfDbContext _jetfDbContext = jetfDbContext;
     private readonly DataCenterDbContext _dataCenterDbContext = dataCenterDbContext;
@@ -242,6 +242,32 @@ public sealed class PortalService(
     }
 
     /// <summary>
+    /// 取得異常原因清單。
+    /// </summary>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>異常原因資料。</returns>
+    public async Task<IReadOnlyList<ShipmentInboundExceptionReasonDto>> GetShipmentInboundExceptionReasonsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _jetfDbContext.ShipmentInboundExceptionReasons
+                .AsNoTracking()
+                .OrderBy(entity => entity.Id)
+                .Select(entity => new ShipmentInboundExceptionReasonDto
+                {
+                    Id = entity.Id,
+                    Reason = entity.Reason
+                })
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "查詢異常原因清單失敗");
+            throw;
+        }
+    }
+
+    /// <summary>
     /// 建立異常件資料。
     /// </summary>
     /// <param name="request">異常件請求資料。</param>
@@ -283,11 +309,21 @@ public sealed class PortalService(
                 return ServiceResult.Fail(photoPathResult.ErrorCode, photoPathResult.Message, photoPathResult.Code);
             }
 
+            var exceptionReasonExists = await _jetfDbContext.ShipmentInboundExceptionReasons
+                .AsNoTracking()
+                .AnyAsync(entity => entity.Id == request.ExceptionReasonId, cancellationToken);
+            if (!exceptionReasonExists)
+            {
+                return ServiceResult.Fail(
+                    "SHIPMENT_INBOUND_EXCEPTION_REASON_NOT_FOUND",
+                    "查無符合條件的異常原因");
+            }
+
             var entity = new ShipmentInboundExceptionEntity
             {
                 ShipmentInboundId = matchingInbounds[0].Id,
                 SeqNo = request.SeqNo,
-                Reason = request.Reason.Trim(),
+                ExceptionReasonId = request.ExceptionReasonId,
                 FilePath = photoPathResult.PhotoPath,
                 UploadOpe = request.UploadOpe.Trim()
             };

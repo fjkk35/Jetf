@@ -23,10 +23,10 @@ public sealed class ShipmentInboundExceptionEntity
     public string SeqNo { get; set; } = string.Empty;
 
     /// <summary>
-    /// 異常原因。
+    /// 異常原因 Id。
     /// </summary>
-    [Column("Reason")]
-    public string Reason { get; set; } = string.Empty;
+    [Column("ExceptionReasonId")]
+    public int ExceptionReasonId { get; set; }
 
     /// <summary>
     /// 照片路徑。

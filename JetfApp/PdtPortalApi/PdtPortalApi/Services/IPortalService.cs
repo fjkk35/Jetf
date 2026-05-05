@@ -42,6 +42,13 @@ public interface IPortalService
     Task<ServiceResult> CreateShipmentInboundAsync(CreateShipmentInboundRequest request, CancellationToken cancellationToken);
 
     /// <summary>
+    /// 取得異常原因清單。
+    /// </summary>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>異常原因資料。</returns>
+    Task<IReadOnlyList<ShipmentInboundExceptionReasonDto>> GetShipmentInboundExceptionReasonsAsync(CancellationToken cancellationToken);
+
+    /// <summary>
     /// 建立異常件資料。
     /// </summary>
     /// <param name="request">異常件請求資料。</param>

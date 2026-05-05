@@ -110,7 +110,7 @@ public sealed class HmacSignatureService(IOptions<HmacOptions> options, ILogger<
                 "\n",
                 unixTimeSeconds.ToString(CultureInfo.InvariantCulture),
                 request.SeqNo ?? string.Empty,
-                request.Reason ?? string.Empty,
+                request.ExceptionReasonId.ToString(CultureInfo.InvariantCulture),
                 request.Photo ?? string.Empty,
                 request.UploadOpe ?? string.Empty);
 

@@ -52,6 +52,11 @@ data class SourceType(
     @SerializedName("sourceType") val sourceType: String
 )
 
+data class ExceptionReason(
+    @SerializedName("id") val id: Int,
+    @SerializedName("reason") val reason: String
+)
+
 data class LoginRequest(
     @SerializedName("account") val account: String,
     @SerializedName("versionCode") val versionCode: String
@@ -75,7 +80,7 @@ data class ShipmentInboundRequest(
 
 data class ShipmentInboundExceptionRequest(
     @SerializedName("seqNo") val seqNo: String,
-    @SerializedName("reason") val reason: String,
+    @SerializedName("exceptionReasonId") val exceptionReasonId: Int,
     @SerializedName("photo") val photo: String,
     @SerializedName("uploadOpe") val uploadOpe: String
 )

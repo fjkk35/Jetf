@@ -42,6 +42,8 @@ import kotlinx.coroutines.launch
 class ShipmentExceptionFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeScanHandler {
     private var _binding: FragmentShipmentExceptionBinding? = null
     private var isApplyingUiState = false
+    private lateinit var reasonAdapter: ArrayAdapter<String>
+    private var renderedExceptionReasonIds: List<Int> = emptyList()
     private var currentPhotoFile: File? = null
     private var currentPhotoUri: Uri? = null
     private val binding: FragmentShipmentExceptionBinding
@@ -83,25 +85,12 @@ class ShipmentExceptionFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeS
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val reasons = listOf(
-            getString(R.string.option_exception_reason_water_damage),
-            getString(R.string.option_exception_reason_damage),
-            getString(R.string.option_exception_reason_leak),
-            getString(R.string.option_exception_reason_label_issue),
-            getString(R.string.option_exception_reason_destroy),
-            getString(R.string.option_exception_reason_empty)
-        )
-
+        reasonAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, mutableListOf())
         shipmentExceptionViewModel.updateUploadOperator(appViewModel.currentAccount.value.orEmpty())
+        shipmentExceptionViewModel.loadExceptionReasons()
         binding.root.isFocusable = true
         binding.root.isFocusableInTouchMode = true
-        binding.dropdownReason.setAdapter(
-            ArrayAdapter(
-                requireContext(),
-                android.R.layout.simple_list_item_1,
-                reasons
-            )
-        )
+        binding.dropdownReason.setAdapter(reasonAdapter)
         binding.dropdownReason.keyListener = null
         binding.dropdownReason.isCursorVisible = false
         binding.dropdownReason.showSoftInputOnFocus = false
@@ -149,7 +138,8 @@ class ShipmentExceptionFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeS
             }
         }
         binding.dropdownReason.setOnItemClickListener { _, _, position, _ ->
-            val reason = binding.dropdownReason.adapter.getItem(position)?.toString().orEmpty()
+            val reason = shipmentExceptionViewModel.uiState.value.exceptionReasons.getOrNull(position)
+                ?: return@setOnItemClickListener
             shipmentExceptionViewModel.updateReason(reason)
             hideKeyboard(binding.root)
         }
@@ -168,6 +158,14 @@ class ShipmentExceptionFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeS
                     shipmentExceptionViewModel.uiState.collect { state ->
                         isApplyingUiState = true
                         try {
+                            val exceptionReasonIds = state.exceptionReasons.map { it.id }
+                            if (renderedExceptionReasonIds != exceptionReasonIds) {
+                                renderedExceptionReasonIds = exceptionReasonIds
+                                reasonAdapter.clear()
+                                reasonAdapter.addAll(state.exceptionReasons.map { it.reason })
+                                reasonAdapter.notifyDataSetChanged()
+                            }
+
                             if (binding.editSeqNo.text?.toString() != state.seqNo) {
                                 binding.editSeqNo.setText(state.seqNo)
                                 binding.editSeqNo.setSelection(state.seqNo.length)
@@ -182,7 +180,7 @@ class ShipmentExceptionFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeS
                             binding.buttonDeletePhoto.visibility = if (state.photoPreview == null) View.GONE else View.VISIBLE
 
                             binding.editSeqNo.isEnabled = !state.isSubmitting
-                            binding.dropdownReason.isEnabled = !state.isSubmitting
+                            binding.dropdownReason.isEnabled = !state.isSubmitting && !state.isLoadingReasons
                             binding.buttonTakePhoto.isEnabled = !state.isSubmitting
                             binding.buttonDeletePhoto.isEnabled = !state.isSubmitting
                             binding.loadingContainer.visibility = if (state.isSubmitting) View.VISIBLE else View.GONE

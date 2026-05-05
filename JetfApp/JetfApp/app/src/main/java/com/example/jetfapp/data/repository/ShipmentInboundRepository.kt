@@ -3,6 +3,7 @@ package com.example.jetfapp.data.repository
 import com.example.jetfapp.data.model.ApiResult
 import com.example.jetfapp.data.model.AppConfig
 import com.example.jetfapp.data.model.BatchUpdateLocationCodeRequest
+import com.example.jetfapp.data.model.ExceptionReason
 import com.example.jetfapp.data.model.GetBatchLocationUpdateCountRequest
 import com.example.jetfapp.data.model.ShipmentInboundExceptionRequest
 import com.example.jetfapp.data.model.ShipmentInboundRequest
@@ -29,6 +30,16 @@ class ShipmentInboundRepository(
         } else {
             safeApiCall(gson) {
                 apiService.getSourceTypes()
+            }
+        }
+    }
+
+    suspend fun getExceptionReasons(): ApiResult<List<ExceptionReason>> = withContext(ioDispatcher) {
+        if (!appConfig.hasBaseUrl) {
+            ApiResult.Failure(message = "Missing API_BASE_URL configuration.")
+        } else {
+            safeApiCall(gson) {
+                apiService.getExceptionReasons()
             }
         }
     }
