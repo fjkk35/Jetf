@@ -52,6 +52,11 @@
     .exception-record-col-tracking {
         width: 220px;
     }
+
+    .exception-record-result {
+        padding: 0 18px 18px;
+        box-sizing: border-box;
+    }
 </style>
 
 <div ng-controller="ShipmentInboundExceptionRecordController">
@@ -178,7 +183,7 @@
         <p>{{exporting ? '匯出中...' : '載入中...'}}</p>
     </div>
 
-    <div ng-show="isSearched && !loading">
+    <div class="exception-record-result" ng-show="isSearched && !loading">
         <div class="row mb-2">
             <div class="col-lg-6">
                 <div class="form-inline">
