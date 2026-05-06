@@ -144,6 +144,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'ShipmentInboundBatchImport', text: '貨件入庫批量上傳', url: '~/ShipmentInboundBatchImport/Index', auth: ['ShipmentInboundBatchImport'] },
                 { id: 'ShipmentInboundProcess', text: '貨件回倉處理', url: '~/ShipmentInboundProcess/Index', auth: ['ShipmentInboundProcess'] },
                 { id: 'ShipmentInboundRecord', text: '貨件紀錄查詢', url: '~/ShipmentInboundRecord/Index', auth: ['ShipmentInboundRecord'] },
+                { id: 'ShipmentInboundExceptionRecord', text: '異常紀錄查詢', url: '~/ShipmentInboundExceptionRecord/Index', auth: ['ShipmentInboundRecord'] },
                 { id: 'ShipmentInboundPick', text: '撿貨明細', url: '~/ShipmentInboundPick/Index', auth: ['ShipmentInboundPick'] },
                 { id: 'ShipmentOutboundBatchImport', text: '貨件出庫批量上傳', url: '~/ShipmentOutboundBatchImport/Index', auth: ['ShipmentOutboundBatchImport'] },
                 { id: 'ShipmentOutboundBatchImportRevoke', text: '貨件出庫取消批量上傳', url: '~/ShipmentOutboundBatchImportRevoke/Index', auth: ['ShipmentOutboundBatchImport'] },

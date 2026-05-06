@@ -335,6 +335,7 @@
     <Compile Include="Controllers\ShipmentInboundLocationTransferController.cs" />
     <Compile Include="Controllers\ShipmentInboundPickController.cs" />
     <Compile Include="Controllers\ShipmentInboundProcessController.cs" />
+    <Compile Include="Controllers\ShipmentInboundExceptionRecordController.cs" />
     <Compile Include="Controllers\ShipmentInboundRecordController.cs" />
     <Compile Include="Controllers\ShipmentInboundWarehouseProcessController.cs" />
     <Compile Include="Controllers\ShipmentOutboundBatchImportController.cs" />
@@ -815,6 +816,7 @@
     <Content Include="Scripts\ng-controllers\ShipmentInboundLocationTransfer\ShipmentInboundLocationTransfer.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundPick\ShipmentInboundPick.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundProcess\ShipmentInboundProcess.js" />
+    <Content Include="Scripts\ng-controllers\ShipmentInboundExceptionRecord\ShipmentInboundExceptionRecord.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundRecord\ShipmentInboundRecord.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundRecord\ShipmentInboundRecordDetail.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundWarehouseProcess\ShipmentInboundWarehouseProcess.js" />
@@ -2900,6 +2902,7 @@
     <Content Include="Views\EtlCustomerWorkLoadReport\Index.cshtml" />
     <Content Include="Views\ShipmentInboundBatchImport\Index.cshtml" />
     <Content Include="Views\ShipmentInboundProcess\Index.cshtml" />
+    <Content Include="Views\ShipmentInboundExceptionRecord\Index.cshtml" />
     <Content Include="Views\ShipmentInboundRecord\Index.cshtml" />
     <Content Include="Views\ShipmentInboundPick\Index.cshtml" />
     <Content Include="Views\ShipmentOutboundBatchImport\Index.cshtml" />
@@ -2934,6 +2937,7 @@
     <None Include="tsconfig.json" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaClearance\SeaClearance.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaClearance\SeaClearanceDetail.ts" />
+    <TypeScriptCompile Include="Scripts\ng-controllers\ShipmentInboundExceptionRecord\ShipmentInboundExceptionRecord.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SjlBatchImport\SjlBatchImportSearch.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SjlBilling\SjlBilling.ts" />
     <TypeScriptCompile Include="Scripts\types\global.d.ts" />

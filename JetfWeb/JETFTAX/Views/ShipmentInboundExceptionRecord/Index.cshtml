@@ -1,0 +1,253 @@
+﻿@{
+    ViewBag.Title = "異常紀錄查詢";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .exception-record-table-container {
+        max-height: 600px;
+        overflow: auto;
+        border: 1px solid #dee2e6;
+    }
+
+        .exception-record-table-container table {
+            min-width: 100%;
+            margin-bottom: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .exception-record-table-container thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #343a40;
+            color: #fff;
+        }
+
+        .exception-record-table-container td,
+        .exception-record-table-container th {
+            padding: 8px;
+            vertical-align: middle;
+            border: 1px solid #dee2e6;
+            white-space: normal;
+            word-break: break-all;
+        }
+
+        .exception-record-table-container tbody tr:nth-of-type(odd) {
+            background-color: #f2f2f2;
+        }
+
+        .exception-record-table-container tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+    .exception-record-col-date {
+        width: 160px;
+        white-space: nowrap;
+        word-break: normal;
+    }
+
+    .exception-record-col-main,
+    .exception-record-col-tracking {
+        width: 220px;
+    }
+</style>
+
+<div ng-controller="ShipmentInboundExceptionRecordController">
+    <span class="headtype">異常紀錄查詢</span>
+    <hr />
+
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <div class="row mb-3 align-items-center">
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="exceptionInboundDateStart" class="col-lg-4 col-form-label text-right">入庫日期(起)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="exceptionInboundDateStart"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.inboundDateStart"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="startDatePopup.opened"
+                           ng-click="openStartDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇開始日期" />
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="exceptionInboundDateEnd" class="col-lg-4 col-form-label text-right">入庫日期(迄)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="exceptionInboundDateEnd"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.inboundDateEnd"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="endDatePopup.opened"
+                           ng-click="openEndDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇結束日期" />
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="exceptionMainNumber" class="col-lg-4 col-form-label text-right">主號</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="exceptionMainNumber"
+                           class="form-control"
+                           ng-model="searchForm.mainNumber"
+                           placeholder="請輸入主號" />
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="exceptionTrackingNo" class="col-lg-4 col-form-label text-right">單號</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="exceptionTrackingNo"
+                           class="form-control"
+                           ng-model="searchForm.trackingNo"
+                           placeholder="請輸入單號" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="exceptionCustCode" class="col-lg-4 col-form-label text-right">客戶</label>
+                <div class="col-lg-8">
+                    <customer-multi-select
+                        select-all="customerSelectAll"
+                        selected-cust-codes="selectedCustCodes"
+                        display-text="customerDisplayText"
+                        display-full-text="customerDisplayFullText">
+                    </customer-multi-select>
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="exceptionReason" class="col-lg-4 col-form-label text-right">異常原因</label>
+                <div class="col-lg-8">
+                    <select id="exceptionReason"
+                            class="form-control"
+                            ng-model="searchForm.exceptionReason">
+                        <option value="">全部</option>
+                        <option ng-repeat="reason in exceptionReasonList" value="{{reason.Value}}">{{reason.Text}}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12 text-right">
+                <button type="button"
+                        class="btn btn-primary"
+                        ng-click="search()"
+                        ng-disabled="loading || exporting">
+                    <i class="fa fa-search"></i> 查詢
+                </button>
+                <button type="button"
+                        class="btn btn-secondary ml-2"
+                        ng-click="clearSearch()"
+                        ng-disabled="loading || exporting">
+                    <i class="fa fa-eraser"></i> 清除
+                </button>
+                <button type="button"
+                        class="btn btn-success ml-2"
+                        ng-click="exportExcel()"
+                        ng-disabled="loading || exporting">
+                    <i class="fa fa-download"></i> 匯出Excel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div ng-show="loading || exporting" class="text-center">
+        <i class="fa fa-spinner fa-spin fa-3x"></i>
+        <p>{{exporting ? '匯出中...' : '載入中...'}}</p>
+    </div>
+
+    <div ng-show="isSearched && !loading">
+        <div class="row mb-2">
+            <div class="col-lg-6">
+                <div class="form-inline">
+                    <label class="mr-2">每頁顯示</label>
+                    <select class="form-control"
+                            ng-model="pageSize"
+                            ng-change="changePageSize()">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <label class="ml-2">筆</label>
+                </div>
+            </div>
+            <div class="col-lg-6 text-right">
+                <span>{{recordsInfo}}</span>
+            </div>
+        </div>
+
+        <div class="exception-record-table-container mt-3">
+            <table class="table table-bordered table-hover">
+                <thead class="thead-dark">
+                    <tr>
+                        <th class="exception-record-col-date">入庫日期</th>
+                        <th class="exception-record-col-main">主號</th>
+                        <th class="exception-record-col-tracking">單號</th>
+                        <th>異常原因</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-if="data.length === 0">
+                        <td colspan="4" class="text-center">查無資料</td>
+                    </tr>
+                    <tr ng-repeat="item in data">
+                        <td class="exception-record-col-date">{{item.InboundDate | customDate}}</td>
+                        <td class="exception-record-col-main">{{item.MainNumber}}</td>
+                        <td class="exception-record-col-tracking">
+                            <a href="~/ShipmentInboundRecord/Detail?id={{item.Id}}"
+                               target="_blank"
+                               class="text-primary"
+                               style="cursor:pointer;text-decoration:underline;font-weight:600;">
+                                {{item.TrackingNo}}
+                            </a>
+                        </td>
+                        <td>{{item.ExceptionReason}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row mt-3" ng-show="totalPages > 1">
+            <div class="col-lg-12">
+                <nav>
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" ng-class="{disabled: currentPage === 1}">
+                            <a class="page-link" href="javascript:void(0)" ng-click="previousPage()">上一頁</a>
+                        </li>
+                        <li class="page-item"
+                            ng-repeat="page in getPages()"
+                            ng-class="{active: page === currentPage}">
+                            <a class="page-link" href="javascript:void(0)" ng-click="changePage(page)">{{page}}</a>
+                        </li>
+                        <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
+                            <a class="page-link" href="javascript:void(0)" ng-click="nextPage()">下一頁</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
