@@ -135,9 +135,9 @@ namespace Service.Models.SeaUnreceivedOrder
         public DateTime? ShortCargoDataDate { get; set; }
 
         /// <summary>
-        /// 最後傳輸日
-        /// 高雄郵聯(全旺) =>【預計到港日】+3
-        /// TPCT(捷豐) =>【預計到港日】+7
+        /// 最後傳輸日。
+        /// 清關業者包含郵聯 =>【預計到港日】+1 工作日，不含到港日當天。
+        /// 其他清關業者 =>【預計到港日】+6 日。
         /// </summary>
         public DateTime? LastDataDate { get; set; }
 

@@ -156,18 +156,15 @@ namespace Service.Services.WorkLoad
                     row.CreateCell(4).SetCellValue(eta);//到港日
                     row.GetCell(4).CellStyle = date2Style;
 
-                    if (dt.Rows[i]["MODIFYBY"].ToString().IndexOf("高雄郵聯") > -1)
-                    {
-                        //清關業者為高雄時到港日+6天，其餘清關業者則空白
-                        row.CreateCell(5).SetCellValue(_workDayService.AddWorkDays(workDay.Item1, workDay.Item2, eta, 3));//報單最後傳輸日
-                        row.GetCell(5).CellStyle = date2Style;
-                    }
-                    else if (dt.Rows[i]["MODIFYBY"].ToString().IndexOf("tpct", StringComparison.OrdinalIgnoreCase) > -1 ||
-                             dt.Rows[i]["MODIFYBY"].ToString().IndexOf("基隆港務", StringComparison.OrdinalIgnoreCase) > -1)
-                    {
-                        row.CreateCell(5).SetCellValue(eta.AddDays(+6));//最後傳輸日
-                        row.GetCell(5).CellStyle = date2Style;
-                    }
+                    var lastTransmitDate = Service.Helpers.SeaLastTransmitDateHelper.GetLastTransmitDate(
+                        _workDayService,
+                        workDay.Item1,
+                        workDay.Item2,
+                        dt.Rows[i]["MODIFYBY"].ToString(),
+                        eta);
+
+                    row.CreateCell(5).SetCellValue(lastTransmitDate);//最後傳輸日
+                    row.GetCell(5).CellStyle = date2Style;
                 }
                 //row.CreateCell(6).SetCellValue("");//應回倉日期
                 row.CreateCell(7).SetCellValue(dt.Rows[i]["MESSAGE"].ToString());//報單未傳訊息
@@ -392,20 +389,15 @@ namespace Service.Services.WorkLoad
                     row.CreateCell(8).SetCellValue(eta.AddDays(-1));
                     row.GetCell(8).CellStyle = date2Style;
 
-                    if (item.MODIFYBY != null && item.MODIFYBY.IndexOf("高雄郵聯") > -1)
-                    {
-                        row.CreateCell(9).SetCellValue(_workDayService.AddWorkDays(workDay.Item1, workDay.Item2, eta, 3));//最後傳輸日
-                        row.GetCell(9).CellStyle = date2Style;
-                    }
-                    else if (item.MODIFYBY != null && 
-                            (
-                             item.MODIFYBY.IndexOf("TPCT", StringComparison.OrdinalIgnoreCase) > -1 ||
-                             item.MODIFYBY.IndexOf("基隆港務", StringComparison.OrdinalIgnoreCase) > -1
-                            ))
-                    {
-                        row.CreateCell(9).SetCellValue(eta.AddDays(+6));//最後傳輸日
-                        row.GetCell(9).CellStyle = date2Style;
-                    }
+                    var lastTransmitDate = Service.Helpers.SeaLastTransmitDateHelper.GetLastTransmitDate(
+                        _workDayService,
+                        workDay.Item1,
+                        workDay.Item2,
+                        item.MODIFYBY,
+                        eta);
+
+                    row.CreateCell(9).SetCellValue(lastTransmitDate);//最後傳輸日
+                    row.GetCell(9).CellStyle = date2Style;
                 }
 
                 //row.CreateCell(10).SetCellValue("");//短到日期

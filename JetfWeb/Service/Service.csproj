@@ -281,6 +281,7 @@
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Extensions\BCryptCompatibility.cs" />
     <Compile Include="Helpers\CacheHelper.cs" />
+    <Compile Include="Helpers\SeaLastTransmitDateHelper.cs" />
     <Compile Include="Models\AbnormalState\AbnormalStateModel.cs" />
     <Compile Include="Models\ApprovalCategory\ApprovalCategoryModel.cs" />
     <Compile Include="Models\AuthorizationForm\AuthorizationFormModel.cs" />

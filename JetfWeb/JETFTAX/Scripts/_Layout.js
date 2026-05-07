@@ -8,7 +8,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
 
     var menus = [
         {
-            id: 'tax', title: '稅金操作', icon: 'fas fa-fw fa-user-cog', partner: 'Tax', children: [
+            id: 'tax', title: '稅金操作', icon: 'fas fa-fw fa-file-invoice-dollar', partner: 'Tax', children: [
                 { id: 'Seatax', text: '1-1.海運稅金資料上傳', url: '~/Upload/Seatax', auth: ['UploadSeaTax'] },
                 { id: 'SeataxG', text: '2-1.G類資料上傳', url: '~/Upload/SeataxG', auth: ['UploadSeaTaxG'] },
                 { id: 'DownloadSea', text: '3-1.物流代收檔下載-海運', url: '~/Download/DownloadSea', auth: ['DownloadSeaTax'] },
@@ -68,14 +68,14 @@ mainApp.controller('LayoutController', function ($scope, $http) {
             ]
         },
         {
-            id: 'income', title: '營收', icon: 'fas fa-fw fa-search', partner: 'Income', children: [
+            id: 'income', title: '營收', icon: 'fas fa-fw fa-chart-line', partner: 'Income', children: [
                 { id: 'IncomeReport', text: '營收報表', url: '~/Income/IncomeReport', auth: ['IncomeReport'] },
                 { id: 'IncomeETAReport', text: '營收報表-到港日', url: '~/Income/IncomeETAReport', auth: ['IncomeEtaReport'] },
                 { id: 'IncomeDetailsReport', text: '營收總表及明細表', url: '~/Income/IncomeDetailsReport', auth: ['IncomeDetails'] }
             ]
         },
         {
-            id: 'workLoad', title: '作業量', icon: 'fas fa-fw fa-search', partner: 'WorkLoad', children: [
+            id: 'workLoad', title: '作業量', icon: 'fas fa-fw fa-chart-bar', partner: 'WorkLoad', children: [
                 { id: 'CCStatusReport', text: '海空快通關狀態彙總表', url: '~/WorkLoad/CCStatusReport', auth: ['ClearanceStatusReport'] },
                 { id: 'CustWorkLoadReport', text: '空快客戶作業量報表', url: '~/EtlCustWorkLoad/CustWorkLoadReport', auth: ['EtlCustomerWorkLoadReport'] },
                 { id: 'EtlCustomerWorkLoadReport', text: '空快客戶作業量報表V2', url: '~/EtlCustomerWorkLoadReport/Index', auth: ['EtlCustomerWorkLoadReport'] },
@@ -93,7 +93,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
             ]
         },
         {
-            id: 'clearanceWork', title: '清關作業', icon: 'fas fa-fw fa-search', partner: 'ClearanceWork', children: [
+            id: 'clearanceWork', title: '清關作業', icon: 'fas fa-fw fa-clipboard-check', partner: 'ClearanceWork', children: [
                 //{ id: 'ScanCargoArrivalTime', text: '輸入外車交倉時間', url: '~/ScanCargoArrivalTime/Index' },
                 { id: 'PdtScanCargoArrivalTime', text: '輸入外車交倉時間', url: '~/PdtScanCargoArrivalTime/Index' },
                 { id: 'EtlClearanceDetails', text: '空快清關明細表', url: '~/EtlClearanceDetails/Index', auth: ['EtlClearanceDetails'] },
@@ -114,7 +114,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
             ]
         },
         {
-            id: 'seaWork', title: '海快作業', icon: 'fas fa-fw fa-search', children: [
+            id: 'seaWork', title: '海快作業', icon: 'fas fa-fw fa-ship', children: [
                 { id: 'SeaWorkErrorOrder', text: '海快作業錯單', url: '~/SeaWorkErrorOrder/Index', auth: ['SeaWorkErrorOrder'] },
                 { id: 'SeaWorkErrorOrderReport', text: '海快作業錯單統計報表', url: '~/SeaWorkErrorOrderReport/Index', auth: ['SeaWorkErrorOrderReport'] },
                 { id: 'SeaWorkRecognizance', text: '海快作業具結', url: '~/SeaWorkRecognizance/Index', auth: ['SeaWorkRecognizance'] },
@@ -124,7 +124,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
             ]
         },
         {
-            id: 'seaClearance', title: '海快正式報關', icon: 'fas fa-fw fa-search', children: [
+            id: 'seaClearance', title: '海快正式報關', icon: 'fas fa-fw fa-file-signature', children: [
                 { id: 'SeaClearanceCreate', text: '海快後段建檔', url: '~/SeaClearanceCreate/Index', auth: ['SeaClearanceCreate'] },
                 { id: 'SeaClearance', text: '海快後段報關系統', url: '~/SeaClearance/Index', auth: ['SeaClearance'] },
                 { id: 'CustomsBroker', text: '報驗行建檔', url: '~/CustomsBroker/Index', auth: ['CustomsBroker'] },
@@ -140,7 +140,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
             ]
         },
         {
-            id: 'shipmentInbound', title: '貨件回倉作業', icon: 'fas fa-fw fa-search', children: [
+            id: 'shipmentInbound', title: '貨件回倉作業', icon: 'fas fa-fw fa-warehouse', children: [
                 { id: 'ShipmentInboundBatchImport', text: '貨件入庫批量上傳', url: '~/ShipmentInboundBatchImport/Index', auth: ['ShipmentInboundBatchImport'] },
                 { id: 'ShipmentInboundProcess', text: '貨件回倉處理', url: '~/ShipmentInboundProcess/Index', auth: ['ShipmentInboundProcess'] },
                 { id: 'ShipmentInboundRecord', text: '貨件紀錄查詢', url: '~/ShipmentInboundRecord/Index', auth: ['ShipmentInboundRecord'] },
@@ -153,14 +153,14 @@ mainApp.controller('LayoutController', function ($scope, $http) {
             ]
         },
         {
-            id: 'jetft', title: '捷穩通', icon: 'fas fa-fw fa-search', children: [
+            id: 'jetft', title: '捷穩通', icon: 'fas fa-fw fa-truck-loading', children: [
                 { id: 'SjlBatchImport', text: '捷利托運資料上傳', url: '~/SjlBatchImport/Index', auth: ['SjlBatchImport'] },
                 { id: 'SjlBatchImportSearch', text: '捷利托運資料查詢', url: '~/SjlBatchImport/Search', auth: ['SjlBatchImport'] },
                 { id: 'SjlBilling', text: '捷利帳單', url: '~/SjlBilling/Index', auth: ['SjlBilling'] },
             ]
         },
         {
-            id: 'send', title: '發送訊息', icon: 'fas fa-fw fa-search', partner: 'Send', children: [
+            id: 'send', title: '發送訊息', icon: 'fas fa-fw fa-paper-plane', partner: 'Send', children: [
                 { id: 'ErrorOrderSend', text: '錯單發送簡訊', url: '~/ErrorOrderSend/Index', auth: ['ErrorOrderSend'] },
                 { id: 'ErrorOrderSendDetail', text: '錯單發送明細', url: '~/ErrorOrderSendDetail/Index' },
                 { id: 'ErrorOrderSendCustomer', text: '客戶相對應平台', url: '~/ErrorOrderSendCustomer/Index' },
@@ -168,13 +168,13 @@ mainApp.controller('LayoutController', function ($scope, $http) {
             ]
         },
         {
-            id: 'line', title: 'LINE', icon: 'fas fa-fw fa-search', partner: 'Line', children: [
+            id: 'line', title: 'LINE', icon: 'fas fa-fw fa-comments', partner: 'Line', children: [
                 { id: 'TelegramGroup', text: 'Telegram群組', url: '~/TelegramGroup/Index' },
                 { id: 'SearchWork', text: '轉檔查詢', url: '~/Cargo/SearchWork', auth: ['SearchWork'] }
             ]
         },
         {
-            id: 'user', title: '會員', icon: 'fas fa-fw fa-search', partner: 'User', children: [
+            id: 'user', title: '會員', icon: 'fas fa-fw fa-users-cog', partner: 'User', children: [
                 { id: 'UserMaster', text: '帳號管理', url: '~/UserMaster/Index', auth: ['UserMaster'] },
                 { id: 'Authority', text: '權限', url: '~/Authority/Index', auth: ['UserMaster'] },
                 { id: 'AuthorityGroup', text: '權限群組', url: '~/AuthorityGroup/Index', auth: ['UserMaster'] }

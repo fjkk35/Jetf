@@ -1457,16 +1457,12 @@ namespace Service.Services.SeaUnreceivedOrder
                 //取得最後傳輸日
                 if (r.Eta.HasValue)
                 {
-                    switch (r.ModifyBy)
-                    {
-                        case "高雄郵聯(億興)":
-                        case "高雄郵聯(全旺)":
-                            r.LastDataDate = _workDayService.AddWorkDays(workDay.Item1, workDay.Item2, r.Eta.Value, 3);
-                            break;
-                        case "TPCT(捷豐)":
-                            r.LastDataDate = r.Eta.Value.AddDays(6);
-                            break;
-                    }
+                    r.LastDataDate = Service.Helpers.SeaLastTransmitDateHelper.GetLastTransmitDate(
+                        _workDayService,
+                        workDay.Item1,
+                        workDay.Item2,
+                        r.ModifyBy,
+                        r.Eta.Value);
                 }
 
                 switch (report)
