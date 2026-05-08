@@ -60,6 +60,7 @@ namespace Service.Services.ShipmentInboundPick
                         StoreName = x.StoreName,
                         Tax = x.Tax ?? 0,
                         Ccfee = x.Ccfee ?? 0,
+                        Cod = x.Cod ?? 0,
                         ProcessFee = x.ProcessFee ?? 0,
                         FreightFee = (int)(x.FreightFee ?? 0),
                         CustCode = x.CustCode,
@@ -174,7 +175,7 @@ namespace Service.Services.ShipmentInboundPick
             {
                 "序號", "訂單號", "收件人姓名", "收件人地址", "收件人電話",
                 "託運備註中文限制", "商品別編號", "商品數量", "才積/重量/總長(30/60/90/120..)",
-                "代收貨款", "指定配送日期", "指定配送時間", "稅金", "代收手續費"
+                "代收款總金額", "指定配送日期", "指定配送時間", "客戶"
             };
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
@@ -195,15 +196,14 @@ namespace Service.Services.ShipmentInboundPick
                 NpoiCell.CreateIntCell(dataRow, 9, item.TotalAmount, dataStyle);
                 NpoiCell.CreateCell(dataRow, 10, "", dataStyle);
                 NpoiCell.CreateCell(dataRow, 11, "", dataStyle);
-                NpoiCell.CreateIntCell(dataRow, 12, item.Tax, dataStyle);
-                NpoiCell.CreateIntCell(dataRow, 13, item.ProcessFee, dataStyle);
+                NpoiCell.CreateCell(dataRow, 12, item.CustName, dataStyle);
                 rowIndex++;
                 seqNo++;
             }
 
             var fixedWidths = new Dictionary<int, int>
             {
-                { 8, 12000 }
+                { 9, 12000 }
             };
 
             //AutoSize+20字元
@@ -229,8 +229,8 @@ namespace Service.Services.ShipmentInboundPick
             {
                 "出貨日期", "訂單編號", "收件人姓名", "收件人地址", "收件人電話",
                 "備註", "託運單號", "預定配達日", "配達時段", "品名",
-                "代收貨款", "契客代號", "溫層", "尺寸", "寄件人姓名",
-                "寄件人地址", "寄件人電話", "稅金", "代收手續費"
+                "代收款總金額", "契客代號", "溫層", "尺寸", "寄件人姓名",
+                "寄件人地址", "寄件人電話"
             };
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
@@ -258,8 +258,6 @@ namespace Service.Services.ShipmentInboundPick
                 NpoiCell.CreateCell(dataRow, 14, senderInfo.SenderName, dataStyle);
                 NpoiCell.CreateCell(dataRow, 15, "桃園市蘆竹區南山路二段122號", dataStyle);
                 NpoiCell.CreateCell(dataRow, 16, senderInfo.SenderPhone, dataStyle);
-                NpoiCell.CreateIntCell(dataRow, 17, item.Tax, dataStyle);
-                NpoiCell.CreateIntCell(dataRow, 18, item.ProcessFee, dataStyle);
                 rowIndex++;
             }
 
@@ -280,7 +278,7 @@ namespace Service.Services.ShipmentInboundPick
             var headers = new List<string>
             {
                 "單號", "收件人姓名", "收件人地址", "收件人電話",
-                "門市店號", "門市名稱", "代收貨款", "稅金"
+                "門市店號", "門市名稱", "代收款總金額"
             };
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
@@ -295,7 +293,6 @@ namespace Service.Services.ShipmentInboundPick
                 NpoiCell.CreateCell(dataRow, 4, item.StoreCode, dataStyle);
                 NpoiCell.CreateCell(dataRow, 5, item.StoreName, dataStyle);
                 NpoiCell.CreateIntCell(dataRow, 6, item.TotalAmount, dataStyle);
-                NpoiCell.CreateIntCell(dataRow, 7, item.Tax, dataStyle);
                 rowIndex++;
             }
 
@@ -313,7 +310,7 @@ namespace Service.Services.ShipmentInboundPick
             IRow headerRow = sheet.CreateRow(0);
             var headers = new List<string>
             {
-                "單號", "收件人姓名", "收件人地址", "收件人電話", "稅金", "代收手續費"
+                "單號", "收件人姓名", "收件人地址", "收件人電話", "代收款總金額"
             };
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
@@ -325,8 +322,7 @@ namespace Service.Services.ShipmentInboundPick
                 NpoiCell.CreateCell(dataRow, 1, item.ProcessImporter, dataStyle);
                 NpoiCell.CreateCell(dataRow, 2, item.ProcessImporterAddr, dataStyle);
                 NpoiCell.CreateCell(dataRow, 3, item.ProcessImporterPhone, dataStyle);
-                NpoiCell.CreateIntCell(dataRow, 4, item.Tax, dataStyle);
-                NpoiCell.CreateIntCell(dataRow, 5, item.ProcessFee, dataStyle);
+                NpoiCell.CreateIntCell(dataRow, 4, item.TotalAmount, dataStyle);
                 rowIndex++;
             }
 

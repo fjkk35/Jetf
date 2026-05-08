@@ -86,6 +86,9 @@ namespace Service.Services.ShipmentInboundProcess
                         var oldFee = existing.Fee;
                         var newProcessType = (ShipmentInboundProcessType)request.ProcessType;
 
+                        NormalizeUpdateRequest(request);
+                        ValidateUpdateRequest(request, newProcessType);
+
                         existing.ProcessType = newProcessType;
                         existing.ProcessTransNo = request.ProcessTransNo;
                         existing.ProcessImporter = request.ProcessImporter;
@@ -187,6 +190,63 @@ namespace Service.Services.ShipmentInboundProcess
                         throw;
                     }
                 }
+            }
+        }
+
+        private void NormalizeUpdateRequest(ShipmentInboundProcessUpdateRequest request)
+        {
+            request.ProcessImporter = request.ProcessImporter?.Trim();
+            request.ProcessImporterPhone = request.ProcessImporterPhone?.Trim();
+            request.ProcessImporterAddr = request.ProcessImporterAddr?.Trim();
+            request.StoreCode = request.StoreCode?.Trim();
+            request.StoreName = request.StoreName?.Trim();
+            request.CarNo = request.CarNo?.Trim();
+            request.Remark = request.Remark?.Trim();
+        }
+
+        private void ValidateUpdateRequest(
+            ShipmentInboundProcessUpdateRequest request,
+            ShipmentInboundProcessType newProcessType)
+        {
+            if (newProcessType != ShipmentInboundProcessType.NewTrackingNo)
+            {
+                return;
+            }
+
+            if (!request.ProcessTransNo.HasValue)
+            {
+                throw new Exception("請選擇重出派件公司");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.ProcessImporter))
+            {
+                throw new Exception("收件人為必填欄位");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.ProcessImporterPhone))
+            {
+                throw new Exception("電話為必填欄位");
+            }
+
+            var processTransNo = (ShipmentInboundProcessTransNo)request.ProcessTransNo.Value;
+            if (processTransNo == ShipmentInboundProcessTransNo.SevenEleven)
+            {
+                if (string.IsNullOrWhiteSpace(request.StoreCode))
+                {
+                    throw new Exception("門市店號為必填欄位");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.StoreName))
+                {
+                    throw new Exception("門市名稱為必填欄位");
+                }
+
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(request.ProcessImporterAddr))
+            {
+                throw new Exception("宅配地址為必填欄位");
             }
         }
 

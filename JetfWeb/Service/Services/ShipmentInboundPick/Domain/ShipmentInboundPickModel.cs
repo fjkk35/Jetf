@@ -1,4 +1,4 @@
-using Service.EnumTax;
+ï»¿using Service.EnumTax;
 using Service.Extensions;
 using System;
 using System.Collections.Generic;
@@ -8,113 +8,124 @@ using System.Threading.Tasks;
 
 namespace Service.Services.ShipmentInboundPick.Domain
 {
+    /// <summary>
+    /// è²¨ä»¶å›å€‰æ€è²¨è³‡æ–™ã€‚
+    /// </summary>
     public class ShipmentInboundPickModel
     {
         /// <summary>
-        /// ³æ¸¹
+        /// å–®è™Ÿã€‚
         /// </summary>
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// SeqNo
+        /// åºè™Ÿã€‚
         /// </summary>
         public string SeqNo { get; set; }
 
         /// <summary>
-        /// Àx¦ì
+        /// å„²ä½ã€‚
         /// </summary>
         public string LocationCode { get; set; }
 
         /// <summary>
-        /// ³B²z¤è¦¡
+        /// è²¨åˆ°ä»˜æ¬¾é‡‘é¡ã€‚
+        /// </summary>
+        public int Cod { get; set; }
+
+        /// <summary>
+        /// è™•ç†æ–¹å¼ã€‚
         /// </summary>
         public ShipmentInboundProcessType ProcessType { get; set; }
 
+        /// <summary>
+        /// è™•ç†æ–¹å¼åç¨±ã€‚
+        /// </summary>
         public string ProcessTypeName => ProcessType.ToDescription();
 
         /// <summary>
-        /// ­«¥X¬£¥ó¤½¥q
+        /// é‡å‡ºæ´¾ä»¶å…¬å¸ã€‚
         /// </summary>
         public ShipmentInboundProcessTransNo ProcessTransNo { get; set; }
 
         /// <summary>
-        /// ¦¬¥ó¤H
+        /// æ”¶ä»¶äººã€‚
         /// </summary>
         public string ProcessImporter { get; set; }
 
         /// <summary>
-        /// ¹q¸Ü
+        /// é›»è©±ã€‚
         /// </summary>
         public string ProcessImporterPhone { get; set; }
 
         /// <summary>
-        /// ¦a§}
+        /// åœ°å€ã€‚
         /// </summary>
         public string ProcessImporterAddr { get; set; }
 
         /// <summary>
-        /// ªù¥«©±¸¹
+        /// é–€å¸‚åº—è™Ÿã€‚
         /// </summary>
         public string StoreCode { get; set; }
 
         /// <summary>
-        /// ªù¥«¦WºÙ
+        /// é–€å¸‚åç¨±ã€‚
         /// </summary>
         public string StoreName { get; set; }
 
         /// <summary>
-        /// µ|ª÷
+        /// ç¨…é‡‘ã€‚
         /// </summary>
         public int Tax { get; set; }
 
         /// <summary>
-        /// ³øÃö¶O
+        /// å ±é—œè²»ã€‚
         /// </summary>
         public int Ccfee { get; set; }
 
         /// <summary>
-        /// ­«¥X¹B¶O
+        /// é‡å‡ºé‹è²»ã€‚
         /// </summary>
         public int FreightFee { get; set; }
 
         /// <summary>
-        /// ¤âÄò¶O
+        /// æ‰‹çºŒè²»ã€‚
         /// </summary>
         public int ProcessFee { get; set; }
 
         /// <summary>
-        /// ¥N¦¬´Ú¶µ
+        /// ç¸½ä»£æ”¶æ¬¾é …ã€‚
         /// </summary>
         public int TotalAmount
         {
             get
             {
-                //¶}·s³æ¸¹
+                // é–‹æ–°å–®è™Ÿæ‰éœ€è¦è¨ˆç®—ä»£æ”¶æ¬¾é …ã€‚
                 if ( ProcessType == ShipmentInboundProcessType.NewTrackingNo)
                 {
-                    return Tax + Ccfee + FreightFee + ProcessFee;
+                    return Cod + FreightFee + Tax + Ccfee + ProcessFee;
                 }
                 return 0;
             }
         }
 
         /// <summary>
-        /// «È¤á¥N½X
+        /// å®¢æˆ¶ä»£ç¢¼ã€‚
         /// </summary>
         public string CustCode { get; set; }
 
         /// <summary>
-        /// ¶i¤f¤è¦¡
+        /// é€²å£æ–¹å¼ã€‚
         /// </summary>
         public string DataType { get; set; }
 
         /// <summary>
-        /// «È¤á¦WºÙ
+        /// å®¢æˆ¶åç¨±ã€‚
         /// </summary>
         public string CustName { get; set; }
 
         /// <summary>
-        /// ³Æµù
+        /// å‚™è¨»ã€‚
         /// </summary>
         public string Remark { get; set; }
     }

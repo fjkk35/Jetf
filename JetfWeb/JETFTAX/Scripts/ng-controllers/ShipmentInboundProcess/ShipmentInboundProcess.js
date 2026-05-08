@@ -36,6 +36,10 @@
         showWeeks: false
     };
 
+    function normalizeText(value) {
+        return value ? value.trim() : '';
+    }
+
     // 查詢條件
     $scope.searchForm = {
         dataType: '',
@@ -391,6 +395,51 @@
                 });
                 return;
             }
+
+            if (!normalizeText($scope.processForm.processImporter)) {
+                swal({
+                    title: "提醒",
+                    text: "請輸入收件人",
+                    icon: "warning"
+                });
+                return;
+            }
+
+            if (!normalizeText($scope.processForm.processImporterPhone)) {
+                swal({
+                    title: "提醒",
+                    text: "請輸入電話",
+                    icon: "warning"
+                });
+                return;
+            }
+
+            if ($scope.processForm.processTransNo == 3) {
+                if (!normalizeText($scope.processForm.storeCode)) {
+                    swal({
+                        title: "提醒",
+                        text: "請輸入門市店號",
+                        icon: "warning"
+                    });
+                    return;
+                }
+
+                if (!normalizeText($scope.processForm.storeName)) {
+                    swal({
+                        title: "提醒",
+                        text: "請輸入門市名稱",
+                        icon: "warning"
+                    });
+                    return;
+                }
+            } else if (!normalizeText($scope.processForm.processImporterAddr)) {
+                swal({
+                    title: "提醒",
+                    text: "請輸入宅配地址",
+                    icon: "warning"
+                });
+                return;
+            }
         }
 
         $scope.saving = true;
@@ -410,20 +459,20 @@
             Id: $scope.currentItem.Id,
             ProcessType: $scope.processForm.processType,
             ProcessTransNo: $scope.processForm.processTransNo,
-            ProcessImporter: $scope.processForm.processImporter,
-            ProcessImporterPhone: $scope.processForm.processImporterPhone,
-            ProcessImporterAddr: $scope.processForm.processImporterAddr,
-            StoreCode: $scope.processForm.storeCode,
-            StoreName: $scope.processForm.storeName,
+            ProcessImporter: normalizeText($scope.processForm.processImporter),
+            ProcessImporterPhone: normalizeText($scope.processForm.processImporterPhone),
+            ProcessImporterAddr: normalizeText($scope.processForm.processImporterAddr),
+            StoreCode: normalizeText($scope.processForm.storeCode),
+            StoreName: normalizeText($scope.processForm.storeName),
             Tax: $scope.processForm.tax,
             Ccfee: $scope.processForm.ccfee,
             Cod: $scope.processForm.cod,
             FreightPayerNo: $scope.processForm.freightPayerNo,
             FreightFee: $scope.processForm.freightFee,
             Fee: $scope.processForm.fee,
-            CarNo: $scope.processForm.carNo,
+            CarNo: normalizeText($scope.processForm.carNo),
             PickupTime: pickupTimeStr,
-            Remark: $scope.processForm.remark
+            Remark: normalizeText($scope.processForm.remark)
         };
 
         $http.post(Router.action('ShipmentInboundProcess', 'UpdateProcessType'), request)
