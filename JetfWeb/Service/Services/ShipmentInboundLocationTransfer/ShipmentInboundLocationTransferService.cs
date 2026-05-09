@@ -32,6 +32,7 @@ namespace Service.Services.ShipmentInboundLocationTransfer
                     {
                         Id = x.Id,
                         TrackingNo = x.TrackingNo,
+                        SeqNo = x.SeqNo,
                         LocationCode = x.LocationCode
                     })
                     .ToList();

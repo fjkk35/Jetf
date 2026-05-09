@@ -1,24 +1,29 @@
-using System;
+ï»¿using System;
 
 namespace Service.Services.ShipmentInboundLocationTransfer.Domain
 {
     /// <summary>
-    /// Àx¦ì½Õ¼·¸ê®Æ¼Ò«¬
+    /// å„²ä½èª¿æ’¥è³‡æ–™æ¨¡å‹
     /// </summary>
     public class LocationTransferModel
     {
         /// <summary>
-        /// ¥DÁä Id
+        /// ä¸»éµ Id
         /// </summary>
         public int Id { get; set; }
 
         /// <summary>
-        /// ³æ¸¹
+        /// å–®è™Ÿ
         /// </summary>
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// Àx¦ì
+        /// æµæ°´è™Ÿ
+        /// </summary>
+        public string SeqNo { get; set; }
+
+        /// <summary>
+        /// å„²ä½
         /// </summary>
         public string LocationCode { get; set; }
     }
