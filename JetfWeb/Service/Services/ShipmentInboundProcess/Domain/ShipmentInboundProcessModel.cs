@@ -81,6 +81,18 @@ namespace Service.Services.ShipmentInboundProcess.Domain
         public string ProcessTypeName => ProcessType?.ToDescription();
 
         /// <summary>
+        /// 開始處理時間。
+        /// 若超過系統鎖定逾時時間，後端會回傳空值。
+        /// </summary>
+        public DateTime? ProcessStartTime { get; set; }
+
+        /// <summary>
+        /// 開始處理人員。
+        /// 若超過系統鎖定逾時時間，後端會回傳空值。
+        /// </summary>
+        public string ProcessStartOpe { get; set; }
+
+        /// <summary>
         /// 稅金
         /// </summary>
         public decimal? Tax { get; set; }

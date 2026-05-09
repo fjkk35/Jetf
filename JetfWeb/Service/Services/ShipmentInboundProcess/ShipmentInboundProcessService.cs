@@ -12,8 +12,22 @@ using System.Linq;
 
 namespace Service.Services.ShipmentInboundProcess
 {
+    /// <summary>
+    /// 貨件回倉處理服務，負責查詢、鎖定、更新與批次處理作業。
+    /// </summary>
     public class ShipmentInboundProcessService : _BaseService
     {
+        /// <summary>
+        /// 處理鎖定逾時分鐘數。
+        /// 超過此時間的鎖定視為失效，前端不顯示且允許下一位人員接手。
+        /// </summary>
+        private const int ProcessEditLockTimeoutMinutes = 10;
+
+        /// <summary>
+        /// 依查詢條件取得貨件回倉處理列表資料。
+        /// </summary>
+        /// <param name="request">查詢條件與分頁資訊。</param>
+        /// <returns>查詢結果與總筆數。</returns>
         public ShipmentInboundProcessResponse GetData(ShipmentInboundProcessRequest request)
         {
             using (var db = CreateJetfDbContext())
@@ -41,12 +55,15 @@ namespace Service.Services.ShipmentInboundProcess
                         ProcessType = x.ProcessType.HasValue
                             ? (ShipmentInboundProcessType?)x.ProcessType.Value
                             : null,
+                        ProcessStartTime = x.ProcessStartTime,
+                        ProcessStartOpe = x.ProcessStartOpe,
                         Tax = x.Tax,
                         Ccfee = x.Ccfee,
                         Cod = x.Cod
                     })
                     .ToList();
 
+                NormalizeExpiredProcessEditDisplay(data);
                 FillCustomerAndTransNames(data);
 
                 return new ShipmentInboundProcessResponse
@@ -57,6 +74,11 @@ namespace Service.Services.ShipmentInboundProcess
             }
         }
 
+        /// <summary>
+        /// 更新貨件回倉處理方式與相關欄位。
+        /// </summary>
+        /// <param name="request">更新內容。</param>
+        /// <returns>更新是否成功。</returns>
         public bool UpdateProcessType(ShipmentInboundProcessUpdateRequest request)
         {
             var userId = GetUserId();
@@ -77,6 +99,14 @@ namespace Service.Services.ShipmentInboundProcess
                         if (existing.OutboundDate.HasValue)
                         {
                             throw new Exception($"重出日期 {existing.OutboundDate.Value:yyyy/MM/dd}，無法更新資料");
+                        }
+
+                        NormalizeExpiredProcessEditLock(existing);
+
+                        if (existing.ProcessStartTime.HasValue &&
+                            !string.Equals(existing.ProcessStartOpe, userId, StringComparison.OrdinalIgnoreCase))
+                        {
+                            throw new Exception($"此筆資料已由 {existing.ProcessStartOpe} 於 {existing.ProcessStartTime.Value:yyyy/MM/dd HH:mm:ss} 開始處理");
                         }
 
                         var oldProcessType = existing.ProcessType;
@@ -109,6 +139,8 @@ namespace Service.Services.ShipmentInboundProcess
                         existing.Cod = request.Cod;
                         existing.ProcessTime = DateTime.Now;
                         existing.ProcessOpe = userId;
+                        existing.ProcessStartTime = null;
+                        existing.ProcessStartOpe = null;
 
                         if (oldProcessType != newProcessType)
                         {
@@ -193,6 +225,10 @@ namespace Service.Services.ShipmentInboundProcess
             }
         }
 
+        /// <summary>
+        /// 正規化更新請求中的字串欄位，移除頭尾空白。
+        /// </summary>
+        /// <param name="request">待更新的請求資料。</param>
         private void NormalizeUpdateRequest(ShipmentInboundProcessUpdateRequest request)
         {
             request.ProcessImporter = request.ProcessImporter?.Trim();
@@ -204,6 +240,11 @@ namespace Service.Services.ShipmentInboundProcess
             request.Remark = request.Remark?.Trim();
         }
 
+        /// <summary>
+        /// 驗證更新請求是否符合指定處理方式的必填規則。
+        /// </summary>
+        /// <param name="request">待驗證的請求資料。</param>
+        /// <param name="newProcessType">本次設定的處理方式。</param>
         private void ValidateUpdateRequest(
             ShipmentInboundProcessUpdateRequest request,
             ShipmentInboundProcessType newProcessType)
@@ -250,6 +291,11 @@ namespace Service.Services.ShipmentInboundProcess
             }
         }
 
+        /// <summary>
+        /// 依 Id 取得單筆貨件回倉處理明細。
+        /// </summary>
+        /// <param name="id">貨件回倉資料 Id。</param>
+        /// <returns>單筆明細資料。</returns>
         public ShipmentInboundProcessDetailModel GetDetailById(int id)
         {
             using (var db = CreateJetfDbContext())
@@ -282,6 +328,106 @@ namespace Service.Services.ShipmentInboundProcess
         }
 
         /// <summary>
+        /// 開始編輯指定貨件回倉資料，建立處理鎖定。
+        /// 若原鎖定已逾時，會由目前使用者接手；若原鎖定者就是目前使用者，則直接續用編輯。
+        /// </summary>
+        /// <param name="id">貨件回倉資料 Id。</param>
+        /// <returns>最新的單筆列表資料。</returns>
+        public ShipmentInboundProcessModel BeginProcessEdit(int id)
+        {
+            var userId = GetUserId();
+
+            using (var db = CreateJetfDbContext())
+            {
+                var entity = db.ShipmentInbounds.FirstOrDefault(x => x.Id == id);
+                if (entity == null)
+                {
+                    throw new Exception("查無此資料");
+                }
+
+                NormalizeExpiredProcessEditLock(entity);
+
+                if (entity.ProcessStartTime.HasValue)
+                {
+                    if (string.Equals(entity.ProcessStartOpe, userId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        entity.ProcessStartTime = DateTime.Now;
+                        db.SaveChanges();
+                        return BuildShipmentInboundProcessModel(entity);
+                    }
+
+                    throw new Exception($"此筆資料已由 {entity.ProcessStartOpe} 於 {entity.ProcessStartTime.Value:yyyy/MM/dd HH:mm:ss} 開始處理");
+                }
+
+                entity.ProcessStartTime = DateTime.Now;
+                entity.ProcessStartOpe = userId;
+                db.SaveChanges();
+
+                return BuildShipmentInboundProcessModel(entity);
+            }
+        }
+
+        /// <summary>
+        /// 釋放指定貨件回倉資料的處理鎖定。
+        /// </summary>
+        /// <param name="id">貨件回倉資料 Id。</param>
+        /// <returns>最新的單筆列表資料。</returns>
+        public ShipmentInboundProcessModel ReleaseProcessEdit(int id)
+        {
+            var userId = GetUserId();
+
+            using (var db = CreateJetfDbContext())
+            {
+                var entity = db.ShipmentInbounds.FirstOrDefault(x => x.Id == id);
+                if (entity == null)
+                {
+                    throw new Exception("查無此資料");
+                }
+
+                if (NormalizeExpiredProcessEditLock(entity))
+                {
+                    db.SaveChanges();
+                    return BuildShipmentInboundProcessModel(entity);
+                }
+
+                if (!entity.ProcessStartTime.HasValue)
+                {
+                    return BuildShipmentInboundProcessModel(entity);
+                }
+
+                if (!string.Equals(entity.ProcessStartOpe, userId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return BuildShipmentInboundProcessModel(entity);
+                }
+
+                entity.ProcessStartTime = null;
+                entity.ProcessStartOpe = null;
+                db.SaveChanges();
+
+                return BuildShipmentInboundProcessModel(entity);
+            }
+        }
+
+        /// <summary>
+        /// 依 Id 取得單筆列表資料。
+        /// </summary>
+        /// <param name="id">貨件回倉資料 Id。</param>
+        /// <returns>單筆列表資料。</returns>
+        public ShipmentInboundProcessModel GetRowById(int id)
+        {
+            using (var db = CreateJetfDbContext())
+            {
+                var entity = db.ShipmentInbounds.AsNoTracking().FirstOrDefault(x => x.Id == id);
+                if (entity == null)
+                {
+                    throw new Exception("查無此資料");
+                }
+
+                return BuildShipmentInboundProcessModel(entity);
+            }
+        }
+
+        /// <summary>
         /// 取得貨物來源清單
         /// </summary>
         public List<SelectListModel> GetSourceTypeList()
@@ -295,6 +441,12 @@ namespace Service.Services.ShipmentInboundProcess
                 }).ToList();
         }
 
+        /// <summary>
+        /// 依查詢條件組合篩選條件。
+        /// </summary>
+        /// <param name="query">原始查詢。</param>
+        /// <param name="request">查詢條件。</param>
+        /// <returns>套用條件後的查詢物件。</returns>
         private IQueryable<Data.ShipmentInboundEntity> BuildWhereConditions(
             IQueryable<Data.ShipmentInboundEntity> query,
             ShipmentInboundProcessRequest request)
@@ -339,21 +491,78 @@ namespace Service.Services.ShipmentInboundProcess
             return query;
         }
 
+        /// <summary>
+        /// 取得空運客戶名稱對照表。
+        /// </summary>
+        /// <param name="custCodes">客戶代碼清單。</param>
+        /// <returns>客戶代碼與名稱對照。</returns>
         private Dictionary<string, string> GetAirCustNames(List<string> custCodes)
         {
             return GetAirCustomerNames(custCodes);
         }
 
+        /// <summary>
+        /// 將資料實體轉為列表顯示模型。
+        /// 若處理鎖定已逾時，會清空顯示欄位。
+        /// </summary>
+        /// <param name="entity">貨件回倉資料實體。</param>
+        /// <returns>列表顯示模型。</returns>
+        private ShipmentInboundProcessModel BuildShipmentInboundProcessModel(Data.ShipmentInboundEntity entity)
+        {
+            var model = new ShipmentInboundProcessModel
+            {
+                Id = entity.Id,
+                DataType = entity.DataType,
+                InboundDate = entity.InboundDate,
+                TrackingNo = entity.TrackingNo,
+                SourceType = entity.SourceType.HasValue
+                    ? (ShipmentInboundSourceType)entity.SourceType.Value
+                    : default(ShipmentInboundSourceType),
+                ReturnTrackingNo = entity.ReturnTrackingNo,
+                CustCode = entity.CustCode,
+                TransNo = entity.TransNo,
+                TransName = entity.TransName,
+                ReturnReason = entity.ReturnReason,
+                ProcessType = entity.ProcessType.HasValue
+                    ? (ShipmentInboundProcessType?)entity.ProcessType.Value
+                    : null,
+                ProcessStartTime = entity.ProcessStartTime,
+                ProcessStartOpe = entity.ProcessStartOpe,
+                Tax = entity.Tax,
+                Ccfee = entity.Ccfee,
+                Cod = entity.Cod
+            };
+
+            NormalizeExpiredProcessEditDisplay(model);
+            FillCustomerAndTransNames(new List<ShipmentInboundProcessModel> { model });
+
+            return model;
+        }
+
+        /// <summary>
+        /// 取得海運客戶名稱對照表。
+        /// </summary>
+        /// <param name="custCodes">客戶代碼清單。</param>
+        /// <returns>客戶代碼與名稱對照。</returns>
         private Dictionary<string, string> GetSeaCustNames(List<string> custCodes)
         {
             return GetSeaCustomerNames(custCodes);
         }
 
+        /// <summary>
+        /// 取得空運派件公司名稱對照表。
+        /// </summary>
+        /// <param name="transNos">派件公司代碼清單。</param>
+        /// <returns>派件公司代碼與名稱對照。</returns>
         private Dictionary<string, string> GetAirTransNames(List<string> transNos)
         {
             return base.GetAirTransNames(transNos);
         }
 
+        /// <summary>
+        /// 補齊客戶名稱與派件公司名稱。
+        /// </summary>
+        /// <param name="data">待補齊名稱的資料列。</param>
         private void FillCustomerAndTransNames(List<ShipmentInboundProcessModel> data)
         {
             var airCustCodes = data.Where(x => x.DataType == "空運" && !string.IsNullOrWhiteSpace(x.CustCode))
@@ -397,8 +606,65 @@ namespace Service.Services.ShipmentInboundProcess
         }
 
         /// <summary>
+        /// 將逾時的處理鎖定從顯示模型中清空，避免前端顯示過期鎖定資訊。
+        /// </summary>
+        /// <param name="data">待處理的資料列清單。</param>
+        private void NormalizeExpiredProcessEditDisplay(List<ShipmentInboundProcessModel> data)
+        {
+            foreach (var item in data)
+            {
+                NormalizeExpiredProcessEditDisplay(item);
+            }
+        }
+
+        /// <summary>
+        /// 將逾時的處理鎖定從顯示模型中清空，避免前端顯示過期鎖定資訊。
+        /// </summary>
+        /// <param name="model">待處理的資料列。</param>
+        private void NormalizeExpiredProcessEditDisplay(ShipmentInboundProcessModel model)
+        {
+            if (model == null || !IsProcessEditExpired(model.ProcessStartTime))
+            {
+                return;
+            }
+
+            model.ProcessStartTime = null;
+            model.ProcessStartOpe = null;
+        }
+
+        /// <summary>
+        /// 清除資料實體中已逾時的處理鎖定。
+        /// </summary>
+        /// <param name="entity">待處理的資料實體。</param>
+        /// <returns>是否有清除逾時鎖定。</returns>
+        private bool NormalizeExpiredProcessEditLock(Data.ShipmentInboundEntity entity)
+        {
+            if (entity == null || !IsProcessEditExpired(entity.ProcessStartTime))
+            {
+                return false;
+            }
+
+            entity.ProcessStartTime = null;
+            entity.ProcessStartOpe = null;
+            return true;
+        }
+
+        /// <summary>
+        /// 判斷處理鎖定是否已逾時。
+        /// </summary>
+        /// <param name="processStartTime">開始處理時間。</param>
+        /// <returns>逾時回傳 true，否則回傳 false。</returns>
+        private bool IsProcessEditExpired(DateTime? processStartTime)
+        {
+            return processStartTime.HasValue
+                && processStartTime.Value.AddMinutes(ProcessEditLockTimeoutMinutes) <= DateTime.Now;
+        }
+
+        /// <summary>
         /// 匯出 Excel
         /// </summary>
+        /// <param name="request">查詢條件。</param>
+        /// <returns>Excel 檔案位元組陣列。</returns>
         public byte[] ExportExcel(ShipmentInboundProcessRequest request)
         {
             // 移除分頁限制，取得所有資料
@@ -415,6 +681,11 @@ namespace Service.Services.ShipmentInboundProcess
             }
         }
 
+        /// <summary>
+        /// 建立貨件回倉處理匯出 Excel 活頁簿。
+        /// </summary>
+        /// <param name="data">匯出資料。</param>
+        /// <returns>Excel 活頁簿物件。</returns>
         private IWorkbook CreateExcelWorkbook(List<ShipmentInboundProcessModel> data)
         {
             IWorkbook workbook = new XSSFWorkbook();
@@ -466,6 +737,8 @@ namespace Service.Services.ShipmentInboundProcess
         /// Excel 欄位：單號、處理方式(中文)、備註
         /// 整批驗證：任一筆驗證失敗則整批失敗，不更新任何資料。
         /// </summary>
+        /// <param name="filePath">上傳檔案路徑。</param>
+        /// <returns>批次處理結果。</returns>
         public ResponseModel BatchUpload(string filePath)
         {
             var res = new ResponseModel { status = Status.success, msg = "上傳成功" };
@@ -551,6 +824,11 @@ namespace Service.Services.ShipmentInboundProcess
             return res;
         }
 
+        /// <summary>
+        /// 驗證批量上傳的每一列資料。
+        /// </summary>
+        /// <param name="rows">批量上傳資料列。</param>
+        /// <returns>驗證錯誤清單。</returns>
         private List<ShipmentInboundProcessBatchUploadErrorModel> ValidateBatchUploadRows(List<ShipmentInboundProcessBatchUploadRowModel> rows)
         {
             var errors = new List<ShipmentInboundProcessBatchUploadErrorModel>();
@@ -640,6 +918,11 @@ namespace Service.Services.ShipmentInboundProcess
             return errors;
         }
 
+        /// <summary>
+        /// 判斷批次上傳是否允許指定的處理方式。
+        /// </summary>
+        /// <param name="processType">處理方式代碼。</param>
+        /// <returns>允許回傳 true，否則回傳 false。</returns>
         private bool IsAllowedBatchProcessType(int processType)
         {
             // 僅允許：TransferFromOriginal(2)、ReturnToSite(3)、Destroy(5)、AddToReturnShipment(6)、InspectContents(7)、ConfirmOuterLabel(8)、TempData(9)、TransferBySystem(10)
@@ -657,6 +940,11 @@ namespace Service.Services.ShipmentInboundProcess
             return allowedTypes.Contains(processType);
         }
 
+        /// <summary>
+        /// 讀取批量上傳處理方式的 Excel 內容。
+        /// </summary>
+        /// <param name="filePath">上傳檔案路徑。</param>
+        /// <returns>批量上傳資料列。</returns>
         private List<ShipmentInboundProcessBatchUploadRowModel> ReadBatchUploadExcel(string filePath)
         {
             var result = new List<ShipmentInboundProcessBatchUploadRowModel>();
@@ -721,6 +1009,8 @@ namespace Service.Services.ShipmentInboundProcess
         /// <summary>
         /// 更新退件原因
         /// </summary>
+        /// <param name="id">貨件回倉資料 Id。</param>
+        /// <param name="returnReason">新的退件原因。</param>
         public void UpdateReturnReason(int id, string returnReason)
         {
             using (var db = CreateJetfDbContext())
@@ -746,6 +1036,8 @@ namespace Service.Services.ShipmentInboundProcess
         /// Excel 欄位：單號、退件原因
         /// 驗證規則：如果有單號找不到，整批上傳失敗，並回傳失敗原因
         /// </summary>
+        /// <param name="filePath">上傳檔案路徑。</param>
+        /// <returns>批次處理結果。</returns>
         public ResponseModel BatchUploadReturnReason(string filePath)
         {
             var res = new ResponseModel { status = Status.success, msg = "上傳成功" };

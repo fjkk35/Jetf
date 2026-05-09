@@ -23,6 +23,24 @@
         cursor: pointer;
         user-select: none;
     }
+
+    .shipment-process-row-updated > td {
+        animation: shipment-process-row-flash 2s ease-in-out;
+    }
+
+    @@keyframes shipment-process-row-flash {
+        0% {
+            background-color: rgba(255, 243, 205, 0.95);
+        }
+
+        70% {
+            background-color: rgba(255, 243, 205, 0.55);
+        }
+
+        100% {
+            background-color: rgba(255, 243, 205, 0);
+        }
+    }
 </style>
 
 <div ng-controller="ShipmentInboundProcessController">
@@ -349,14 +367,17 @@
                                     <th>單號</th>
                                     <th>貨件來源</th>
                                     <th>退件原因</th>
+                                    <th>開始處理時間</th>
+                                    <th>開始處理人員</th>
                                     <th style="width: 200px;">處理方式</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr ng-if="data.length === 0">
-                                    <td colspan="9" class="text-center">查無資料</td>
+                                    <td colspan="11" class="text-center">查無資料</td>
                                 </tr>
-                                <tr ng-repeat="item in data">
+                                <tr ng-repeat="item in data track by item.Id"
+                                    ng-class="{'shipment-process-row-updated': item.RowUpdateHighlight}">
                                     <td>{{(currentPage - 1) * pageSize + $index + 1}}</td>
                                     <td>{{item.InboundDate | customDateTime}}</td>
                                     <td>{{item.DataType}}</td>
@@ -399,19 +420,15 @@
                                             </div>
                                         </div>
                                     </td>
+                                    <td>{{item.ProcessStartTime | customDateTime}}</td>
+                                    <td>{{item.ProcessStartOpe || ''}}</td>
                                     <td>
-                                        <button ng-if="item.ProcessType"
-                                                class="btn btn-sm btn-info"
-                                                ng-click="viewProcessDetail(item)">
-                                            {{item.ProcessTypeName}}
+                                        <button class="btn btn-sm"
+                                                ng-class="getProcessButtonClass(item)"
+                                                ng-disabled="dialogLoading"
+                                                ng-click="beginProcessEdit(item)">
+                                            {{item.ProcessTypeName || '處理方式'}}
                                         </button>
-                                        <select ng-if="!item.ProcessType"
-                                                class="form-control form-control-sm"
-                                                ng-model="item.selectedProcessType"
-                                                ng-change="openProcessModal(item)">
-                                            <option value="">請選擇</option>
-                                            <option ng-repeat="type in processTypeList" value="{{type.Value}}">{{type.Text}}</option>
-                                        </select>
                                     </td>
                                 </tr>
                             </tbody>
@@ -419,24 +436,28 @@
                     </div>
 
                     <!-- 分頁控制 -->
-                    <div class="row" ng-show="totalPages > 1">
-                        <div class="col-lg-12">
-                            <nav>
-                                <ul class="pagination justify-content-center">
-                                    <li class="page-item" ng-class="{disabled: currentPage === 1}">
-                                        <a class="page-link" href="javascript:void(0)" ng-click="previousPage()">上一頁</a>
-                                    </li>
-                                    <li class="page-item"
-                                        ng-repeat="page in getPages()"
-                                        ng-class="{active: page === currentPage}">
-                                        <a class="page-link" href="javascript:void(0)" ng-click="changePage(page)">{{page}}</a>
-                                    </li>
-                                    <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
-                                        <a class="page-link" href="javascript:void(0)" ng-click="nextPage()">下一頁</a>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
+                    <div class="d-flex justify-content-center mt-3" ng-show="totalPages > 1">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination">
+                                <li class="page-item" ng-class="{disabled: currentPage === 1}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="goToPage(1)">第一頁</a>
+                                </li>
+                                <li class="page-item" ng-class="{disabled: currentPage === 1}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="previousPage()">上一頁</a>
+                                </li>
+                                <li class="page-item"
+                                    ng-repeat="page in getPageNumbers()"
+                                    ng-class="{active: page === currentPage}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="goToPage(page)">{{page}}</a>
+                                </li>
+                                <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="nextPage()">下一頁</a>
+                                </li>
+                                <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="goToPage(totalPages)">最後一頁</a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -638,3 +659,7 @@
     </div>
 </div>
 
+@section scripts {
+    <script src="~/Scripts/jquery.signalR-2.4.3.js"></script>
+    <script src="~/signalr/hubs"></script>
+}

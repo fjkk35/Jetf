@@ -1,9 +1,11 @@
 ﻿mainApp.controller('ShipmentInboundProcessController', function ($scope, $http) {
     var remarkOnlyProcessTypes = [2, 3, 5, 6, 7, 8, 10];
+    var mainHub = null;
 
     // 初始化資料
     $scope.data = [];
     $scope.loading = false;
+    $scope.dialogLoading = false;
     $scope.isSearched = false;
     $scope.saving = false;
     $scope.exporting = false;
@@ -40,6 +42,68 @@
         return value ? value.trim() : '';
     }
 
+    function getCurrentProcessItemId() {
+        return $scope.shouldReleaseProcessEditOnHide && $scope.currentItem
+            ? $scope.currentItem.Id
+            : null;
+    }
+
+    function releaseProcessEditOnUnload() {
+        var itemId = getCurrentProcessItemId();
+        if (!itemId) {
+            return;
+        }
+
+        $scope.shouldReleaseProcessEditOnHide = false;
+
+        var releaseUrl = Router.action('ShipmentInboundProcess', 'ReleaseProcessEdit');
+        var payload = 'id=' + encodeURIComponent(itemId);
+
+        if (navigator.sendBeacon) {
+            var beaconData = new Blob([payload], { type: 'application/x-www-form-urlencoded; charset=UTF-8' });
+            navigator.sendBeacon(releaseUrl, beaconData);
+            return;
+        }
+
+        $.ajax({
+            url: releaseUrl,
+            type: 'POST',
+            data: payload,
+            async: false,
+            contentType: 'application/x-www-form-urlencoded; charset=UTF-8'
+        });
+    }
+
+    function triggerRowHighlight(row) {
+        if (!row) {
+            return;
+        }
+
+        row.RowUpdateHighlight = true;
+
+        window.setTimeout(function () {
+            row.RowUpdateHighlight = false;
+            $scope.$applyAsync();
+        }, 2000);
+    }
+
+    function initializeSignalR() {
+        if (typeof $ === 'undefined' || !$.connection || !$.connection.mainHub) {
+            return;
+        }
+
+        mainHub = $.connection.mainHub;
+        mainHub.client.shipmentInboundProcessRowUpdated = function (rowData) {
+            $scope.$applyAsync(function () {
+                $scope.mergeRowData(rowData, true);
+            });
+        };
+
+        $.connection.hub.start().fail(function (error) {
+            console.error('ShipmentInboundProcess SignalR 連線失敗:', error);
+        });
+    }
+
     // 查詢條件
     $scope.searchForm = {
         dataType: '',
@@ -67,6 +131,7 @@
     $scope.currentItem = null;
     $scope.modalTitle = '';
     $scope.isViewMode = false;
+    $scope.shouldReleaseProcessEditOnHide = false;
 
     $scope.processForm = {
         processType: null,
@@ -96,12 +161,19 @@
 
         // 監聽 Modal 關閉事件
         $('#processModal').on('hidden.bs.modal', function () {
-            // 重置未處理項目的選擇
-            if ($scope.currentItem && !$scope.currentItem.ProcessType) {
-                $scope.currentItem.selectedProcessType = '';
-                $scope.$apply(); // 通知 Angular 更新視圖
+            if ($scope.shouldReleaseProcessEditOnHide && $scope.currentItem) {
+                $scope.releaseProcessEdit($scope.currentItem.Id, true);
+            }
+
+            $scope.currentItem = null;
+            $scope.shouldReleaseProcessEditOnHide = false;
+
+            if (!$scope.$$phase) {
+                $scope.$apply();
             }
         });
+
+        $(window).on('pagehide beforeunload', releaseProcessEditOnUnload);
     };
 
     // 載入處理方式清單
@@ -239,19 +311,14 @@
         }
     };
 
-    // 開啟處理方式 Modal
-    $scope.openProcessModal = function (item) {
-        if (!item.selectedProcessType && !item.ProcessType) {
-            return;
-        }
-
+    $scope.openNewProcessModal = function (item) {
         $scope.currentItem = item;
         $scope.isViewMode = false;
+        $scope.shouldReleaseProcessEditOnHide = true;
 
-        var processTypeValue = item.selectedProcessType || item.ProcessType;
         $scope.processForm = {
             trackingNo: item.TrackingNo || '',
-            processType: parseInt(processTypeValue),
+            processType: null,
             processTransNo: null,
             processImporter: '',
             processImporterPhone: '',
@@ -282,18 +349,65 @@
 
         $scope.calcFee();
 
-        var processTypeName = $scope.processTypeList.find(function (t) {
-            return t.Value == processTypeValue;
-        });
-        $scope.modalTitle = processTypeName ? processTypeName.Text : '處理方式';
+        $scope.modalTitle = '處理方式';
 
         $('#processModal').modal('show');
     };
+
+    $scope.beginProcessEdit = function (item) {
+        if ($scope.dialogLoading) {
+            return;
+        }
+
+        $scope.dialogLoading = true;
+
+        $http.post(Router.action('ShipmentInboundProcess', 'BeginProcessEdit'), { id: item.Id })
+            .then(function (response) {
+                if (response.data.Redirect) {
+                    window.location = Router.action('Account', 'Login');
+                    return;
+                }
+
+                if (response.data.status === 'error') {
+                    swal({
+                        title: '無法編輯',
+                        text: response.data.msg || '此筆資料目前無法進行處理',
+                        icon: 'error'
+                    });
+                    return;
+                }
+
+                var currentRow = item;
+                if (response.data.ReturnObject) {
+                    currentRow = $scope.mergeRowData(response.data.ReturnObject) || item;
+                }
+
+                if (currentRow.ProcessType) {
+                    $scope.viewProcessDetail(currentRow);
+                    return;
+                }
+
+                $scope.openNewProcessModal(currentRow);
+            })
+            .catch(function (error) {
+                console.error('開始處理失敗:', error);
+                swal({
+                    title: '無法編輯',
+                    text: '請稍後再試',
+                    icon: 'error'
+                });
+            })
+            .finally(function () {
+                $scope.dialogLoading = false;
+            });
+    };
+
     // 查看已處理項目的詳細資料
     $scope.viewProcessDetail = function (item) {
         $scope.currentItem = item;
         $scope.isViewMode = false;
-        $scope.loading = true;
+        $scope.shouldReleaseProcessEditOnHide = true;
+        $scope.dialogLoading = true;
 
         $http.get(Router.action('ShipmentInboundProcess', 'GetDetailById') + '?id=' + item.Id)
             .then(function (response) {
@@ -369,8 +483,56 @@
                 });
             })
             .finally(function () {
-                $scope.loading = false;
+                $scope.dialogLoading = false;
             });
+    };
+
+    $scope.releaseProcessEdit = function (id, silent) {
+        return $http.post(Router.action('ShipmentInboundProcess', 'ReleaseProcessEdit'), { id: id })
+            .then(function (response) {
+                if (response.data && response.data.ReturnObject) {
+                    $scope.mergeRowData(response.data.ReturnObject);
+                }
+
+                return response;
+            })
+            .catch(function (error) {
+                if (!silent) {
+                    swal({
+                        title: '釋放編輯失敗',
+                        text: '請稍後再試',
+                        icon: 'error'
+                    });
+                }
+
+                throw error;
+            });
+    };
+
+    $scope.mergeRowData = function (rowData, shouldHighlight) {
+        if (!rowData) {
+            return;
+        }
+
+        for (var index = 0; index < $scope.data.length; index++) {
+            if ($scope.data[index].Id === rowData.Id) {
+                angular.extend($scope.data[index], rowData);
+
+                if (shouldHighlight) {
+                    triggerRowHighlight($scope.data[index]);
+                }
+
+                return $scope.data[index];
+            }
+        }
+
+        return null;
+    };
+
+    $scope.getProcessButtonClass = function (item) {
+        return item && item.ProcessType
+            ? 'btn-info'
+            : 'btn-warning';
     };
 
     // 儲存處理方式
@@ -478,13 +640,17 @@
         $http.post(Router.action('ShipmentInboundProcess', 'UpdateProcessType'), request)
             .then(function (response) {
                 if (response.data.status === 'success') {
+                    $scope.shouldReleaseProcessEditOnHide = false;
+
                     swal({
                         title: "成功",
                         text: "更新成功",
                         icon: "success"
                     });
+                    if (response.data.ReturnObject) {
+                        $scope.mergeRowData(response.data.ReturnObject);
+                    }
                     $('#processModal').modal('hide');
-                    $scope.loadData();
                 } else {
                     swal({
                         title: "失敗",
@@ -655,6 +821,7 @@
     $scope.updateRecordsInfo = function () {
 
         if ($scope.totalCount === 0) {
+            $scope.recordsInfo = '';
             return;
         }
 
@@ -691,20 +858,29 @@
     // 改變每頁顯示筆數
     $scope.changePageSize = function () {
         $scope.currentPage = 1;
-        $scope.loadData();
+        if ($scope.isSearched) {
+            $scope.loadData();
+        }
     };
 
     // 產生頁碼陣列
-    $scope.getPages = function () {
+    $scope.getPageNumbers = function () {
         var pages = [];
-        var startPage = Math.max(1, $scope.currentPage - 2);
-        var endPage = Math.min($scope.totalPages, $scope.currentPage + 2);
+        var maxVisible = 10;
+        var startPage = Math.max(1, $scope.currentPage - Math.floor(maxVisible / 2));
+        var endPage = Math.min($scope.totalPages, startPage + maxVisible - 1);
 
-        for (var i = startPage; i <= endPage; i++) {
-            pages.push(i);
+        if (endPage - startPage < maxVisible - 1) {
+            startPage = Math.max(1, endPage - maxVisible + 1);
+        }
+
+        for (var index = startPage; index <= endPage; index++) {
+            pages.push(index);
         }
         return pages;
     };
+
+    $scope.goToPage = $scope.changePage;
 
     // 批量上傳相關
     $scope.openBatchUploadModal = function () {
@@ -945,4 +1121,5 @@
 
     // 初始化
     $scope.init();
+    initializeSignalR();
 });

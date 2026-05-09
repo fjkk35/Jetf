@@ -235,6 +235,18 @@ namespace Service.Data
         public DateTime? ProcessTime { get; set; }
 
         /// <summary>
+        /// 開始處理時間。
+        /// </summary>
+        [Column("ProcessStartTime")]
+        public DateTime? ProcessStartTime { get; set; }
+
+        /// <summary>
+        /// 開始處理人員。
+        /// </summary>
+        [Column("ProcessStartOpe")]
+        public string ProcessStartOpe { get; set; }
+
+        /// <summary>
         /// 客服處理人員。
         /// </summary>
         [Column("ProcessOpe")]

@@ -1,5 +1,6 @@
 ﻿using Hangfire;
 using Hangfire.Dashboard;
+using Microsoft.AspNet.SignalR;
 using Microsoft.Owin;
 using Owin;
 using Service.Services;
@@ -20,6 +21,8 @@ namespace JETFTAX.App_Start
     {
         public void Configuration(IAppBuilder app)
         {
+            app.MapSignalR();
+
             GlobalConfiguration.Configuration
                 .UseSqlServerStorage("Data Source=192.168.1.4;Initial Catalog=jetf;Persist Security Info=True;User ID=user_c1;Password=a*741jef*;");
 
