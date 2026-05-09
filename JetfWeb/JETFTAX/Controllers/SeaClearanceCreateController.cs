@@ -1,7 +1,7 @@
 ﻿using JETFTAX.Models.PostClearance;
-using JETFTAX.Models.SeaClearanceCreate;
 using Service.EnumTax;
 using Service.Models;
+using Service.Models.SeaClearanceCreate;
 using Service.Services;
 using Service.Services.ErrorOrderSend;
 using Service.Services.SeaClearance;
@@ -34,23 +34,41 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SeaClearanceCreate)]
         public ActionResult Index()
         {
-            var vm = new SeaClearanceCreateViewModel()
+            return View();
+        }
+
+        [HttpPost]
+        [UserAuthorize(Authority.SeaClearanceCreate)]
+        public JsonResult SearchData(SeaClearanceCreateRequest request)
+        {
+            try
             {
-                DataDate = DateTime.Now.ToString("yyyy-MM-dd"),
-                SeaClearanceList = _seaClearanceCreateService.GetSeaClearance()
-            };
-            return View(vm);
+                var result = _seaClearanceCreateService.GetSeaClearance(request);
+
+                return Json(new
+                {
+                    Data = result.Data,
+                    TotalCount = result.TotalCount
+                }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    error = ex.Message
+                }, JsonRequestBehavior.AllowGet);
+            }
         }
 
         /// <summary>
         /// 上傳後段報關建檔
         /// </summary>
         /// <param name="file"></param>
-        /// <param name="vm"></param>
+        /// <param name="dataDate"></param>
         /// <returns></returns>
         [HttpPost]
         [UserAuthorize(Authority.SeaClearanceCreate)]
-        public JsonResult UploadFile(HttpPostedFileBase file, SeaClearanceCreateViewModel vm)
+        public JsonResult UploadFile(HttpPostedFileBase file, string dataDate)
         {
             ResponseModel resopnseModel = new ResponseModel();
             try
@@ -72,7 +90,7 @@ namespace JETFTAX.Controllers
                             fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
-                            resopnseModel = _seaClearanceCreateService.UploadFile(filePath, vm.DataDate, Session["user_id"].ToString());
+                            resopnseModel = _seaClearanceCreateService.UploadFile(filePath, dataDate, Session["user_id"].ToString());
                         }
                     }
                 }

@@ -87,6 +87,9 @@ namespace Service.Data
         [Column("Item_Name")]
         public string Item_Name { get; set; }
 
+        [Column("Merge_Over_Flag")]
+        public string Merge_Over_Flag { get; set; }
+
         /// <summary>
         /// 重量（Gw）
         /// </summary>

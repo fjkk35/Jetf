@@ -338,6 +338,8 @@
     <Compile Include="Models\ProcessModel.cs" />
     <Compile Include="Models\ScanCargoArrivalTime\ScanCargoArrivalTimeModel.cs" />
     <Compile Include="Models\SeaClearanceCreate\ApprovalCategoryModel.cs" />
+    <Compile Include="Models\SeaClearanceCreate\SeaClearanceCreateRequest.cs" />
+    <Compile Include="Models\SeaClearanceCreate\SeaClearanceCreateResponse.cs" />
     <Compile Include="Models\SeaClearanceCreate\SeaClearanceCustTaxPayment.cs" />
     <Compile Include="Models\SeaClearanceCreate\SeaClearanceDetailEditHistoryModel.cs" />
     <Compile Include="Models\SeaClearanceCreate\SeaClearanceDetailModel.cs" />

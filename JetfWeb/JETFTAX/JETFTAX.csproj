@@ -415,7 +415,6 @@
     <Compile Include="Models\PdtScanCargoArrivalTime\PdtScanCargoArrivalTimeUpdateVm.cs" />
     <Compile Include="Models\PostClearance\PostClearanceViewModel.cs" />
     <Compile Include="Models\ScanCargoArrivalTime\ScanCargoArrivalTimeViewModel.cs" />
-    <Compile Include="Models\SeaClearanceCreate\SeaClearanceCreateViewModel.cs" />
     <Compile Include="Models\SeaClearanceCustTaxPayment\SeaClearanceCustTaxPaymentViewModel.cs" />
     <Compile Include="Models\SeaClearanceFee\SeaClearanceFeeViewModel.cs" />
     <Compile Include="Models\SeaClearanceSjlTaxPayment\SeaClearanceSjlTaxPaymentViewModel.cs" />
@@ -810,6 +809,7 @@
     <Content Include="Scripts\ng-controllers\ScanCargoCustomerDiff\ScanCargoCustomerDiff.js" />
     <Content Include="Scripts\ng-controllers\SeaClearanceProcessor\SeaClearanceProcessor.js" />
     <Content Include="Scripts\ng-controllers\SeaClearance\SeaClearance.js" />
+    <Content Include="Scripts\ng-controllers\SeaClearanceCreate\SeaClearanceCreate.js" />
     <Content Include="Scripts\ng-controllers\SearchCargo\SearchCargo.js" />
     <Content Include="Scripts\ng-controllers\SearchCargo\SearchCargoDetail.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundBatchImport\ShipmentInboundBatchImport.js" />

@@ -1,4 +1,4 @@
-﻿mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', function ($scope, $timeout) {
+mainApp.controller('SjlBatchImportSearchController', ['$scope', '$timeout', function ($scope, $timeout) {
         $scope.searchParams = {
             startDate: null,
             endDate: null,

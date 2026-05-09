@@ -257,6 +257,8 @@ namespace Service.Models.SeaClearanceCreate
         /// </summary>
         public string Jetf_Serial { get; set; }
 
+        public string Merge_Over_Flag { get; set; }
+
         public decimal Gw { get; set; }
 
         /// <summary>

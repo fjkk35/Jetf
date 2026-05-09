@@ -146,8 +146,8 @@ namespace Service.Services
                                     OUTPUT INSERTED.Id
                                     values(@SeaClearanceId,@DataDate, @MainNumber,@TrackingNo, @MftNo,@IsSucess, @Memo,@ImportDate,@DeclNo,@ProDateTime,@IsSeaOrderOriginal,@Tax)";
 
-            var insertOriginalMapping = @"insert [jetf].[dbo].[SeaClearanceDetailOriginalMapping](SeaClearanceDetailId, SeaOrderOriginalId, CreateDate, Modifyby, Post_Entry, Eta, Cust_Code,Piece, Importer, Im_Phoneno, Importer_Id, Tax_Payment, Item_Name,Jetf_Serial, Gw, CC)
-                                    values(@SeaClearanceDetailId,@SeaOrderOriginalId, @CreateDate, @Modifyby, @Post_Entry, @Eta, @Cust_Code,@Piece, @Importer, @Im_Phoneno, @Importer_Id, @Tax_Payment, @Item_Name, @Jetf_Serial, @Gw, @CC)";
+            var insertOriginalMapping = @"insert [jetf].[dbo].[SeaClearanceDetailOriginalMapping](SeaClearanceDetailId, SeaOrderOriginalId, CreateDate, Modifyby, Post_Entry, Eta, Cust_Code,Piece, Importer, Im_Phoneno, Importer_Id, Tax_Payment, Item_Name,Jetf_Serial, Merge_Over_Flag, Gw, CC)
+                                    values(@SeaClearanceDetailId,@SeaOrderOriginalId, @CreateDate, @Modifyby, @Post_Entry, @Eta, @Cust_Code,@Piece, @Importer, @Im_Phoneno, @Importer_Id, @Tax_Payment, @Item_Name, @Jetf_Serial, @Merge_Over_Flag, @Gw, @CC)";
 
             if (conn.State != ConnectionState.Open)
                 conn.Open();
@@ -201,6 +201,7 @@ namespace Service.Services
                                 Tax_Payment = seaOrderOriginal.Tax_Payment,
                                 Item_Name = seaOrderOriginal.Item_Name,
                                 Jetf_Serial = seaOrderOriginal.Jetf_Serial,
+                                Merge_Over_Flag = seaOrderOriginal.Merge_Over_Flag,
                                 Gw = seaOrderOriginal.Gw,
                                 CC = seaOrderOriginal.CC,
                             }, transaction: tran);
@@ -334,7 +335,7 @@ namespace Service.Services
                         where a.TYPE='ER'
                     )
  
-                    select ROW_ID as SeaOrderOriginalId,a.MainNumber,a.BL_NO,CreateDate, Post_Entry, Eta, Despatch_Name as Cust_Code,Piece, Importer, Im_Phoneno, Importer_Id, Tax_Payment, Item_Name,Jetf_Serial, Gw, CC,
+                    select ROW_ID as SeaOrderOriginalId,a.MainNumber,a.BL_NO,CreateDate, Post_Entry, Eta, Despatch_Name as Cust_Code,Piece, Importer, Im_Phoneno, Importer_Id, Tax_Payment, Item_Name,Jetf_Serial, b.MERGE_OVER_FLAG as Merge_Over_Flag, Gw, CC,
                     c.Modifyby
                     from @SeaOriginalMapping a
                     join [DATA_CENTER].[dbo].[SEA_ORDER_ORIGINAL] b on a.MainNumber =b.MAINNUMBER and a.BL_NO=b.BL_NO
@@ -355,9 +356,26 @@ namespace Service.Services
 
             foreach (var item in list)
             {
-                item.SeaOrderOriginals = result
+                var seaOrderOriginals = result
                     .Where(r=> r.MainNumber == item.MainNumber && r.Bl_No == item.TrackingNo)
                     .ToList();
+
+                //如果Merge_Over_Flag=O，只取Merge_Over_Flag=O的資料
+                if (seaOrderOriginals.Any(r => string.Equals(r.Merge_Over_Flag, "O", StringComparison.OrdinalIgnoreCase)))
+                {
+                    seaOrderOriginals = seaOrderOriginals
+                        .Where(r => string.Equals(r.Merge_Over_Flag, "O", StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
+                //如果Merge_Over_Flag=M，只取Merge_Over_Flag=M的資料
+                else if (seaOrderOriginals.Any(r => string.Equals(r.Merge_Over_Flag, "M", StringComparison.OrdinalIgnoreCase)))
+                {
+                    seaOrderOriginals = seaOrderOriginals
+                        .Where(r => string.Equals(r.Merge_Over_Flag, "M", StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                }
+
+                item.SeaOrderOriginals = seaOrderOriginals;
             }
         }
 
@@ -446,11 +464,34 @@ namespace Service.Services
             }
         }
 
-        public List<SeaClearanceModel> GetSeaClearance()
+        public SeaClearanceCreateResponse GetSeaClearance(SeaClearanceCreateRequest request)
         {
-            var sqlQuery = "SELECT * FROM jetf.dbo.SeaClearance order by Id desc";
+            request = request ?? new SeaClearanceCreateRequest();
 
-            return conn.Query<SeaClearanceModel>(sqlQuery).ToList();
+            var page = request.Page > 0 ? request.Page : 1;
+            var pageSize = request.PageSize > 0 ? request.PageSize : 10;
+
+            var sqlQuery = @"
+                            SELECT COUNT(1)
+                            FROM jetf.dbo.SeaClearance;
+
+                            SELECT Id, FileName, UploadOpe, CrtDateTime
+                            FROM jetf.dbo.SeaClearance
+                            ORDER BY Id DESC
+                            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+            using (var result = conn.QueryMultiple(sqlQuery, new
+            {
+                Offset = (page - 1) * pageSize,
+                PageSize = pageSize
+            }))
+            {
+                return new SeaClearanceCreateResponse
+                {
+                    TotalCount = result.ReadFirst<int>(),
+                    Data = result.Read<SeaClearanceModel>().ToList()
+                };
+            }
         }
 
         /// <summary>
