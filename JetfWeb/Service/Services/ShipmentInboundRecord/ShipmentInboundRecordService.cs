@@ -404,6 +404,32 @@ namespace Service.Services.ShipmentInboundRecord
                 }).ToList();
         }
 
+        /// <summary>
+        /// 取得不明貨件可選客戶清單。
+        /// </summary>
+        /// <param name="dataType">進口方式。</param>
+        /// <returns>客戶下拉選單資料。</returns>
+        public List<SelectListModel> GetUnknownShipmentCustList(string dataType)
+        {
+            using (var db = CreateDataCenterDbContext())
+            {
+                return BuildUnknownShipmentCustList(db, dataType);
+            }
+        }
+
+        /// <summary>
+        /// 取得不明貨件可選派件公司清單。
+        /// </summary>
+        /// <param name="dataType">進口方式。</param>
+        /// <returns>派件公司下拉選單資料。</returns>
+        public List<ShipmentInboundUnknownShipmentTransOptionModel> GetUnknownShipmentTransList(string dataType)
+        {
+            using (var db = CreateJetfDbContext())
+            {
+                return BuildUnknownShipmentTransList(db, dataType);
+            }
+        }
+
         public ShipmentInboundRecordExportExcelResult GetExportExcel(ShipmentInboundRecordRequest request)
         {
             if (request == null)
@@ -546,6 +572,239 @@ namespace Service.Services.ShipmentInboundRecord
                 FileName = fileName,
                 FileBytes = bytes
             };
+        }
+
+        /// <summary>
+        /// 更新不明貨件的基本資料。
+        /// </summary>
+        /// <param name="request">更新請求。</param>
+        public void UpdateUnknownShipmentBasicInfo(UpdateUnknownShipmentBasicInfoRequest request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            if (request.Id <= 0)
+            {
+                throw new ArgumentException("Id 不可為空");
+            }
+
+            using (var db = CreateJetfDbContext())
+            using (var dataCenterDb = CreateDataCenterDbContext())
+            {
+                var entity = db.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
+                if (entity == null)
+                {
+                    throw new ArgumentException("查無資料");
+                }
+
+                if (entity.IsOrderOriginal)
+                {
+                    throw new InvalidOperationException("只有不明貨件可修改基本資料");
+                }
+
+                var hasDataTypeInput = !string.IsNullOrWhiteSpace(request.DataType);
+                var hasCustCodeInput = !string.IsNullOrWhiteSpace(request.CustCode);
+                var hasTransNoInput = request.TransNo != null;
+                var hasTransNameInput = request.TransName != null;
+                var hasSourceTypeInput = request.SourceType.HasValue;
+
+                var dataType = hasDataTypeInput
+                    ? NormalizeDataType(request.DataType)
+                    : NormalizeDataType(entity.DataType);
+
+                if (hasDataTypeInput && string.IsNullOrWhiteSpace(dataType))
+                {
+                    throw new ArgumentException("請選擇正確的進口方式");
+                }
+
+                var currentDataType = NormalizeDataType(entity.DataType);
+                var isDataTypeChanged = !string.Equals(currentDataType, dataType, StringComparison.OrdinalIgnoreCase);
+
+                var targetCustCode = hasCustCodeInput
+                    ? (request.CustCode ?? string.Empty).Trim()
+                    : (entity.CustCode ?? string.Empty).Trim();
+
+                var targetTransNo = hasTransNoInput
+                    ? (request.TransNo ?? string.Empty).Trim()
+                    : (entity.TransNo ?? string.Empty).Trim();
+                var targetTransName = hasTransNameInput
+                    ? (request.TransName ?? string.Empty).Trim()
+                    : (entity.TransName ?? string.Empty).Trim();
+
+                var targetSourceType = hasSourceTypeInput
+                    ? request.SourceType
+                    : entity.SourceType;
+
+                if (isDataTypeChanged && !hasCustCodeInput)
+                {
+                    targetCustCode = string.Empty;
+                }
+
+                if (isDataTypeChanged && !hasTransNoInput && !hasTransNameInput)
+                {
+                    targetTransNo = string.Empty;
+                    targetTransName = string.Empty;
+                }
+
+                SelectListModel targetCustomer = null;
+                if (hasCustCodeInput && !string.IsNullOrWhiteSpace(targetCustCode))
+                {
+                    var customerOptions = BuildUnknownShipmentCustList(dataCenterDb, dataType);
+                    targetCustomer = customerOptions.FirstOrDefault(x => string.Equals(x.Value, targetCustCode, StringComparison.OrdinalIgnoreCase));
+                    if (targetCustomer == null)
+                    {
+                        throw new ArgumentException("查無對應客戶資料");
+                    }
+                }
+
+                ShipmentInboundUnknownShipmentTransOptionModel targetTrans = null;
+                if (hasTransNoInput || hasTransNameInput)
+                {
+                    if (string.Equals(dataType, "海運", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!string.IsNullOrWhiteSpace(targetTransName))
+                        {
+                            var transOptions = BuildUnknownShipmentTransList(db, dataType);
+                            targetTrans = transOptions.FirstOrDefault(x =>
+                                string.Equals((x.TransName ?? string.Empty).Trim(), targetTransName, StringComparison.OrdinalIgnoreCase));
+
+                            if (targetTrans == null)
+                            {
+                                throw new ArgumentException("查無對應派件公司資料");
+                            }
+                        }
+                        else
+                        {
+                            targetTransNo = string.Empty;
+                            targetTransName = string.Empty;
+                        }
+                    }
+                    else if (string.Equals(dataType, "空運", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var transOptions = BuildUnknownShipmentTransList(db, dataType);
+                        if (!string.IsNullOrWhiteSpace(targetTransNo))
+                        {
+                            targetTrans = transOptions.FirstOrDefault(x =>
+                                string.Equals((x.TransNo ?? string.Empty).Trim(), targetTransNo, StringComparison.OrdinalIgnoreCase));
+                        }
+                        else if (!string.IsNullOrWhiteSpace(targetTransName))
+                        {
+                            targetTrans = transOptions.FirstOrDefault(x =>
+                                string.Equals((x.TransName ?? string.Empty).Trim(), targetTransName, StringComparison.OrdinalIgnoreCase));
+                        }
+                        else
+                        {
+                            targetTransNo = string.Empty;
+                            targetTransName = string.Empty;
+                        }
+
+                        if (targetTrans == null)
+                        {
+                            throw new ArgumentException("查無對應派件公司資料");
+                        }
+                    }
+                    else
+                    {
+                        targetTransNo = string.Empty;
+                        targetTransName = string.Empty;
+                    }
+                }
+
+                if (hasSourceTypeInput && (!targetSourceType.HasValue || !Enum.IsDefined(typeof(ShipmentInboundSourceType), targetSourceType.Value)))
+                {
+                    throw new ArgumentException("請選擇正確的貨件來源");
+                }
+
+                var editTime = DateTime.Now;
+                var editUser = GetUserId();
+
+                var targetDataType = string.IsNullOrWhiteSpace(dataType) ? entity.DataType : dataType;
+                var newCustomerDisplay = (hasCustCodeInput || isDataTypeChanged)
+                    ? GetCustomerDisplayText(targetDataType, targetCustCode, targetCustomer?.Text ?? string.Empty)
+                    : GetCustomerDisplayText(targetDataType, entity.CustCode, ResolveCustomerName(dataCenterDb, targetDataType, entity.CustCode));
+
+                var newTransDisplay = (hasTransNoInput || hasTransNameInput || isDataTypeChanged)
+                    ? GetTransDisplayText(targetTrans?.TransNo ?? targetTransNo, targetTrans?.TransName ?? targetTransName)
+                    : GetTransDisplayText(entity.TransNo, entity.TransName);
+
+                var persistedTransNo = string.Equals(targetDataType, "空運", StringComparison.OrdinalIgnoreCase)
+                    ? (targetTrans?.TransNo ?? targetTransNo)
+                    : string.Empty;
+                var persistedTransName = string.Equals(targetDataType, "空運", StringComparison.OrdinalIgnoreCase)
+                    ? string.Empty
+                    : (targetTrans?.TransName ?? targetTransName);
+
+                var oldSourceTypeText = entity.SourceType.HasValue
+                    ? ((ShipmentInboundSourceType)entity.SourceType.Value).ToDescription()
+                    : string.Empty;
+                var newSourceTypeText = targetSourceType.HasValue
+                    ? ((ShipmentInboundSourceType)targetSourceType.Value).ToDescription()
+                    : string.Empty;
+
+                AddShipmentInboundEditHistoryIfChanged(
+                    db,
+                    entity.Id,
+                    "進口方式",
+                    entity.DataType,
+                    targetDataType,
+                    editTime,
+                    editUser,
+                    !string.Equals(entity.DataType, targetDataType, StringComparison.OrdinalIgnoreCase));
+
+                var oldCustomerDisplay = GetCustomerDisplayText(entity.DataType, entity.CustCode, ResolveCustomerName(dataCenterDb, entity.DataType, entity.CustCode));
+                AddShipmentInboundEditHistoryIfChanged(
+                    db,
+                    entity.Id,
+                    "客戶",
+                    oldCustomerDisplay,
+                    newCustomerDisplay,
+                    editTime,
+                    editUser,
+                    !string.Equals(oldCustomerDisplay, newCustomerDisplay, StringComparison.OrdinalIgnoreCase));
+
+                var oldTransDisplay = GetTransDisplayText(entity.TransNo, entity.TransName);
+                AddShipmentInboundEditHistoryIfChanged(
+                    db,
+                    entity.Id,
+                    "派件公司",
+                    oldTransDisplay,
+                    newTransDisplay,
+                    editTime,
+                    editUser,
+                    !string.Equals(oldTransDisplay, newTransDisplay, StringComparison.OrdinalIgnoreCase));
+
+                AddShipmentInboundEditHistoryIfChanged(
+                    db,
+                    entity.Id,
+                    "貨件來源",
+                    oldSourceTypeText,
+                    newSourceTypeText,
+                    editTime,
+                    editUser,
+                    entity.SourceType != targetSourceType);
+
+                entity.DataType = targetDataType;
+
+                if (hasCustCodeInput || isDataTypeChanged)
+                {
+                    entity.CustCode = targetCustCode;
+                }
+
+                if (hasTransNoInput || hasTransNameInput || isDataTypeChanged)
+                {
+                    entity.TransNo = persistedTransNo;
+                    entity.TransName = persistedTransName;
+                }
+
+                if (hasSourceTypeInput)
+                {
+                    entity.SourceType = targetSourceType;
+                }
+
+                db.SaveChanges();
+            }
         }
 
         /// <summary>
@@ -773,6 +1032,264 @@ namespace Service.Services.ShipmentInboundRecord
                     })
                     .ToList();
             }
+        }
+
+        /// <summary>
+        /// 依進口方式建立不明貨件可選客戶清單。
+        /// </summary>
+        /// <param name="db">DataCenter 資料庫內容。</param>
+        /// <param name="dataType">進口方式。</param>
+        /// <returns>客戶下拉選單資料。</returns>
+        private List<SelectListModel> BuildUnknownShipmentCustList(Data.DataCenterDbContext db, string dataType)
+        {
+            var custType = GetCustomerTypeCode(dataType);
+            if (string.IsNullOrWhiteSpace(custType))
+            {
+                return new List<SelectListModel>();
+            }
+
+            if (custType == "SEA")
+            {
+                return db.SysCusts
+                    .AsNoTracking()
+                    .Where(x => x.CustType == custType)
+                    .Select(x => new SelectListModel
+                    {
+                        Value = x.CustCode,
+                        Text = x.CustName
+                    })
+                    .ToList()
+                    .Where(x => !string.IsNullOrWhiteSpace(x.Value) && !string.IsNullOrWhiteSpace(x.Text))
+                    .OrderBy(x => x.Text)
+                    .ThenBy(x => x.Value)
+                    .ToList();
+            }
+
+            return db.SysCusts
+                .AsNoTracking()
+                .Where(x => x.CustType == custType && !string.IsNullOrEmpty(x.OldCode))
+                .Select(x => new SelectListModel
+                {
+                    Value = x.OldCode,
+                    Text = x.CustName
+                })
+                .ToList()
+                .Where(x => !string.IsNullOrWhiteSpace(x.Value) && !string.IsNullOrWhiteSpace(x.Text))
+                .OrderBy(x => x.Text)
+                .ThenBy(x => x.Value)
+                .ToList();
+        }
+
+        /// <summary>
+        /// 依進口方式建立不明貨件可選派件公司清單。
+        /// </summary>
+        /// <param name="db">Jetf 資料庫內容。</param>
+        /// <param name="dataType">進口方式。</param>
+        /// <returns>派件公司下拉選單資料。</returns>
+        private List<ShipmentInboundUnknownShipmentTransOptionModel> BuildUnknownShipmentTransList(Data.JetfDbContext db, string dataType)
+        {
+            var normalizedDataType = NormalizeDataType(dataType);
+            if (string.IsNullOrWhiteSpace(normalizedDataType))
+            {
+                return new List<ShipmentInboundUnknownShipmentTransOptionModel>();
+            }
+
+            return db.CustomerMasters
+                .AsNoTracking()
+                .Where(x => x.TranType == normalizedDataType && !string.IsNullOrEmpty(x.TransName))
+                .Select(x => new
+                {
+                    x.TransNo,
+                    x.TransName
+                })
+                .ToList()
+                .Select(x => new ShipmentInboundUnknownShipmentTransOptionModel
+                {
+                    TransNo = normalizedDataType == "海運"
+                        ? string.Empty
+                        : (x.TransNo ?? string.Empty).Trim(),
+                    TransName = (x.TransName ?? string.Empty).Trim()
+                })
+                .Where(x => !string.IsNullOrWhiteSpace(x.TransName))
+                .GroupBy(x => new { x.TransNo, x.TransName })
+                .Select(g => new ShipmentInboundUnknownShipmentTransOptionModel
+                {
+                    OptionKey = string.IsNullOrWhiteSpace(g.Key.TransNo)
+                        ? $"NAME::{g.Key.TransName}"
+                        : $"NO::{g.Key.TransNo}::{g.Key.TransName}",
+                    TransNo = g.Key.TransNo,
+                    TransName = g.Key.TransName
+                })
+                .OrderBy(x => x.TransName)
+                .ThenBy(x => x.TransNo)
+                .ToList();
+        }
+
+        /// <summary>
+        /// 將進口方式轉為 DataCenter 客戶類型代碼。
+        /// </summary>
+        /// <param name="dataType">進口方式。</param>
+        /// <returns>SEA 或 AIR 類型代碼。</returns>
+        private string GetCustomerTypeCode(string dataType)
+        {
+            var normalizedDataType = NormalizeDataType(dataType);
+            if (normalizedDataType == "海運")
+            {
+                return "SEA";
+            }
+
+            if (normalizedDataType == "空運")
+            {
+                return "AIR";
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 正規化進口方式文字。
+        /// </summary>
+        /// <param name="dataType">進口方式文字。</param>
+        /// <returns>正規化後的進口方式。</returns>
+        private string NormalizeDataType(string dataType)
+        {
+            var normalizedDataType = (dataType ?? string.Empty).Trim();
+            return normalizedDataType == "海運" || normalizedDataType == "空運"
+                ? normalizedDataType
+                : null;
+        }
+
+        /// <summary>
+        /// 依進口方式與客戶代碼取得客戶名稱。
+        /// </summary>
+        /// <param name="db">DataCenter 資料庫內容。</param>
+        /// <param name="dataType">進口方式。</param>
+        /// <param name="custCode">客戶代碼。</param>
+        /// <returns>客戶名稱。</returns>
+        private string ResolveCustomerName(Data.DataCenterDbContext db, string dataType, string custCode)
+        {
+            var normalizedCustCode = (custCode ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalizedCustCode))
+            {
+                return string.Empty;
+            }
+
+            var custType = GetCustomerTypeCode(dataType);
+            if (custType == "SEA")
+            {
+                return db.SysCusts
+                    .AsNoTracking()
+                    .Where(x => x.CustType == custType && x.CustCode == normalizedCustCode)
+                    .Select(x => x.CustName)
+                    .FirstOrDefault() ?? string.Empty;
+            }
+
+            if (custType == "AIR")
+            {
+                return db.SysCusts
+                    .AsNoTracking()
+                    .Where(x => x.CustType == custType && x.OldCode == normalizedCustCode)
+                    .Select(x => x.CustName)
+                    .FirstOrDefault() ?? string.Empty;
+            }
+
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// 組合客戶欄位的編輯紀錄顯示文字。
+        /// </summary>
+        /// <param name="dataType">進口方式。</param>
+        /// <param name="custCode">客戶代碼。</param>
+        /// <param name="custName">客戶名稱。</param>
+        /// <returns>客戶顯示文字。</returns>
+        private string GetCustomerDisplayText(string dataType, string custCode, string custName)
+        {
+            var normalizedCustCode = (custCode ?? string.Empty).Trim();
+            var normalizedCustName = (custName ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(normalizedCustCode) && string.IsNullOrWhiteSpace(normalizedCustName))
+            {
+                return string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedCustName))
+            {
+                return normalizedCustCode;
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedCustCode))
+            {
+                return normalizedCustName;
+            }
+
+            return $"{normalizedCustName} ({normalizedCustCode})";
+        }
+
+        /// <summary>
+        /// 組合派件公司欄位的編輯紀錄顯示文字。
+        /// </summary>
+        /// <param name="transNo">派件公司代碼。</param>
+        /// <param name="transName">派件公司名稱。</param>
+        /// <returns>派件公司顯示文字。</returns>
+        private string GetTransDisplayText(string transNo, string transName)
+        {
+            var normalizedTransNo = (transNo ?? string.Empty).Trim();
+            var normalizedTransName = (transName ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(normalizedTransNo) && string.IsNullOrWhiteSpace(normalizedTransName))
+            {
+                return string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedTransNo))
+            {
+                return normalizedTransName;
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedTransName))
+            {
+                return normalizedTransNo;
+            }
+
+            return $"{normalizedTransName} ({normalizedTransNo})";
+        }
+
+        /// <summary>
+        /// 若欄位值有異動，新增貨件編輯紀錄。
+        /// </summary>
+        /// <param name="db">Jetf 資料庫內容。</param>
+        /// <param name="shipmentInboundId">貨件入庫資料 Id。</param>
+        /// <param name="fieldName">欄位名稱。</param>
+        /// <param name="oldValue">舊值。</param>
+        /// <param name="newValue">新值。</param>
+        /// <param name="editTime">編輯時間。</param>
+        /// <param name="editUser">編輯人員。</param>
+        /// <param name="hasChanged">是否有異動。</param>
+        private void AddShipmentInboundEditHistoryIfChanged(
+            Data.JetfDbContext db,
+            int shipmentInboundId,
+            string fieldName,
+            string oldValue,
+            string newValue,
+            DateTime editTime,
+            string editUser,
+            bool hasChanged)
+        {
+            if (!hasChanged)
+            {
+                return;
+            }
+
+            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+            {
+                ShipmentInboundId = shipmentInboundId,
+                FieldName = fieldName,
+                OldValue = oldValue,
+                NewValue = newValue,
+                EditTime = editTime,
+                EditUser = editUser
+            });
         }
     }
 }

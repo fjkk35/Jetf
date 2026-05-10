@@ -24,6 +24,7 @@
                 '<style>' +
                 '  .customer-multi-select-input{cursor:pointer;background-color:#fff;}' +
                 '  .customer-multi-select-input[readonly]{background-color:#fff;}' +
+                '  .customer-search-input{max-width:320px;}' +
                 '  .customer-grid{display:flex;flex-wrap:wrap;gap:8px 12px;}' +
                 '  .customer-grid .customer-item{width:calc((100% - (12px * 5))/6);min-width:180px;}' +
                 '  .customer-grid .customer-item label{display:flex;align-items:center;gap:6px;margin:0;cursor:pointer;user-select:none;}' +
@@ -64,6 +65,16 @@
                 '            </div>' +
                 '          </div>' +
                 '        </div>' +
+                '        <div class="form-group mb-3">' +
+                '          <div class="d-flex align-items-center" style="gap:8px;">' +
+                '            <input type="text" class="form-control customer-search-input" ng-model="searchKeyword" placeholder="請輸入客戶名稱關鍵字" />' +
+                '            <button type="button" class="btn btn-outline-secondary btn-sm" ng-if="hasSearchKeyword()" ng-click="clearSearch()">清除</button>' +
+                '          </div>' +
+                '          <div class="mt-2" ng-if="hasSearchKeyword()">' +
+                '            <button type="button" class="btn btn-outline-primary btn-sm mr-2" ng-click="selectFilteredCustomers()">勾選目前搜尋結果</button>' +
+                '            <button type="button" class="btn btn-outline-secondary btn-sm" ng-click="deselectFilteredCustomers()">取消目前勾選結果</button>' +
+                '          </div>' +
+                '        </div>' +
                 '' +
                 '        <div style="max-height:600px;overflow-y:auto;">' +
                 '          <div class="mb-3" ng-repeat="(custType, customers) in custList">' +
@@ -72,17 +83,17 @@
                 '            </div>' +
                 '            <hr class="mt-2 mb-2" />' +
                 '            <div class="customer-grid">' +
-                '              <div class="customer-item" ng-repeat="cust in customers">' +
+                '              <div class="customer-item" ng-repeat="cust in getFilteredCustomers(custType) track by $index">' +
                 '                <label ng-attr-title="{{cust.Text}}">' +
                 '                  <input type="checkbox" ng-model="selection.selectedMap[cust.Value]" ng-change="onItemChanged()" />' +
                 '                  <span class="customer-name">{{cust.Text}}</span>' +
                 '                </label>' +
                 '              </div>' +
                 '            </div>' +
-                '            <div ng-if="customers.length===0" class="text-center text-muted">查無{{custType}}客戶清單</div>' +
+                '            <div ng-if="getFilteredCustomers(custType).length===0" class="text-center text-muted">查無{{custType}}客戶清單</div>' +
                 '          </div>' +
                 '' +
-                '          <div ng-if="!custList || (custList.SEA.length===0 && custList.AIR.length===0)" class="text-center text-muted">查無客戶清單</div>' +
+                '          <div ng-if="!hasAnyCustomers()" class="text-center text-muted">查無客戶清單</div>' +
                 '        </div>' +
                 '      </div>' +
                 '      <div class="modal-footer">' +
@@ -95,6 +106,7 @@
                 scope.id = (Math.random().toString(36).substr(2, 9));
 
                 scope.custList = {};
+                scope.searchKeyword = '';
 
                 scope.selection = {
                     selectAll: true,
@@ -212,6 +224,89 @@
                     scope.selectedCustCodes = codes;
                 }
 
+                function sortCustomerList(list) {
+                    return (list || []).slice().sort(function (left, right) {
+                        var leftText = (left.Text || '').toLowerCase();
+                        var rightText = (right.Text || '').toLowerCase();
+
+                        if (leftText < rightText) {
+                            return -1;
+                        }
+
+                        if (leftText > rightText) {
+                            return 1;
+                        }
+
+                        var leftValue = (left.Value || '').toLowerCase();
+                        var rightValue = (right.Value || '').toLowerCase();
+                        if (leftValue < rightValue) {
+                            return -1;
+                        }
+
+                        if (leftValue > rightValue) {
+                            return 1;
+                        }
+
+                        return 0;
+                    });
+                }
+
+                scope.hasSearchKeyword = function () {
+                    return !!(scope.searchKeyword || '').trim();
+                };
+
+                scope.clearSearch = function () {
+                    scope.searchKeyword = '';
+                };
+
+                scope.selectFilteredCustomers = function () {
+                    for (var key in scope.custList) {
+                        if (scope.custList.hasOwnProperty(key)) {
+                            var filteredCustomers = scope.getFilteredCustomers(key);
+                            for (var index = 0; index < filteredCustomers.length; index++) {
+                                scope.selection.selectedMap[filteredCustomers[index].Value] = true;
+                            }
+                        }
+                    }
+
+                    syncOutputs();
+                };
+
+                scope.deselectFilteredCustomers = function () {
+                    for (var key in scope.custList) {
+                        if (scope.custList.hasOwnProperty(key)) {
+                            var filteredCustomers = scope.getFilteredCustomers(key);
+                            for (var index = 0; index < filteredCustomers.length; index++) {
+                                scope.selection.selectedMap[filteredCustomers[index].Value] = false;
+                            }
+                        }
+                    }
+
+                    syncOutputs();
+                };
+
+                scope.getFilteredCustomers = function (custType) {
+                    var customers = scope.custList[custType] || [];
+                    var keyword = (scope.searchKeyword || '').trim().toLowerCase();
+                    if (!keyword) {
+                        return customers;
+                    }
+
+                    return customers.filter(function (cust) {
+                        return (cust.Text || '').toLowerCase().indexOf(keyword) > -1;
+                    });
+                };
+
+                scope.hasAnyCustomers = function () {
+                    for (var key in scope.custList) {
+                        if (scope.custList.hasOwnProperty(key) && (scope.custList[key] || []).length > 0) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                };
+
                 scope.open = function () {
                     $('#custSelectModal').modal('show');
                 };
@@ -260,7 +355,14 @@
                                 return;
                             }
 
-                            scope.custList = result;
+                            var sortedResult = {};
+                            for (var key in result) {
+                                if (result.hasOwnProperty(key)) {
+                                    sortedResult[key] = sortCustomerList(result[key]);
+                                }
+                            }
+
+                            scope.custList = sortedResult;
                             initSelectionAsAll();
                         })
                         .catch(function (error) {

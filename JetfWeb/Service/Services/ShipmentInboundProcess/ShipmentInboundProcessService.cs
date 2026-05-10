@@ -128,7 +128,7 @@ namespace Service.Services.ShipmentInboundProcess
                         existing.StoreName = request.StoreName;
                         existing.FreightPayerNo = request.FreightPayerNo;
                         existing.FreightFee = request.FreightFee;
-                        existing.Fee = request.Fee;
+                        existing.Fee = CalculateFee(newProcessType, request.FreightFee, request.Tax, request.Ccfee, request.Cod);
                         existing.CarNo = request.CarNo;
                         existing.PickupTime = DateTime.TryParse(request.PickupTime, out var pickupTime)
                             ? pickupTime
@@ -289,6 +289,35 @@ namespace Service.Services.ShipmentInboundProcess
             {
                 throw new Exception("宅配地址為必填欄位");
             }
+        }
+
+        /// <summary>
+        /// 依處理方式與費用欄位計算代收手續費。
+        /// </summary>
+        /// <param name="processType">處理方式。</param>
+        /// <param name="freightFee">運費。</param>
+        /// <param name="tax">稅金。</param>
+        /// <param name="ccfee">報關費。</param>
+        /// <param name="cod">到付款。</param>
+        /// <returns>代收手續費。</returns>
+        private int CalculateFee(
+            ShipmentInboundProcessType processType,
+            int? freightFee,
+            int? tax,
+            int? ccfee,
+            int? cod)
+        {
+            if (processType == ShipmentInboundProcessType.NewTrackingNo)
+            {
+                return 30;
+            }
+
+            return (freightFee ?? 0) > 0
+                || (tax ?? 0) > 0
+                || (ccfee ?? 0) > 0
+                || (cod ?? 0) > 0
+                ? 30
+                : 0;
         }
 
         /// <summary>

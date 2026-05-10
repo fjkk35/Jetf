@@ -607,7 +607,9 @@
     <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundRecordModel.cs" />
     <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundRecordRequest.cs" />
     <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundRecordResponse.cs" />
+    <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundUnknownShipmentTransOptionModel.cs" />
     <Compile Include="Services\ShipmentInboundRecord\Domain\UpdateAmountRequest.cs" />
+    <Compile Include="Services\ShipmentInboundRecord\Domain\UpdateUnknownShipmentBasicInfoRequest.cs" />
     <Compile Include="Services\ShipmentInboundRecord\Domain\UpdateTrackingNoRequest.cs" />
     <Compile Include="Services\ShipmentInboundRecord\ShipmentInboundRecordService.cs" />
     <Compile Include="Services\ShipmentInboundWarehouseProcess\Domain\ShipmentInboundWarehouseProcessBatchUploadErrorModel.cs" />

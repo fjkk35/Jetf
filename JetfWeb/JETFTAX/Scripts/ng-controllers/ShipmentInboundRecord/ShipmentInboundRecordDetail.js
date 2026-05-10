@@ -1,4 +1,4 @@
-﻿mainApp.controller('ShipmentInboundRecordDetailController', ['$scope', '$http', '$location', '$timeout', function ($scope, $http, $location, $timeout) {
+﻿mainApp.controller('ShipmentInboundRecordDetailController', ['$scope', '$http', '$location', '$timeout', '$q', function ($scope, $http, $location, $timeout, $q) {
     // 初始化資料
     $scope.data = null;
     $scope.loading = true;
@@ -9,8 +9,92 @@
     $scope.historyData = [];
     $scope.editTrackingNo = '';
     $scope.savingTrackingNo = false;
+    $scope.savingBasicInfo = false;
+    $scope.customerOptions = [];
+    $scope.transOptions = [];
+    $scope.sourceTypeList = [];
+
+    $scope.dataTypes = [
+        { Value: '海運', Text: '海運' },
+        { Value: '空運', Text: '空運' }
+    ];
+
+    $scope.basicInfoForm = {
+        dataType: '',
+        custCode: '',
+        sourceType: '',
+        selectedTrans: null
+    };
 
     var exceptionViewer = null;
+
+    function normalizeText(value) {
+        return value ? value.toString().trim() : '';
+    }
+
+    function resetBasicInfoForm() {
+        $scope.basicInfoForm = {
+            dataType: '',
+            custCode: '',
+            sourceType: '',
+            selectedTrans: null
+        };
+    }
+
+    function findMatchedTransOption(transNo, transName) {
+        var normalizedTransNo = normalizeText(transNo);
+        var normalizedTransName = normalizeText(transName);
+
+        for (var index = 0; index < $scope.transOptions.length; index++) {
+            var item = $scope.transOptions[index];
+            if (normalizeText(item.TransNo) === normalizedTransNo
+                && normalizeText(item.TransName) === normalizedTransName) {
+                return item;
+            }
+        }
+
+        return null;
+    }
+
+    function loadSourceTypeList() {
+        if ($scope.sourceTypeList.length > 0) {
+            return $q.when($scope.sourceTypeList);
+        }
+
+        return $http.get(Router.action('ShipmentInboundRecord', 'GetSourceTypeList'))
+            .then(function (response) {
+                $scope.sourceTypeList = response.data || [];
+                return $scope.sourceTypeList;
+            });
+    }
+
+    function loadUnknownShipmentCustList(dataType) {
+        if (!dataType) {
+            $scope.customerOptions = [];
+            return $q.when([]);
+        }
+
+        return $http.get(Router.action('ShipmentInboundRecord', 'GetUnknownShipmentCustList'), {
+            params: { dataType: dataType }
+        }).then(function (response) {
+            $scope.customerOptions = response.data || [];
+            return $scope.customerOptions;
+        });
+    }
+
+    function loadUnknownShipmentTransList(dataType) {
+        if (!dataType) {
+            $scope.transOptions = [];
+            return $q.when([]);
+        }
+
+        return $http.get(Router.action('ShipmentInboundRecord', 'GetUnknownShipmentTransList'), {
+            params: { dataType: dataType }
+        }).then(function (response) {
+            $scope.transOptions = response.data || [];
+            return $scope.transOptions;
+        });
+    }
 
     function destroyExceptionViewer() {
         if (exceptionViewer) {
@@ -104,8 +188,102 @@
         $('#editTrackingNoModal').modal('show');
     };
 
+    $scope.onBasicInfoDataTypeChange = function () {
+        $scope.basicInfoForm.custCode = '';
+        $scope.basicInfoForm.selectedTrans = null;
+
+        return $q.all([
+            loadUnknownShipmentCustList($scope.basicInfoForm.dataType),
+            loadUnknownShipmentTransList($scope.basicInfoForm.dataType)
+        ]);
+    };
+
+    $scope.openBasicInfoDialog = function () {
+        if (!$scope.data || $scope.data.IsOrderOriginal !== false) {
+            return;
+        }
+
+        resetBasicInfoForm();
+        $scope.basicInfoForm.dataType = normalizeText($scope.data.DataType);
+        $scope.basicInfoForm.sourceType = $scope.data.SourceType != null ? $scope.data.SourceType.toString() : '';
+
+        loadSourceTypeList()
+            .then(function () {
+                return $scope.onBasicInfoDataTypeChange();
+            })
+            .then(function () {
+                $scope.basicInfoForm.custCode = normalizeText($scope.data.CustCode);
+                $scope.basicInfoForm.selectedTrans = findMatchedTransOption($scope.data.TransNo, $scope.data.TransName);
+                $('#editBasicInfoModal').modal('show');
+            })
+            .catch(function (error) {
+                console.error('載入不明貨件基本資料編輯選項失敗:', error);
+                swal({
+                    title: '載入失敗',
+                    text: (error && error.data && error.data.error) ? error.data.error : '無法載入編輯選項，請稍後再試',
+                    icon: 'error'
+                });
+            });
+    };
+
+    $scope.saveBasicInfo = function () {
+        var id = getQueryParam('id');
+        if (!id) {
+            swal({
+                title: '錯誤',
+                text: '缺少必要參數',
+                icon: 'error'
+            });
+            return;
+        }
+
+        $scope.savingBasicInfo = true;
+
+        $http.post(Router.action('ShipmentInboundRecord', 'UpdateUnknownShipmentBasicInfo'), {
+            Id: parseInt(id, 10),
+            DataType: $scope.basicInfoForm.dataType,
+            CustCode: $scope.basicInfoForm.custCode,
+            TransNo: $scope.basicInfoForm.selectedTrans ? $scope.basicInfoForm.selectedTrans.TransNo : null,
+            TransName: $scope.basicInfoForm.selectedTrans ? $scope.basicInfoForm.selectedTrans.TransName : null,
+            SourceType: ($scope.basicInfoForm.sourceType === '' || $scope.basicInfoForm.sourceType === null || typeof $scope.basicInfoForm.sourceType === 'undefined')
+                ? null
+                : parseInt($scope.basicInfoForm.sourceType, 10)
+        })
+            .then(function (response) {
+                if (response.data.error) {
+                    swal({
+                        title: '錯誤',
+                        text: response.data.error,
+                        icon: 'error'
+                    });
+                    return;
+                }
+
+                swal({
+                    title: '成功',
+                    text: '基本資料更新成功',
+                    icon: 'success'
+                }).then(function () {
+                    $('#editBasicInfoModal').modal('hide');
+                    $scope.loadDetail();
+                });
+            })
+            .catch(function (error) {
+                console.error('更新不明貨件基本資料失敗:', error);
+                swal({
+                    title: '錯誤',
+                    text: '更新失敗，請稍後再試',
+                    icon: 'error'
+                });
+            })
+            .finally(function () {
+                $scope.savingBasicInfo = false;
+            });
+    };
+
     $scope.saveTrackingNo = function () {
         var trackingNo = ($scope.editTrackingNo || '').trim();
+
         if (!trackingNo) {
             swal({
                 title: '錯誤',

@@ -268,9 +268,17 @@
             <div ng-show="data && !loading" class="detail-container">
                 <!-- 基本資料 -->
                 <div class="detail-section">
-                    <h4 class="section-title">
-                        <i class="fa fa-info-circle mr-2"></i>基本資料
-                    </h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="section-title mb-0">
+                            <i class="fa fa-info-circle mr-2"></i>基本資料
+                        </h4>
+                        <button type="button"
+                                class="btn btn-outline-primary btn-sm"
+                                ng-if="data.IsOrderOriginal === false"
+                                ng-click="openBasicInfoDialog()">
+                            <i class="fa fa-edit"></i> 編輯基本資料
+                        </button>
+                    </div>
 
                     <div class="detail-grid">
                         <div class="detail-col">
@@ -709,6 +717,63 @@
                     <button type="button" class="btn btn-primary" ng-click="saveTrackingNo()" ng-disabled="savingTrackingNo">
                         <i class="fa fa-spinner fa-spin" ng-show="savingTrackingNo"></i>
                         {{savingTrackingNo ? '儲存中...' : '確定'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editBasicInfoModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">編輯不明貨件基本資料</h5>
+                    <button type="button" class="close" data-dismiss="modal" ng-disabled="savingBasicInfo">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>進口方式</label>
+                        <select class="form-control"
+                                ng-model="basicInfoForm.dataType"
+                                ng-change="onBasicInfoDataTypeChange()">
+                            <option value="">請選擇</option>
+                            <option ng-repeat="type in dataTypes" value="{{type.Value}}">{{type.Text}}</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>客戶</label>
+                        <select class="form-control"
+                                ng-model="basicInfoForm.custCode"
+                                ng-disabled="!basicInfoForm.dataType">
+                            <option value="">請選擇</option>
+                            <option ng-repeat="item in customerOptions track by $index" value="{{item.Value}}">{{item.Text}}</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>派件公司</label>
+                        <select class="form-control"
+                                ng-model="basicInfoForm.selectedTrans"
+                                ng-disabled="!basicInfoForm.dataType"
+                                ng-options="item as item.DisplayText for item in transOptions track by item.OptionKey">
+                            <option value="">請選擇</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label>貨件來源</label>
+                        <select class="form-control"
+                                ng-model="basicInfoForm.sourceType"
+                                ng-options="item.Value as item.Text for item in sourceTypeList">
+                            <option value="">請選擇</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-disabled="savingBasicInfo">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveBasicInfo()" ng-disabled="savingBasicInfo">
+                        <i class="fa fa-spinner fa-spin" ng-show="savingBasicInfo"></i>
+                        {{savingBasicInfo ? '儲存中...' : '確定'}}
                     </button>
                 </div>
             </div>

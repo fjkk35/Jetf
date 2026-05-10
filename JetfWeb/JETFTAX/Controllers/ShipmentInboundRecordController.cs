@@ -180,6 +180,46 @@ namespace JETFTAX.Controllers
         }
 
         /// <summary>
+        /// 依進口方式取得不明貨件可選客戶清單。
+        /// </summary>
+        /// <param name="dataType">進口方式。</param>
+        /// <returns>客戶下拉選單資料。</returns>
+        [HttpGet]
+        [UserAuthorize(Authority.ShipmentInboundRecord)]
+        public JsonResult GetUnknownShipmentCustList(string dataType)
+        {
+            try
+            {
+                var list = _shipmentInboundRecordService.GetUnknownShipmentCustList(dataType);
+                return Json(list, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        /// <summary>
+        /// 依進口方式取得不明貨件可選派件公司清單。
+        /// </summary>
+        /// <param name="dataType">進口方式。</param>
+        /// <returns>派件公司下拉選單資料。</returns>
+        [HttpGet]
+        [UserAuthorize(Authority.ShipmentInboundRecord)]
+        public JsonResult GetUnknownShipmentTransList(string dataType)
+        {
+            try
+            {
+                var list = _shipmentInboundRecordService.GetUnknownShipmentTransList(dataType);
+                return Json(list, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        /// <summary>
         /// 取得貨物來源清單
         /// </summary>
         [HttpGet]
@@ -247,6 +287,26 @@ namespace JETFTAX.Controllers
             try
             {
                 _shipmentInboundRecordService.UpdateTrackingNo(request);
+                return Json(new { success = true }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        /// <summary>
+        /// 更新不明貨件的基本資料。
+        /// </summary>
+        /// <param name="request">更新請求。</param>
+        /// <returns>更新結果。</returns>
+        [HttpPost]
+        [UserAuthorize(Authority.ShipmentInboundRecord)]
+        public JsonResult UpdateUnknownShipmentBasicInfo(UpdateUnknownShipmentBasicInfoRequest request)
+        {
+            try
+            {
+                _shipmentInboundRecordService.UpdateUnknownShipmentBasicInfo(request);
                 return Json(new { success = true }, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
