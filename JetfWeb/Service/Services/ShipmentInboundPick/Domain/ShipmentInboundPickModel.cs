@@ -91,7 +91,7 @@ namespace Service.Services.ShipmentInboundPick.Domain
         /// <summary>
         /// 手續費。
         /// </summary>
-        public int ProcessFee { get; set; }
+        public int Fee { get; set; }
 
         /// <summary>
         /// 總代收款項。
@@ -103,7 +103,7 @@ namespace Service.Services.ShipmentInboundPick.Domain
                 // 開新單號才需要計算代收款項。
                 if ( ProcessType == ShipmentInboundProcessType.NewTrackingNo)
                 {
-                    return Cod + FreightFee + Tax + Ccfee + ProcessFee;
+                    return Cod + FreightFee + Tax + Ccfee + Fee;
                 }
                 return 0;
             }

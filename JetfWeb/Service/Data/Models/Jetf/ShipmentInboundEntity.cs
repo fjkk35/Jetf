@@ -223,12 +223,6 @@ namespace Service.Data
         public int? FreightFee { get; set; }
 
         /// <summary>
-        /// 處理費用。
-        /// </summary>
-        [Column("ProcessFee")]
-        public int? ProcessFee { get; set; }
-
-        /// <summary>
         /// 客服處理時間。
         /// </summary>
         [Column("ProcessTime")]

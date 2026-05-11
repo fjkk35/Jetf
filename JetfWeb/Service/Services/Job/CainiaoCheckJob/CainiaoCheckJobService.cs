@@ -30,11 +30,11 @@ namespace Service.Services.Job.CainiaoCheckJob
             string sendDate = date.ToString("yyyyMMdd");
             string sendTime = date.AddMinutes(-8).ToString("HHmmss");
 
-            SendTelegramCainiaoCheck("CainiaoCheck", sendDate, sendTime);
+            await SendTelegramCainiaoCheck("CainiaoCheck", sendDate, sendTime);
         }
 
 
-        async void SendTelegramCainiaoCheck(string sendName, string sendDate, string sendTime)
+        async Task SendTelegramCainiaoCheck(string sendName, string sendDate, string sendTime)
         {
             DataTable dt = CheckSend(sendName, sendDate, sendTime);
             if (dt.Rows.Count > 0)

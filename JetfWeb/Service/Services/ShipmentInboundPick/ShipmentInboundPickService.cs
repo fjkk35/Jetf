@@ -61,7 +61,7 @@ namespace Service.Services.ShipmentInboundPick
                         Tax = x.Tax ?? 0,
                         Ccfee = x.Ccfee ?? 0,
                         Cod = x.Cod ?? 0,
-                        ProcessFee = x.ProcessFee ?? 0,
+                        Fee = x.Fee ?? 0,
                         FreightFee = (int)(x.FreightFee ?? 0),
                         CustCode = x.CustCode,
                         DataType = x.DataType,

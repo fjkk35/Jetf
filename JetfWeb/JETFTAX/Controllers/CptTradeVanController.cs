@@ -12,9 +12,11 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
+using static JETFTAX.Controllers.AccountController;
 
 namespace JETFTAX.Controllers
 {
+    [UserAuthorize(Authority.CptTradeVan)]
     public class CptTradeVanController : Controller
     {
         private readonly CptTradeVanService _cptTradeVanService;
