@@ -119,6 +119,8 @@ namespace Service.Services.ShipmentInboundProcess
                         NormalizeUpdateRequest(request);
                         ValidateUpdateRequest(request, newProcessType);
 
+                        var newFee = CalculateFee(newProcessType, request.FreightFee, request.Tax, request.Ccfee, request.Cod);
+
                         existing.ProcessType = newProcessType;
                         existing.ProcessTransNo = request.ProcessTransNo;
                         existing.ProcessImporter = request.ProcessImporter;
@@ -128,7 +130,7 @@ namespace Service.Services.ShipmentInboundProcess
                         existing.StoreName = request.StoreName;
                         existing.FreightPayerNo = request.FreightPayerNo;
                         existing.FreightFee = request.FreightFee;
-                        existing.Fee = CalculateFee(newProcessType, request.FreightFee, request.Tax, request.Ccfee, request.Cod);
+                        existing.Fee = newFee;
                         existing.CarNo = request.CarNo;
                         existing.PickupTime = DateTime.TryParse(request.PickupTime, out var pickupTime)
                             ? pickupTime
@@ -199,14 +201,14 @@ namespace Service.Services.ShipmentInboundProcess
                             });
                         }
 
-                        if (oldFee != request.Fee)
+                        if (oldFee != newFee)
                         {
                             db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = request.Id,
                                 FieldName = "手續費",
                                 OldValue = oldFee?.ToString(),
-                                NewValue = request.Fee.ToString(),
+                                NewValue = newFee.ToString(),
                                 EditTime = DateTime.Now,
                                 EditUser = userId
                             });
@@ -307,11 +309,6 @@ namespace Service.Services.ShipmentInboundProcess
             int? ccfee,
             int? cod)
         {
-            if (processType == ShipmentInboundProcessType.NewTrackingNo)
-            {
-                return 30;
-            }
-
             return (freightFee ?? 0) > 0
                 || (tax ?? 0) > 0
                 || (ccfee ?? 0) > 0

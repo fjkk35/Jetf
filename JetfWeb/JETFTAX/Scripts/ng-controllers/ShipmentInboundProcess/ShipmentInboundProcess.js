@@ -247,8 +247,7 @@
         var tax = parseFloat($scope.processForm.tax) || 0;
         var ccfee = parseFloat($scope.processForm.ccfee) || 0;
         var cod = parseFloat($scope.processForm.cod) || 0;
-        var processType = parseInt($scope.processForm.processType, 10) || 0;
-        $scope.processForm.fee = (processType === 1 || freightFee > 0 || tax > 0 || ccfee > 0 || cod > 0) ? 30 : 0;
+        $scope.processForm.fee = (freightFee > 0 || tax > 0 || ccfee > 0 || cod > 0) ? 30 : 0;
     };
 
     // 重出派件公司變更時的處理
