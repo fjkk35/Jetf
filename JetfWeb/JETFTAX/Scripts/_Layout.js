@@ -142,6 +142,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
         {
             id: 'shipmentInbound', title: '貨件回倉作業', icon: 'fas fa-fw fa-warehouse', children: [
                 { id: 'ShipmentInboundBatchImport', text: '貨件入庫批量上傳', url: '~/ShipmentInboundBatchImport/Index', auth: ['ShipmentInboundBatchImport'] },
+                { id: 'ShipmentInboundProcessStage', text: '預先登記處理', url: '~/ShipmentInboundProcessStage/Index', auth: ['ShipmentInboundProcess'] },
                 { id: 'ShipmentInboundProcess', text: '貨件回倉處理', url: '~/ShipmentInboundProcess/Index', auth: ['ShipmentInboundProcess'] },
                 { id: 'ShipmentInboundRecord', text: '貨件紀錄查詢', url: '~/ShipmentInboundRecord/Index', auth: ['ShipmentInboundRecord'] },
                 { id: 'ShipmentInboundExceptionRecord', text: '異常紀錄查詢', url: '~/ShipmentInboundExceptionRecord/Index', auth: ['ShipmentInboundRecord'] },

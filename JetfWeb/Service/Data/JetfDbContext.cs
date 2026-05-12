@@ -18,6 +18,8 @@ namespace Service.Data
 
         public DbSet<ShipmentInboundEntity> ShipmentInbounds { get; set; }
 
+        public DbSet<ShipmentInboundProcessStageEntity> ShipmentInboundProcessStages { get; set; }
+
         public DbSet<SeaClearanceDetailEntity> SeaClearanceDetails { get; set; }
 
         public DbSet<SeaClearanceDetailOriginalMappingEntity> SeaClearanceDetailOriginalMappings { get; set; }

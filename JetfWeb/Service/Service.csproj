@@ -242,6 +242,7 @@
     <Compile Include="Data\Models\Jetf\ShipmentInboundExceptionEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundExceptionReasonEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundLocationHistoryEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ShipmentInboundProcessStageEntity.cs" />
     <Compile Include="EnumTax\Authority.cs" />
     <Compile Include="EnumTax\AuthorityPartner.cs" />
     <Compile Include="EnumTax\CacheName.cs" />
@@ -595,6 +596,12 @@
     <Compile Include="Services\ShipmentInboundProcess\Domain\ShipmentInboundProcessResponse.cs" />
     <Compile Include="Services\ShipmentInboundProcess\Domain\ShipmentInboundProcessUpdateRequest.cs" />
     <Compile Include="Services\ShipmentInboundProcess\ShipmentInboundProcessService.cs" />
+    <Compile Include="Services\ShipmentInboundProcessStage\Domain\ShipmentInboundProcessStageDetailModel.cs" />
+    <Compile Include="Services\ShipmentInboundProcessStage\Domain\ShipmentInboundProcessStageModel.cs" />
+    <Compile Include="Services\ShipmentInboundProcessStage\Domain\ShipmentInboundProcessStageRequest.cs" />
+    <Compile Include="Services\ShipmentInboundProcessStage\Domain\ShipmentInboundProcessStageResponse.cs" />
+    <Compile Include="Services\ShipmentInboundProcessStage\Domain\ShipmentInboundProcessStageSaveRequest.cs" />
+    <Compile Include="Services\ShipmentInboundProcessStage\ShipmentInboundProcessStageService.cs" />
     <Compile Include="Services\ShipmentInboundExceptionRecord\Domain\ShipmentInboundExceptionRecordExportResult.cs" />
     <Compile Include="Services\ShipmentInboundExceptionRecord\Domain\ShipmentInboundExceptionRecordModel.cs" />
     <Compile Include="Services\ShipmentInboundExceptionRecord\Domain\ShipmentInboundExceptionRecordRequest.cs" />

@@ -1,0 +1,306 @@
+﻿@{
+    ViewBag.Title = "預先登記處理";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="ShipmentInboundProcessStageController" ng-init="init()">
+    <span class="headtype">預先登記處理</span>
+    <hr />
+
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <div class="row mb-3 align-items-center">
+            <div class="form-group row col-lg-6 mb-0">
+                <label for="trackingNoInput" class="col-lg-2 col-form-label text-right">單號</label>
+                <div class="col-lg-10">
+                    <input type="text"
+                           id="trackingNoInput"
+                           class="form-control"
+                           ng-model="searchForm.trackingNo"
+                           placeholder="請輸入單號" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12 text-right">
+                <button type="button"
+                        class="btn btn-primary"
+                        ng-click="search()"
+                        ng-disabled="loading">
+                    <i class="fa fa-search"></i> 查詢
+                </button>
+                <button type="button"
+                        class="btn btn-secondary ml-2"
+                        ng-click="clearSearch()"
+                        ng-disabled="loading">
+                    <i class="fa fa-eraser"></i> 清除
+                </button>
+                <button type="button"
+                        class="btn btn-success ml-2"
+                        ng-click="openCreateModal()"
+                        ng-disabled="loading || dialogLoading">
+                    <i class="fa fa-plus"></i> 新增資料
+                </button>
+            </div>
+        </div>
+    </div>
+    <hr />
+
+    <div ng-show="loading" class="text-center">
+        <i class="fa fa-spinner fa-spin fa-3x"></i>
+        <p>載入中...</p>
+    </div>
+
+    <div ng-show="isSearched && !loading">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="row mb-2">
+                        <div class="col-lg-6">
+                            <div class="form-inline">
+                                <label class="mr-2">每頁顯示</label>
+                                <select class="form-control"
+                                        ng-model="pageSize"
+                                        ng-change="changePageSize()">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <label class="ml-2">筆</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 text-right">
+                            <span>{{recordsInfo}}</span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-3">
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>序號</th>
+                                    <th>單號</th>
+                                    <th>退件原因</th>
+                                    <th style="width: 160px;">處理方式</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-if="data.length === 0">
+                                    <td colspan="4" class="text-center">查無資料</td>
+                                </tr>
+                                <tr ng-repeat="item in data track by item.Id">
+                                    <td>{{(currentPage - 1) * pageSize + $index + 1}}</td>
+                                    <td>{{item.TrackingNo}}</td>
+                                    <td>{{item.ReturnReason || ''}}</td>
+                                    <td>
+                                        <button class="btn btn-sm"
+                                                ng-class="getProcessButtonClass(item)"
+                                                ng-disabled="dialogLoading"
+                                                ng-click="beginProcessEdit(item)">
+                                            {{item.ProcessTypeName || '處理方式'}}
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-center mt-3" ng-show="totalPages > 1">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination">
+                                <li class="page-item" ng-class="{disabled: currentPage === 1}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="goToPage(1)">第一頁</a>
+                                </li>
+                                <li class="page-item" ng-class="{disabled: currentPage === 1}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="previousPage()">上一頁</a>
+                                </li>
+                                <li class="page-item"
+                                    ng-repeat="page in getPageNumbers()"
+                                    ng-class="{active: page === currentPage}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="goToPage(page)">{{page}}</a>
+                                </li>
+                                <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="nextPage()">下一頁</a>
+                                </li>
+                                <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="goToPage(totalPages)">最後一頁</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="processStageModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{modalTitle}}</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">單號 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" ng-model="processForm.trackingNo" />
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">退件原因</label>
+                        <div class="col-sm-9">
+                            <input type="text" class="form-control" ng-model="processForm.returnReason" />
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">處理方式 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <select class="form-control"
+                                    ng-model="processForm.processType"
+                                    ng-change="onProcessTypeChange()">
+                                <option value="">請選擇</option>
+                                <option ng-repeat="type in processTypeList" ng-value="type.Value">{{type.Text}}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <hr />
+
+                    <div ng-if="processForm.processType == 1 || processForm.processType == 9">
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">重出派件公司 <span class="text-danger" ng-if="processForm.processType == 1">*</span></label>
+                            <div class="col-sm-9">
+                                <select class="form-control" ng-model="processForm.processTransNo" ng-change="onProcessTransNoChange()">
+                                    <option value="">請選擇</option>
+                                    <option ng-repeat="trans in processTransNoList" ng-value="trans.Value">{{trans.Text}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">收件人 <span class="text-danger" ng-if="processForm.processType == 1">*</span></label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.processImporter" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">電話 <span class="text-danger" ng-if="processForm.processType == 1">*</span></label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.processImporterPhone" />
+                            </div>
+                        </div>
+                        <div class="form-group row" ng-if="processForm.processTransNo != 3">
+                            <label class="col-sm-3 col-form-label">宅配地址 <span class="text-danger" ng-if="processForm.processType == 1">*</span></label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.processImporterAddr" />
+                            </div>
+                        </div>
+                        <div class="form-group row" ng-if="processForm.processTransNo == 3">
+                            <label class="col-sm-3 col-form-label">門市店號 <span class="text-danger" ng-if="processForm.processType == 1">*</span></label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.storeCode" />
+                            </div>
+                        </div>
+                        <div class="form-group row" ng-if="processForm.processTransNo == 3">
+                            <label class="col-sm-3 col-form-label">門市名稱 <span class="text-danger" ng-if="processForm.processType == 1">*</span></label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.storeName" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">重出運費支付方</label>
+                            <div class="col-sm-9">
+                                <select class="form-control" ng-model="processForm.freightPayerNo" ng-change="onFreightPayerNoChange()">
+                                    <option value="">請選擇</option>
+                                    <option ng-repeat="payer in freightPayerNoList" ng-value="payer.Value">{{payer.Text}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">重出運費</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.freightFee" readonly />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">手續費</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.fee" readonly />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">備註</label>
+                            <div class="col-sm-9">
+                                <textarea class="form-control" ng-model="processForm.remark" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div ng-if="[2,3,5,6,7,8,10].indexOf(processForm.processType) > -1">
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">備註</label>
+                            <div class="col-sm-9">
+                                <textarea class="form-control" ng-model="processForm.remark" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div ng-if="processForm.processType == 4">
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">收件人</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.processImporter" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">電話</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.processImporterPhone" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">預計自取日期</label>
+                            <div class="col-sm-9">
+                                <input type="text"
+                                       class="datepicker-input form-control"
+                                       ng-model="processForm.pickupTime"
+                                       uib-datepicker-popup="yyyy-MM-dd"
+                                       datepicker-options="dateOptions"
+                                       is-open="pickupTimePopup.opened"
+                                       ng-click="openPickupTimePopup()"
+                                       close-text="關閉"
+                                       current-text="今天"
+                                       show-button-bar="false"
+                                       readonly
+                                       placeholder="請選擇預計自取日期" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">車牌號碼</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="processForm.carNo" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">備註</label>
+                            <div class="col-sm-9">
+                                <textarea class="form-control" ng-model="processForm.remark" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveProcess()" ng-disabled="saving">
+                        <i class="fa fa-spinner fa-spin" ng-show="saving"></i>
+                        {{saving ? '儲存中...' : '確定'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
