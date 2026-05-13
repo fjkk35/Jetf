@@ -65,12 +65,12 @@ public sealed class SeaOrderOriginalEntity
     /// <summary>
     /// 毛重。
     /// </summary>
-    [Column("GW")]
+    [Column("GW", TypeName = "numeric(18, 3)")]
     public decimal Gw { get; set; }
 
     /// <summary>
     /// 到付款。
     /// </summary>
-    [Column("CC")]
-    public decimal? CC { get; set; }
+    [Column("CC", TypeName = "float")]
+    public double? CC { get; set; }
 }

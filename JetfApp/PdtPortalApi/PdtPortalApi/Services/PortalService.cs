@@ -198,7 +198,7 @@ public sealed class PortalService(
                 ? null
                 : await GetFeeDataAsync(originalJetfSerial, cancellationToken);
             var cod = feeData?.Cod ?? sourceCod;
-            var fee = feeData is not null || cod > 0 ? 30 : 0;
+            var fee = (feeData?.Tax ?? 0) > 0 || (feeData?.Ccfee ?? 0) > 0 ? 30 : 0;
 
 			var entity = new ShipmentInboundEntity
 			{
@@ -708,6 +708,11 @@ public sealed class PortalService(
     }
 
     private static int ConvertCcToCod(decimal? value)
+    {
+        return value.HasValue ? (int)value.Value : 0;
+    }
+
+    private static int ConvertCcToCod(double? value)
     {
         return value.HasValue ? (int)value.Value : 0;
     }

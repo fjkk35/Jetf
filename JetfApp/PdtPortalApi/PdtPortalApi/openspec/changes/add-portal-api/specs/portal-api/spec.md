@@ -102,7 +102,7 @@
 - **THEN** `DataType` 設為 `海運`
 - **AND** `IsOrderOriginal` 設為 `true`
 - **AND** 以海運來源資料補齊 `ImporterAddr`、`ImporterPhone`、`Importer`、`CustCode`、`TransName`
-- **AND** `Fee` 固定寫入 `30`
+- **AND** 當 `Tax` 或 `Ccfee` 任一大於 `0` 時，`Fee` 寫入 `30`，否則寫入 `0`
 - **AND** 稅金資料來自 `jetf.dbo.FEE_MASTER`
 - **AND** 成功寫入 `jetf.dbo.ShipmentInbound`
 
@@ -115,7 +115,7 @@
 - **THEN** `DataType` 設為 `空運`
 - **AND** `IsOrderOriginal` 設為 `true`
 - **AND** 以空運來源資料補齊 `ImporterAddr`、`ImporterPhone`、`Importer`、`CustCode`、`TransNo`
-- **AND** `Fee` 固定寫入 `30`
+- **AND** 當 `Tax` 或 `Ccfee` 任一大於 `0` 時，`Fee` 寫入 `30`，否則寫入 `0`
 - **AND** 稅金資料來自 `jetf.dbo.FEE_MASTER`
 - **AND** 成功寫入 `jetf.dbo.ShipmentInbound`
 
@@ -127,7 +127,7 @@
 - **THEN** `DataType` 以空字串寫入
 - **AND** `IsOrderOriginal` 設為 `false`
 - **AND** 未補齊的來源欄位以空字串或 0 寫入
-- **AND** `Fee` 固定寫入 `30`
+- **AND** 當 `Tax` 或 `Ccfee` 任一大於 `0` 時，`Fee` 寫入 `30`，否則寫入 `0`
 - **AND** 成功寫入 `jetf.dbo.ShipmentInbound`
 
 #### Scenario: 簽章無效或逾時

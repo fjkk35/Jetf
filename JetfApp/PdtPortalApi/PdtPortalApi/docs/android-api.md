@@ -327,7 +327,7 @@ API 文件頁面:
 - 若海運有資料，`dataType = 海運`
 - 若空運有資料，`dataType = 空運`
 - 若都查不到，`dataType = ""`，`isOrderOriginal = false`
-- `fee` 固定寫入 `30`
+- 當 `tax` 或 `ccfee` 任一大於 `0` 時，`fee = 30`；否則 `fee = 0`
 
 ### 成功回應範例
 
