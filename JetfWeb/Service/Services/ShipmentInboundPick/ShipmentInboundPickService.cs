@@ -277,7 +277,7 @@ namespace Service.Services.ShipmentInboundPick
             IRow headerRow = sheet.CreateRow(0);
             var headers = new List<string>
             {
-                "單號", "收件人姓名", "收件人地址", "收件人電話",
+                "單號", "收件人姓名", "收件人電話",
                 "門市店號", "門市名稱", "代收款總金額"
             };
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
@@ -288,11 +288,10 @@ namespace Service.Services.ShipmentInboundPick
                 IRow dataRow = sheet.CreateRow(rowIndex);
                 NpoiCell.CreateCell(dataRow, 0, item.TrackingNo, dataStyle);
                 NpoiCell.CreateCell(dataRow, 1, item.ProcessImporter, dataStyle);
-                NpoiCell.CreateCell(dataRow, 2, item.ProcessImporterAddr, dataStyle);
-                NpoiCell.CreateCell(dataRow, 3, item.ProcessImporterPhone, dataStyle);
-                NpoiCell.CreateCell(dataRow, 4, item.StoreCode, dataStyle);
-                NpoiCell.CreateCell(dataRow, 5, item.StoreName, dataStyle);
-                NpoiCell.CreateIntCell(dataRow, 6, item.TotalAmount, dataStyle);
+                NpoiCell.CreateCell(dataRow, 2, item.ProcessImporterPhone, dataStyle);
+                NpoiCell.CreateCell(dataRow, 3, item.StoreCode, dataStyle);
+                NpoiCell.CreateCell(dataRow, 4, item.StoreName, dataStyle);
+                NpoiCell.CreateIntCell(dataRow, 5, item.TotalAmount, dataStyle);
                 rowIndex++;
             }
 
