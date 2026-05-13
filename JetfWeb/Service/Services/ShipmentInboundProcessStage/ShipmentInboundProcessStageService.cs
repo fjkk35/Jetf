@@ -36,7 +36,41 @@ namespace Service.Services.ShipmentInboundProcessStage
                 if (!string.IsNullOrWhiteSpace(request.TrackingNo))
                 {
                     var trackingNo = request.TrackingNo.Trim();
-                    query = query.Where(x => x.TrackingNo == trackingNo);
+                    query = query.Where(x => x.TrackingNo.Contains(trackingNo));
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.CreatedOpe))
+                {
+                    var createdOpe = request.CreatedOpe.Trim();
+                    query = query.Where(x => x.CreatedOpe.Contains(createdOpe));
+                }
+
+                var createdTimeStart = ParseSearchDate(request.CreatedTimeStart, "輸入日期(起)");
+                if (createdTimeStart.HasValue)
+                {
+                    var start = createdTimeStart.Value.Date;
+                    query = query.Where(x => x.CreatedTime >= start);
+                }
+
+                var createdTimeEnd = ParseSearchDate(request.CreatedTimeEnd, "輸入日期(迄)");
+                if (createdTimeEnd.HasValue)
+                {
+                    var endExclusive = createdTimeEnd.Value.Date.AddDays(1);
+                    query = query.Where(x => x.CreatedTime < endExclusive);
+                }
+
+                var matchTimieStart = ParseSearchDate(request.MatchTimieStart, "匹配日期(起)");
+                if (matchTimieStart.HasValue)
+                {
+                    var start = matchTimieStart.Value.Date;
+                    query = query.Where(x => x.MatchTimie.HasValue && x.MatchTimie.Value >= start);
+                }
+
+                var matchTimieEnd = ParseSearchDate(request.MatchTimieEnd, "匹配日期(迄)");
+                if (matchTimieEnd.HasValue)
+                {
+                    var endExclusive = matchTimieEnd.Value.Date.AddDays(1);
+                    query = query.Where(x => x.MatchTimie.HasValue && x.MatchTimie.Value < endExclusive);
                 }
 
                 var page = request.Page <= 0 ? 1 : request.Page;
@@ -53,6 +87,14 @@ namespace Service.Services.ShipmentInboundProcessStage
                         Id = x.Id,
                         TrackingNo = x.TrackingNo,
                         ReturnReason = x.ReturnReason,
+                        Cod = x.Cod,
+                        FreightFee = x.FreightFee,
+                        Tax = x.Tax,
+                        CcFee = x.CcFee,
+                        Fee = x.Fee,
+                        CreatedTime = x.CreatedTime,
+                        CreatedOpe = x.CreatedOpe,
+                        MatchTimie = x.MatchTimie,
                         ProcessType = x.ProcessType
                     })
                     .ToList();
@@ -89,6 +131,9 @@ namespace Service.Services.ShipmentInboundProcessStage
                         ProcessImporterAddr = x.ProcessImporterAddr,
                         StoreCode = x.StoreCode,
                         StoreName = x.StoreName,
+                        Tax = x.Tax,
+                        CcFee = x.CcFee,
+                        Cod = x.Cod,
                         FreightPayerNo = x.FreightPayerNo.HasValue
                             ? (ShipmentInboundFreightPayerNo?)x.FreightPayerNo.Value
                             : null,
@@ -210,6 +255,21 @@ namespace Service.Services.ShipmentInboundProcessStage
                 request.StoreName = null;
             }
 
+            if (processType != ShipmentInboundProcessType.NewTrackingNo &&
+                processType != ShipmentInboundProcessType.TempData &&
+                processType != ShipmentInboundProcessType.SelfPickup)
+            {
+                request.Tax = 0;
+                request.CcFee = 0;
+                request.Cod = 0;
+            }
+
+            if (processType == ShipmentInboundProcessType.SelfPickup)
+            {
+                request.CcFee = 0;
+                request.Cod = 0;
+            }
+
             if (processType != ShipmentInboundProcessType.SelfPickup)
             {
                 request.CarNo = null;
@@ -269,6 +329,11 @@ namespace Service.Services.ShipmentInboundProcessStage
                 throw new Exception("電話為必填欄位");
             }
 
+            if (!request.FreightPayerNo.HasValue)
+            {
+                throw new Exception("重出運費支付方為必填欄位");
+            }
+
             var processTransNo = (ShipmentInboundProcessTransNo)request.ProcessTransNo.Value;
             if (processTransNo == ShipmentInboundProcessTransNo.SevenEleven)
             {
@@ -307,9 +372,12 @@ namespace Service.Services.ShipmentInboundProcessStage
             entity.ProcessImporterAddr = request.ProcessImporterAddr;
             entity.StoreCode = request.StoreCode;
             entity.StoreName = request.StoreName;
+            entity.Tax = request.Tax;
+            entity.CcFee = request.CcFee;
+            entity.Cod = request.Cod;
             entity.FreightPayerNo = request.FreightPayerNo;
             entity.FreightFee = request.FreightFee;
-            entity.Fee = CalculateFee(request.FreightFee);
+            entity.Fee = CalculateFee(request.FreightFee, request.Tax, request.CcFee);
             entity.CarNo = request.CarNo;
             entity.PickupTime = DateTime.TryParse(request.PickupTime, out var pickupTime)
                 ? pickupTime
@@ -317,34 +385,38 @@ namespace Service.Services.ShipmentInboundProcessStage
             entity.Remark = request.Remark;
             entity.ProcessTime = DateTime.Now;
             entity.ProcessOpe = userId;
+            entity.UpdatedOpe = isNew ? null : userId;
+            entity.UpdatedTime = isNew ? (DateTime?)null : DateTime.Now;
 
             if (isNew)
             {
-                entity.Importer = request.ProcessImporter;
-                entity.ImporterPhone = request.ProcessImporterPhone;
-                entity.ImporterAddr = request.ProcessImporterAddr;
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(entity.Importer) && !string.IsNullOrWhiteSpace(request.ProcessImporter))
-            {
-                entity.Importer = request.ProcessImporter;
-            }
-
-            if (string.IsNullOrWhiteSpace(entity.ImporterPhone) && !string.IsNullOrWhiteSpace(request.ProcessImporterPhone))
-            {
-                entity.ImporterPhone = request.ProcessImporterPhone;
-            }
-
-            if (string.IsNullOrWhiteSpace(entity.ImporterAddr) && !string.IsNullOrWhiteSpace(request.ProcessImporterAddr))
-            {
-                entity.ImporterAddr = request.ProcessImporterAddr;
+                entity.IsMatch = false;
+                entity.MatchTimie = null;
             }
         }
 
-        private int CalculateFee(int? freightFee)
+        private DateTime? ParseSearchDate(string value, string fieldName)
         {
-            return (freightFee ?? 0) > 0 ? 30 : 0;
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            if (!DateTime.TryParse(value, out var date))
+            {
+                throw new Exception($"{fieldName}格式錯誤，請使用 yyyy-MM-dd");
+            }
+
+            return date.Date;
+        }
+
+        private int CalculateFee(int? freightFee, int? tax, int? ccFee)
+        {
+            return (freightFee ?? 0) > 0
+                || (tax ?? 0) > 0
+                || (ccFee ?? 0) > 0
+                ? 30
+                : 0;
         }
 
         private ShipmentInboundProcessStageModel BuildStageModel(ShipmentInboundProcessStageEntity entity)
@@ -354,6 +426,14 @@ namespace Service.Services.ShipmentInboundProcessStage
                 Id = entity.Id,
                 TrackingNo = entity.TrackingNo,
                 ReturnReason = entity.ReturnReason,
+                Cod = entity.Cod,
+                FreightFee = entity.FreightFee,
+                Tax = entity.Tax,
+                CcFee = entity.CcFee,
+                Fee = entity.Fee,
+                CreatedTime = entity.CreatedTime,
+                CreatedOpe = entity.CreatedOpe,
+                MatchTimie = entity.MatchTimie,
                 ProcessType = entity.ProcessType
             };
         }

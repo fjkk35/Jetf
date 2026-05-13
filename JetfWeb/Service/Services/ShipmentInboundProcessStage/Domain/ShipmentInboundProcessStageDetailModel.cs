@@ -59,6 +59,21 @@ namespace Service.Services.ShipmentInboundProcessStage.Domain
         public string StoreName { get; set; }
 
         /// <summary>
+        /// 稅金。
+        /// </summary>
+        public int? Tax { get; set; }
+
+        /// <summary>
+        /// 報關費。
+        /// </summary>
+        public int? CcFee { get; set; }
+
+        /// <summary>
+        /// 到付款。
+        /// </summary>
+        public int? Cod { get; set; }
+
+        /// <summary>
         /// 重出運費支付方。
         /// </summary>
         public ShipmentInboundFreightPayerNo? FreightPayerNo { get; set; }

@@ -109,12 +109,12 @@ namespace Service.Services.ShipmentInboundCommon
                     shipment.Tax = fee.Tax ?? 0;
                     shipment.Ccfee = fee.Ccfee ?? 0;
                     shipment.Cod = fee.Cod ?? 0;
-                    shipment.Fee = 30;
+                    shipment.Fee = CalculateFee(shipment.Tax, shipment.Ccfee, null);
                 }
                 else if (orderData != null)
                 {
                     shipment.Cod = orderData.FallbackCod;
-                    shipment.Fee = shipment.Cod > 0 ? 30 : 0;
+                    shipment.Fee = 0;
                 }
             }
         }
@@ -405,6 +405,15 @@ namespace Service.Services.ShipmentInboundCommon
         private int ParseAmountToInt(decimal? amount)
         {
             return amount.HasValue ? decimal.ToInt32(decimal.Truncate(amount.Value)) : 0;
+        }
+
+        private int CalculateFee(int? tax, int? ccfee, int? freightFee)
+        {
+            return (tax ?? 0) > 0
+                || (ccfee ?? 0) > 0
+                || (freightFee ?? 0) > 0
+                ? 30
+                : 0;
         }
 
         private int ParseAmountToInt(string amount)

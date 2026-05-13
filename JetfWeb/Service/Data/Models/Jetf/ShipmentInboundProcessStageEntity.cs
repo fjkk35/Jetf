@@ -25,28 +25,28 @@ namespace Service.Data
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// 進口人或收件人姓名。
-        /// </summary>
-        [Column("Importer")]
-        public string Importer { get; set; }
-
-        /// <summary>
-        /// 進口人或收件人電話。
-        /// </summary>
-        [Column("ImporterPhone")]
-        public string ImporterPhone { get; set; }
-
-        /// <summary>
-        /// 進口人或收件人地址。
-        /// </summary>
-        [Column("ImporterAddr")]
-        public string ImporterAddr { get; set; }
-
-        /// <summary>
         /// 手續費。
         /// </summary>
         [Column("Fee")]
         public int? Fee { get; set; }
+
+        /// <summary>
+        /// 稅金。
+        /// </summary>
+        [Column("Tax")]
+        public int? Tax { get; set; }
+
+        /// <summary>
+        /// 報關費。
+        /// </summary>
+        [Column("CcFee")]
+        public int? CcFee { get; set; }
+
+        /// <summary>
+        /// 到付款。
+        /// </summary>
+        [Column("Cod")]
+        public int? Cod { get; set; }
 
         /// <summary>
         /// 退件原因。
@@ -149,5 +149,29 @@ namespace Service.Data
         /// </summary>
         [Column("CreatedTime")]
         public DateTime CreatedTime { get; set; }
+
+        /// <summary>
+        /// 更新人員。
+        /// </summary>
+        [Column("UpdatedOpe")]
+        public string UpdatedOpe { get; set; }
+
+        /// <summary>
+        /// 更新時間。
+        /// </summary>
+        [Column("UpdatedTime")]
+        public DateTime? UpdatedTime { get; set; }
+
+        /// <summary>
+        /// 是否已匹配。
+        /// </summary>
+        [Column("IsMatch")]
+        public bool IsMatch { get; set; }
+
+        /// <summary>
+        /// 匹配時間。
+        /// </summary>
+        [Column("MatchTimie")]
+        public DateTime? MatchTimie { get; set; }
     }
 }

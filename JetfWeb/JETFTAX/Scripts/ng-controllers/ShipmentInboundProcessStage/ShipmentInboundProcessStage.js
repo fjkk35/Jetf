@@ -13,7 +13,12 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
     $scope.recordsInfo = '';
 
     $scope.searchForm = {
-        trackingNo: ''
+        trackingNo: '',
+        createdTimeStart: null,
+        createdTimeEnd: null,
+        createdOpe: '',
+        matchTimieStart: null,
+        matchTimieEnd: null
     };
 
     $scope.processTypeList = [];
@@ -21,6 +26,10 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
     $scope.freightPayerNoList = [];
     $scope.currentItem = null;
     $scope.modalTitle = '新增預先登記處理';
+    $scope.createdTimeStartPopup = { opened: false };
+    $scope.createdTimeEndPopup = { opened: false };
+    $scope.matchTimieStartPopup = { opened: false };
+    $scope.matchTimieEndPopup = { opened: false };
     $scope.pickupTimePopup = { opened: false };
     $scope.dateOptions = {
         formatYear: 'yyyy',
@@ -45,6 +54,9 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
             processImporterAddr: '',
             storeCode: '',
             storeName: '',
+            tax: null,
+            ccFee: null,
+            cod: null,
             freightPayerNo: null,
             freightFee: 0,
             fee: 0,
@@ -127,9 +139,27 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
         $scope.pickupTimePopup.opened = true;
     };
 
+    $scope.openCreatedTimeStartPopup = function () {
+        $scope.createdTimeStartPopup.opened = true;
+    };
+
+    $scope.openCreatedTimeEndPopup = function () {
+        $scope.createdTimeEndPopup.opened = true;
+    };
+
+    $scope.openMatchTimieStartPopup = function () {
+        $scope.matchTimieStartPopup.opened = true;
+    };
+
+    $scope.openMatchTimieEndPopup = function () {
+        $scope.matchTimieEndPopup.opened = true;
+    };
+
     $scope.calcFee = function () {
         var freightFee = parseFloat($scope.processForm.freightFee) || 0;
-        $scope.processForm.fee = freightFee > 0 ? 30 : 0;
+        var tax = parseFloat($scope.processForm.tax) || 0;
+        var ccFee = parseFloat($scope.processForm.ccFee) || 0;
+        $scope.processForm.fee = (freightFee > 0 || tax > 0 || ccFee > 0) ? 30 : 0;
     };
 
     $scope.onProcessTransNoChange = function () {
@@ -157,6 +187,17 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
             $scope.processForm.processImporterAddr = '';
         }
 
+        if ($scope.processForm.processType != 1 && $scope.processForm.processType != 4 && $scope.processForm.processType != 9) {
+            $scope.processForm.tax = null;
+            $scope.processForm.ccFee = null;
+            $scope.processForm.cod = null;
+        }
+
+        if ($scope.processForm.processType == 4) {
+            $scope.processForm.ccFee = null;
+            $scope.processForm.cod = null;
+        }
+
         if ($scope.processForm.processType != 4) {
             $scope.processForm.carNo = '';
             $scope.processForm.pickupTime = null;
@@ -174,6 +215,11 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
     $scope.buildSearchRequest = function () {
         return {
             TrackingNo: normalizeText($scope.searchForm.trackingNo),
+            CreatedTimeStart: formatDate($scope.searchForm.createdTimeStart),
+            CreatedTimeEnd: formatDate($scope.searchForm.createdTimeEnd),
+            CreatedOpe: normalizeText($scope.searchForm.createdOpe),
+            MatchTimieStart: formatDate($scope.searchForm.matchTimieStart),
+            MatchTimieEnd: formatDate($scope.searchForm.matchTimieEnd),
             Page: $scope.currentPage,
             PageSize: parseInt($scope.pageSize)
         };
@@ -222,7 +268,14 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
     };
 
     $scope.clearSearch = function () {
-        $scope.searchForm = { trackingNo: '' };
+        $scope.searchForm = {
+            trackingNo: '',
+            createdTimeStart: null,
+            createdTimeEnd: null,
+            createdOpe: '',
+            matchTimieStart: null,
+            matchTimieEnd: null
+        };
         $scope.data = [];
         $scope.isSearched = false;
         $scope.currentPage = 1;
@@ -336,6 +389,9 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
                     processImporterAddr: detail.ProcessImporterAddr || '',
                     storeCode: detail.StoreCode || '',
                     storeName: detail.StoreName || '',
+                    tax: detail.Tax,
+                    ccFee: detail.CcFee,
+                    cod: detail.Cod,
                     freightPayerNo: detail.FreightPayerNo,
                     freightFee: detail.FreightFee || 0,
                     fee: detail.Fee || 0,
@@ -395,6 +451,11 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
                 return;
             }
 
+            if (!$scope.processForm.freightPayerNo) {
+                swal({ title: '提醒', text: '請選擇重出運費支付方', icon: 'warning' });
+                return;
+            }
+
             if ($scope.processForm.processTransNo == 3) {
                 if (!normalizeText($scope.processForm.storeCode)) {
                     swal({ title: '提醒', text: '請輸入門市店號', icon: 'warning' });
@@ -424,6 +485,9 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
             ProcessImporterAddr: normalizeText($scope.processForm.processImporterAddr),
             StoreCode: normalizeText($scope.processForm.storeCode),
             StoreName: normalizeText($scope.processForm.storeName),
+            Tax: $scope.processForm.tax,
+            CcFee: $scope.processForm.ccFee,
+            Cod: $scope.processForm.cod,
             FreightPayerNo: $scope.processForm.freightPayerNo,
             FreightFee: $scope.processForm.freightFee,
             Fee: $scope.processForm.fee,

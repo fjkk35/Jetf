@@ -11,6 +11,31 @@ namespace Service.Services.ShipmentInboundProcessStage.Domain
         public string TrackingNo { get; set; }
 
         /// <summary>
+        /// 輸入日期起，格式 yyyy-MM-dd。
+        /// </summary>
+        public string CreatedTimeStart { get; set; }
+
+        /// <summary>
+        /// 輸入日期迄，格式 yyyy-MM-dd。
+        /// </summary>
+        public string CreatedTimeEnd { get; set; }
+
+        /// <summary>
+        /// 輸入人員。
+        /// </summary>
+        public string CreatedOpe { get; set; }
+
+        /// <summary>
+        /// 匹配日期起，格式 yyyy-MM-dd。
+        /// </summary>
+        public string MatchTimieStart { get; set; }
+
+        /// <summary>
+        /// 匹配日期迄，格式 yyyy-MM-dd。
+        /// </summary>
+        public string MatchTimieEnd { get; set; }
+
+        /// <summary>
         /// 目前頁碼。
         /// </summary>
         public int Page { get; set; }

@@ -1,5 +1,6 @@
 using Service.EnumTax;
 using Service.Extensions;
+using System;
 
 namespace Service.Services.ShipmentInboundProcessStage.Domain
 {
@@ -22,6 +23,52 @@ namespace Service.Services.ShipmentInboundProcessStage.Domain
         /// 退件原因。
         /// </summary>
         public string ReturnReason { get; set; }
+
+        /// <summary>
+        /// 到付款。
+        /// </summary>
+        public int? Cod { get; set; }
+
+        /// <summary>
+        /// 運費。
+        /// </summary>
+        public int? FreightFee { get; set; }
+
+        /// <summary>
+        /// 稅金。
+        /// </summary>
+        public int? Tax { get; set; }
+
+        /// <summary>
+        /// 報關費。
+        /// </summary>
+        public int? CcFee { get; set; }
+
+        /// <summary>
+        /// 代收手續費。
+        /// </summary>
+        public int? Fee { get; set; }
+
+        /// <summary>
+        /// 代收款總金額。
+        /// </summary>
+        public int CollectionTotalAmount =>
+            (Cod ?? 0) + (FreightFee ?? 0) + (Tax ?? 0) + (CcFee ?? 0) + (Fee ?? 0);
+
+        /// <summary>
+        /// 輸入日期。
+        /// </summary>
+        public DateTime CreatedTime { get; set; }
+
+        /// <summary>
+        /// 輸入人員。
+        /// </summary>
+        public string CreatedOpe { get; set; }
+
+        /// <summary>
+        /// 匹配日期。
+        /// </summary>
+        public DateTime? MatchTimie { get; set; }
 
         /// <summary>
         /// 處理方式。

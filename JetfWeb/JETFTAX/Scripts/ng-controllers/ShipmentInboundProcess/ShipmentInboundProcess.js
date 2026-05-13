@@ -246,8 +246,7 @@
         var freightFee = parseFloat($scope.processForm.freightFee) || 0;
         var tax = parseFloat($scope.processForm.tax) || 0;
         var ccfee = parseFloat($scope.processForm.ccfee) || 0;
-        var cod = parseFloat($scope.processForm.cod) || 0;
-        $scope.processForm.fee = (freightFee > 0 || tax > 0 || ccfee > 0 || cod > 0) ? 30 : 0;
+        $scope.processForm.fee = (freightFee > 0 || tax > 0 || ccfee > 0) ? 30 : 0;
     };
 
     // 重出派件公司變更時的處理
@@ -573,6 +572,15 @@
                 swal({
                     title: "提醒",
                     text: "請輸入電話",
+                    icon: "warning"
+                });
+                return;
+            }
+
+            if (!$scope.processForm.freightPayerNo) {
+                swal({
+                    title: "提醒",
+                    text: "請選擇重出運費支付方",
                     icon: "warning"
                 });
                 return;

@@ -882,8 +882,7 @@ namespace Service.Services.ShipmentInboundRecord
                     });
                 }
 
-                var hasAnyAmount = (entity.Cod ?? 0) > 0
-                    || (entity.Ccfee ?? 0) > 0
+                var hasAnyAmount = (entity.Ccfee ?? 0) > 0
                     || (entity.FreightFee ?? 0) > 0
                     || (entity.Tax ?? 0) > 0;
                 var targetFee = hasAnyAmount ? 30 : 0;

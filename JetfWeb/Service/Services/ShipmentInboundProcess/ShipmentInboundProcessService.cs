@@ -271,6 +271,11 @@ namespace Service.Services.ShipmentInboundProcess
                 throw new Exception("電話為必填欄位");
             }
 
+            if (!request.FreightPayerNo.HasValue)
+            {
+                throw new Exception("重出運費支付方為必填欄位");
+            }
+
             var processTransNo = (ShipmentInboundProcessTransNo)request.ProcessTransNo.Value;
             if (processTransNo == ShipmentInboundProcessTransNo.SevenEleven)
             {
@@ -312,7 +317,6 @@ namespace Service.Services.ShipmentInboundProcess
             return (freightFee ?? 0) > 0
                 || (tax ?? 0) > 0
                 || (ccfee ?? 0) > 0
-                || (cod ?? 0) > 0
                 ? 30
                 : 0;
         }

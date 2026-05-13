@@ -9,14 +9,99 @@
 
     <div class="card bg-light rounded p-4 mb-4" style="border:none">
         <div class="row mb-3 align-items-center">
-            <div class="form-group row col-lg-6 mb-0">
-                <label for="trackingNoInput" class="col-lg-2 col-form-label text-right">單號</label>
-                <div class="col-lg-10">
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="createdTimeStartInput" class="col-lg-4 col-form-label text-right">輸入日期(起)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="createdTimeStartInput"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.createdTimeStart"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="createdTimeStartPopup.opened"
+                           ng-click="openCreatedTimeStartPopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇開始日期" />
+                </div>
+            </div>
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="createdTimeEndInput" class="col-lg-4 col-form-label text-right">輸入日期(迄)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="createdTimeEndInput"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.createdTimeEnd"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="createdTimeEndPopup.opened"
+                           ng-click="openCreatedTimeEndPopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇結束日期" />
+                </div>
+            </div>
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="matchTimieStartInput" class="col-lg-4 col-form-label text-right">匹配日期(起)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="matchTimieStartInput"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.matchTimieStart"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="matchTimieStartPopup.opened"
+                           ng-click="openMatchTimieStartPopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇開始日期" />
+                </div>
+            </div>
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="matchTimieEndInput" class="col-lg-4 col-form-label text-right">匹配日期(迄)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="matchTimieEndInput"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.matchTimieEnd"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="matchTimieEndPopup.opened"
+                           ng-click="openMatchTimieEndPopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇結束日期" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="trackingNoInput" class="col-lg-4 col-form-label text-right">單號</label>
+                <div class="col-lg-8">
                     <input type="text"
                            id="trackingNoInput"
                            class="form-control"
                            ng-model="searchForm.trackingNo"
                            placeholder="請輸入單號" />
+                </div>
+            </div>
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="createdOpeInput" class="col-lg-4 col-form-label text-right">輸入人員</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="createdOpeInput"
+                           class="form-control"
+                           ng-model="searchForm.createdOpe"
+                           placeholder="請輸入人員" />
                 </div>
             </div>
         </div>
@@ -82,17 +167,35 @@
                                     <th>序號</th>
                                     <th>單號</th>
                                     <th>退件原因</th>
+                                    <th>到付款</th>
+                                    <th>運費</th>
+                                    <th>稅金</th>
+                                    <th>報關費</th>
+                                    <th>代收手續費</th>
+                                    <th>代收款總金額</th>
+                                    <th>匹配日期</th>
+                                    <th>輸入日期</th>
+                                    <th>輸入人員</th>
                                     <th style="width: 160px;">處理方式</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr ng-if="data.length === 0">
-                                    <td colspan="4" class="text-center">查無資料</td>
+                                    <td colspan="13" class="text-center">查無資料</td>
                                 </tr>
                                 <tr ng-repeat="item in data track by item.Id">
                                     <td>{{(currentPage - 1) * pageSize + $index + 1}}</td>
                                     <td>{{item.TrackingNo}}</td>
                                     <td>{{item.ReturnReason || ''}}</td>
+                                    <td class="text-right">{{(item.Cod || 0) | number:0}}</td>
+                                    <td class="text-right">{{(item.FreightFee || 0) | number:0}}</td>
+                                    <td class="text-right">{{(item.Tax || 0) | number:0}}</td>
+                                    <td class="text-right">{{(item.CcFee || 0) | number:0}}</td>
+                                    <td class="text-right">{{(item.Fee || 0) | number:0}}</td>
+                                    <td class="text-right">{{(item.CollectionTotalAmount || 0) | number:0}}</td>
+                                    <td>{{item.MatchTimie | customDateTime}}</td>
+                                    <td>{{item.CreatedTime | customDateTime}}</td>
+                                    <td>{{item.CreatedOpe || ''}}</td>
                                     <td>
                                         <button class="btn btn-sm"
                                                 ng-class="getProcessButtonClass(item)"
@@ -212,7 +315,25 @@
                             </div>
                         </div>
                         <div class="form-group row">
-                            <label class="col-sm-3 col-form-label">重出運費支付方</label>
+                            <label class="col-sm-3 col-form-label">稅金</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.tax" ng-change="calcFee()" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">報關費</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.ccFee" ng-change="calcFee()" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">到付款</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.cod" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">重出運費支付方 <span class="text-danger" ng-if="processForm.processType == 1">*</span></label>
                             <div class="col-sm-9">
                                 <select class="form-control" ng-model="processForm.freightPayerNo" ng-change="onFreightPayerNoChange()">
                                     <option value="">請選擇</option>
@@ -260,6 +381,12 @@
                             <label class="col-sm-3 col-form-label">電話</label>
                             <div class="col-sm-9">
                                 <input type="text" class="form-control" ng-model="processForm.processImporterPhone" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">稅金</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.tax" ng-change="calcFee()" />
                             </div>
                         </div>
                         <div class="form-group row">
