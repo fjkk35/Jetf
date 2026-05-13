@@ -76,8 +76,18 @@ namespace Service.Services.ShipmentInboundProcessStage.Domain
         public ShipmentInboundProcessType? ProcessType { get; set; }
 
         /// <summary>
+        /// 重出派件公司。
+        /// </summary>
+        public ShipmentInboundProcessTransNo? ProcessTransNo { get; set; }
+
+        /// <summary>
         /// 處理方式名稱。
         /// </summary>
         public string ProcessTypeName => ProcessType?.ToDescription();
+
+        /// <summary>
+        /// 重出派件公司名稱。
+        /// </summary>
+        public string ProcessTransName => ProcessTransNo?.ToDescription();
     }
 }

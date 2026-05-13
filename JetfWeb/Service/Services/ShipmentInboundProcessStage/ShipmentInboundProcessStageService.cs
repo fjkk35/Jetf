@@ -95,7 +95,10 @@ namespace Service.Services.ShipmentInboundProcessStage
                         CreatedTime = x.CreatedTime,
                         CreatedOpe = x.CreatedOpe,
                         MatchTimie = x.MatchTimie,
-                        ProcessType = x.ProcessType
+                        ProcessType = x.ProcessType,
+                        ProcessTransNo = x.ProcessTransNo.HasValue
+                            ? (ShipmentInboundProcessTransNo?)x.ProcessTransNo.Value
+                            : null
                     })
                     .ToList();
 

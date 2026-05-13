@@ -88,7 +88,7 @@ namespace JETFTAX.Controllers
         {
             try
             {
-                var result = _service.ExportExcelZip(searchRequest, Server.MapPath);
+                var result = _service.ExportExcelZip(searchRequest);
                 var handle = Guid.NewGuid().ToString();
                 TempData[handle] = result.FileBytes;
 

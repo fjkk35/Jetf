@@ -1,6 +1,7 @@
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.Extensions;
+using Service.Services.ShipmentInboundCommon;
 using Service.Services.ShipmentInboundExceptionRecord.Domain;
 using Service.Services.ShipmentInboundProcess.Domain;
 using System;
@@ -17,6 +18,13 @@ namespace Service.Services.ShipmentInboundExceptionRecord
     /// </summary>
     public class ShipmentInboundExceptionRecordService : _BaseService
     {
+        private readonly ShipmentInboundExceptionImageStorageService _imageStorageService;
+
+        public ShipmentInboundExceptionRecordService(ShipmentInboundExceptionImageStorageService imageStorageService)
+        {
+            _imageStorageService = imageStorageService;
+        }
+
         /// <summary>
         /// 依查詢條件取得異常紀錄分頁資料。
         /// </summary>
@@ -70,11 +78,8 @@ namespace Service.Services.ShipmentInboundExceptionRecord
         /// 匯出異常件紀錄 Excel 與異常圖片 ZIP。
         /// </summary>
         /// <param name="request">查詢條件。</param>
-        /// <param name="mapPath">將網站相對路徑轉成實體路徑的方法。</param>
         /// <returns>ZIP 檔名與檔案內容。</returns>
-        public ShipmentInboundExceptionRecordExportResult ExportExcelZip(
-            ShipmentInboundExceptionRecordRequest request,
-            Func<string, string> mapPath)
+        public ShipmentInboundExceptionRecordExportResult ExportExcelZip(ShipmentInboundExceptionRecordRequest request)
         {
             request = NormalizeRequest(request);
             request.Page = 1;
@@ -91,7 +96,7 @@ namespace Service.Services.ShipmentInboundExceptionRecord
             }
 
             var excelBytes = CreateExcel(data);
-            var zipBytes = CreateZip(data, excelBytes, mapPath);
+            var zipBytes = CreateZip(data, excelBytes);
 
             return new ShipmentInboundExceptionRecordExportResult
             {
@@ -249,19 +254,17 @@ namespace Service.Services.ShipmentInboundExceptionRecord
         /// </summary>
         /// <param name="data">匯出資料。</param>
         /// <param name="excelBytes">Excel 檔案內容。</param>
-        /// <param name="mapPath">將網站相對路徑轉成實體路徑的方法。</param>
         /// <returns>ZIP 檔案內容。</returns>
         private byte[] CreateZip(
             List<ShipmentInboundExceptionRecordModel> data,
-            byte[] excelBytes,
-            Func<string, string> mapPath)
+            byte[] excelBytes)
         {
             using (var zipStream = new MemoryStream())
             {
                 using (var zip = new ZipArchive(zipStream, ZipArchiveMode.Create, true))
                 {
                     AddBytes(zip, "異常件紀錄.xlsx", excelBytes);
-                    AddImages(zip, data, mapPath);
+                    AddImages(zip, data);
                 }
 
                 return zipStream.ToArray();
@@ -273,11 +276,7 @@ namespace Service.Services.ShipmentInboundExceptionRecord
         /// </summary>
         /// <param name="zip">目標 ZIP 封存。</param>
         /// <param name="data">匯出資料。</param>
-        /// <param name="mapPath">將網站相對路徑轉成實體路徑的方法。</param>
-        private void AddImages(
-            ZipArchive zip,
-            List<ShipmentInboundExceptionRecordModel> data,
-            Func<string, string> mapPath)
+        private void AddImages(ZipArchive zip, List<ShipmentInboundExceptionRecordModel> data)
         {
             if (data == null || !data.Any())
             {
@@ -323,13 +322,13 @@ namespace Service.Services.ShipmentInboundExceptionRecord
                 for (int i = 0; i < itemImages.Count; i++)
                 {
                     var image = itemImages[i];
-                    var physicalPath = ResolvePhysicalPath(image.FilePath, mapPath);
-                    if (string.IsNullOrWhiteSpace(physicalPath) || !File.Exists(physicalPath))
+                    var fileBytes = _imageStorageService.ReadAllBytes(image.FilePath);
+                    if (fileBytes == null || fileBytes.Length == 0)
                     {
                         continue;
                     }
 
-                    var extension = Path.GetExtension(physicalPath);
+                    var extension = _imageStorageService.GetExtension(image.FilePath);
                     if (string.IsNullOrWhiteSpace(extension))
                     {
                         extension = ".jpg";
@@ -338,39 +337,9 @@ namespace Service.Services.ShipmentInboundExceptionRecord
                     var entryName = BuildImageEntryName(item, i + 1, extension);
                     entryName = EnsureUniqueEntryName(entryName, usedEntryNames);
 
-                    AddBytes(zip, entryName, File.ReadAllBytes(physicalPath));
+                    AddBytes(zip, entryName, fileBytes);
                 }
             }
-        }
-
-        /// <summary>
-        /// 將異常圖片路徑解析成實體檔案路徑。
-        /// </summary>
-        /// <param name="filePath">資料庫儲存的圖片路徑。</param>
-        /// <param name="mapPath">將網站相對路徑轉成實體路徑的方法。</param>
-        /// <returns>實體檔案路徑。</returns>
-        private string ResolvePhysicalPath(string filePath, Func<string, string> mapPath)
-        {
-            if (string.IsNullOrWhiteSpace(filePath))
-            {
-                return null;
-            }
-
-            if (Path.IsPathRooted(filePath))
-            {
-                return filePath;
-            }
-
-            if (mapPath == null)
-            {
-                return filePath;
-            }
-
-            var relativePath = filePath.StartsWith("~")
-                ? filePath
-                : "~/" + filePath.TrimStart('~', '/', '\\').Replace('\\', '/');
-
-            return mapPath(relativePath);
         }
 
         /// <summary>

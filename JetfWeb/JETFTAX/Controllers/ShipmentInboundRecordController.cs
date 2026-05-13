@@ -1,10 +1,10 @@
 ﻿using Service.Extensions;
 using Service.EnumTax;
 using Service.Models;
+using Service.Services.ShipmentInboundCommon;
 using Service.Services.ShipmentInboundRecord;
 using Service.Services.ShipmentInboundRecord.Domain;
 using System;
-using System.IO;
 using System.Linq;
 using System.Web.Mvc;
 using static JETFTAX.Controllers.AccountController;
@@ -14,10 +14,14 @@ namespace JETFTAX.Controllers
     public class ShipmentInboundRecordController : Controller
     {
         private readonly ShipmentInboundRecordService _shipmentInboundRecordService;
+        private readonly ShipmentInboundExceptionImageStorageService _imageStorageService;
 
-        public ShipmentInboundRecordController(ShipmentInboundRecordService shipmentInboundRecordService)
+        public ShipmentInboundRecordController(
+            ShipmentInboundRecordService shipmentInboundRecordService,
+            ShipmentInboundExceptionImageStorageService imageStorageService)
         {
             _shipmentInboundRecordService = shipmentInboundRecordService;
+            _imageStorageService = imageStorageService;
         }
 
         // GET: ShipmentInboundRecord
@@ -83,23 +87,13 @@ namespace JETFTAX.Controllers
 
             try
             {
-                var physicalPath = filePath;
-                if (!Path.IsPathRooted(physicalPath))
-                {
-                    var relativePath = filePath.StartsWith("~")
-                        ? filePath
-                        : "~/" + filePath.TrimStart('~', '/', '\\').Replace('\\', '/');
-
-                    physicalPath = Server.MapPath(relativePath);
-                }
-
-                if (!System.IO.File.Exists(physicalPath))
+                var fileBytes = _imageStorageService.ReadAllBytes(filePath);
+                if (fileBytes == null || fileBytes.Length == 0)
                 {
                     return null;
                 }
 
-                var mimeType = System.Web.MimeMapping.GetMimeMapping(physicalPath);
-                var fileBytes = System.IO.File.ReadAllBytes(physicalPath);
+                var mimeType = System.Web.MimeMapping.GetMimeMapping(filePath);
                 return $"data:{mimeType};base64,{Convert.ToBase64String(fileBytes)}";
             }
             catch
