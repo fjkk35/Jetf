@@ -1,23 +1,27 @@
 ﻿using System.Globalization;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using PdtPortalApi.Data;
 using PdtPortalApi.Models.Dtos;
 using PdtPortalApi.Models.Entities;
 using PdtPortalApi.Models.Enums;
 using PdtPortalApi.Models.Requests;
+using PdtPortalApi.Options;
+using Renci.SshNet;
 
 namespace PdtPortalApi.Services;
 
 public sealed class PortalService(
     JetfDbContext jetfDbContext,
     DataCenterDbContext dataCenterDbContext,
+    IOptions<ShipmentInboundPhotoSftpOptions> shipmentInboundPhotoSftpOptions,
     ILogger<PortalService> logger) : IPortalService
 {
-    private const string ExceptionPhotoDirectory = @"D:\UploadPdt";
     private const string LocationFieldName = "儲位";
     private readonly JetfDbContext _jetfDbContext = jetfDbContext;
     private readonly DataCenterDbContext _dataCenterDbContext = dataCenterDbContext;
+    private readonly ShipmentInboundPhotoSftpOptions _shipmentInboundPhotoSftpOptions = shipmentInboundPhotoSftpOptions.Value;
     private readonly ILogger<PortalService> _logger = logger;
 
     /// <summary>
@@ -792,6 +796,15 @@ public sealed class PortalService(
     {
         try
         {
+            if (!HasValidPhotoSftpConfiguration())
+            {
+                _logger.LogError("異常件照片 SFTP 設定不完整");
+                return PhotoSaveResult.Fail(
+                    "PHOTO_SFTP_NOT_CONFIGURED",
+                    "異常件照片上傳設定不完整",
+                    StatusCodes.Status500InternalServerError);
+            }
+
             var normalizedPhotoBase64 = NormalizePhotoBase64(photoBase64);
             if (string.IsNullOrWhiteSpace(normalizedPhotoBase64))
             {
@@ -809,23 +822,37 @@ public sealed class PortalService(
                 return PhotoSaveResult.Fail("INVALID_PHOTO", "照片格式不正確");
             }
 
-            Directory.CreateDirectory(ExceptionPhotoDirectory);
+            var now = DateTime.Now;
+            var remoteDirectory = BuildExceptionPhotoRemoteDirectory(now);
+            var remoteFilePath = $"{remoteDirectory}/{BuildExceptionPhotoFileName(now)}";
 
-            string filePath;
-            do
+            await Task.Run(() =>
             {
-                var fileName = DateTime.Now.ToString("yyyyMMddhhmmssfff", CultureInfo.InvariantCulture);
-                filePath = Path.Combine(ExceptionPhotoDirectory, $"{fileName}.jpg");
-                if (!File.Exists(filePath))
+                cancellationToken.ThrowIfCancellationRequested();
+
+                using var sftpClient = new SftpClient(
+                    _shipmentInboundPhotoSftpOptions.Host,
+                    _shipmentInboundPhotoSftpOptions.Port,
+                    _shipmentInboundPhotoSftpOptions.Username,
+                    _shipmentInboundPhotoSftpOptions.Password);
+
+                sftpClient.Connect();
+                EnsureRemoteDirectoryExists(sftpClient, remoteDirectory);
+
+                using var photoStream = new MemoryStream(photoBytes, writable: false);
+                sftpClient.UploadFile(photoStream, remoteFilePath);
+
+                if (sftpClient.IsConnected)
                 {
-                    break;
+                    sftpClient.Disconnect();
                 }
+            }, cancellationToken);
 
-                await Task.Delay(1, cancellationToken);
-            } while (true);
-
-            await File.WriteAllBytesAsync(filePath, photoBytes, cancellationToken);
-            return PhotoSaveResult.Success(filePath);
+            return PhotoSaveResult.Success(BuildExceptionPhotoUri(remoteFilePath));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception exception)
         {
@@ -842,6 +869,59 @@ public sealed class PortalService(
         var trimmedPhoto = photoBase64.Trim();
         var commaIndex = trimmedPhoto.IndexOf(',');
         return commaIndex >= 0 ? trimmedPhoto[(commaIndex + 1)..] : trimmedPhoto;
+    }
+
+    private bool HasValidPhotoSftpConfiguration()
+    {
+        return !string.IsNullOrWhiteSpace(_shipmentInboundPhotoSftpOptions.Host)
+            && _shipmentInboundPhotoSftpOptions.Port > 0
+            && !string.IsNullOrWhiteSpace(_shipmentInboundPhotoSftpOptions.Username)
+            && !string.IsNullOrWhiteSpace(_shipmentInboundPhotoSftpOptions.Password)
+            && !string.IsNullOrWhiteSpace(_shipmentInboundPhotoSftpOptions.RootDirectory);
+    }
+
+    private string BuildExceptionPhotoRemoteDirectory(DateTime timestamp)
+    {
+        var normalizedRootDirectory = NormalizeRemotePath(_shipmentInboundPhotoSftpOptions.RootDirectory);
+        return $"{normalizedRootDirectory}/{timestamp:yyyyMMdd}";
+    }
+
+    private string BuildExceptionPhotoUri(string remoteFilePath)
+    {
+        return $"sftp://{_shipmentInboundPhotoSftpOptions.Host}:{_shipmentInboundPhotoSftpOptions.Port}{NormalizeRemotePath(remoteFilePath)}";
+    }
+
+    private static string BuildExceptionPhotoFileName(DateTime timestamp)
+    {
+        return $"{timestamp.ToString("yyyyMMddHHmmssfff", CultureInfo.InvariantCulture)}_{Guid.NewGuid():N}.jpg";
+    }
+
+    private static string NormalizeRemotePath(string path)
+    {
+        var normalizedPath = path.Trim().Replace('\\', '/').Trim('/');
+        return string.IsNullOrWhiteSpace(normalizedPath)
+            ? "/"
+            : $"/{normalizedPath}";
+    }
+
+    private static void EnsureRemoteDirectoryExists(SftpClient sftpClient, string remoteDirectory)
+    {
+        var normalizedDirectory = NormalizeRemotePath(remoteDirectory);
+        var pathSegments = normalizedDirectory
+            .Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+        var currentPath = string.Empty;
+        foreach (var pathSegment in pathSegments)
+        {
+            currentPath = string.IsNullOrEmpty(currentPath)
+                ? $"/{pathSegment}"
+                : $"{currentPath}/{pathSegment}";
+
+            if (!sftpClient.Exists(currentPath))
+            {
+                sftpClient.CreateDirectory(currentPath);
+            }
+        }
     }
 
     private sealed class PhotoSaveResult

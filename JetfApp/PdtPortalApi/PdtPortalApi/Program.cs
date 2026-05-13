@@ -78,6 +78,7 @@ builder.Services.AddDbContext<DataCenterDbContext>(options =>
 
 builder.Services.Configure<AppVersionOptions>(builder.Configuration.GetSection(AppVersionOptions.SectionName));
 builder.Services.Configure<HmacOptions>(builder.Configuration.GetSection(HmacOptions.SectionName));
+builder.Services.Configure<ShipmentInboundPhotoSftpOptions>(builder.Configuration.GetSection(ShipmentInboundPhotoSftpOptions.SectionName));
 builder.Services.AddSingleton<IAppVersionService, AppVersionService>();
 builder.Services.AddSingleton<IHmacSignatureService, HmacSignatureService>();
 builder.Services.AddScoped<IPortalService, PortalService>();
