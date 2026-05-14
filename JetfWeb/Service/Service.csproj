@@ -388,6 +388,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\AbnormalState\AbnormalStateService.cs" />
     <Compile Include="Services\AccountService.cs" />
+    <Compile Include="Services\AccsNew\AccsNewService.cs" />
+    <Compile Include="Services\AccsNew\Domain\AccsNewLoginRequest.cs" />
+    <Compile Include="Services\AccsNew\Domain\AccsNewQueryRequest.cs" />
+    <Compile Include="Services\AccsNew\Domain\AccsNewQueryResult.cs" />
+    <Compile Include="Services\AccsNew\Domain\AccsNewSessionInfo.cs" />
     <Compile Include="Services\AccsShopee\AccsShopeeService.cs" />
     <Compile Include="Services\AccsShopee\Domain\AccsLoginRequest.cs" />
     <Compile Include="Services\AccsShopee\Domain\AccsQueryRequest.cs" />

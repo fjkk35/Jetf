@@ -267,6 +267,7 @@
     <Compile Include="Hubs\MainHub.cs" />
     <Compile Include="Controllers\AbnormalStateController.cs" />
     <Compile Include="Controllers\AccountController.cs" />
+    <Compile Include="Controllers\AccsNewController.cs" />
     <Compile Include="Controllers\AccsShopeeController.cs" />
     <Compile Include="Controllers\ApprovalCategoryController.cs" />
     <Compile Include="Controllers\AuthorityController.cs" />
@@ -805,6 +806,7 @@
     <Content Include="Scripts\js\sb-admin-2.js" />
     <Content Include="Scripts\js\sb-admin-2.min.js" />
     <Content Include="Scripts\ng-controllers\AbnormalState\AbnormalState.js" />
+    <Content Include="Scripts\ng-controllers\AccsNew\AccsNew.js" />
     <Content Include="Scripts\ng-controllers\AccsShopee\AccsShopee.js" />
     <Content Include="Scripts\ng-controllers\BatchSearchShenzhenCargo\BatchSearchShenzhenCargo.js" />
     <Content Include="Scripts\ng-controllers\BatchSearchTax\BatchSearchTax.js" />
@@ -2905,6 +2907,7 @@
     <Content Include="Views\AbnormalState\Index.cshtml" />
     <Content Include="Views\TaxPortalCustomer\Index.cshtml" />
     <Content Include="Views\SeaClearanceProcessor\Index.cshtml" />
+    <Content Include="Views\AccsNew\Index.cshtml" />
     <Content Include="Views\AccsShopee\Index.cshtml" />
     <Content Include="Views\SearchCargo\Index.cshtml" />
     <Content Include="Views\SearchCargo\Detail.cshtml" />
