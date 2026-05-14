@@ -104,6 +104,18 @@
                            placeholder="請輸入人員" />
                 </div>
             </div>
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="isMatchedInput" class="col-lg-4 col-form-label text-right">匹配</label>
+                <div class="col-lg-8">
+                    <select id="isMatchedInput"
+                            class="form-control"
+                            ng-model="searchForm.isMatched">
+                        <option value="">全部</option>
+                        <option value="true">是</option>
+                        <option value="false">否</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
         <div class="row">
@@ -249,6 +261,10 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-warning" ng-if="isReadOnlyMode">
+                        此資料已有匹配日期，僅可查看，不能再進行修改。
+                    </div>
+                    <fieldset ng-disabled="isReadOnlyMode">
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label">單號 <span class="text-danger">*</span></label>
                         <div class="col-sm-9">
@@ -421,10 +437,11 @@
                             </div>
                         </div>
                     </div>
+                    </fieldset>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" ng-click="saveProcess()" ng-disabled="saving">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{isReadOnlyMode ? '關閉' : '取消'}}</button>
+                    <button type="button" class="btn btn-primary" ng-if="!isReadOnlyMode" ng-click="saveProcess()" ng-disabled="saving">
                         <i class="fa fa-spinner fa-spin" ng-show="saving"></i>
                         {{saving ? '儲存中...' : '確定'}}
                     </button>

@@ -73,6 +73,13 @@ namespace Service.Services.ShipmentInboundProcessStage
                     query = query.Where(x => x.MatchTimie.HasValue && x.MatchTimie.Value < endExclusive);
                 }
 
+                if (request.IsMatched.HasValue)
+                {
+                    query = request.IsMatched.Value
+                        ? query.Where(x => x.MatchTimie.HasValue)
+                        : query.Where(x => !x.MatchTimie.HasValue);
+                }
+
                 var page = request.Page <= 0 ? 1 : request.Page;
                 var pageSize = request.PageSize <= 0 ? 10 : request.PageSize;
                 var totalCount = query.Count();
@@ -189,6 +196,11 @@ namespace Service.Services.ShipmentInboundProcessStage
                     if (entity == null)
                     {
                         throw new Exception("查無此資料");
+                    }
+
+                    if (entity.MatchTimie.HasValue)
+                    {
+                        throw new Exception("此資料已有匹配日期，不能再進行修改");
                     }
                 }
 

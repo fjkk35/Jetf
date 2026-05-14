@@ -36,6 +36,11 @@ namespace Service.Services.ShipmentInboundProcessStage.Domain
         public string MatchTimieEnd { get; set; }
 
         /// <summary>
+        /// 匹配狀態，null=全部、true=是、false=否。
+        /// </summary>
+        public bool? IsMatched { get; set; }
+
+        /// <summary>
         /// 目前頁碼。
         /// </summary>
         public int Page { get; set; }

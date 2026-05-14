@@ -18,13 +18,15 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
         createdTimeEnd: null,
         createdOpe: '',
         matchTimieStart: null,
-        matchTimieEnd: null
+        matchTimieEnd: null,
+        isMatched: ''
     };
 
     $scope.processTypeList = [];
     $scope.processTransNoList = [];
     $scope.freightPayerNoList = [];
     $scope.currentItem = null;
+    $scope.isReadOnlyMode = false;
     $scope.modalTitle = '新增預先登記處理';
     $scope.createdTimeStartPopup = { opened: false };
     $scope.createdTimeEndPopup = { opened: false };
@@ -41,6 +43,18 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
 
     function normalizeText(value) {
         return value ? value.trim() : '';
+    }
+
+    function normalizeMatchedValue(value) {
+        if (value === true || value === 'true') {
+            return true;
+        }
+
+        if (value === false || value === 'false') {
+            return false;
+        }
+
+        return null;
     }
 
     function buildEmptyForm() {
@@ -106,6 +120,7 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
 
         $('#processStageModal').on('hidden.bs.modal', function () {
             $scope.currentItem = null;
+            $scope.isReadOnlyMode = false;
             $scope.processForm = buildEmptyForm();
 
             if (!$scope.$$phase) {
@@ -220,6 +235,7 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
             CreatedOpe: normalizeText($scope.searchForm.createdOpe),
             MatchTimieStart: formatDate($scope.searchForm.matchTimieStart),
             MatchTimieEnd: formatDate($scope.searchForm.matchTimieEnd),
+            IsMatched: normalizeMatchedValue($scope.searchForm.isMatched),
             Page: $scope.currentPage,
             PageSize: parseInt($scope.pageSize)
         };
@@ -274,7 +290,8 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
             createdTimeEnd: null,
             createdOpe: '',
             matchTimieStart: null,
-            matchTimieEnd: null
+            matchTimieEnd: null,
+            isMatched: ''
         };
         $scope.data = [];
         $scope.isSearched = false;
@@ -347,6 +364,7 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
 
     $scope.openCreateModal = function () {
         $scope.currentItem = null;
+        $scope.isReadOnlyMode = false;
         $scope.modalTitle = '新增預先登記處理';
         $scope.processForm = buildEmptyForm();
         $('#processStageModal').modal('show');
@@ -359,6 +377,7 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
 
         $scope.dialogLoading = true;
         $scope.currentItem = item;
+        $scope.isReadOnlyMode = !!(item && item.MatchTimie);
         $scope.viewProcessDetail(item)
             .finally(function () {
                 $scope.dialogLoading = false;
@@ -378,7 +397,7 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
                 }
 
                 var detail = response.data;
-                $scope.modalTitle = (item.ProcessTypeName || '處理方式') + ' (修改)';
+                $scope.modalTitle = (item.ProcessTypeName || '處理方式') + ($scope.isReadOnlyMode ? ' (查看)' : ' (修改)');
                 $scope.processForm = {
                     trackingNo: detail.TrackingNo || '',
                     returnReason: detail.ReturnReason || '',
@@ -417,6 +436,10 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
     };
 
     $scope.saveProcess = function () {
+        if ($scope.isReadOnlyMode) {
+            return;
+        }
+
         if (!normalizeText($scope.processForm.trackingNo)) {
             swal({
                 title: '提醒',
