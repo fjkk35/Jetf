@@ -36,18 +36,25 @@ namespace Service.Services.Job.SjlJob
         /// <returns></returns>
         public async Task RunJhfTaxJobAsync()
         {
-            var modifyTime = DateTime.Today.AddDays(-1).AddHours(22);
-            var taxList = GetJhfTaxList(modifyTime);
-
-            if (!taxList.Any())
+            try
             {
-                return;
+                var modifyTime = DateTime.Today.AddDays(-1).AddHours(22);
+                var taxList = GetJhfTaxList(modifyTime);
+
+                if (!taxList.Any())
+                {
+                    return;
+                }
+
+                foreach (var taxItem in taxList)
+                {
+                    var executionResult = await SendTaxListWithRetryAsync(taxItem);
+                    await SaveResponseAsync(taxItem, executionResult);
+                }
             }
-
-            foreach (var taxItem in taxList)
+            catch (Exception ex)
             {
-                var executionResult = await SendTaxListWithRetryAsync(taxItem);
-                await SaveResponseAsync(taxItem, executionResult);
+                WriteJobErrorLog("金祥富稅金資料傳送", ex);
             }
         }
 

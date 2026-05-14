@@ -80,6 +80,7 @@ namespace Service.Services.Job.TactWebClientJob
                 }
                 catch (Exception ex)
                 {
+                    WriteJobErrorLog("華儲查詢", ex);
                     return false;
                 }
                 finally 

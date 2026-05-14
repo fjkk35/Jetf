@@ -24,15 +24,22 @@ namespace Service.Services.Job.CainiaoNeedJob
 
         public async Task RunCainiaoNeedJob() 
         {
-            DateTime date = DateTime.Now;
-            string sendDate = date.ToString("yyyyMMdd");
-            string sendTime = date.ToString("HHmmss");
+            try
+            {
+                DateTime date = DateTime.Now;
+                string sendDate = date.ToString("yyyyMMdd");
+                string sendTime = date.ToString("HHmmss");
 
-            //菜鳥
-            await SendLineCainiaoNeedAsync("CainiaoNeed", sendDate, sendTime);
+                //菜鳥
+                await SendLineCainiaoNeedAsync("CainiaoNeed", sendDate, sendTime);
 
-            //蝦皮
-            await SendLineShopeeNeedAsync("ShopeeNeed", sendDate, sendTime);
+                //蝦皮
+                await SendLineShopeeNeedAsync("ShopeeNeed", sendDate, sendTime);
+            }
+            catch (Exception ex)
+            {
+                WriteJobErrorLog("菜鳥需預委任發送訊息", ex);
+            }
 
         }
 

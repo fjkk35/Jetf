@@ -26,36 +26,43 @@ namespace Service.Services
         /// <returns></returns>
         public async Task RunSeaTaxJobAsync()
         {
-            var dataDate = DateTime.Now.AddHours(-12).ToString("yyyyMMdd");
-
-            var seaTaxs = GetSeaTax(dataDate);
-
-            foreach(var seaTax in seaTaxs)
+            try
             {
-                var request = new TaxRequestModel
-                {
-                    FeeMasterId = seaTax.Id,
-                    Date = seaTax.DataDate,
-                    TaxNumber = seaTax.Tax_Number,
-                    DeclarationNumber = seaTax.Clearance_Number,
-                    Bigbagid = seaTax.TrackingNo,
-                    Edelno = seaTax.Dlv_Inv,
-                    ConsigneeName = seaTax.Recipient,
-                    TaxAmount = seaTax.Tax_Amount,
-                    ProductName = seaTax.Dlv_Com,
-                    PayObject = "捷丰国际物流股份有限公司",
-                    Type= "海运"
-                };
+                var dataDate = DateTime.Now.AddHours(-12).ToString("yyyyMMdd");
 
-                if (string.IsNullOrEmpty(request.TaxNumber))
+                var seaTaxs = GetSeaTax(dataDate);
+
+                foreach(var seaTax in seaTaxs)
                 {
-                    //無稅金資料
-                    await SaveNoTaxNumber(request);
-                    //跳過此筆
-                    continue;
+                    var request = new TaxRequestModel
+                    {
+                        FeeMasterId = seaTax.Id,
+                        Date = seaTax.DataDate,
+                        TaxNumber = seaTax.Tax_Number,
+                        DeclarationNumber = seaTax.Clearance_Number,
+                        Bigbagid = seaTax.TrackingNo,
+                        Edelno = seaTax.Dlv_Inv,
+                        ConsigneeName = seaTax.Recipient,
+                        TaxAmount = seaTax.Tax_Amount,
+                        ProductName = seaTax.Dlv_Com,
+                        PayObject = "捷丰国际物流股份有限公司",
+                        Type= "海运"
+                    };
+
+                    if (string.IsNullOrEmpty(request.TaxNumber))
+                    {
+                        //無稅金資料
+                        await SaveNoTaxNumber(request);
+                        //跳過此筆
+                        continue;
+                    }
+
+                    await PostTaxAsync(request);
                 }
-
-                await PostTaxAsync(request);
+            }
+            catch (Exception ex)
+            {
+                WriteJobErrorLog("捷利海運稅金", ex);
             }
         }
 
@@ -65,40 +72,47 @@ namespace Service.Services
         /// <returns></returns>
         public async Task RunEtlTaxJobAsync()
         {
-            var date = DateTime.Now.AddHours(-12);
-
-            var sDate = date.AddDays(-2).ToString("yyyyMMdd");
-            var eDate = date.ToString("yyyyMMdd");
-
-            var etlTaxs = GetEtlTax(sDate, eDate);
-
-            foreach (var etlTax in etlTaxs)
+            try
             {
-                var request = new TaxRequestModel
+                var date = DateTime.Now.AddHours(-12);
+
+                var sDate = date.AddDays(-2).ToString("yyyyMMdd");
+                var eDate = date.ToString("yyyyMMdd");
+
+                var etlTaxs = GetEtlTax(sDate, eDate);
+
+                foreach (var etlTax in etlTaxs)
                 {
-                    FeeMasterId = etlTax.Id,
-                    Date = etlTax.DataDate,
-                    TaxNumber = etlTax.Tax_Number,
-                    DeclarationNumber = etlTax.Clearance_Number,
-                    Bigbagid = etlTax.Bag_Number,
-                    Edelno = etlTax.Dlv_Inv,
-                    ConsigneeName = etlTax.Recipient,
-                    TaxAmount = etlTax.Tax_Amount,
-                    ProductName = etlTax.Trans_Name,
-                    PayObject = "捷丰国际物流股份有限公司",
-                    Type = "空运"
-                };
+                    var request = new TaxRequestModel
+                    {
+                        FeeMasterId = etlTax.Id,
+                        Date = etlTax.DataDate,
+                        TaxNumber = etlTax.Tax_Number,
+                        DeclarationNumber = etlTax.Clearance_Number,
+                        Bigbagid = etlTax.Bag_Number,
+                        Edelno = etlTax.Dlv_Inv,
+                        ConsigneeName = etlTax.Recipient,
+                        TaxAmount = etlTax.Tax_Amount,
+                        ProductName = etlTax.Trans_Name,
+                        PayObject = "捷丰国际物流股份有限公司",
+                        Type = "空运"
+                    };
 
 
-                if (string.IsNullOrEmpty(request.TaxNumber))
-                {
-                    //無稅金資料
-                    await SaveNoTaxNumber(request);
-                    //跳過此筆
-                    continue;
+                    if (string.IsNullOrEmpty(request.TaxNumber))
+                    {
+                        //無稅金資料
+                        await SaveNoTaxNumber(request);
+                        //跳過此筆
+                        continue;
+                    }
+
+                    await PostTaxAsync(request);
                 }
-
-                await PostTaxAsync(request);
+            }
+            catch (Exception ex)
+            {
+                WriteJobErrorLog("捷利空運稅金", ex);
             }
         }
 

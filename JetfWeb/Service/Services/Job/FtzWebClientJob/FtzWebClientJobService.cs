@@ -15,7 +15,7 @@ namespace Service.Services.Job.FtzWebClientJob
     {
         public async Task<bool> RunFtzWebClientJobAsync()
         {
-            // «Ø¥ß HttpClientHandler ¥H«O«ù Cookie
+            // å»ºç«‹ HttpClientHandler ä»¥ä¿ç•™ Cookie
             var handler = new HttpClientHandler
             {
                 CookieContainer = new CookieContainer(),
@@ -27,10 +27,10 @@ namespace Service.Services.Job.FtzWebClientJob
             {
                 try
                 {
-                    // ³]©w°ò¥» headers
+                    // è¨­å®šåŸºæœ¬ headers
                     client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36");
 
-                    // ¨BÆJ 1: µn¤J
+                    // æ­¥é©Ÿ 1: ç™»å…¥
                     bool loginSuccess = await Login(client, "0335", "24951752");
 
                     if (!loginSuccess)
@@ -38,7 +38,7 @@ namespace Service.Services.Job.FtzWebClientJob
                         return false;
                     }
 
-                    // ¨BÆJ 2: ¬d¸ß¸ê®Æ
+                    // æ­¥é©Ÿ 2: æŸ¥è©¢è³‡æ–™
                     var startDate = DateTime.Now.AddDays(-1).ToString("yyyyMMdd");
                     var endDate = DateTime.Now.ToString("yyyyMMdd");
                     var jsonResult = await QueryData(client, "I", "0335", startDate, endDate);
@@ -48,25 +48,25 @@ namespace Service.Services.Job.FtzWebClientJob
                         return false;
                     }
 
-                    // ¨BÆJ 3: ¸ÑªR JSON ¸ê®Æ
+                    // æ­¥é©Ÿ 3: è§£æ JSON è³‡æ–™
                     var data = ParseJsonData(jsonResult);
 
                     if (data == null || data.rows == null || !data.rows.Any())
                     {
-                        return true; // ¨S¦³¸ê®Æ¤]ºâ¦¨¥\
+                        return true; // æ²’æœ‰è³‡æ–™ä¹Ÿè¦–ç‚ºæˆåŠŸ
                     }
 
-                    //¨BÆJ 4: ¥Ó³ø¥ó¼Æ¤j©ó2ªº­n§ä¥X¨Ö¤À´£³æ¸¹
+                    // æ­¥é©Ÿ 4: ç”³å ±ä»¶æ•¸å¤§æ–¼ 2 çš„è³‡æ–™è¦æ‰¾å‡ºä½µåˆ†æå–®è™Ÿ
                     var merges = data?.rows
                         .Where(r => !string.IsNullOrWhiteSpace(r.hwb) && ParseInt(r.piece) > 1)
                         .ToList();
 
-                    // ³s½u
+                    // é€£ç·šè³‡æ–™åº«
                     await conn.OpenAsync();
 
                     foreach (var r in merges)
                     {
-                        //¨ú±o¨Ö¤À´£³æ¸¹
+                        // å–å¾—ä½µåˆ†æå–®è™Ÿ
                         var result = await GetMergeTrackingNo(r.hwb);
                         if (result.Any())
                         {
@@ -83,11 +83,12 @@ namespace Service.Services.Job.FtzWebClientJob
 
                     conn.Close();
 
-                    // ¨BÆJ 5: ¼g¤J¸ê®Æ®w
+                    // æ­¥é©Ÿ 5: å¯«å…¥è³‡æ–™åº«
                     await SaveToDatabase(data.rows);
                 }
                 catch (Exception ex)
                 {
+                    WriteJobErrorLog("é é›„æŸ¥è©¢", ex);
                     return false;
                 }
                 finally
@@ -103,7 +104,7 @@ namespace Service.Services.Job.FtzWebClientJob
         }
 
         /// <summary>
-        /// µn¤Jºô¯¸
+        /// ç™»å…¥ç¶²ç«™
         /// </summary>
         private async Task<bool> Login(HttpClient client, string userId, string userPd)
         {
@@ -111,18 +112,18 @@ namespace Service.Services.Job.FtzWebClientJob
             {
                 var loginUrl = "https://ehu.ftz.com.tw/FTZEHU/login.do";
 
-                // ·Ç³Æµn¤Jªí³æ¸ê®Æ
+                // æº–å‚™ç™»å…¥è¡¨å–®è³‡æ–™
                 var formData = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("userId", userId),
                     new KeyValuePair<string, string>("userPd", userPd)
                 });
 
-                // µo°e POST ½Ğ¨D
+                // ç™¼é€ POST è«‹æ±‚
                 var response = await client.PostAsync(loginUrl, formData);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
-                // ÀË¬d¬O§_µn¤J¦¨¥\
+                // æª¢æŸ¥æ˜¯å¦ç™»å…¥æˆåŠŸ
                 if (response.IsSuccessStatusCode)
                 {
                     return true;
@@ -137,28 +138,28 @@ namespace Service.Services.Job.FtzWebClientJob
         }
 
         /// <summary>
-        /// ¬d¸ß¸ê®Æ
+    /// æŸ¥è©¢è³‡æ–™
         /// </summary>
-        /// <param name="client">HttpClient ¹ê¨Ò</param>
-        /// <param name="ieType">¶i¥X¤fÃş«¬¡GI=¶i¤f, E=¥X¤f</param>
-        /// <param name="eid">¤½¥qID</param>
-        /// <param name="startDate">¶}©l¤é´Á (®æ¦¡: yyyyMMdd)</param>
-        /// <param name="endDate">µ²§ô¤é´Á (®æ¦¡: yyyyMMdd)</param>
+    /// <param name="client">HttpClient å¯¦ä¾‹</param>
+    /// <param name="ieType">é€²å‡ºå£åˆ¥ï¼ŒI=é€²å£ï¼ŒE=å‡ºå£</param>
+    /// <param name="eid">å…¬å¸ ID</param>
+    /// <param name="startDate">é–‹å§‹æ—¥æœŸï¼Œæ ¼å¼ç‚º yyyyMMdd</param>
+    /// <param name="endDate">çµæŸæ—¥æœŸï¼Œæ ¼å¼ç‚º yyyyMMdd</param>
         private async Task<string> QueryData(HttpClient client, string ieType, string eid, string startDate, string endDate)
         {
             try
             {
                 var queryUrl = "https://ehu.ftz.com.tw/FTZEHU/NORLEGCOQUERY_01.do";
 
-                // ·Ç³Æ¬d¸ß°Ñ¼Æ
+        // æº–å‚™æŸ¥è©¢åƒæ•¸
                 var nd = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 var queryString = $"?ieType={ieType}&eid={eid}&d1={startDate}&d2={endDate}&_search=false&nd={nd}&rows=10000&page=1&sidx=&sord=asc";
 
-                // µo°e GET ½Ğ¨D
+        // ç™¼é€ GET è«‹æ±‚
                 var response = await client.GetAsync(queryUrl + queryString);
                 response.EnsureSuccessStatusCode();
 
-                // Åª¨ú¦^À³¤º®e
+        // è®€å–å›æ‡‰å…§å®¹
                 var responseContent = await response.Content.ReadAsStringAsync();
 
                 return responseContent;
@@ -170,9 +171,9 @@ namespace Service.Services.Job.FtzWebClientJob
         }
 
         /// <summary>
-        /// ¸ÑªR JSON ¸ê®Æ
+    /// è§£æ JSON è³‡æ–™
         /// </summary>
-        /// <param name="json">JSON ¤º®e</param>
+    /// <param name="json">JSON å…§å®¹</param>
         /// <returns>FtzRelnonoutModel</returns>
         private FtzRelnonoutModel ParseJsonData(string json)
         {
@@ -188,9 +189,9 @@ namespace Service.Services.Job.FtzWebClientJob
         }
 
         /// <summary>
-        /// Àx¦s¸ê®Æ¨ì¸ê®Æ®w
+        /// å„²å­˜è³‡æ–™åˆ°è³‡æ–™åº«
         /// </summary>
-        /// <param name="rows">FTZ ©ñ¦æ¥¼¥X­Ü¸ê®Æ¦Cªí</param>
+        /// <param name="rows">FTZ å›å‚³çš„è³‡æ–™åˆ—</param>
         private async Task SaveToDatabase(List<Row> rows)
         {
             if (rows == null || !rows.Any())
@@ -202,7 +203,7 @@ namespace Service.Services.Job.FtzWebClientJob
             {
                 await conn.OpenAsync();
 
-                // ¨ú±o©Ò¦³«DªÅªº TrackingNo (hwb)
+                // å–å¾—æ‰€æœ‰éç©ºçš„ TrackingNo (hwb)
                 var trackingNos = rows
                     .Where(x => !string.IsNullOrWhiteSpace(x.hwb))
                     .Select(x => x.hwb)
@@ -212,7 +213,7 @@ namespace Service.Services.Job.FtzWebClientJob
                 if (!trackingNos.Any())
                     return;
 
-                // ¤@¦¸¬d¥X¤w¦s¦bªº TrackingNo
+                // ä¸€æ¬¡æŸ¥å‡ºå·²å­˜åœ¨çš„ TrackingNo
                 var existingSql = @"
                     SELECT TrackingNo 
                     FROM [jetf].[dbo].[FtzRelnonout]
@@ -222,7 +223,7 @@ namespace Service.Services.Job.FtzWebClientJob
                 var existing = (await conn.QueryAsync<string>(existingSql, new { TrackingNos = trackingNos }))
                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                // ¿z¥X­n·s¼Wªº¸ê®Æ¡A¨ÃÂà´«¬°°Î¦Wª«¥ó
+                // ç¯©å‡ºè¦æ–°å¢çš„è³‡æ–™ï¼Œä¸¦è½‰æˆè³‡æ–™åº«æ¬„ä½æ ¼å¼
                 var toInsert = rows
                     .Where(x => !string.IsNullOrWhiteSpace(x.hwb) && !existing.Contains(x.hwb))
                     .Select(x => new
@@ -235,7 +236,7 @@ namespace Service.Services.Job.FtzWebClientJob
                 if (toInsert.Count == 0)
                     return;
 
-                // §å¦¸·s¼W¸ê®Æ
+                // æ‰¹æ¬¡æ–°å¢è³‡æ–™
                 var insertSql = @"
                         INSERT INTO [jetf].[dbo].[FtzRelnonout] 
                         (TrackingNo, DeclaredQty)
@@ -246,8 +247,8 @@ namespace Service.Services.Job.FtzWebClientJob
             }
             catch (Exception ex)
             {
-                // °O¿ı¿ù»~©Î©ß¥X¨Ò¥~
-                throw new Exception($"FTZÀx¦s¸ê®Æ¨ì¸ê®Æ®w®Éµo¥Í¿ù»~: {ex.Message}", ex);
+                // ä¿ç•™åŸå§‹ä¾‹å¤–ä¸¦å¾€å¤–æ‹‹å‡º
+                throw new Exception($"FTZ å„²å­˜è³‡æ–™åˆ°è³‡æ–™åº«æ™‚ç™¼ç”ŸéŒ¯èª¤: {ex.Message}", ex);
             }
             finally
             {
@@ -259,10 +260,10 @@ namespace Service.Services.Job.FtzWebClientJob
         }
 
         /// <summary>
-        /// ¨ú±o¨Ö¤À´£³æ¸¹
+        /// å–å¾—ä½µåˆ†æå–®è™Ÿ
         /// </summary>
-        /// <param name="trackingNo">¤À´£³æ¸¹</param>
-        /// <returns>¨Ã¤À´£³æ¸¹¦Cªí</returns>
+        /// <param name="trackingNo">ä¸»æå–®è™Ÿ</param>
+        /// <returns>ä½µåˆ†æå–®è™Ÿæ¸…å–®</returns>
         private async Task<List<string>> GetMergeTrackingNo(string trackingNo)
         {
             if (string.IsNullOrWhiteSpace(trackingNo))
@@ -270,7 +271,7 @@ namespace Service.Services.Job.FtzWebClientJob
                 return new List<string>();
             }
 
-            // ©I¥s Stored Procedure
+            // å‘¼å« Stored Procedure
             var result = await conn.QueryAsync<string>(
                 "jetf.[dbo].[USP_GetMergeTrackingNo]",
                 new { TrackingNo = trackingNo },
@@ -281,7 +282,7 @@ namespace Service.Services.Job.FtzWebClientJob
         }
 
         /// <summary>
-        /// ±N¦r¦êÂà´«¬°¾ã¼Æ
+    /// å°‡å­—ä¸²è½‰æˆæ•´æ•¸
         /// </summary>
         private int ParseInt(string value)
         {

@@ -162,6 +162,7 @@ namespace Service.Services.ShipmentInboundProcessStage
             {
                 var duplicateExists = db.ShipmentInboundProcessStages.Any(x =>
                     x.TrackingNo == request.TrackingNo &&
+                    !x.MatchTimie.HasValue &&
                     (!request.Id.HasValue || x.Id != request.Id.Value));
 
                 if (duplicateExists)

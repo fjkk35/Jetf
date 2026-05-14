@@ -35,32 +35,39 @@ namespace Service.Services.Job.IncomeJob
         /// </summary>
         public async Task RunIncomeJobAsync()
         {
-            DateTime date = DateTime.Now;
-            string sDate = date.AddDays(-1).ToString("yyyyMM") + "01";
-            string eDate = date.AddDays(-1).ToString("yyyyMMdd");
-            string sendDate = date.ToString("yyyyMMdd");
-            string sendTime = date.ToString("HHmm");
+            try
+            {
+                DateTime date = DateTime.Now;
+                string sDate = date.AddDays(-1).ToString("yyyyMM") + "01";
+                string eDate = date.AddDays(-1).ToString("yyyyMMdd");
+                string sendDate = date.ToString("yyyyMMdd");
+                string sendTime = date.ToString("HHmm");
 
-            //營收總表
-            await SendLineIncomeReport("營收總表", sendDate, sendTime, sDate, eDate);
+                //營收總表
+                await SendLineIncomeReport("營收總表", sendDate, sendTime, sDate, eDate);
 
-            //營收總表2
-            //await SendLineIncomeReport2("營收總表2", sendDate, sendTime, sDate, eDate);
+                //營收總表2
+                //await SendLineIncomeReport2("營收總表2", sendDate, sendTime, sDate, eDate);
 
-            //海運-營收總表及明細表
-            await SendLineIncomeDetailsSeaReportAsync("海運-營收總表及明細表", sendDate, sendTime, sendDate, sendDate);
+                //海運-營收總表及明細表
+                await SendLineIncomeDetailsSeaReportAsync("海運-營收總表及明細表", sendDate, sendTime, sendDate, sendDate);
 
-            //空運-營收總表及明細表0800-2000
-            await SendLineIncomeDetailsEtlReportAsync("空運-營收總表及明細表0800-2000", sendDate, sendTime, sendDate, sendDate);
+                //空運-營收總表及明細表0800-2000
+                await SendLineIncomeDetailsEtlReportAsync("空運-營收總表及明細表0800-2000", sendDate, sendTime, sendDate, sendDate);
 
-            //空運-營收總表及明細表2000-0800
-            await SendLineIncomeDetailsEtlReport2Async("空運-營收總表及明細表2000-0800", sendDate, sendTime, date.AddDays(-1).ToString("yyyyMMdd"), sendDate);
+                //空運-營收總表及明細表2000-0800
+                await SendLineIncomeDetailsEtlReport2Async("空運-營收總表及明細表2000-0800", sendDate, sendTime, date.AddDays(-1).ToString("yyyyMMdd"), sendDate);
 
-            //稅金統計表
-            await SendLineTaxReportAsync("海空快稅金統計表", sendDate, sendTime, sDate, eDate);
+                //稅金統計表
+                await SendLineTaxReportAsync("海空快稅金統計表", sendDate, sendTime, sDate, eDate);
 
-            //營收去年比
-            await SendLineIncomeRateReportAsync("營收去年比", sendDate, sendTime, sDate, eDate);
+                //營收去年比
+                await SendLineIncomeRateReportAsync("營收去年比", sendDate, sendTime, sDate, eDate);
+            }
+            catch (Exception ex)
+            {
+                WriteJobErrorLog("營收報表", ex);
+            }
         }
 
         /// <summary>
@@ -1460,29 +1467,42 @@ namespace Service.Services.Job.IncomeJob
         /// </summary>
         public void InsertIncomeReport()
         {
-            DateTime now = DateTime.Now;
-            string sDate = now.AddDays(-1).ToString("yyyyMM") + "01";
-            string eDate = now.AddDays(-1).ToString("yyyyMMdd");
-
-            int days = Convert.ToInt32((DateTime.ParseExact(eDate, "yyyyMMdd", null) - DateTime.ParseExact(sDate, "yyyyMMdd", null)).TotalDays) + 1;
-            DateTime date = DateTime.ParseExact(eDate, "yyyyMMdd", null);
-            conn.Open();
-            for (int i = 0; i < days; i++)
+            try
             {
-                using (SqlCommand cmd = new SqlCommand("jetf.dbo.SP_Insert_Income_Report", conn))
+                DateTime now = DateTime.Now;
+                string sDate = now.AddDays(-1).ToString("yyyyMM") + "01";
+                string eDate = now.AddDays(-1).ToString("yyyyMMdd");
+
+                int days = Convert.ToInt32((DateTime.ParseExact(eDate, "yyyyMMdd", null) - DateTime.ParseExact(sDate, "yyyyMMdd", null)).TotalDays) + 1;
+                DateTime date = DateTime.ParseExact(eDate, "yyyyMMdd", null);
+                conn.Open();
+                for (int i = 0; i < days; i++)
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.Add("@DataDate", SqlDbType.NVarChar).Value = date.AddDays(-i).ToString("yyyyMMdd");
-                    cmd.Parameters.Add("@SDate_ETL", SqlDbType.DateTime).Value = $"{date.AddDays(-i).ToString("yyyy-MM-dd")} 09:00:00";
-                    cmd.Parameters.Add("@EDate_ETL", SqlDbType.DateTime).Value = $"{date.AddDays(-i + 1).ToString("yyyy-MM-dd")} 08:59:59";
-                    cmd.Parameters.Add("@SDate", SqlDbType.DateTime).Value = $"{date.AddDays(-i).ToString("yyyy-MM-dd")} 00:00:00";
-                    cmd.Parameters.Add("@EDate", SqlDbType.DateTime).Value = $"{date.AddDays(-i).ToString("yyyy-MM-dd")} 23:59:59";
-                    cmd.CommandTimeout = 600;
-                    cmd.ExecuteNonQuery();
+                    using (SqlCommand cmd = new SqlCommand("jetf.dbo.SP_Insert_Income_Report", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.Add("@DataDate", SqlDbType.NVarChar).Value = date.AddDays(-i).ToString("yyyyMMdd");
+                        cmd.Parameters.Add("@SDate_ETL", SqlDbType.DateTime).Value = $"{date.AddDays(-i).ToString("yyyy-MM-dd")} 09:00:00";
+                        cmd.Parameters.Add("@EDate_ETL", SqlDbType.DateTime).Value = $"{date.AddDays(-i + 1).ToString("yyyy-MM-dd")} 08:59:59";
+                        cmd.Parameters.Add("@SDate", SqlDbType.DateTime).Value = $"{date.AddDays(-i).ToString("yyyy-MM-dd")} 00:00:00";
+                        cmd.Parameters.Add("@EDate", SqlDbType.DateTime).Value = $"{date.AddDays(-i).ToString("yyyy-MM-dd")} 23:59:59";
+                        cmd.CommandTimeout = 600;
+                        cmd.ExecuteNonQuery();
+                    }
                 }
             }
-            conn.Close();
+            catch (Exception ex)
+            {
+                WriteJobErrorLog("營收轉檔", ex);
+            }
+            finally
+            {
+                if (conn.State == ConnectionState.Open)
+                {
+                    conn.Close();
+                }
+            }
         }
 
         /// <summary>

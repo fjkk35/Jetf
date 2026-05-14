@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data.Entity;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -15,6 +16,7 @@ namespace Service
     public class _BaseService
     {
         private readonly string key= "JETFJETFJETFJETFJETFJETFJETFJETF";
+        private static readonly object JobLogLock = new object();
         public SqlConnection conn;
         /// <summary>
         /// 建構式
@@ -192,6 +194,34 @@ namespace Service
             {
                 string[] ipArray = sIPAddress.Split(new Char[] { ',' });
                 return ipArray[0];
+            }
+        }
+
+        /// <summary>
+        /// 將排程例外寫入網站根目錄 log.txt。
+        /// </summary>
+        /// <param name="jobName">排程名稱。</param>
+        /// <param name="ex">例外資訊。</param>
+        protected void WriteJobErrorLog(string jobName, Exception ex)
+        {
+            try
+            {
+                var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "log.txt");
+                var content = new StringBuilder()
+                    .AppendLine("==============================")
+                    .AppendLine($"Time: {DateTime.Now:yyyy/MM/dd HH:mm:ss}")
+                    .AppendLine($"Job: {jobName}")
+                    .AppendLine($"Message: {ex.Message}")
+                    .AppendLine($"StackTrace: {ex}")
+                    .ToString();
+
+                lock (JobLogLock)
+                {
+                    File.AppendAllText(logPath, content, Encoding.UTF8);
+                }
+            }
+            catch
+            {
             }
         }
 

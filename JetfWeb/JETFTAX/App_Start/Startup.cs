@@ -29,7 +29,7 @@ namespace JETFTAX.App_Start
 
             app.UseHangfireDashboard("/hangfire");
 
-#if DEBUG
+#if !DEBUG
             app.UseHangfireServer();
 
             // 設定排程任務

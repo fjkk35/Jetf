@@ -26,11 +26,18 @@ namespace Service.Services.Job.CainiaoCheckJob
         /// </summary>
         public async Task RunCainiaoCheckJobAsync()
         {
-            DateTime date = DateTime.Now;
-            string sendDate = date.ToString("yyyyMMdd");
-            string sendTime = date.AddMinutes(-8).ToString("HHmmss");
+            try
+            {
+                DateTime date = DateTime.Now;
+                string sendDate = date.ToString("yyyyMMdd");
+                string sendTime = date.AddMinutes(-8).ToString("HHmmss");
 
-            await SendTelegramCainiaoCheck("CainiaoCheck", sendDate, sendTime);
+                await SendTelegramCainiaoCheck("CainiaoCheck", sendDate, sendTime);
+            }
+            catch (Exception ex)
+            {
+                WriteJobErrorLog("菜鳥資料檢查", ex);
+            }
         }
 
 

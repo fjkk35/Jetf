@@ -26,12 +26,19 @@ namespace Service.Services.Job.ComponentJob
         /// </summary>
         public async Task RunComponentJobAsync()
         {
-            DateTime date = DateTime.Now;
-            string sendDate = date.ToString("yyyyMMdd");
-            string sendTime = date.ToString("HHmmss");
+            try
+            {
+                DateTime date = DateTime.Now;
+                string sendDate = date.ToString("yyyyMMdd");
+                string sendTime = date.ToString("HHmmss");
 
-           await SendLineManifestAsync("Manifest", sendDate, sendTime);
-           await SendLineCargoManifestAsync("CargoManifest", sendDate, sendTime);
+               await SendLineManifestAsync("Manifest", sendDate, sendTime);
+               await SendLineCargoManifestAsync("CargoManifest", sendDate, sendTime);
+            }
+            catch (Exception ex)
+            {
+                WriteJobErrorLog("酷彭發送訊息", ex);
+            }
         }
 
         async Task SendLineManifestAsync(string sendName, string sendDate, string sendTime)
