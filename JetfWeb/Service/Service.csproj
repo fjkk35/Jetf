@@ -672,17 +672,8 @@
     <Compile Include="Services\WorkDay\WorkDayService.cs" />
     <Compile Include="Services\WorkLoad\SeaWorkLoadService.cs" />
     <Compile Include="Services\WorkLoad\WorkLoadService.cs" />
-    <Compile Include="Data\Models\Jetf\CustomerMasterEntity.cs" />
     <Compile Include="Data\DataCenterDbContext.cs" />
-    <Compile Include="Data\Models\Jetf\FeeMasterEntity.cs" />
     <Compile Include="Data\JetfDbContext.cs" />
-    <Compile Include="Data\Models\DataCenter\OriginalListEntity.cs" />
-    <Compile Include="Data\Models\DataCenter\SeaOrderOriginalEntity.cs" />
-    <Compile Include="Data\Models\Jetf\ShipmentInboundEditHistoryEntity.cs" />
-    <Compile Include="Data\Models\Jetf\ShipmentInboundEntity.cs" />
-    <Compile Include="Data\Models\Jetf\ShipmentInboundExceptionEntity.cs" />
-    <Compile Include="Data\Models\Jetf\ShipmentInboundLocationHistoryEntity.cs" />
-    <Compile Include="Data\Models\DataCenter\SysCustEntity.cs" />
     <Compile Include="Extensions\QueryableExtensions.cs" />
     <Compile Include="_BaseService.cs" />
   </ItemGroup>
