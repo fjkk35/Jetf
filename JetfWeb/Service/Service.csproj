@@ -121,6 +121,9 @@
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="NLog, Version=5.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\packages\NLog.5.3.4\lib\net45\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="NPOI, Version=2.5.6.0, Culture=neutral, PublicKeyToken=0df73ec7942b34e1, processorArchitecture=MSIL">
       <HintPath>..\packages\NPOI.2.5.6\lib\net45\NPOI.dll</HintPath>
     </Reference>
@@ -566,6 +569,7 @@
     <Compile Include="Services\Job\SjlJob\Domain\JhfTaxResponseModel.cs" />
     <Compile Include="Services\Job\SjlJob\Domain\JhfTaxSendRequestModel.cs" />
     <Compile Include="Services\Job\SjlJob\SjlJobService.cs" />
+    <Compile Include="Services\Job\ShipmentInboundProcessStageTransferJob\ShipmentInboundProcessStageTransferJobService.cs" />
     <Compile Include="Services\Job\TaxJob\Model\EtlTaxModel.cs" />
     <Compile Include="Services\Job\TaxJob\Model\SeaTaxModel.cs" />
     <Compile Include="Services\Job\TaxJob\Model\TaxRequestModel.cs" />
@@ -610,7 +614,6 @@
     <Compile Include="Services\ShipmentInboundExceptionRecord\ShipmentInboundExceptionRecordService.cs" />
     <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundCustomerGroupModel.cs" />
     <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundEditHistoryModel.cs" />
-    <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundLocationHistoryModel.cs" />
     <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundRecordExportExcelResult.cs" />
     <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundRecordModel.cs" />
     <Compile Include="Services\ShipmentInboundRecord\Domain\ShipmentInboundRecordRequest.cs" />

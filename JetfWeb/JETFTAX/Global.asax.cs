@@ -10,6 +10,7 @@ using Service.Services.Job.CainiaoNeedJob;
 using Service.Services.Job.ComponentJob;
 using Service.Services.Job.FtzWebClientJob;
 using Service.Services.Job.IncomeJob;
+using Service.Services.Job.ShipmentInboundProcessStageTransferJob;
 using Service.Services.Job.SjlJob;
 using Service.Services.Job.TactWebClientJob;
 using System;
@@ -103,6 +104,7 @@ namespace JETFTAX
             builder.RegisterType<TactWebClientJobService>().AsSelf().InstancePerLifetimeScope();
             builder.RegisterType<FtzWebClientJobService>().AsSelf().InstancePerLifetimeScope();
             builder.RegisterType<SjlJobService>().AsSelf().InstancePerLifetimeScope();
+            builder.RegisterType<ShipmentInboundProcessStageTransferJobService>().AsSelf().InstancePerLifetimeScope();
         }
 
         private void ConfigureServices(ServiceCollection services)

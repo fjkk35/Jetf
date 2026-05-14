@@ -9,6 +9,7 @@ using Service.Services.Job.CainiaoNeedJob;
 using Service.Services.Job.ComponentJob;
 using Service.Services.Job.FtzWebClientJob;
 using Service.Services.Job.IncomeJob;
+using Service.Services.Job.ShipmentInboundProcessStageTransferJob;
 using Service.Services.Job.SjlJob;
 using Service.Services.Job.TactWebClientJob;
 using System;
@@ -28,7 +29,7 @@ namespace JETFTAX.App_Start
 
             app.UseHangfireDashboard("/hangfire");
 
-#if !DEBUG
+#if DEBUG
             app.UseHangfireServer();
 
             // 設定排程任務
@@ -47,6 +48,7 @@ namespace JETFTAX.App_Start
             var tactWebClientJobService = DependencyResolver.Current.GetService<TactWebClientJobService>();
             var ftzWebClientJobService = DependencyResolver.Current.GetService<FtzWebClientJobService>();
             var sjlJobService = DependencyResolver.Current.GetService<SjlJobService>();
+            var shipmentInboundProcessStageTransferJobService = DependencyResolver.Current.GetService<ShipmentInboundProcessStageTransferJobService>();
             
             var timeZoneOptions = new RecurringJobOptions
             {
@@ -97,6 +99,11 @@ namespace JETFTAX.App_Start
             RecurringJob.AddOrUpdate("金祥富稅金資料傳送",
                 () => sjlJobService.RunJhfTaxJobAsync(),
                 Cron.Daily(22, 10),
+                timeZoneOptions);
+
+            RecurringJob.AddOrUpdate("預先登記處理轉檔",
+                () => shipmentInboundProcessStageTransferJobService.RunShipmentInboundProcessStageTransferJobAsync(),
+                "*/10 8-19 * * *",
                 timeZoneOptions);
         }
 
