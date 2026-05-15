@@ -1,14 +1,14 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Service.Data
 {
     /// <summary>
-    /// DATA_CENTER 海運原始訂單資料。
+    /// 海運訂單編修資料。
     /// </summary>
-    [Table("SEA_ORDER_ORIGINAL", Schema = "dbo")]
-    public sealed class SeaOrderOriginalEntity
+    [Table("SEA_ORDER_EDIT", Schema = "dbo")]
+    public sealed class SeaOrderEditEntity
     {
         /// <summary>
         /// 資料流水號。
@@ -90,7 +90,13 @@ namespace Service.Data
         public string ItemNo { get; set; }
 
         /// <summary>
-        /// 品名。
+        /// 原始品名。
+        /// </summary>
+        [Column("ITEM_ONAME")]
+        public string ItemOName { get; set; }
+
+        /// <summary>
+        /// 編修後品名。
         /// </summary>
         [Column("ITEM_NAME")]
         public string ItemName { get; set; }
@@ -105,13 +111,7 @@ namespace Service.Data
         /// 商標。
         /// </summary>
         [Column("TRADEMARK")]
-        public string Trademark { get; set; }
-
-        /// <summary>
-        /// 規格補充說明。
-        /// </summary>
-        [Column("II_SPEC")]
-        public string IiSpec { get; set; }
+        public string TradeMark { get; set; }
 
         /// <summary>
         /// 淨重。
@@ -147,7 +147,7 @@ namespace Service.Data
         /// 完稅價格。
         /// </summary>
         [Column("DUTY_PAYING")]
-        public decimal? DutyPaying { get; set; }
+        public double? DutyPaying { get; set; }
 
         /// <summary>
         /// 體積。
@@ -180,7 +180,7 @@ namespace Service.Data
         public string ExCountryCode { get; set; }
 
         /// <summary>
-        /// 出口商地址。
+        /// 出口地址。
         /// </summary>
         [Column("EX_ADD")]
         public string ExAddress { get; set; }
@@ -204,6 +204,36 @@ namespace Service.Data
         public string Importer { get; set; }
 
         /// <summary>
+        /// 轉運日期。
+        /// </summary>
+        [Column("TRANS_DATE")]
+        public string TransDate { get; set; }
+
+        /// <summary>
+        /// 轉運狀態。
+        /// </summary>
+        [Column("TRANS_STATUS")]
+        public string TransStatus { get; set; }
+
+        /// <summary>
+        /// 更正證號。
+        /// </summary>
+        [Column("CORRECT_ID")]
+        public string CorrectId { get; set; }
+
+        /// <summary>
+        /// 更正姓名。
+        /// </summary>
+        [Column("CORRECT_Name")]
+        public string CorrectName { get; set; }
+
+        /// <summary>
+        /// 海關系統狀態。
+        /// </summary>
+        [Column("CS_STATUS")]
+        public string CsStatus { get; set; }
+
+        /// <summary>
         /// 進口人電話。
         /// </summary>
         [Column("IM_PHONENO")]
@@ -214,12 +244,6 @@ namespace Service.Data
         /// </summary>
         [Column("IM_ADD")]
         public string ImporterAddress { get; set; }
-
-        /// <summary>
-        /// 進口人地址簡化版。
-        /// </summary>
-        [Column("IM_ADD_S")]
-        public string ImporterAddressShort { get; set; }
 
         /// <summary>
         /// 貨櫃型式。
@@ -264,7 +288,7 @@ namespace Service.Data
         public string TaxFeeDeclared { get; set; }
 
         /// <summary>
-        /// 客戶代碼或客戶名稱代碼。
+        /// 客戶代碼。
         /// </summary>
         [Column("DESPATCH_NAME")]
         public string DespatchName { get; set; }
@@ -285,7 +309,7 @@ namespace Service.Data
         /// 到付款金額。
         /// </summary>
         [Column("CC")]
-        public double? Cc { get; set; }
+        public string Cc { get; set; }
 
         /// <summary>
         /// 補登資料。
@@ -306,16 +330,10 @@ namespace Service.Data
         public string Memo { get; set; }
 
         /// <summary>
-        /// 尺寸說明。
+        /// 尺寸資訊。
         /// </summary>
         [Column("SIZE")]
         public string Size { get; set; }
-
-        /// <summary>
-        /// 合計。
-        /// </summary>
-        [Column("TOTAL")]
-        public double? Total { get; set; }
 
         /// <summary>
         /// SIHNO。
@@ -328,24 +346,6 @@ namespace Service.Data
         /// </summary>
         [Column("LPNO")]
         public string LpNo { get; set; }
-
-        /// <summary>
-        /// 額外欄位。
-        /// </summary>
-        [Column("EXTRA1")]
-        public string Extra1 { get; set; }
-
-        /// <summary>
-        /// 到貨資訊。
-        /// </summary>
-        [Column("ARRIVAL")]
-        public string Arrival { get; set; }
-
-        /// <summary>
-        /// 狀態。
-        /// </summary>
-        [Column("STATUS")]
-        public string Status { get; set; }
 
         /// <summary>
         /// 建立時間。
@@ -378,28 +378,82 @@ namespace Service.Data
         public int? Version { get; set; }
 
         /// <summary>
-        /// 進口人名稱簡化版。
+        /// 規格補充說明。
         /// </summary>
-        [Column("IMPORTER_S")]
-        public string ImporterShort { get; set; }
+        [Column("II_SPEC")]
+        public string IiSpec { get; set; }
 
         /// <summary>
-        /// 是否轉運。
+        /// 狀態。
         /// </summary>
-        [Column("IS_TRANSFER")]
-        public string IsTransfer { get; set; }
+        [Column("STATUS")]
+        public string Status { get; set; }
 
         /// <summary>
-        /// 出口商地址簡化版。
+        /// 資料資訊。
         /// </summary>
-        [Column("EX_ADD_S")]
-        public string ExAddressShort { get; set; }
+        [Column("DATA_INFO")]
+        public string DataInfo { get; set; }
 
         /// <summary>
-        /// 進口人電話簡化版。
+        /// 稅率。
         /// </summary>
-        [Column("IM_PHONENO_S")]
-        public string ImporterPhoneShort { get; set; }
+        [Column("TAX_RATE")]
+        public string TaxRate { get; set; }
+
+        /// <summary>
+        /// 稅則貨品名稱。
+        /// </summary>
+        [Column("TAX_GOODS")]
+        public string TaxGoods { get; set; }
+
+        /// <summary>
+        /// 稅別代碼一。
+        /// </summary>
+        [Column("TAX_CODE1")]
+        public string TaxCode1 { get; set; }
+
+        /// <summary>
+        /// 稅別代碼二。
+        /// </summary>
+        [Column("TAX_CODE2")]
+        public string TaxCode2 { get; set; }
+
+        /// <summary>
+        /// 原始單價。
+        /// </summary>
+        [Column("UNIT_PRICE_O")]
+        public decimal? UnitPriceOriginal { get; set; }
+
+        /// <summary>
+        /// 原始發票金額。
+        /// </summary>
+        [Column("INVOICE_AMOUNT_O")]
+        public decimal? InvoiceAmountOriginal { get; set; }
+
+        /// <summary>
+        /// 原始完稅價格。
+        /// </summary>
+        [Column("DUTY_PAYING_O")]
+        public decimal? DutyPayingOriginal { get; set; }
+
+        /// <summary>
+        /// 稅額一。
+        /// </summary>
+        [Column("TAX_FEE1")]
+        public decimal? TaxFee1 { get; set; }
+
+        /// <summary>
+        /// 稅額二。
+        /// </summary>
+        [Column("TAX_FEE2")]
+        public decimal? TaxFee2 { get; set; }
+
+        /// <summary>
+        /// 總稅額。
+        /// </summary>
+        [Column("TOTAL_TAX")]
+        public decimal? TotalTax { get; set; }
 
         /// <summary>
         /// 核驗結果一。
@@ -426,163 +480,9 @@ namespace Service.Data
         public string RealResult4 { get; set; }
 
         /// <summary>
-        /// 品名簡化版。
-        /// </summary>
-        [Column("ITEM_NAME_S")]
-        public string ItemNameShort { get; set; }
-
-        /// <summary>
-        /// 稅率代碼一。
-        /// </summary>
-        [Column("TAX1_CODE")]
-        public string Tax1Code { get; set; }
-
-        /// <summary>
-        /// 稅率代碼二。
-        /// </summary>
-        [Column("TAX2_CODE")]
-        public string Tax2Code { get; set; }
-
-        /// <summary>
-        /// 稅率。
-        /// </summary>
-        [Column("TAX_RATE")]
-        public string TaxRate { get; set; }
-
-        /// <summary>
-        /// 稅額。
-        /// </summary>
-        [Column("TAX")]
-        public decimal? Tax { get; set; }
-
-        /// <summary>
-        /// 是否重複。
-        /// </summary>
-        [Column("IS_REPEAT")]
-        public string IsRepeat { get; set; }
-
-        /// <summary>
-        /// 毛重檢核結果。
-        /// </summary>
-        [Column("GW_CHECK")]
-        public string GwCheck { get; set; }
-
-        /// <summary>
-        /// 件數檢核結果。
-        /// </summary>
-        [Column("PIECE_CHECK")]
-        public string PieceCheck { get; set; }
-
-        /// <summary>
-        /// 淨重檢核結果。
-        /// </summary>
-        [Column("NW_CHECK")]
-        public string NwCheck { get; set; }
-
-        /// <summary>
-        /// 數量檢核結果。
-        /// </summary>
-        [Column("QUANTITY_CHECK")]
-        public string QuantityCheck { get; set; }
-
-        /// <summary>
-        /// 完稅價格檢核結果。
-        /// </summary>
-        [Column("PAYING_CHECK")]
-        public string PayingCheck { get; set; }
-
-        /// <summary>
-        /// 是否含稅。
-        /// </summary>
-        [Column("INCLUDE_TAX")]
-        public string IncludeTax { get; set; }
-
-        /// <summary>
-        /// 進口人證號簡化版。
-        /// </summary>
-        [Column("IMPORTER_ID_S")]
-        public string ImporterIdShort { get; set; }
-
-        /// <summary>
-        /// 稅則貨品名稱。
-        /// </summary>
-        [Column("TAX_GOODS")]
-        public string TaxGoods { get; set; }
-
-        /// <summary>
-        /// 品名中譯版。
-        /// </summary>
-        [Column("ITEM_NAME_M")]
-        public string ItemNameMedium { get; set; }
-
-        /// <summary>
-        /// 身分證檢核結果。
-        /// </summary>
-        [Column("ID_CHECK")]
-        public string IdCheck { get; set; }
-
-        /// <summary>
-        /// 稅金付款方式。
-        /// </summary>
-        [Column("TAX_PAYMENT")]
-        public string TaxPayment { get; set; }
-
-        /// <summary>
-        /// 轉換後稅金付款方式。
-        /// </summary>
-        [Column("TRANS_TAXPAYMENT")]
-        public string TransTaxPayment { get; set; }
-
-        /// <summary>
-        /// 業務模組。
-        /// </summary>
-        [Column("BIZ_MODULE")]
-        public string BizModule { get; set; }
-
-        /// <summary>
         /// 是否已超出併單範圍。
         /// </summary>
         [Column("MERGE_OVER_FLAG")]
         public string MergeOverFlag { get; set; }
-
-        /// <summary>
-        /// 舊版相容欄位，對應資料主鍵。
-        /// </summary>
-        [NotMapped]
-        public int Id
-        {
-            get { return RowId; }
-            set { RowId = value; }
-        }
-
-        /// <summary>
-        /// 舊版相容欄位，對應客戶代碼。
-        /// </summary>
-        [NotMapped]
-        public string CustCode
-        {
-            get { return DespatchName; }
-            set { DespatchName = value; }
-        }
-
-        /// <summary>
-        /// 舊版相容欄位，對應進口人地址。
-        /// </summary>
-        [NotMapped]
-        public string ImporterAddr
-        {
-            get { return ImporterAddress; }
-            set { ImporterAddress = value; }
-        }
-
-        /// <summary>
-        /// 舊版相容欄位，對應到付款金額。
-        /// </summary>
-        [NotMapped]
-        public decimal? CC
-        {
-            get { return Cc.HasValue ? (decimal?)Convert.ToDecimal(Cc.Value) : null; }
-            set { Cc = value.HasValue ? (double?)value.Value : null; }
-        }
     }
 }

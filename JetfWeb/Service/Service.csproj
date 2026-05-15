@@ -229,11 +229,33 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\Models\DataCenter\AirApprovalGEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\AirDetainEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\CargoStatusEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\CargoStatusDetailEntity.cs" />
     <Compile Include="Data\Models\DataCenter\OriginalListEntity.cs" />
     <Compile Include="Data\Models\DataCenter\SeaOrderOriginalEntity.cs" />
     <Compile Include="Data\Models\DataCenter\SysCustEntity.cs" />
       <Compile Include="Data\Models\DataCenter\ClearanceInfoEntity.cs" />
       <Compile Include="Data\Models\DataCenter\ClearanceTaxEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\CesMainOrderEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\DespatchFromEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\EtlCniPreDeclareOrderEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\EtlCnoPreDeclareCallbackEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\EtlFtzTaxEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\EtlOrderInfoEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\EtlPlinkErrorCodeEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\EtlPlinkErrorEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\EtlPreApprovalEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\EtlTactTaxEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\MainOrderInfoEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\MakeListEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\NameCertificationEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\OrderCargoManifestEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\OrderManifestEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\SeaOrderEditEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\SysAirBagEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\SysParamEntity.cs" />
     <Compile Include="Data\Models\Jetf\CustomerMasterEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterEntity.cs" />
     <Compile Include="Data\Models\Jetf\AbnormalStateEntity.cs" />
