@@ -1,22 +1,28 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Service.Data
 {
     /// <summary>
-    /// Jetf 費用主檔資料。
+    /// 費用主檔歷程資料。
     /// </summary>
-    [Table("FEE_MASTER", Schema = "dbo")]
-    public sealed class FeeMasterEntity
+    [Table("FEE_MASTER_LOG", Schema = "dbo")]
+    public sealed class FeeMasterLogEntity
     {
         /// <summary>
-        /// 主鍵識別碼。
+        /// 原始識別碼。
         /// </summary>
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        [Column("ID")]
+        [Column("ID", Order = 0)]
         public int Id { get; set; }
+
+        /// <summary>
+        /// 歷程建立時間。
+        /// </summary>
+        [Key]
+        [Column("INS_TIME", Order = 1)]
+        public DateTime InsTime { get; set; }
 
         /// <summary>
         /// 資料日期。
@@ -299,11 +305,5 @@ namespace Service.Data
         /// </summary>
         [Column("TRANS_COD")]
         public int? TransCod { get; set; }
-
-        /// <summary>
-        /// 納稅義務人證號。
-        /// </summary>
-        [Column("TAX_RECID")]
-        public string TaxRecId { get; set; }
     }
 }

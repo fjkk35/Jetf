@@ -359,6 +359,7 @@
     <Compile Include="Controllers\TactController.cs" />
     <Compile Include="Controllers\TCatEtlTaxController.cs" />
     <Compile Include="Controllers\TelegramGroupController.cs" />
+    <Compile Include="Controllers\SeaTaxUploadController.cs" />
     <Compile Include="Controllers\TpctContainerController.cs" />
     <Compile Include="Controllers\SeaUnboxingRecordController.cs" />
     <Compile Include="Controllers\TransferBagReportController.cs" />
@@ -828,6 +829,7 @@
     <Content Include="Scripts\ng-controllers\SeaClearanceCreate\SeaClearanceCreate.js" />
     <Content Include="Scripts\ng-controllers\SearchCargo\SearchCargo.js" />
     <Content Include="Scripts\ng-controllers\SearchCargo\SearchCargoDetail.js" />
+    <Content Include="Scripts\ng-controllers\Upload\SeaTaxUpload.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundBatchImport\ShipmentInboundBatchImport.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundLocationTransfer\ShipmentInboundLocationTransfer.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundPick\ShipmentInboundPick.js" />
@@ -2788,6 +2790,7 @@
     <Content Include="Scripts\vendor\jquery\jquery.slim.min.map" />
     <Content Include="Views\Account\Login.cshtml" />
     <Content Include="Views\Upload\Seatax.cshtml" />
+    <Content Include="Views\SeaTaxUpload\Index.cshtml" />
     <Content Include="Views\Upload\SeataxG.cshtml" />
     <Content Include="Views\Download\DownloadSea.cshtml" />
     <Content Include="Views\Download\DownloadEtl.cshtml" />
@@ -2959,6 +2962,7 @@
     <TypeScriptCompile Include="Scripts\ng-controllers\ShipmentInboundExceptionRecord\ShipmentInboundExceptionRecord.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SjlBatchImport\SjlBatchImportSearch.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SjlBilling\SjlBilling.ts" />
+    <TypeScriptCompile Include="Scripts\ng-controllers\Upload\SeaTaxUpload.ts" />
     <TypeScriptCompile Include="Scripts\types\global.d.ts" />
   </ItemGroup>
   <PropertyGroup>

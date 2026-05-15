@@ -42,6 +42,14 @@ namespace Service.Data
 
         public DbSet<FeeMasterEntity> FeeMasters { get; set; }
 
+        public DbSet<FeeMasterLogEntity> FeeMasterLogs { get; set; }
+
+        public DbSet<FeeMasterModifyEntity> FeeMasterModifies { get; set; }
+
         public DbSet<CustomerMasterEntity> CustomerMasters { get; set; }
+
+        public DbSet<CustomerSpecialEntity> CustomerSpecials { get; set; }
+
+        public DbSet<SeaTaxUploadEntity> SeaTaxUploads { get; set; }
     }
 }

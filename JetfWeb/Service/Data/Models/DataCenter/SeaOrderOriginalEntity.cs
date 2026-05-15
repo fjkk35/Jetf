@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System;
 
 namespace Service.Data
 {
@@ -32,6 +33,12 @@ namespace Service.Data
         public string JetfSerial { get; set; }
 
         /// <summary>
+        /// 進口人證號。
+        /// </summary>
+        [Column("IMPORTER_ID")]
+        public string ImporterId { get; set; }
+
+        /// <summary>
         /// 進口人地址。
         /// </summary>
         [Column("IM_ADD")]
@@ -62,6 +69,12 @@ namespace Service.Data
         public string TransName { get; set; }
 
         /// <summary>
+        /// 稅金派件公司。
+        /// </summary>
+        [Column("TRANS_TAXPAYMENT")]
+        public string TransTaxPayment { get; set; }
+
+        /// <summary>
         /// 毛重。
         /// </summary>
         [Column("GW")]
@@ -72,6 +85,24 @@ namespace Service.Data
         /// </summary>
         [Column("CC")]
         public decimal? CC { get; set; }
+
+        /// <summary>
+        /// 備註。
+        /// </summary>
+        [Column("MEMO")]
+        public string Memo { get; set; }
+
+        /// <summary>
+        /// 到貨資訊。
+        /// </summary>
+        [Column("ARRIVAL")]
+        public string Arrival { get; set; }
+
+        /// <summary>
+        /// 修改時間。
+        /// </summary>
+        [Column("MODIFTYDATE")]
+        public DateTime? ModifyDate { get; set; }
 
     }
 }

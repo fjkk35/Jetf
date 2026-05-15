@@ -21,6 +21,12 @@ namespace Service.Data
 
         public DbSet<SeaOrderOriginalEntity> SeaOrderOriginals { get; set; }
 
+        public DbSet<ClearanceInfoEntity> ClearanceInfos { get; set; }
+
+        public DbSet<ClearanceTaxEntity> ClearanceTaxes { get; set; }
+
+        public DbSet<EtlTipcTaxEntity> EtlTipcTaxes { get; set; }
+
         public DbSet<OriginalListEntity> OriginalLists { get; set; }
 
         public DbSet<SysCustEntity> SysCusts { get; set; }

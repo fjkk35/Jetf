@@ -1,0 +1,55 @@
+﻿@{
+    ViewBag.Title = "SeaTaxUpload";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="SeaTaxUploadController">
+    <span class="headtype">海運稅金資料上傳(新)</span>
+    <hr />
+
+    <form id="SeaTaxUploadForm"
+          action="@Url.Action("UploadFile", "SeaTaxUpload")"
+          method="post"
+          enctype="multipart/form-data"
+          class="containertype">
+        <div class="col-lg-12" style="margin-bottom:0.5rem;">
+            <label for="date">日　　期</label>
+            <input type="text"
+                   id="date"
+                   name="date"
+                   class="datepicker-input form-control"
+                   ng-model="form.date"
+                   uib-datepicker-popup="yyyy-MM-dd"
+                   datepicker-options="dateOptions"
+                   is-open="datePopup.opened"
+                   ng-click="openDatePopup()"
+                   close-text="關閉"
+                   current-text="今天"
+                   show-button-bar="false"
+                   readonly
+                   placeholder="請選擇日期" />
+        </div>
+        <div class="col-lg-12">
+            <label for="taxType">稅金種類</label>
+            <select id="taxType"
+                    name="taxType"
+                    class="form-control"
+                    ng-model="form.taxType">
+                <option value="">請選擇</option>
+                <option ng-repeat="item in taxTypeList" value="{{item.Value}}">{{item.Text}}</option>
+            </select>
+        </div>
+        <div class="col-lg-12" style="margin:0.5rem 0;">
+            <input type="file" name="file" id="fileTax" />
+        </div>
+        <button type="button"
+                class="btn btn-primary confirmbtn col-lg-3"
+                style="font-size: 1.2rem;"
+                ng-click="uploadFile()"
+                ng-disabled="loading">
+            <i class="fa fas fa-upload"></i> 上傳
+        </button>
+
+        <div class="loader loader-bar" ng-class="{'is-active': loading}" data-rounded data-text="檔案上傳中"></div>
+    </form>
+</div>
