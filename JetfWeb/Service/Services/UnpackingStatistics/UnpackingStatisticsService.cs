@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Service.Services.UnpackingStatistics
 {
-    // �אּ public �ѥ~����k�^�Ǩϥ�
+    // 改為 public 供外部方法回傳使用
     public class UnpackingStatisticsModel
     {
         public DateTime Date { get; set; }
@@ -56,7 +56,7 @@ namespace Service.Services.UnpackingStatistics
             var list = GetRaw(startDate, endDate);
             var result = new List<SheetData>();
 
-            // �ѪR����d��
+            // 解析日期範圍
             var start = DateTime.Parse(startDate);
             var end = DateTime.Parse(endDate);
             var allDates = new List<DateTime>();
@@ -70,7 +70,7 @@ namespace Service.Services.UnpackingStatistics
                 var customers = g.Select(r => r.Customer).Distinct().OrderBy(r => r).ToList();
                 var rows = new List<PivotRow>();
                 
-                // ��C�Ӥ���إ߸�ƦC�A�S����ƪ������� 0
+                // 對每個日期建立資料列，沒有資料的日期顯示 0
                 foreach (var date in allDates.OrderBy(d => d))
                 {
                     var dateData = g.Where(x => x.Date.Date == date.Date).ToList();
@@ -97,12 +97,12 @@ namespace Service.Services.UnpackingStatistics
                 });
             }
 
-            // �p�G�S�������ơA�����ݭn��ܤ���϶�
+            // 如果沒有任何資料，但仍需要顯示日期區間
             if (!result.Any() && allDates.Any())
             {
                 result.Add(new SheetData
                 {
-                    DataType = "�L���",
+                    DataType = "無資料",
                     Customers = new List<string>(),
                     Rows = allDates.Select(date => new PivotRow
                     {
@@ -127,13 +127,13 @@ namespace Service.Services.UnpackingStatistics
                 var sheet = wb.CreateSheet(sheetData.DataType);
                 int colIndex = 0;
                 var header = sheet.CreateRow(0);
-                header.CreateCell(colIndex).SetCellValue("���"); colIndex++;
-                header.CreateCell(colIndex).SetCellValue("����X�p"); colIndex++;
+                header.CreateCell(colIndex).SetCellValue("日期"); colIndex++;
+                header.CreateCell(colIndex).SetCellValue("當日合計"); colIndex++;
                 foreach (var c in sheetData.Customers)
                 {
                     header.CreateCell(colIndex).SetCellValue(c); colIndex++;
                 }
-                //�M style
+                //套 style
                 for (int i = 0; i < colIndex; i++) header.GetCell(i).CellStyle = style.Header;
 
                 int rowIdx = 1;
@@ -150,10 +150,10 @@ namespace Service.Services.UnpackingStatistics
                         ci++;
                     }
                 }
-                // �p�p�C
+                // 小計列
                 var totalRow = sheet.CreateRow(sheetData.Rows.Count + 1);
                 int tc = 0;
-                totalRow.CreateCell(tc).SetCellValue("�p�p"); totalRow.GetCell(tc).CellStyle = style.SubTotal; tc++;
+                totalRow.CreateCell(tc).SetCellValue("小計"); totalRow.GetCell(tc).CellStyle = style.SubTotal; tc++;
                 totalRow.CreateCell(tc).SetCellValue(sheetData.GrandTotal); totalRow.GetCell(tc).CellStyle = style.SubTotalInt; tc++;
                 foreach (var c in sheetData.Customers)
                 {
@@ -163,23 +163,23 @@ namespace Service.Services.UnpackingStatistics
                     tc++;
                 }
                 
-                // �վ����e�� - �ھڤ��e�ʺA�վ�
+                // 調整欄位寬度 - 根據內容動態調整
                 for (int i = 0; i < tc; i++)
                 {
-                    if (i == 0) // �����
+                    if (i == 0) // 日期欄
                     {
-                        sheet.SetColumnWidth(i, 3000); // MM/dd �榡���ݭn�Ӽe
+                        sheet.SetColumnWidth(i, 3000); // MM/dd 格式不需要太寬
                     }
-                    else if (i == 1) // ����X�p��
+                    else if (i == 1) // 當日合計欄
                     {
                         sheet.SetColumnWidth(i, 4000);
                     }
-                    else // �Ȥ�W�����
+                    else // 客戶名稱欄位
                     {
-                        // �ھګȤ�W�٪��װʺA�վ�e��
+                        // 根據客戶名稱長度動態調整寬度
                         var customerName = sheetData.Customers[i - 2];
-                        var width = Math.Max(4000, customerName.Length * 500 + 2000); // ��¦�e�� + �r�����׽վ�
-                        width = Math.Min(width, 8000); // �]�w�̤j�e���קK�L�e
+                        var width = Math.Max(4000, customerName.Length * 500 + 2000); // 基礎寬度 + 字元長度調整
+                        width = Math.Min(width, 8000); // 設定最大寬度避免過寬
                         sheet.SetColumnWidth(i, width);
                     }
                 }
@@ -199,10 +199,10 @@ namespace Service.Services.UnpackingStatistics
         Styles BuildStyles(IWorkbook wb)
         {
             var font = wb.CreateFont();
-            font.FontName = "�L�n������";
+            font.FontName = "微軟正黑體";
             font.FontHeightInPoints = 11;
             var bold = wb.CreateFont();
-            bold.FontName = "�L�n������"; bold.IsBold = true; bold.FontHeightInPoints = 11;
+            bold.FontName = "微軟正黑體"; bold.IsBold = true; bold.FontHeightInPoints = 11;
 
             ICellStyle header = wb.CreateCellStyle(); header.SetFont(bold); header.Alignment = HorizontalAlignment.Center; header.VerticalAlignment = VerticalAlignment.Center;
             ICellStyle txt = wb.CreateCellStyle(); txt.SetFont(font);
