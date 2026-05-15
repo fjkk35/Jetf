@@ -1,0 +1,68 @@
+﻿@{
+    ViewBag.Title = "DownloadEtlNew";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="DownloadEtlNewController">
+    <span class="headtype">物流代收檔下載-空運(新)</span>
+    <hr />
+
+    <form id="DownloadEtlNewForm"
+          action="@Url.Action("EtlExcel", "DownloadEtlNew")"
+          method="post"
+          enctype="multipart/form-data"
+          class="containertype">
+        <div class="col-lg-12" style="margin-bottom:0.5rem;">
+            <label for="date">日　　期</label>
+            <input type="text"
+                   id="date"
+                   name="date"
+                   class="datepicker-input form-control"
+                   ng-model="form.date"
+                   uib-datepicker-popup="yyyy-MM-dd"
+                   datepicker-options="dateOptions"
+                   is-open="datePopup.opened"
+                   ng-click="openDatePopup()"
+                   close-text="關閉"
+                   current-text="今天"
+                   show-button-bar="false"
+                   readonly
+                   placeholder="請選擇日期" />
+        </div>
+        <div class="col-lg-12" style="margin-bottom:0.5rem;">
+            <label for="timeBetween">資料區間</label>
+            <select id="timeBetween"
+                    name="timeBetween"
+                    class="form-control"
+                    ng-model="form.timeBetween"
+                    ng-options="item.value as item.text for item in timeBetweenList"
+                    ng-change="onTimeBetweenChange()"></select>
+            <input type="text"
+                   id="sTime"
+                   name="sTime"
+                   maxlength="4"
+                   class="form-control"
+                   ng-model="form.sTime"
+                   placeholder="開始時間" />
+            －
+            <input type="text"
+                   id="eTime"
+                   name="eTime"
+                   maxlength="4"
+                   class="form-control"
+                   ng-model="form.eTime"
+                   placeholder="結束時間" />
+        </div>
+        <input type="hidden" id="company" name="company" ng-value="form.company" />
+
+        <button type="button"
+                class="btn btn-primary confirmbtn col-lg-3"
+                style="font-size: 1.2rem;"
+                ng-click="downloadAll()"
+                ng-disabled="loading">
+            <i class="fas fa-download"></i> 下載
+        </button>
+
+        <div class="loader loader-bar" ng-class="{'is-active': loading}" data-rounded data-text="檔案下載中"></div>
+    </form>
+</div>

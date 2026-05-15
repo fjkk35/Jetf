@@ -27,9 +27,8 @@ namespace JETFTAX.App_Start
             GlobalConfiguration.Configuration
                 .UseSqlServerStorage("Data Source=192.168.1.4;Initial Catalog=jetf;Persist Security Info=True;User ID=user_c1;Password=a*741jef*;");
 
-            app.UseHangfireDashboard("/hangfire");
-
 #if !DEBUG
+            app.UseHangfireDashboard("/hangfire");
             app.UseHangfireServer();
 
             // 設定排程任務

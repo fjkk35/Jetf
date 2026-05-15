@@ -728,6 +728,7 @@
     <Compile Include="Services\TpctContainerService.cs" />
     <Compile Include="Services\TransferBagReport\TransferBagReportService.cs" />
     <Compile Include="Services\UnpackingStatistics\UnpackingStatisticsService.cs" />
+    <Compile Include="Services\DownloadEtlNew\DownloadEtlNewService.cs" />
     <Compile Include="Services\SeaTaxUpload\SeaTaxUploadService.cs" />
     <Compile Include="Services\UploadService.cs" />
     <Compile Include="Services\UserContextService.cs" />

@@ -10,7 +10,6 @@ mainApp.controller('LayoutController', function ($scope, $http) {
         {
             id: 'tax', title: '稅金操作', icon: 'fas fa-fw fa-file-invoice-dollar', partner: 'Tax', children: [
                 { id: 'Seatax', text: '1-1.海運稅金資料上傳', url: '~/Upload/Seatax', auth: ['UploadSeaTax'] },
-                { id: 'SeaTaxUploadNew', text: '1-1-1.海運稅金資料上傳(新)', url: '~/SeaTaxUpload/Index', auth: ['UploadSeaTax'] },
                 { id: 'SeataxG', text: '2-1.G類資料上傳', url: '~/Upload/SeataxG', auth: ['UploadSeaTaxG'] },
                 { id: 'DownloadSea', text: '3-1.物流代收檔下載-海運', url: '~/Download/DownloadSea', auth: ['DownloadSeaTax'] },
                 { id: 'CainiaoSevenElevenSeaTax', text: '3-1-1.菜鳥7-11海運稅金', url: '~/CainiaoSevenElevenSeaTax/Index', auth: ['CainiaoSevenElevenSeaTax'] },
@@ -43,6 +42,12 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'MainTaxSearch', text: '7-4.主號稅金查詢', url: '~/MainTaxSearch/Index', auth: ['MainTaxSearch'] },
                 { id: 'TaxPortalCustomer', text: '7-5.稅金單客戶查詢', url: '~/TaxPortalCustomer/Index', auth: ['TaxPortalCustomer'] },
                 { id: 'SearchCustomer', text: '客戶查詢', url: '~/Customer/SearchCustomer', auth: ['SearchCustomer'] }
+            ]
+        },
+        {
+            id: 'taxNew', title: '稅金操作(新)', icon: 'fas fa-fw fa-file-invoice-dollar', partner: 'Tax', children: [
+                { id: 'SeaTaxUploadNew', text: '1-1.海運稅金資料上傳(新)', url: '~/SeaTaxUpload/Index', auth: ['UploadSeaTax'] },
+                { id: 'DownloadEtlNew', text: '1-2.物流代收檔下載-空運(新)', url: '~/DownloadEtlNew/Index', auth: ['DownloadEtlTax'] }
             ]
         },
         {
