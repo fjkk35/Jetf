@@ -15,7 +15,12 @@ namespace JETFTAX.Controllers
 {
     public class CustomerController : Controller
     {
-        CustomerService customerService = new CustomerService();
+        private readonly CustomerService _customerService;
+
+        public CustomerController(CustomerService customerService)
+        {
+            _customerService = customerService;
+        }
 
         /// <summary>
         /// 客戶查詢
@@ -35,7 +40,7 @@ namespace JETFTAX.Controllers
         //[UserAuthorize("1", "2")]
         [UserAuthorize(Authority.SearchCustomer)]
         public ActionResult GetCustomer() {
-            DataTable dt = customerService.GetCustomer_Master();
+            DataTable dt = _customerService.GetCustomer_Master();
             //int count = dt.Rows.Count;
             //JDataTableModel model = new JDataTableModel()
             //{
@@ -63,7 +68,7 @@ namespace JETFTAX.Controllers
 
             //物流公司
             List<SelectListItem> customerList = new List<SelectListItem>();
-            DataTable dt_CompanyList = customerService.GetCompanyList();
+            DataTable dt_CompanyList = _customerService.GetCompanyList();
             for (int i = 0; i < dt_CompanyList.Rows.Count; i++)
             {
                 //company = $"{ dt_CompanyList.Rows[i]["COMPANY_NO"].ToString()}-{dt_CompanyList.Rows[i]["COMPANY"].ToString()}";
@@ -85,7 +90,7 @@ namespace JETFTAX.Controllers
 
             if (id != "")
             {
-                DataTable dt = customerService.GetCustomer_Master(id);
+                DataTable dt = _customerService.GetCustomer_Master(id);
                 vm.id = id;
                 vm.tran_type = dt.Rows[0]["TRAN_TYPE"].ToString();
                 vm.cust_id = dt.Rows[0]["CUST_ID"].ToString();
@@ -131,10 +136,10 @@ namespace JETFTAX.Controllers
 
             if (vm.id == null)
             {
-                resopnseModel= customerService.InsertCustomer_Master(model, Session["user_id"].ToString());
+                resopnseModel= _customerService.InsertCustomer_Master(model, Session["user_id"].ToString());
             }
             else {
-                resopnseModel = customerService.EditCustomer_Master(model, Session["user_id"].ToString());
+                resopnseModel = _customerService.EditCustomer_Master(model, Session["user_id"].ToString());
             }
            
             return Json(resopnseModel, JsonRequestBehavior.AllowGet);

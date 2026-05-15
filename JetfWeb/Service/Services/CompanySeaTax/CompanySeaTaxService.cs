@@ -17,7 +17,8 @@ namespace Service.Services.CompanySeaTax
     {
         private readonly GlobalService _globalService;
 
-        public CompanySeaTaxService(GlobalService globalService)
+        public CompanySeaTaxService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, GlobalService globalService)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _globalService = globalService;
         }

@@ -18,6 +18,11 @@ namespace Service.Services.InvoiceNew
 {
     public class InvoiceNewService : _BaseService
     {
+        public InvoiceNewService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 開立電子發票作業New上傳並產生Excel
         /// </summary>

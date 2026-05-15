@@ -11,6 +11,11 @@ namespace Service.Services.ApprovalCategory
 {
     public class ApprovalCategoryService : _BaseService
     {
+        public ApprovalCategoryService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得所有簽審類別
         /// </summary>

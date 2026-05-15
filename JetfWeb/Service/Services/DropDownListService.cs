@@ -17,6 +17,11 @@ namespace Service.Services
 {
     public class DropDownListService : _BaseService
     {
+        public DropDownListService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
 
         /// <summary>
         /// 取得空運稅金種類

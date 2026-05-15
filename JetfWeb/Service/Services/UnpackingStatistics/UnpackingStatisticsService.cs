@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Service.Services.UnpackingStatistics
 {
-    // §ï¬° public ¨Ñ¥~³¡¤èªk¦^¶Ç¨Ï¥Î
+    // ï¿½ï¬° public ï¿½Ñ¥~ï¿½ï¿½ï¿½ï¿½kï¿½^ï¿½Ç¨Ï¥ï¿½
     public class UnpackingStatisticsModel
     {
         public DateTime Date { get; set; }
@@ -19,6 +19,11 @@ namespace Service.Services.UnpackingStatistics
 
     public class UnpackingStatisticsService : _BaseService
     {
+        public UnpackingStatisticsService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         class SheetData
         {
             public string DataType { get; set; }
@@ -51,7 +56,7 @@ namespace Service.Services.UnpackingStatistics
             var list = GetRaw(startDate, endDate);
             var result = new List<SheetData>();
 
-            // ¸ÑªR¤é´Á½d³ò
+            // ï¿½ÑªRï¿½ï¿½ï¿½ï¿½dï¿½ï¿½
             var start = DateTime.Parse(startDate);
             var end = DateTime.Parse(endDate);
             var allDates = new List<DateTime>();
@@ -65,7 +70,7 @@ namespace Service.Services.UnpackingStatistics
                 var customers = g.Select(r => r.Customer).Distinct().OrderBy(r => r).ToList();
                 var rows = new List<PivotRow>();
                 
-                // ¹ï¨C­Ó¤é´Á«Ø¥ß¸ê®Æ¦C¡A¨S¦³¸ê®Æªº¤é´ÁÅã¥Ü 0
+                // ï¿½ï¿½Cï¿½Ó¤ï¿½ï¿½ï¿½Ø¥ß¸ï¿½Æ¦Cï¿½Aï¿½Sï¿½ï¿½ï¿½ï¿½Æªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 0
                 foreach (var date in allDates.OrderBy(d => d))
                 {
                     var dateData = g.Where(x => x.Date.Date == date.Date).ToList();
@@ -92,12 +97,12 @@ namespace Service.Services.UnpackingStatistics
                 });
             }
 
-            // ¦pªG¨S¦³¥ô¦ó¸ê®Æ¡A¦ý¤´»Ý­nÅã¥Ü¤é´Á°Ï¶¡
+            // ï¿½pï¿½Gï¿½Sï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¡Aï¿½ï¿½ï¿½ï¿½ï¿½Ý­nï¿½ï¿½Ü¤ï¿½ï¿½ï¿½Ï¶ï¿½
             if (!result.Any() && allDates.Any())
             {
                 result.Add(new SheetData
                 {
-                    DataType = "µL¸ê®Æ",
+                    DataType = "ï¿½Lï¿½ï¿½ï¿½",
                     Customers = new List<string>(),
                     Rows = allDates.Select(date => new PivotRow
                     {
@@ -122,13 +127,13 @@ namespace Service.Services.UnpackingStatistics
                 var sheet = wb.CreateSheet(sheetData.DataType);
                 int colIndex = 0;
                 var header = sheet.CreateRow(0);
-                header.CreateCell(colIndex).SetCellValue("¤é´Á"); colIndex++;
-                header.CreateCell(colIndex).SetCellValue("·í¤é¦X­p"); colIndex++;
+                header.CreateCell(colIndex).SetCellValue("ï¿½ï¿½ï¿½"); colIndex++;
+                header.CreateCell(colIndex).SetCellValue("ï¿½ï¿½ï¿½ï¿½Xï¿½p"); colIndex++;
                 foreach (var c in sheetData.Customers)
                 {
                     header.CreateCell(colIndex).SetCellValue(c); colIndex++;
                 }
-                //®M style
+                //ï¿½M style
                 for (int i = 0; i < colIndex; i++) header.GetCell(i).CellStyle = style.Header;
 
                 int rowIdx = 1;
@@ -145,10 +150,10 @@ namespace Service.Services.UnpackingStatistics
                         ci++;
                     }
                 }
-                // ¤p­p¦C
+                // ï¿½pï¿½pï¿½C
                 var totalRow = sheet.CreateRow(sheetData.Rows.Count + 1);
                 int tc = 0;
-                totalRow.CreateCell(tc).SetCellValue("¤p­p"); totalRow.GetCell(tc).CellStyle = style.SubTotal; tc++;
+                totalRow.CreateCell(tc).SetCellValue("ï¿½pï¿½p"); totalRow.GetCell(tc).CellStyle = style.SubTotal; tc++;
                 totalRow.CreateCell(tc).SetCellValue(sheetData.GrandTotal); totalRow.GetCell(tc).CellStyle = style.SubTotalInt; tc++;
                 foreach (var c in sheetData.Customers)
                 {
@@ -158,23 +163,23 @@ namespace Service.Services.UnpackingStatistics
                     tc++;
                 }
                 
-                // ½Õ¾ãÄæ¦ì¼e«× - ®Ú¾Ú¤º®e°ÊºA½Õ¾ã
+                // ï¿½Õ¾ï¿½ï¿½ï¿½ï¿½eï¿½ï¿½ - ï¿½Ú¾Ú¤ï¿½ï¿½eï¿½ÊºAï¿½Õ¾ï¿½
                 for (int i = 0; i < tc; i++)
                 {
-                    if (i == 0) // ¤é´ÁÄæ
+                    if (i == 0) // ï¿½ï¿½ï¿½ï¿½ï¿½
                     {
-                        sheet.SetColumnWidth(i, 3000); // MM/dd ®æ¦¡¤£»Ý­n¤Ó¼e
+                        sheet.SetColumnWidth(i, 3000); // MM/dd ï¿½æ¦¡ï¿½ï¿½ï¿½Ý­nï¿½Ó¼e
                     }
-                    else if (i == 1) // ·í¤é¦X­pÄæ
+                    else if (i == 1) // ï¿½ï¿½ï¿½ï¿½Xï¿½pï¿½ï¿½
                     {
                         sheet.SetColumnWidth(i, 4000);
                     }
-                    else // «È¤á¦WºÙÄæ¦ì
+                    else // ï¿½È¤ï¿½Wï¿½ï¿½ï¿½ï¿½ï¿½
                     {
-                        // ®Ú¾Ú«È¤á¦WºÙªø«×°ÊºA½Õ¾ã¼e«×
+                        // ï¿½Ú¾Ú«È¤ï¿½Wï¿½Ùªï¿½ï¿½×°ÊºAï¿½Õ¾ï¿½eï¿½ï¿½
                         var customerName = sheetData.Customers[i - 2];
-                        var width = Math.Max(4000, customerName.Length * 500 + 2000); // °òÂ¦¼e«× + ¦r¤¸ªø«×½Õ¾ã
-                        width = Math.Min(width, 8000); // ³]©w³Ì¤j¼e«×Á×§K¹L¼e
+                        var width = Math.Max(4000, customerName.Length * 500 + 2000); // ï¿½ï¿½Â¦ï¿½eï¿½ï¿½ + ï¿½rï¿½ï¿½ï¿½ï¿½ï¿½×½Õ¾ï¿½
+                        width = Math.Min(width, 8000); // ï¿½]ï¿½wï¿½Ì¤jï¿½eï¿½ï¿½ï¿½×§Kï¿½Lï¿½e
                         sheet.SetColumnWidth(i, width);
                     }
                 }
@@ -194,10 +199,10 @@ namespace Service.Services.UnpackingStatistics
         Styles BuildStyles(IWorkbook wb)
         {
             var font = wb.CreateFont();
-            font.FontName = "·L³n¥¿¶ÂÅé";
+            font.FontName = "ï¿½Lï¿½nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½";
             font.FontHeightInPoints = 11;
             var bold = wb.CreateFont();
-            bold.FontName = "·L³n¥¿¶ÂÅé"; bold.IsBold = true; bold.FontHeightInPoints = 11;
+            bold.FontName = "ï¿½Lï¿½nï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"; bold.IsBold = true; bold.FontHeightInPoints = 11;
 
             ICellStyle header = wb.CreateCellStyle(); header.SetFont(bold); header.Alignment = HorizontalAlignment.Center; header.VerticalAlignment = VerticalAlignment.Center;
             ICellStyle txt = wb.CreateCellStyle(); txt.SetFont(font);

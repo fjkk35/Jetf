@@ -17,14 +17,15 @@ namespace JETFTAX.Controllers
 {
     public class DownloadController : Controller
     {
-        GlobalService globalService = new GlobalService();
-        DownloadService downloadService = new DownloadService();
-
+        private readonly GlobalService _globalService;
+        private readonly DownloadService _downloadService;
         private readonly DropDownListService _dropDownListService;
 
-        public DownloadController(DropDownListService dropDownListService)
+        public DownloadController(DropDownListService dropDownListService, GlobalService globalService, DownloadService downloadService)
         {
             _dropDownListService = dropDownListService;
+            _globalService = globalService;
+            _downloadService = downloadService;
         }
 
         /// <summary>
@@ -55,7 +56,7 @@ namespace JETFTAX.Controllers
             string date = Convert.ToDateTime(vm.date).ToString("yyyyMMdd");
             string msg = "";
 
-            DataTableModel dataTableModel = downloadService.SeaReport(vm.date, vm.taxType, "N");
+            DataTableModel dataTableModel = _downloadService.SeaReport(vm.date, vm.taxType, "N");
             msg = dataTableModel.msg;
             DataTable dt = dataTableModel.dt;
 
@@ -161,7 +162,7 @@ namespace JETFTAX.Controllers
                 }
                 row.CreateCell(7).SetCellValue(remark);
                 row.CreateCell(8).SetCellValue(dt.Rows[i]["DLV_COM"].ToString());
-                row.CreateCell(9).SetCellValue(globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString()));
+                row.CreateCell(9).SetCellValue(_globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString()));
             }
 
             return workbook;
@@ -176,7 +177,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.DownloadSeaTax)]
         public ActionResult SeaErrorExcel(DownloadSeaViewModel vm)
         {
-            DataTableModel dataTableModel = downloadService.SeaReport(vm.date, vm.taxType, "");
+            DataTableModel dataTableModel = _downloadService.SeaReport(vm.date, vm.taxType, "");
             DataTable dt = dataTableModel.dt;
             IWorkbook workbook = GetSeaWorkbook(dt);
 
@@ -229,7 +230,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.DownloadSeaTax)]
         public ActionResult SeaSpecialDExcel(DownloadSeaViewModel vm)
         {
-            DataTableModel dataTableModel = downloadService.SeaReport(vm.date, vm.taxType, "D");
+            DataTableModel dataTableModel = _downloadService.SeaReport(vm.date, vm.taxType, "D");
             DataTable dt = dataTableModel.dt;
             IWorkbook workbook = GetSeaSpecialWorkbook(dt);
 
@@ -282,7 +283,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.DownloadSeaTax)]
         public ActionResult SeaSpecialCExcel(DownloadSeaViewModel vm)
         {
-            DataTableModel dataTableModel = downloadService.SeaReport(vm.date, vm.taxType, "C");
+            DataTableModel dataTableModel = _downloadService.SeaReport(vm.date, vm.taxType, "C");
             DataTable dt = dataTableModel.dt;
             IWorkbook workbook = GetSeaSpecialWorkbook(dt);
 
@@ -376,7 +377,7 @@ namespace JETFTAX.Controllers
                     remark = "G類";
                 }
                 row.CreateCell(8).SetCellValue(remark);
-                row.CreateCell(9).SetCellValue(globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString()));
+                row.CreateCell(9).SetCellValue(_globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString()));
             }
 
             return workbook;
@@ -413,7 +414,7 @@ namespace JETFTAX.Controllers
 
             try
             {
-                resopnseModel = downloadService.UploadEtl(vm.date, vm.timeBetween, vm.sTime, vm.eTime, Session["user_id"].ToString());
+                resopnseModel = _downloadService.UploadEtl(vm.date, vm.timeBetween, vm.sTime, vm.eTime, Session["user_id"].ToString());
             }
             catch (Exception ex)
             {
@@ -485,7 +486,7 @@ namespace JETFTAX.Controllers
                 if (fileName != "")
                 {
                     //取得資料
-                    dataTableModel = downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "N", Session["user_id"].ToString());
+                    dataTableModel = _downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "N", Session["user_id"].ToString());
                     msg = dataTableModel.msg;
 
                     if (dataTableModel.status == Status.success)
@@ -524,7 +525,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.DownloadEtlTax)]
         public ActionResult EtlErrorExcel(DownloadEtlViewModel vm)
         {
-            DataTableModel dataTableModel = downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "", Session["user_id"].ToString());
+            DataTableModel dataTableModel = _downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "", Session["user_id"].ToString());
             DataTable dt = dataTableModel.dt;
             string dataDate = Convert.ToDateTime(vm.date).ToString("yyyyMMdd");
             IWorkbook workbook = GetEtlWorkbook(dt);
@@ -586,7 +587,7 @@ namespace JETFTAX.Controllers
                 row.CreateCell(4).SetCellValue(dt.Rows[i]["RECIPIENT"].ToString());
                 row.CreateCell(5).SetCellValue(dt.Rows[i]["RECPHONE"].ToString());
                 row.CreateCell(6).SetCellValue(dt.Rows[i]["TRANS_NAME"].ToString());
-                row.CreateCell(7).SetCellValue(globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString()));
+                row.CreateCell(7).SetCellValue(_globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString()));
             }
             return workbook;
         }
@@ -621,7 +622,7 @@ namespace JETFTAX.Controllers
                 if (fileName != "")
                 {
                     //取得資料
-                    dataTableModel = downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "D", Session["user_id"].ToString());
+                    dataTableModel = _downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "D", Session["user_id"].ToString());
                     if (dataTableModel.status == Status.success)
                     {
                         DataTable dt = dataTableModel.dt;
@@ -677,7 +678,7 @@ namespace JETFTAX.Controllers
                 if (fileName != "")
                 {
                     //取得資料
-                    dataTableModel = downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "C", Session["user_id"].ToString());
+                    dataTableModel = _downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "C", Session["user_id"].ToString());
                     if (dataTableModel.status == Status.success)
                     {
                         DataTable dt = dataTableModel.dt;
@@ -764,7 +765,7 @@ namespace JETFTAX.Controllers
                 row.CreateCell(8).SetCellValue(dt.Rows[i]["RECIPIENT"].ToString());
                 row.CreateCell(9).SetCellValue(dt.Rows[i]["RECPHONE"].ToString());
                 row.CreateCell(10).SetCellValue(dt.Rows[i]["TRANS_NAME"].ToString());
-                row.CreateCell(11).SetCellValue(globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString()));
+                row.CreateCell(11).SetCellValue(_globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString()));
             }
             return workbook;
         }
@@ -811,7 +812,7 @@ namespace JETFTAX.Controllers
                 if (fileName != "")
                 {
                     //取得資料
-                    dataTableModel = downloadService.NoIncludeTaxReport(vm.source, sDate, eDate, Session["user_id"].ToString());
+                    dataTableModel = _downloadService.NoIncludeTaxReport(vm.source, sDate, eDate, Session["user_id"].ToString());
                     if (dataTableModel.status == Status.success)
                     {
                         DataTable dt = dataTableModel.dt;
@@ -1033,7 +1034,7 @@ namespace JETFTAX.Controllers
                 if (fileName != "")
                 {
                     //取得資料
-                    dataTableModel = downloadService.IncludeTaxReport(vm.source, sDate, eDate, Session["user_id"].ToString());
+                    dataTableModel = _downloadService.IncludeTaxReport(vm.source, sDate, eDate, Session["user_id"].ToString());
                     if (dataTableModel.status == Status.success)
                     {
                         DataTable dt = dataTableModel.dt;
@@ -1474,7 +1475,7 @@ namespace JETFTAX.Controllers
         {
             string sDate = Convert.ToDateTime(vm.sDate).ToString("yyyyMMdd");
             string eDate = Convert.ToDateTime(vm.eDate).ToString("yyyyMMdd");
-            DataTableModel dataTableModel = downloadService.SeaModifyGReport(sDate, eDate);
+            DataTableModel dataTableModel = _downloadService.SeaModifyGReport(sDate, eDate);
             DataTable dt = dataTableModel.dt;
 
             IWorkbook workbook = GetSeaModifyGWorkbook(dt);
@@ -1595,7 +1596,7 @@ namespace JETFTAX.Controllers
                 }
                 row.CreateCell(16).SetCellValue(remark);
                 row.CreateCell(17).SetCellValue(dt.Rows[i]["DLV_COM"].ToString());
-                row.CreateCell(18).SetCellValue(globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString()));
+                row.CreateCell(18).SetCellValue(_globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString()));
             }
 
             return workbook;
@@ -1626,7 +1627,7 @@ namespace JETFTAX.Controllers
         {
             string sDate = Convert.ToDateTime(vm.sDate).ToString("yyyyMMdd");
             string eDate = Convert.ToDateTime(vm.eDate).ToString("yyyyMMdd");
-            DataTableModel dataTableModel = downloadService.SeaModifyReport(sDate, eDate);
+            DataTableModel dataTableModel = _downloadService.SeaModifyReport(sDate, eDate);
             DataTable dt = dataTableModel.dt;
 
             IWorkbook workbook = GetSeaModifyWorkbook(dt);
@@ -1732,7 +1733,7 @@ namespace JETFTAX.Controllers
             try
             {
                 //取得資料
-                dataTableModel = downloadService.ReceiveReport(sDate, eDate, Session["user_id"].ToString());
+                dataTableModel = _downloadService.ReceiveReport(sDate, eDate, Session["user_id"].ToString());
                 if (dataTableModel.status == Status.success)
                 {
                     int tax1, tax2, ccfee, cod, fee, to_dlv_cod, dlv_cod, diff;
@@ -1877,7 +1878,7 @@ namespace JETFTAX.Controllers
             try
             {
                 //取得資料
-                dataTableModel = downloadService.TransferReport(dataDate, Session["user_id"].ToString());
+                dataTableModel = _downloadService.TransferReport(dataDate, Session["user_id"].ToString());
                 if (dataTableModel.status == Status.success)
                 {
                     DataTable dt = dataTableModel.dt;
@@ -2030,7 +2031,7 @@ namespace JETFTAX.Controllers
             try
             {
                 //取得資料
-                dataTableModel = downloadService.NoTransferReport(sDate, eDate, Session["user_id"].ToString());
+                dataTableModel = _downloadService.NoTransferReport(sDate, eDate, Session["user_id"].ToString());
                 if (dataTableModel.status == Status.success)
                 {
                     int tax1, tax2, ccfee, cod, fee, to_dlv_cod, dlv_cod;

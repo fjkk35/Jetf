@@ -12,6 +12,11 @@ namespace Service.Services.MainTaxSearch
 {
     public class MainTaxSearchService : _BaseService
     {
+        public MainTaxSearchService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 查詢主號稅金資料
         /// </summary>

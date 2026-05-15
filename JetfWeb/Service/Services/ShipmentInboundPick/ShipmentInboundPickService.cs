@@ -13,11 +13,15 @@ namespace Service.Services.ShipmentInboundPick
 {
     public class ShipmentInboundPickService : _BaseService
     {
+        public ShipmentInboundPickService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         public List<ShipmentInboundPickModel> GetData(ShipmentInboundPickRequest request)
         {
-            using (var db = CreateJetfDbContext())
             {
-                var query = db.ShipmentInbounds
+                var query = JetfDb.ShipmentInbounds
                     .AsNoTracking()
                     .Where(x => x.ProcessType != ShipmentInboundProcessType.TempData)
                     .Where(x => !x.WarehouseProcessType.HasValue);

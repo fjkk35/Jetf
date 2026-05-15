@@ -11,6 +11,11 @@ namespace Service.Services.WorkDay
 {
     public class WorkDayService :_BaseService
     {
+        public WorkDayService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         public List<DateRequest> GetDate(DateTime startDate,DateTime endDate) 
         {
             var list = new List<DateRequest>();

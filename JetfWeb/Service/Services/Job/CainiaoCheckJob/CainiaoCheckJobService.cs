@@ -16,7 +16,8 @@ namespace Service.Services.Job.CainiaoCheckJob
     {
         private readonly TelegramBot _telegramBot;
 
-        public CainiaoCheckJobService(TelegramBot telegramBot)
+        public CainiaoCheckJobService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, TelegramBot telegramBot)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _telegramBot = telegramBot;
         }

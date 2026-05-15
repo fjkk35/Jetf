@@ -17,6 +17,11 @@ namespace Service.Services.EtlCustomerWorkLoadReport
 {
     public class EtlCustomerWorkLoadReportService : _BaseService
     {
+        public EtlCustomerWorkLoadReportService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         #region 公開方法
 
         /// <summary>

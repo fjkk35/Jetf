@@ -13,6 +13,11 @@ namespace Service.Services.WorkDayArea
 {
     public class WorkDayAreaService : _BaseService
     {
+        public WorkDayAreaService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得所有作業地區列表
         /// </summary>

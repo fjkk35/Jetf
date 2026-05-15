@@ -12,6 +12,11 @@ namespace Service.Services.ErrorOrderSmsMessage
 {
     public class ErrorOrderSmsMessageService : _BaseService
     {
+        public ErrorOrderSmsMessageService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得罐頭簡訊
         /// </summary>

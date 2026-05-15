@@ -17,6 +17,11 @@ namespace Service.Services.ShipmentInboundProcess
     /// </summary>
     public class ShipmentInboundProcessService : _BaseService
     {
+        public ShipmentInboundProcessService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 處理鎖定逾時分鐘數。
         /// 超過此時間的鎖定視為失效，前端不顯示且允許下一位人員接手。
@@ -30,9 +35,8 @@ namespace Service.Services.ShipmentInboundProcess
         /// <returns>查詢結果與總筆數。</returns>
         public ShipmentInboundProcessResponse GetData(ShipmentInboundProcessRequest request)
         {
-            using (var db = CreateJetfDbContext())
             {
-                var query = BuildWhereConditions(db.ShipmentInbounds.AsNoTracking(), request);
+                var query = BuildWhereConditions(JetfDb.ShipmentInbounds.AsNoTracking(), request);
                 var totalCount = query.Count();
                 var data = query
                     .OrderByDescending(x => x.InboundDate)
@@ -83,13 +87,12 @@ namespace Service.Services.ShipmentInboundProcess
         {
             var userId = GetUserId();
 
-            using (var db = CreateJetfDbContext())
             {
-                using (var tx = db.Database.BeginTransaction())
+                using (var tx = JetfDb.Database.BeginTransaction())
                 {
                     try
                     {
-                        var existing = db.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
+                        var existing = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
 
                         if (existing == null)
                         {
@@ -151,7 +154,7 @@ namespace Service.Services.ShipmentInboundProcess
                                 : string.Empty;
                             var newValueText = newProcessType.ToDescription();
 
-                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                            JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = request.Id,
                                 FieldName = "處理方式",
@@ -164,7 +167,7 @@ namespace Service.Services.ShipmentInboundProcess
 
                         if (oldTax != request.Tax)
                         {
-                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                            JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = request.Id,
                                 FieldName = "稅金",
@@ -177,7 +180,7 @@ namespace Service.Services.ShipmentInboundProcess
 
                         if (oldCcfee != request.Ccfee)
                         {
-                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                            JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = request.Id,
                                 FieldName = "報關費",
@@ -190,7 +193,7 @@ namespace Service.Services.ShipmentInboundProcess
 
                         if (oldCod != request.Cod)
                         {
-                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                            JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = request.Id,
                                 FieldName = "到付款",
@@ -203,7 +206,7 @@ namespace Service.Services.ShipmentInboundProcess
 
                         if (oldFee != newFee)
                         {
-                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                            JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = request.Id,
                                 FieldName = "手續費",
@@ -214,7 +217,7 @@ namespace Service.Services.ShipmentInboundProcess
                             });
                         }
 
-                        db.SaveChanges();
+                        JetfDb.SaveChanges();
                         tx.Commit();
                         return true;
                     }
@@ -328,9 +331,8 @@ namespace Service.Services.ShipmentInboundProcess
         /// <returns>單筆明細資料。</returns>
         public ShipmentInboundProcessDetailModel GetDetailById(int id)
         {
-            using (var db = CreateJetfDbContext())
             {
-                return db.ShipmentInbounds
+                return JetfDb.ShipmentInbounds
                     .AsNoTracking()
                     .Where(x => x.Id == id)
                     .Select(x => new ShipmentInboundProcessDetailModel
@@ -367,9 +369,8 @@ namespace Service.Services.ShipmentInboundProcess
         {
             var userId = GetUserId();
 
-            using (var db = CreateJetfDbContext())
             {
-                var entity = db.ShipmentInbounds.FirstOrDefault(x => x.Id == id);
+                var entity = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == id);
                 if (entity == null)
                 {
                     throw new Exception("查無此資料");
@@ -382,7 +383,7 @@ namespace Service.Services.ShipmentInboundProcess
                     if (string.Equals(entity.ProcessStartOpe, userId, StringComparison.OrdinalIgnoreCase))
                     {
                         entity.ProcessStartTime = DateTime.Now;
-                        db.SaveChanges();
+                        JetfDb.SaveChanges();
                         return BuildShipmentInboundProcessModel(entity);
                     }
 
@@ -391,7 +392,7 @@ namespace Service.Services.ShipmentInboundProcess
 
                 entity.ProcessStartTime = DateTime.Now;
                 entity.ProcessStartOpe = userId;
-                db.SaveChanges();
+                JetfDb.SaveChanges();
 
                 return BuildShipmentInboundProcessModel(entity);
             }
@@ -406,9 +407,8 @@ namespace Service.Services.ShipmentInboundProcess
         {
             var userId = GetUserId();
 
-            using (var db = CreateJetfDbContext())
             {
-                var entity = db.ShipmentInbounds.FirstOrDefault(x => x.Id == id);
+                var entity = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == id);
                 if (entity == null)
                 {
                     throw new Exception("查無此資料");
@@ -416,7 +416,7 @@ namespace Service.Services.ShipmentInboundProcess
 
                 if (NormalizeExpiredProcessEditLock(entity))
                 {
-                    db.SaveChanges();
+                    JetfDb.SaveChanges();
                     return BuildShipmentInboundProcessModel(entity);
                 }
 
@@ -432,7 +432,7 @@ namespace Service.Services.ShipmentInboundProcess
 
                 entity.ProcessStartTime = null;
                 entity.ProcessStartOpe = null;
-                db.SaveChanges();
+                JetfDb.SaveChanges();
 
                 return BuildShipmentInboundProcessModel(entity);
             }
@@ -445,9 +445,8 @@ namespace Service.Services.ShipmentInboundProcess
         /// <returns>單筆列表資料。</returns>
         public ShipmentInboundProcessModel GetRowById(int id)
         {
-            using (var db = CreateJetfDbContext())
             {
-                var entity = db.ShipmentInbounds.AsNoTracking().FirstOrDefault(x => x.Id == id);
+                var entity = JetfDb.ShipmentInbounds.AsNoTracking().FirstOrDefault(x => x.Id == id);
                 if (entity == null)
                 {
                     throw new Exception("查無此資料");
@@ -793,13 +792,12 @@ namespace Service.Services.ShipmentInboundProcess
             var userId = GetUserId();
 
             var trackingNos = rows.Select(x => x.TrackingNo).Distinct().ToList();
-            using (var db = CreateJetfDbContext())
             {
-                var existingData = db.ShipmentInbounds
+                var existingData = JetfDb.ShipmentInbounds
                     .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
                     .ToDictionary(x => x.TrackingNo, x => x);
 
-                using (var tx = db.Database.BeginTransaction())
+                using (var tx = JetfDb.Database.BeginTransaction())
                 {
                     try
                     {
@@ -826,7 +824,7 @@ namespace Service.Services.ShipmentInboundProcess
                                         : string.Empty;
                                     var newValueText = targetProcessType.ToDescription();
 
-                                    db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                                    JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                                     {
                                         ShipmentInboundId = shipmentInboundId,
                                         FieldName = "處理方式",
@@ -839,7 +837,7 @@ namespace Service.Services.ShipmentInboundProcess
                             }
                         }
 
-                        db.SaveChanges();
+                        JetfDb.SaveChanges();
                         tx.Commit();
                     }
                     catch
@@ -914,9 +912,8 @@ namespace Service.Services.ShipmentInboundProcess
             if (trackingNos.Any())
             {
                 List<string> existing;
-                using (var db = CreateJetfDbContext())
                 {
-                    existing = db.ShipmentInbounds
+                    existing = JetfDb.ShipmentInbounds
                         .AsNoTracking()
                         .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
                         .Select(x => x.TrackingNo)
@@ -1043,9 +1040,8 @@ namespace Service.Services.ShipmentInboundProcess
         /// <param name="returnReason">新的退件原因。</param>
         public void UpdateReturnReason(int id, string returnReason)
         {
-            using (var db = CreateJetfDbContext())
             {
-                var entity = db.ShipmentInbounds.FirstOrDefault(x => x.Id == id);
+                var entity = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == id);
                 if (entity == null)
                 {
                     throw new Exception("查無此資料");
@@ -1057,7 +1053,7 @@ namespace Service.Services.ShipmentInboundProcess
                 }
 
                 entity.ReturnReason = returnReason;
-                db.SaveChanges();
+                JetfDb.SaveChanges();
             }
         }
 
@@ -1089,14 +1085,13 @@ namespace Service.Services.ShipmentInboundProcess
                 return res;
             }
 
-            using (var db = CreateJetfDbContext())
             {
                 var trackingNos = rows.Select(x => x.TrackingNo).Distinct().ToList();
-                var entities = db.ShipmentInbounds
+                var entities = JetfDb.ShipmentInbounds
                     .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
                     .ToDictionary(x => x.TrackingNo, x => x);
 
-                using (var tx = db.Database.BeginTransaction())
+                using (var tx = JetfDb.Database.BeginTransaction())
                 {
                     try
                     {
@@ -1108,7 +1103,7 @@ namespace Service.Services.ShipmentInboundProcess
                             }
                         }
 
-                        db.SaveChanges();
+                        JetfDb.SaveChanges();
                         tx.Commit();
                     }
                     catch
@@ -1150,9 +1145,8 @@ namespace Service.Services.ShipmentInboundProcess
             if (trackingNos.Any())
             {
                 List<string> existing;
-                using (var db = CreateJetfDbContext())
                 {
-                    existing = db.ShipmentInbounds
+                    existing = JetfDb.ShipmentInbounds
                         .AsNoTracking()
                         .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
                         .Select(x => x.TrackingNo)

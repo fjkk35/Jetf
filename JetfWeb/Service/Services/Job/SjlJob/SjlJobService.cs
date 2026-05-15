@@ -18,6 +18,11 @@ namespace Service.Services.Job.SjlJob
     /// </summary>
     public class SjlJobService : _BaseService
     {
+        public SjlJobService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         //測試
         //private const string ApiUrl = "http://test.haysilk.com:7070/wmsbackend/openapi/v/invoke";
         //正式

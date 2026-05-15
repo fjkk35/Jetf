@@ -19,6 +19,11 @@ namespace Service.Services.EtlClearanceDetails
 {
     public class EtlClearanceDetailsService : _BaseService
     {
+        public EtlClearanceDetailsService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得空快清關明細
         /// </summary>

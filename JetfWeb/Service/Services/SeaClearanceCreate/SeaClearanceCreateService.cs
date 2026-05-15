@@ -27,7 +27,8 @@ namespace Service.Services
     {
         private readonly CptPortalApi _cptPortalApi;
 
-        public SeaClearanceCreateService(CptPortalApi cptPortalApi)
+        public SeaClearanceCreateService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, CptPortalApi cptPortalApi)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _cptPortalApi = cptPortalApi;
         }

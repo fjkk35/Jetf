@@ -43,9 +43,12 @@ namespace Service.Services.SeaClearance
         private readonly CustomsBrokerService _customsBrokerService;
         private readonly CptPortalApi _cptPortalApi;
 
-        public SeaClearanceService(CustomsBrokerService customsBrokerService,
+        public SeaClearanceService(Service.Data.JetfDbContext jetfDbContext,
+            Service.Data.DataCenterDbContext dataCenterDbContext,
+            CustomsBrokerService customsBrokerService,
             SeaClearanceDetailEditHistoryService editHistoryService,
             CptPortalApi cptPortalApi)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _editHistoryService = editHistoryService;
             _customsBrokerService = customsBrokerService;
@@ -56,11 +59,10 @@ namespace Service.Services.SeaClearance
         {
             request = request ?? new SeaClearanceRequest();
 
-            using (var db = CreateJetfDbContext())
             {
                 var page = request.Page > 0 ? request.Page : 1;
                 var pageSize = request.PageSize > 0 ? request.PageSize : 10;
-                var query = BuildSeaClearanceListQuery(db, request);
+                var query = BuildSeaClearanceListQuery(JetfDb, request);
                 var totalCount = query.Count();
                 var pageItems = query
                     .OrderBy(x => x.Id)
@@ -142,9 +144,8 @@ namespace Service.Services.SeaClearance
 
         private List<int> GetFilteredSeaClearanceDetailIds(SeaClearanceRequest request)
         {
-            using (var db = CreateJetfDbContext())
             {
-                return BuildSeaClearanceListQuery(db, request)
+                return BuildSeaClearanceListQuery(JetfDb, request)
                     .OrderBy(x => x.Id)
                     .Select(x => x.Id)
                     .ToList();
@@ -710,9 +711,8 @@ namespace Service.Services.SeaClearance
             var warehouseType = request.Type.HasValue ? request.Type.ToDescription() : null;
             var postEntry = request.PostEntry.HasValue ? request.PostEntry.ToDescription() : null;
 
-            using (var db = CreateJetfDbContext())
             {
-                IQueryable<SeaClearanceDetailEntity> detailQuery = db.SeaClearanceDetails
+                IQueryable<SeaClearanceDetailEntity> detailQuery = JetfDb.SeaClearanceDetails
                     .AsNoTracking()
                     .Where(x => x.IsSucess);
 
@@ -722,7 +722,7 @@ namespace Service.Services.SeaClearance
                 detailQuery = detailQuery.WhereIf(!string.IsNullOrWhiteSpace(trackingNo), x => x.TrackingNo == trackingNo);
                 detailQuery = detailQuery.WhereIf(!string.IsNullOrWhiteSpace(declNo), x => x.DeclNo == declNo);
 
-                IQueryable<SeaClearanceDetailOriginalMappingEntity> originalQuery = db.SeaClearanceDetailOriginalMappings.AsNoTracking();
+                IQueryable<SeaClearanceDetailOriginalMappingEntity> originalQuery = JetfDb.SeaClearanceDetailOriginalMappings.AsNoTracking();
                 var hasOriginalFilter = false;
 
                 if (!string.IsNullOrWhiteSpace(custCode))
@@ -782,12 +782,12 @@ namespace Service.Services.SeaClearance
                         IsSeaOrderOriginal = x.IsSeaOrderOriginal ?? false,
                         Tax = x.Tax,
                         CustomsBrokerId = x.CustomsBrokerId,
-                        CustomsBrokerName = db.CustomsBrokers
+                        CustomsBrokerName = JetfDb.CustomsBrokers
                             .Where(y => y.Id == x.CustomsBrokerId)
                             .Select(y => y.Name)
                             .FirstOrDefault(),
                         CustomsBrokerageId = x.CustomsBrokerageId,
-                        CustomsBrokerageName = db.CustomsBrokerages
+                        CustomsBrokerageName = JetfDb.CustomsBrokerages
                             .Where(y => y.Id == x.CustomsBrokerageId)
                             .Select(y => y.Name)
                             .FirstOrDefault(),
@@ -797,7 +797,7 @@ namespace Service.Services.SeaClearance
                         ContactChangeData = x.ContactChangeData,
                         CurrentStepId = x.CurrentStepId,
                         CurrentAbnormalStateId = x.CurrentAbnormalStateId,
-                        CurrentAbnormalStateName = db.AbnormalStates
+                        CurrentAbnormalStateName = JetfDb.AbnormalStates
                             .Where(y => y.Id == x.CurrentAbnormalStateId)
                             .Select(y => y.AbnormalStateName)
                             .FirstOrDefault(),
@@ -807,7 +807,7 @@ namespace Service.Services.SeaClearance
                     })
                     .ToList();
 
-                var originalRows = db.SeaClearanceDetailOriginalMappings
+                var originalRows = JetfDb.SeaClearanceDetailOriginalMappings
                     .AsNoTracking()
                     .Where(x => detailIds.Contains(x.SeaClearanceDetailId))
                     .OrderBy(x => x.SeaClearanceDetailId)
@@ -842,7 +842,7 @@ namespace Service.Services.SeaClearance
                     .Distinct()
                     .ToList();
 
-                var feeMap = db.SeaClearanceFees
+                var feeMap = JetfDb.SeaClearanceFees
                     .AsNoTracking()
                     .Where(x => feeCustCodes.Contains(x.CustCode))
                     .GroupBy(x => x.CustCode)

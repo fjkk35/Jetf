@@ -12,6 +12,11 @@ namespace Service.Services
 {
    public class AccountService : _BaseService
    {
+      public AccountService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+          : base(jetfDbContext, dataCenterDbContext)
+      {
+      }
+
         public UserMasterModel GetUserMaster(string user,string pwd) 
         {
             UserMasterModel model = new UserMasterModel();

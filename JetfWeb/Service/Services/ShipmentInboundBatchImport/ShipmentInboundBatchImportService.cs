@@ -14,7 +14,13 @@ namespace Service.Services.ShipmentInboundBatchImport
 {
     public class ShipmentInboundBatchImportService : _BaseService
     {
-        private readonly ShipmentInboundTrackingNoService _trackingNoService = new ShipmentInboundTrackingNoService();
+        private readonly ShipmentInboundTrackingNoService _trackingNoService;
+
+        public ShipmentInboundBatchImportService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, ShipmentInboundTrackingNoService trackingNoService)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+            _trackingNoService = trackingNoService;
+        }
 
         /// <summary>
         /// 批量上傳貨件入庫資料
@@ -170,9 +176,8 @@ namespace Service.Services.ShipmentInboundBatchImport
         /// <param name="shipmentInboundList">貨件入庫資料列表</param>
         private void InsertShipmentInbound(List<ShipmentInboundModel> shipmentInboundList)
         {
-            using (var db = CreateJetfDbContext())
             {
-                using (var transaction = db.Database.BeginTransaction())
+                using (var transaction = JetfDb.Database.BeginTransaction())
                 {
                     try
                     {
@@ -205,8 +210,8 @@ namespace Service.Services.ShipmentInboundBatchImport
                             CreatedTime = DateTime.Now
                         }).ToList();
 
-                        db.ShipmentInbounds.AddRange(entities);
-                        db.SaveChanges();
+                        JetfDb.ShipmentInbounds.AddRange(entities);
+                        JetfDb.SaveChanges();
                         transaction.Commit();
                     }
                     catch

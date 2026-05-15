@@ -13,6 +13,11 @@ namespace Service.Services.ShipmentInboundProcessStage
     /// </summary>
     public class ShipmentInboundProcessStageService : _BaseService
     {
+        public ShipmentInboundProcessStageService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         private static readonly ShipmentInboundProcessType[] RemarkOnlyProcessTypes =
         {
             ShipmentInboundProcessType.TransferFromOriginal,
@@ -29,9 +34,8 @@ namespace Service.Services.ShipmentInboundProcessStage
         /// </summary>
         public ShipmentInboundProcessStageResponse GetData(ShipmentInboundProcessStageRequest request)
         {
-            using (var db = CreateJetfDbContext())
             {
-                IQueryable<ShipmentInboundProcessStageEntity> query = db.ShipmentInboundProcessStages.AsNoTracking();
+                IQueryable<ShipmentInboundProcessStageEntity> query = JetfDb.ShipmentInboundProcessStages.AsNoTracking();
 
                 if (!string.IsNullOrWhiteSpace(request.TrackingNo))
                 {
@@ -122,9 +126,8 @@ namespace Service.Services.ShipmentInboundProcessStage
         /// </summary>
         public ShipmentInboundProcessStageDetailModel GetDetailById(int id)
         {
-            using (var db = CreateJetfDbContext())
             {
-                return db.ShipmentInboundProcessStages
+                return JetfDb.ShipmentInboundProcessStages
                     .AsNoTracking()
                     .Where(x => x.Id == id)
                     .Select(x => new ShipmentInboundProcessStageDetailModel
@@ -165,9 +168,8 @@ namespace Service.Services.ShipmentInboundProcessStage
             var userId = GetUserId();
             var processType = ValidateAndNormalizeRequest(request);
 
-            using (var db = CreateJetfDbContext())
             {
-                var duplicateExists = db.ShipmentInboundProcessStages.Any(x =>
+                var duplicateExists = JetfDb.ShipmentInboundProcessStages.Any(x =>
                     x.TrackingNo == request.TrackingNo &&
                     !x.MatchTimie.HasValue &&
                     (!request.Id.HasValue || x.Id != request.Id.Value));
@@ -188,11 +190,11 @@ namespace Service.Services.ShipmentInboundProcessStage
                         CreatedTime = DateTime.Now
                     };
 
-                    db.ShipmentInboundProcessStages.Add(entity);
+                    JetfDb.ShipmentInboundProcessStages.Add(entity);
                 }
                 else
                 {
-                    entity = db.ShipmentInboundProcessStages.FirstOrDefault(x => x.Id == request.Id.Value);
+                    entity = JetfDb.ShipmentInboundProcessStages.FirstOrDefault(x => x.Id == request.Id.Value);
                     if (entity == null)
                     {
                         throw new Exception("查無此資料");
@@ -206,7 +208,7 @@ namespace Service.Services.ShipmentInboundProcessStage
 
                 ApplyRequest(entity, request, processType, userId, isNew);
 
-                db.SaveChanges();
+                JetfDb.SaveChanges();
                 return BuildStageModel(entity);
             }
         }
@@ -216,9 +218,8 @@ namespace Service.Services.ShipmentInboundProcessStage
         /// </summary>
         public ShipmentInboundProcessStageModel GetRowById(int id)
         {
-            using (var db = CreateJetfDbContext())
             {
-                var entity = db.ShipmentInboundProcessStages.AsNoTracking().FirstOrDefault(x => x.Id == id);
+                var entity = JetfDb.ShipmentInboundProcessStages.AsNoTracking().FirstOrDefault(x => x.Id == id);
                 if (entity == null)
                 {
                     throw new Exception("查無此資料");

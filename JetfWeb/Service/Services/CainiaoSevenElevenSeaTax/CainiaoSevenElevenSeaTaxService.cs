@@ -12,6 +12,11 @@ namespace Service.Services.CainiaoSevenElevenSeaTax
 {
     public class CainiaoSevenElevenSeaTaxService : _BaseService
     {
+        public CainiaoSevenElevenSeaTaxService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得7-11稅金
         /// </summary>

@@ -18,7 +18,8 @@ namespace Service.Services.SeaWorkRecognizance
     {
         private readonly SeaUnreceivedOrderService _seaUnreceivedOrderService;
 
-        public SeaWorkRecognizanceService(SeaUnreceivedOrderService seaUnreceivedOrderService)
+        public SeaWorkRecognizanceService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, SeaUnreceivedOrderService seaUnreceivedOrderService)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _seaUnreceivedOrderService = seaUnreceivedOrderService;
         }

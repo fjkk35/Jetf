@@ -11,6 +11,11 @@ namespace Service.Services.ShipmentInboundCommon
 {
     public class ShipmentInboundTrackingNoService : _BaseService
     {
+        public ShipmentInboundTrackingNoService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         public void EnrichShipmentData(List<ShipmentInboundModel> shipmentInboundList)
         {
             if (shipmentInboundList == null || shipmentInboundList.Count == 0)
@@ -177,9 +182,8 @@ namespace Service.Services.ShipmentInboundCommon
             var threeDaysAgo = DateTime.Now.Date.AddDays(-3);
             Dictionary<string, List<DateTime?>> existingDict;
 
-            using (var db = CreateJetfDbContext())
             {
-                var query = db.ShipmentInbounds
+                var query = JetfDb.ShipmentInbounds
                     .AsNoTracking()
                     .Where(x => trackingNos.Contains(x.TrackingNo));
 
@@ -251,9 +255,8 @@ namespace Service.Services.ShipmentInboundCommon
 
         private Dictionary<string, ShipmentOrderData> QuerySeaOrderData(List<string> trackingNos)
         {
-            using (var db = CreateDataCenterDbContext())
             {
-                var data = db.SeaOrderOriginals
+                var data = DataCenterDb.SeaOrderOriginals
                     .AsNoTracking()
                     .Where(x => trackingNos.Contains(x.JetfSerial))
                     .Select(x => new
@@ -294,9 +297,8 @@ namespace Service.Services.ShipmentInboundCommon
 
         private Dictionary<string, ShipmentOrderData> QueryAirOrderData(List<string> trackingNos)
         {
-            using (var db = CreateDataCenterDbContext())
             {
-                var data = db.OriginalLists
+                var data = DataCenterDb.OriginalLists
                     .AsNoTracking()
                     .Where(x => trackingNos.Contains(x.TrackingNo))
                     .Select(x => new
@@ -334,9 +336,8 @@ namespace Service.Services.ShipmentInboundCommon
 
         private Dictionary<string, ShipmentOrderData> QueryAirOrderDataByDeliveryNo(List<string> trackingNos)
         {
-            using (var db = CreateDataCenterDbContext())
             {
-                var data = db.OriginalLists
+                var data = DataCenterDb.OriginalLists
                     .AsNoTracking()
                     .Where(x => trackingNos.Contains(x.DeliveryNo))
                     .Select(x => new
@@ -380,9 +381,8 @@ namespace Service.Services.ShipmentInboundCommon
                 return new Dictionary<string, ShipmentFeeData>();
             }
 
-            using (var db = CreateJetfDbContext())
             {
-                var data = db.FeeMasters
+                var data = JetfDb.FeeMasters
                     .AsNoTracking()
                     .Where(x => x.Download == "1" && originalJetfSerials.Contains(x.DlvInv) && x.IncludeTax == "N")
                     .Select(x => new ShipmentFeeData

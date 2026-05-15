@@ -11,6 +11,11 @@ namespace Service.Services.SeaClearanceCustomer
 {
     public class SeaClearanceCustomerService : _BaseService
     {
+        public SeaClearanceCustomerService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得所有已選擇的客戶
         /// </summary>

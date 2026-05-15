@@ -12,6 +12,11 @@ namespace Service.Services.TaxPortalCustomerService
 {
     public class TaxPortalCustomerService : _BaseService
     {
+        public TaxPortalCustomerService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         private const int PasswordLength = 12;
         private const int BcryptWorkFactor = 12;
         private const string LowerChars = "abcdefghijklmnopqrstuvwxyz";

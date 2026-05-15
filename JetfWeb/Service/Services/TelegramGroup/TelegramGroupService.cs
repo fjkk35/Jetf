@@ -14,7 +14,8 @@ namespace Service.Services.TelegramGroup
     {
         private readonly TelegramBot _telegramBot;
 
-        public TelegramGroupService(TelegramBot telegramBot)
+        public TelegramGroupService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, TelegramBot telegramBot)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _telegramBot = telegramBot;
         }

@@ -14,6 +14,11 @@ namespace Service.Services.CainiaoFamilySeaTax
 {
     public class CainiaoFamilySeaTaxService :_BaseService
     {
+        public CainiaoFamilySeaTaxService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得全家稅金
         /// </summary>

@@ -13,18 +13,34 @@ using Service.Services;
 
 namespace Service
 {
-    public class _BaseService
+    public class _BaseService : IDisposable
     {
         private readonly string key= "JETFJETFJETFJETFJETFJETFJETFJETF";
         private static readonly object JobLogLock = new object();
+        private readonly JetfDbContext _jetfDbContext;
+        private readonly DataCenterDbContext _dataCenterDbContext;
+        private bool _disposed;
         public SqlConnection conn;
+
         /// <summary>
         /// 建構式
         /// </summary>
-        public _BaseService()
+        protected _BaseService(JetfDbContext jetfDbContext, DataCenterDbContext dataCenterDbContext)
         {
+            _jetfDbContext = jetfDbContext ?? throw new ArgumentNullException(nameof(jetfDbContext));
+            _dataCenterDbContext = dataCenterDbContext ?? throw new ArgumentNullException(nameof(dataCenterDbContext));
             conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString);
         }
+
+        /// <summary>
+        /// 取得目前服務所使用的 jetf DbContext。
+        /// </summary>
+        protected JetfDbContext JetfDb => _jetfDbContext;
+
+        /// <summary>
+        /// 取得目前服務所使用的 DATA_CENTER DbContext。
+        /// </summary>
+        protected DataCenterDbContext DataCenterDb => _dataCenterDbContext;
 
         /// <summary>
         /// 取得當前使用者ID
@@ -34,16 +50,6 @@ namespace Service
         protected string GetUserId()
         {
             return UserContextService.GetUserId();
-        }
-
-        protected JetfDbContext CreateJetfDbContext()
-        {
-            return new JetfDbContext();
-        }
-
-        protected DataCenterDbContext CreateDataCenterDbContext()
-        {
-            return new DataCenterDbContext();
         }
 
         protected Dictionary<string, string> GetAirCustomerNames(IEnumerable<string> custCodes)
@@ -59,14 +65,11 @@ namespace Service
                 return new Dictionary<string, string>();
             }
 
-            using (var db = CreateDataCenterDbContext())
-            {
-                return db.SysCusts
-                    .AsNoTracking()
-                    .Where(x => x.CustType == "AIR" && !string.IsNullOrEmpty(x.OldCode) && codes.Contains(x.OldCode))
-                    .GroupBy(x => x.OldCode)
-                    .ToDictionary(g => g.Key, g => g.Select(x => x.CustName).FirstOrDefault() ?? string.Empty);
-            }
+            return DataCenterDb.SysCusts
+                .AsNoTracking()
+                .Where(x => x.CustType == "AIR" && !string.IsNullOrEmpty(x.OldCode) && codes.Contains(x.OldCode))
+                .GroupBy(x => x.OldCode)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.CustName).FirstOrDefault() ?? string.Empty);
         }
 
         protected Dictionary<string, string> GetSeaCustomerNames(IEnumerable<string> custCodes)
@@ -82,14 +85,11 @@ namespace Service
                 return new Dictionary<string, string>();
             }
 
-            using (var db = CreateDataCenterDbContext())
-            {
-                return db.SysCusts
-                    .AsNoTracking()
-                    .Where(x => x.CustType == "SEA" && codes.Contains(x.CustCode))
-                    .GroupBy(x => x.CustCode)
-                    .ToDictionary(g => g.Key, g => g.Select(x => x.CustName).FirstOrDefault() ?? string.Empty);
-            }
+            return DataCenterDb.SysCusts
+                .AsNoTracking()
+                .Where(x => x.CustType == "SEA" && codes.Contains(x.CustCode))
+                .GroupBy(x => x.CustCode)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.CustName).FirstOrDefault() ?? string.Empty);
         }
 
         protected Dictionary<string, string> GetAirTransNames(IEnumerable<string> transNos)
@@ -105,14 +105,30 @@ namespace Service
                 return new Dictionary<string, string>();
             }
 
-            using (var db = CreateJetfDbContext())
+            return JetfDb.CustomerMasters
+                .AsNoTracking()
+                .Where(x => x.TranType == "空運" && codes.Contains(x.TransNo))
+                .GroupBy(x => x.TransNo)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.TransName).FirstOrDefault() ?? string.Empty);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed || !disposing)
             {
-                return db.CustomerMasters
-                    .AsNoTracking()
-                    .Where(x => x.TranType == "空運" && codes.Contains(x.TransNo))
-                    .GroupBy(x => x.TransNo)
-                    .ToDictionary(g => g.Key, g => g.Select(x => x.TransName).FirstOrDefault() ?? string.Empty);
+                return;
             }
+
+            _jetfDbContext?.Dispose();
+            _dataCenterDbContext?.Dispose();
+            conn?.Dispose();
+            _disposed = true;
         }
 
 

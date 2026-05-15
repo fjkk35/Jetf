@@ -20,7 +20,8 @@ namespace Service.Services.SeaWorkErrorOrder
     {
         private readonly CptTradeVanService _cptTradeVanService;
 
-        public SeaWorkErrorOrderService(CptTradeVanService cptTradeVanService)
+        public SeaWorkErrorOrderService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, CptTradeVanService cptTradeVanService)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _cptTradeVanService = cptTradeVanService;
         }

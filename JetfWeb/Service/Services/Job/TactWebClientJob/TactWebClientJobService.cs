@@ -15,6 +15,11 @@ namespace Service.Services.Job.TactWebClientJob
 {
     public class TactWebClientJobService : _BaseService
     {
+        public TactWebClientJobService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         public async Task<bool> RunTactWebClientJobAsync()
         {
             // 建立 HttpClientHandler 以保持 Cookie

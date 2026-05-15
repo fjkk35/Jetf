@@ -11,6 +11,11 @@ namespace Service.Services.Step
 {
     public class StepService : _BaseService
     {
+        public StepService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得所有步驟（包含步驟詳細）
         /// </summary>

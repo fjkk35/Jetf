@@ -15,6 +15,11 @@ namespace Service.Services.BatchSearchTax
 {
     public class BatchSearchTaxService : _BaseService
     {
+        public BatchSearchTaxService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 批量查詢稅金資料
         /// </summary>

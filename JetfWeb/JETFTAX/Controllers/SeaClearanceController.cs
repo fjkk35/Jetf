@@ -21,12 +21,14 @@ namespace JETFTAX.Controllers
         private readonly SeaClearanceService _seaClearanceService;
         private readonly SeaClearanceDetailEditHistoryService _editHistoryService;
         private readonly StepService _stepService;
+        private readonly Service.Services.AbnormalState.AbnormalStateService _abnormalStateService;
 
-        public SeaClearanceController(SeaClearanceService seaClearanceService, SeaClearanceDetailEditHistoryService editHistoryService, StepService stepService)
+        public SeaClearanceController(SeaClearanceService seaClearanceService, SeaClearanceDetailEditHistoryService editHistoryService, StepService stepService, Service.Services.AbnormalState.AbnormalStateService abnormalStateService)
         {
             _seaClearanceService = seaClearanceService;
             _editHistoryService = editHistoryService;
             _stepService = stepService;
+            _abnormalStateService = abnormalStateService;
         }
 
         // GET: SeaClearance
@@ -401,8 +403,7 @@ namespace JETFTAX.Controllers
         {
             try
             {
-                var abnormalStateService = new Service.Services.AbnormalState.AbnormalStateService();
-                var result = abnormalStateService.GetAbnormalStateDetails(abnormalStateId);
+                var result = _abnormalStateService.GetAbnormalStateDetails(abnormalStateId);
                 return Json(result, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)

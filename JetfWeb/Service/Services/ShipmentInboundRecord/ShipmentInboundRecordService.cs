@@ -17,7 +17,13 @@ namespace Service.Services.ShipmentInboundRecord
 {
     public class ShipmentInboundRecordService : _BaseService
     {
-        private readonly ShipmentInboundTrackingNoService _trackingNoService = new ShipmentInboundTrackingNoService();
+        private readonly ShipmentInboundTrackingNoService _trackingNoService;
+
+        public ShipmentInboundRecordService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, ShipmentInboundTrackingNoService trackingNoService)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+            _trackingNoService = trackingNoService;
+        }
 
         /// <summary>
         /// 根據 Id 取得貨件詳細資料
@@ -31,9 +37,8 @@ namespace Service.Services.ShipmentInboundRecord
                 return null;
             }
 
-            using (var db = CreateJetfDbContext())
             {
-                var data = db.ShipmentInbounds
+                var data = JetfDb.ShipmentInbounds
                     .AsNoTracking()
                     .Where(x => x.Id == id)
                     .Select(x => new ShipmentInboundRecordModel
@@ -89,15 +94,15 @@ namespace Service.Services.ShipmentInboundRecord
 
                 FillCustomerAndTransNames(new List<ShipmentInboundRecordModel> { data });
 
-                var lazyLoadingEnabled = db.Configuration.LazyLoadingEnabled;
-                var proxyCreationEnabled = db.Configuration.ProxyCreationEnabled;
+                var lazyLoadingEnabled = JetfDb.Configuration.LazyLoadingEnabled;
+                var proxyCreationEnabled = JetfDb.Configuration.ProxyCreationEnabled;
 
                 try
                 {
-                    db.Configuration.LazyLoadingEnabled = true;
-                    db.Configuration.ProxyCreationEnabled = true;
+                    JetfDb.Configuration.LazyLoadingEnabled = true;
+                    JetfDb.Configuration.ProxyCreationEnabled = true;
 
-                    var exceptions = db.ShipmentInboundExceptions
+                    var exceptions = JetfDb.ShipmentInboundExceptions
                         .Where(x => x.ShipmentInboundId == id)
                         .OrderByDescending(x => x.CreatedTime)
                         .ThenByDescending(x => x.Id)
@@ -137,8 +142,8 @@ namespace Service.Services.ShipmentInboundRecord
                 }
                 finally
                 {
-                    db.Configuration.LazyLoadingEnabled = lazyLoadingEnabled;
-                    db.Configuration.ProxyCreationEnabled = proxyCreationEnabled;
+                    JetfDb.Configuration.LazyLoadingEnabled = lazyLoadingEnabled;
+                    JetfDb.Configuration.ProxyCreationEnabled = proxyCreationEnabled;
                 }
 
                 return data;
@@ -152,9 +157,8 @@ namespace Service.Services.ShipmentInboundRecord
                 return null;
             }
 
-            using (var db = CreateJetfDbContext())
             {
-                var filePaths = db.ShipmentInboundExceptions
+                var filePaths = JetfDb.ShipmentInboundExceptions
                     .AsNoTracking()
                     .Where(x => x.ShipmentInboundId == shipmentInboundId)
                     .OrderByDescending(x => x.CreatedTime)
@@ -175,9 +179,8 @@ namespace Service.Services.ShipmentInboundRecord
 
         public ShipmentInboundRecordResponse GetData(ShipmentInboundRecordRequest request)
         {
-            using (var db = CreateJetfDbContext())
             {
-                var query = BuildWhereConditions(db.ShipmentInbounds.AsNoTracking(), request);
+                var query = BuildWhereConditions(JetfDb.ShipmentInbounds.AsNoTracking(), request);
                 var totalCount = query.Count();
                 var data = query
                     .OrderByDescending(x => x.InboundDate)
@@ -354,9 +357,8 @@ namespace Service.Services.ShipmentInboundRecord
         /// </summary>
         public Dictionary<string,List<SelectListModel>> GetCustList()
         {
-            using (var db = CreateDataCenterDbContext())
             {
-                var seaData = db.SysCusts
+                var seaData = DataCenterDb.SysCusts
                     .AsNoTracking()
                     .Where(x => x.CustType == "SEA")
                     .Select(x => new ShipmentInboundCustomerModel
@@ -366,7 +368,7 @@ namespace Service.Services.ShipmentInboundRecord
                         Cust_Name = x.CustName
                     });
 
-                var airData = db.SysCusts
+                var airData = DataCenterDb.SysCusts
                     .AsNoTracking()
                     .Where(x => x.CustType == "AIR" && !string.IsNullOrEmpty(x.OldCode))
                     .Select(x => new ShipmentInboundCustomerModel
@@ -411,9 +413,8 @@ namespace Service.Services.ShipmentInboundRecord
         /// <returns>客戶下拉選單資料。</returns>
         public List<SelectListModel> GetUnknownShipmentCustList(string dataType)
         {
-            using (var db = CreateDataCenterDbContext())
             {
-                return BuildUnknownShipmentCustList(db, dataType);
+                return BuildUnknownShipmentCustList(DataCenterDb, dataType);
             }
         }
 
@@ -424,9 +425,8 @@ namespace Service.Services.ShipmentInboundRecord
         /// <returns>派件公司下拉選單資料。</returns>
         public List<ShipmentInboundUnknownShipmentTransOptionModel> GetUnknownShipmentTransList(string dataType)
         {
-            using (var db = CreateJetfDbContext())
             {
-                return BuildUnknownShipmentTransList(db, dataType);
+                return BuildUnknownShipmentTransList(JetfDb, dataType);
             }
         }
 
@@ -590,10 +590,8 @@ namespace Service.Services.ShipmentInboundRecord
                 throw new ArgumentException("Id 不可為空");
             }
 
-            using (var db = CreateJetfDbContext())
-            using (var dataCenterDb = CreateDataCenterDbContext())
             {
-                var entity = db.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
+                var entity = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
                 if (entity == null)
                 {
                     throw new ArgumentException("查無資料");
@@ -651,7 +649,7 @@ namespace Service.Services.ShipmentInboundRecord
                 SelectListModel targetCustomer = null;
                 if (hasCustCodeInput && !string.IsNullOrWhiteSpace(targetCustCode))
                 {
-                    var customerOptions = BuildUnknownShipmentCustList(dataCenterDb, dataType);
+                    var customerOptions = BuildUnknownShipmentCustList(DataCenterDb, dataType);
                     targetCustomer = customerOptions.FirstOrDefault(x => string.Equals(x.Value, targetCustCode, StringComparison.OrdinalIgnoreCase));
                     if (targetCustomer == null)
                     {
@@ -666,7 +664,7 @@ namespace Service.Services.ShipmentInboundRecord
                     {
                         if (!string.IsNullOrWhiteSpace(targetTransName))
                         {
-                            var transOptions = BuildUnknownShipmentTransList(db, dataType);
+                            var transOptions = BuildUnknownShipmentTransList(JetfDb, dataType);
                             targetTrans = transOptions.FirstOrDefault(x =>
                                 string.Equals((x.TransName ?? string.Empty).Trim(), targetTransName, StringComparison.OrdinalIgnoreCase));
 
@@ -683,7 +681,7 @@ namespace Service.Services.ShipmentInboundRecord
                     }
                     else if (string.Equals(dataType, "空運", StringComparison.OrdinalIgnoreCase))
                     {
-                        var transOptions = BuildUnknownShipmentTransList(db, dataType);
+                        var transOptions = BuildUnknownShipmentTransList(JetfDb, dataType);
                         if (!string.IsNullOrWhiteSpace(targetTransNo))
                         {
                             targetTrans = transOptions.FirstOrDefault(x =>
@@ -723,7 +721,7 @@ namespace Service.Services.ShipmentInboundRecord
                 var targetDataType = string.IsNullOrWhiteSpace(dataType) ? entity.DataType : dataType;
                 var newCustomerDisplay = (hasCustCodeInput || isDataTypeChanged)
                     ? GetCustomerDisplayText(targetDataType, targetCustCode, targetCustomer?.Text ?? string.Empty)
-                    : GetCustomerDisplayText(targetDataType, entity.CustCode, ResolveCustomerName(dataCenterDb, targetDataType, entity.CustCode));
+                    : GetCustomerDisplayText(targetDataType, entity.CustCode, ResolveCustomerName(DataCenterDb, targetDataType, entity.CustCode));
 
                 var newTransDisplay = (hasTransNoInput || hasTransNameInput || isDataTypeChanged)
                     ? GetTransDisplayText(targetTrans?.TransNo ?? targetTransNo, targetTrans?.TransName ?? targetTransName)
@@ -744,7 +742,7 @@ namespace Service.Services.ShipmentInboundRecord
                     : string.Empty;
 
                 AddShipmentInboundEditHistoryIfChanged(
-                    db,
+                    JetfDb,
                     entity.Id,
                     "進口方式",
                     entity.DataType,
@@ -753,9 +751,9 @@ namespace Service.Services.ShipmentInboundRecord
                     editUser,
                     !string.Equals(entity.DataType, targetDataType, StringComparison.OrdinalIgnoreCase));
 
-                var oldCustomerDisplay = GetCustomerDisplayText(entity.DataType, entity.CustCode, ResolveCustomerName(dataCenterDb, entity.DataType, entity.CustCode));
+                var oldCustomerDisplay = GetCustomerDisplayText(entity.DataType, entity.CustCode, ResolveCustomerName(DataCenterDb, entity.DataType, entity.CustCode));
                 AddShipmentInboundEditHistoryIfChanged(
-                    db,
+                    JetfDb,
                     entity.Id,
                     "客戶",
                     oldCustomerDisplay,
@@ -766,7 +764,7 @@ namespace Service.Services.ShipmentInboundRecord
 
                 var oldTransDisplay = GetTransDisplayText(entity.TransNo, entity.TransName);
                 AddShipmentInboundEditHistoryIfChanged(
-                    db,
+                    JetfDb,
                     entity.Id,
                     "派件公司",
                     oldTransDisplay,
@@ -776,7 +774,7 @@ namespace Service.Services.ShipmentInboundRecord
                     !string.Equals(oldTransDisplay, newTransDisplay, StringComparison.OrdinalIgnoreCase));
 
                 AddShipmentInboundEditHistoryIfChanged(
-                    db,
+                    JetfDb,
                     entity.Id,
                     "貨件來源",
                     oldSourceTypeText,
@@ -803,7 +801,7 @@ namespace Service.Services.ShipmentInboundRecord
                     entity.SourceType = targetSourceType;
                 }
 
-                db.SaveChanges();
+                JetfDb.SaveChanges();
             }
         }
 
@@ -833,9 +831,8 @@ namespace Service.Services.ShipmentInboundRecord
                 throw new ArgumentException("不允許修改此欄位");
             }
 
-            using (var db = CreateJetfDbContext())
             {
-                var entity = db.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
+                var entity = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
                 if (entity == null)
                 {
                     throw new ArgumentException("查無資料");
@@ -871,7 +868,7 @@ namespace Service.Services.ShipmentInboundRecord
 
                 if (hasAmountChanged)
                 {
-                    db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                    JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                     {
                         ShipmentInboundId = request.Id,
                         FieldName = request.FieldName,
@@ -893,7 +890,7 @@ namespace Service.Services.ShipmentInboundRecord
                     var oldFee = entity.Fee;
                     entity.Fee = targetFee;
 
-                    db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                    JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                     {
                         ShipmentInboundId = request.Id,
                         FieldName = "手續費",
@@ -909,7 +906,7 @@ namespace Service.Services.ShipmentInboundRecord
                     return;
                 }
 
-                db.SaveChanges();
+                JetfDb.SaveChanges();
             }
         }
 
@@ -933,9 +930,8 @@ namespace Service.Services.ShipmentInboundRecord
                 throw new ArgumentException("新單號不可為空");
             }
 
-            using (var db = CreateJetfDbContext())
             {
-                var entity = db.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
+                var entity = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
                 if (entity == null)
                 {
                     throw new ArgumentException("查無資料");
@@ -989,7 +985,7 @@ namespace Service.Services.ShipmentInboundRecord
                 entity.Fee = shipment.Fee;
                 entity.IsOrderOriginal = shipment.IsOrderOriginal;
 
-                db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                 {
                     ShipmentInboundId = entity.Id,
                     FieldName = "TrackingNo",
@@ -999,7 +995,7 @@ namespace Service.Services.ShipmentInboundRecord
                     EditUser = GetUserId()
                 });
 
-                db.SaveChanges();
+                JetfDb.SaveChanges();
             }
         }
 
@@ -1013,9 +1009,8 @@ namespace Service.Services.ShipmentInboundRecord
                 return new List<ShipmentInboundEditHistoryModel>();
             }
 
-            using (var db = CreateJetfDbContext())
             {
-                return db.ShipmentInboundEditHistories
+                return JetfDb.ShipmentInboundEditHistories
                     .AsNoTracking()
                     .Where(x => x.ShipmentInboundId == shipmentInboundId)
                     .OrderByDescending(x => x.EditTime)

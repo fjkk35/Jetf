@@ -11,6 +11,11 @@ namespace Service.Services.AbnormalState
 {
     public class AbnormalStateService : _BaseService
     {
+        public AbnormalStateService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得所有異常狀態（包含異常狀態詳細）
         /// </summary>

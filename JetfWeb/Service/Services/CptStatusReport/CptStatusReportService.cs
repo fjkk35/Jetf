@@ -16,7 +16,8 @@ namespace Service.Services.CptStatusReport
     {
         private readonly CptTradeVanService _cptTradeVanService;
 
-        public CptStatusReportService(CptTradeVanService cptTradeVanService)
+        public CptStatusReportService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, CptTradeVanService cptTradeVanService)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _cptTradeVanService = cptTradeVanService;
         }

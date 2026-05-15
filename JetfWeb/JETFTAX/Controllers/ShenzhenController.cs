@@ -11,7 +11,12 @@ namespace JETFTAX.Controllers
 {
     public class ShenzhenController : Controller
     {
-        ShenzhenService shenzhenService = new ShenzhenService();
+        private readonly ShenzhenService _shenzhenService;
+
+        public ShenzhenController(ShenzhenService shenzhenService)
+        {
+            _shenzhenService = shenzhenService;
+        }
 
         // GET: Shenzhen
         public ActionResult Upload()
@@ -42,7 +47,7 @@ namespace JETFTAX.Controllers
                             fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
-                            resopnseModel = shenzhenService.Upload(filePath, Session["user_id"].ToString());
+                            resopnseModel = _shenzhenService.Upload(filePath, Session["user_id"].ToString());
                         }
                     }
                 }

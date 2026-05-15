@@ -18,10 +18,13 @@ namespace JETFTAX.Controllers
 {
     public class EtlCustWorkLoadController : Controller
     {
-        EtlCustWorkLoadService _etlCustWorkLoadService;
-        public EtlCustWorkLoadController(EtlCustWorkLoadService etlCustWorkLoadService) 
+        private readonly EtlCustWorkLoadService _etlCustWorkLoadService;
+        private readonly CustomerService _customerService;
+
+        public EtlCustWorkLoadController(EtlCustWorkLoadService etlCustWorkLoadService, CustomerService customerService) 
         {
             _etlCustWorkLoadService = etlCustWorkLoadService;
+            _customerService = customerService;
         }
 
         /// <summary>
@@ -33,8 +36,7 @@ namespace JETFTAX.Controllers
         {
             string custId, custName;
             //客戶
-            CustomerService customerService = new CustomerService();
-            DataTable dt_CustList = customerService.GetCustomerList();
+            DataTable dt_CustList = _customerService.GetCustomerList();
             List<SelectListItem> customerList = new List<SelectListItem>();
             List<SelectListItem> customerTypeList = new List<SelectListItem>();
             for (int i = 0; i < dt_CustList.Rows.Count; i++)

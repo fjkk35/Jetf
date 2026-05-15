@@ -21,12 +21,13 @@ namespace JETFTAX.Controllers
 {
     public class ScanCargoCustomerController : Controller
     {
-        CCLWorkService cCLWorkService = new CCLWorkService();
+        private readonly CCLWorkService _cclWorkService;
 
         private readonly ScanCargoCustomerService _scanCargoCustomerService;
-        public ScanCargoCustomerController(ScanCargoCustomerService scanCargoCustomerService) 
+        public ScanCargoCustomerController(ScanCargoCustomerService scanCargoCustomerService, CCLWorkService cclWorkService) 
         {
             _scanCargoCustomerService = scanCargoCustomerService;
+            _cclWorkService = cclWorkService;
         }
         
         /// <summary>
@@ -40,7 +41,7 @@ namespace JETFTAX.Controllers
             DateTime date = DateTime.Now;
             vm.sDate = $"{date.ToString("yyyy-MM-dd")} 00:00";
             vm.eDate = $"{date.ToString("yyyy-MM-dd")} 23:59";
-            DataTable dt_DataType = cCLWorkService.GetPdtDataType();
+            DataTable dt_DataType = _cclWorkService.GetPdtDataType();
             List<SelectListItem> dataTypeList = new List<SelectListItem>();
             foreach (DataRow item in dt_DataType.Rows)
             {
@@ -48,7 +49,7 @@ namespace JETFTAX.Controllers
             }
             vm.ddlDataTypeList = dataTypeList;
 
-            DataTable dt_Trans = cCLWorkService.GetPdtTrans();
+            DataTable dt_Trans = _cclWorkService.GetPdtTrans();
             List<SelectListItem> transList = new List<SelectListItem>();
             foreach (DataRow item in dt_Trans.Rows)
             {

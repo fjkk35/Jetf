@@ -16,6 +16,11 @@ namespace Service.Services.CustomerTaxStatistics
 {
     public class CustomerTaxStatisticsService : _BaseService
     {
+        public CustomerTaxStatisticsService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得客戶列表
         /// </summary>

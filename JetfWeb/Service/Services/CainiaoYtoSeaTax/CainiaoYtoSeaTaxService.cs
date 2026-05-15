@@ -8,7 +8,13 @@ namespace Service.Services.CainiaoYtoSeaTax
 {
     public class CainiaoYtoSeaTaxService : _BaseService
     {
-        GlobalService globalService = new GlobalService();
+        private readonly GlobalService _globalService;
+
+        public CainiaoYtoSeaTaxService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, GlobalService globalService)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+            _globalService = globalService;
+        }
 
         public IWorkbook GetCainiaoYtoSeaTax(string dataDate)
         {
@@ -97,7 +103,7 @@ namespace Service.Services.CainiaoYtoSeaTax
                 }
                 row.CreateCell(7).SetCellValue(remark);
                 row.CreateCell(8).SetCellValue(dt.Rows[i]["DLV_COM"].ToString());
-                row.CreateCell(9).SetCellValue(globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString()));
+                row.CreateCell(9).SetCellValue(_globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString()));
                 row.CreateCell(10).SetCellValue(dt.Rows[i]["FEE"].ToString().ToInt());
                 row.CreateCell(11).SetCellValue(dt.Rows[i]["TRANS_COD"].ToString().ToInt());
             }

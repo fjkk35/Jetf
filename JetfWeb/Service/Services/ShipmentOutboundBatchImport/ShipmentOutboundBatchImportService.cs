@@ -14,6 +14,11 @@ namespace Service.Services.ShipmentOutboundBatchImport
 {
     public class ShipmentOutboundBatchImportService : _BaseService
     {
+        public ShipmentOutboundBatchImportService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 批量上傳貨件出庫資料
         /// </summary>
@@ -182,9 +187,8 @@ namespace Service.Services.ShipmentOutboundBatchImport
             var trackingNos = validList.Select(x => x.TrackingNo).Distinct().ToList();
             Dictionary<string, ShipmentInboundProcessType> existingDict;
 
-            using (var db = CreateJetfDbContext())
             {
-                existingDict = db.ShipmentInbounds
+                existingDict = JetfDb.ShipmentInbounds
                     .AsNoTracking()
                     .Where(x => !x.OutboundDate.HasValue && trackingNos.Contains(x.TrackingNo) && x.ProcessType.HasValue)
                     .Select(x => new
@@ -257,13 +261,12 @@ namespace Service.Services.ShipmentOutboundBatchImport
 
             var userId = GetUserId();
 
-            using (var db = CreateJetfDbContext())
             {
-                using (var transaction = db.Database.BeginTransaction())
+                using (var transaction = JetfDb.Database.BeginTransaction())
                 {
                     try
                     {
-                        var shipmentInboundIds = db.ShipmentInbounds
+                        var shipmentInboundIds = JetfDb.ShipmentInbounds
                             .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
                             .ToDictionary(x => x.TrackingNo, x => x);
 
@@ -283,7 +286,7 @@ namespace Service.Services.ShipmentOutboundBatchImport
                             entity.WarehouseProcessTime = DateTime.Now;
                             entity.WarehouseProcessOpe = shipment.OutboundOpe;
 
-                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                            JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = entity.Id,
                                 FieldName = "出庫日期",
@@ -294,7 +297,7 @@ namespace Service.Services.ShipmentOutboundBatchImport
                             });
                         }
 
-                        db.SaveChanges();
+                        JetfDb.SaveChanges();
                         transaction.Commit();
                     }
                     catch

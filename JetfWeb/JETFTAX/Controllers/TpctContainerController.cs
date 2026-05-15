@@ -13,7 +13,12 @@ namespace JETFTAX.Controllers
 {
     public class TpctContainerController : Controller
     {
-        TpctContainerService tpctContainerService = new TpctContainerService();
+        private readonly TpctContainerService _tpctContainerService;
+
+        public TpctContainerController(TpctContainerService tpctContainerService)
+        {
+            _tpctContainerService = tpctContainerService;
+        }
 
         // GET: TpctContainer
         public ActionResult Index()
@@ -34,7 +39,7 @@ namespace JETFTAX.Controllers
                                        .Where(line => !string.IsNullOrWhiteSpace(line))
                                        .ToList();
 
-                IWorkbook workbook = tpctContainerService.Download(list);
+                IWorkbook workbook = _tpctContainerService.Download(list);
 
                 using (MemoryStream fileStream = new MemoryStream())
                 {

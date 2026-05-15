@@ -17,6 +17,11 @@ namespace Service.Services.Importer
 {
     public class ImporterService: _BaseService
     {
+        public ImporterService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         public async Task<ResponseModel> Search(ImporterSearchType type ,List<string> list)
         {
             var response = await GetList(type , list);

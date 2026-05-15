@@ -14,6 +14,11 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
 {
     public class ShipmentInboundWarehouseProcessService : _BaseService
     {
+        public ShipmentInboundWarehouseProcessService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 查詢倉庫處理狀態資料
         /// </summary>
@@ -24,9 +29,8 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
                 return new List<ShipmentInboundWarehouseProcessModel>();
             }
 
-            using (var db = CreateJetfDbContext())
             {
-                return db.ShipmentInbounds
+                return JetfDb.ShipmentInbounds
                     .AsNoTracking()
                     .Where(x => x.TrackingNo == request.TrackingNo)
                     .Select(x => new ShipmentInboundWarehouseProcessModel
@@ -50,13 +54,12 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
         {
             var userId = GetUserId();
 
-            using (var db = CreateJetfDbContext())
             {
-                using (var tx = db.Database.BeginTransaction())
+                using (var tx = JetfDb.Database.BeginTransaction())
                 {
                     try
                     {
-                        var existing = db.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
+                        var existing = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
 
                         if (existing == null)
                         {
@@ -74,13 +77,13 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
                         existing.WarehouseProcessOpe = userId;
 
                         InsertWarehouseProcessTypeHistory(
-                            db,
+                            JetfDb,
                             request.Id,
                             oldWarehouseProcessType,
                             (byte)request.WarehouseProcessType,
                             userId);
 
-                        db.SaveChanges();
+                        JetfDb.SaveChanges();
                         tx.Commit();
                     }
                     catch
@@ -121,13 +124,12 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
             var userId = GetUserId();
 
             var trackingNos = rows.Select(x => x.TrackingNo).Distinct().ToList();
-            using (var db = CreateJetfDbContext())
             {
-                var existingData = db.ShipmentInbounds
+                var existingData = JetfDb.ShipmentInbounds
                     .Where(x => trackingNos.Contains(x.TrackingNo))
                     .ToDictionary(x => x.TrackingNo, x => x);
 
-                using (var tx = db.Database.BeginTransaction())
+                using (var tx = JetfDb.Database.BeginTransaction())
                 {
                     try
                     {
@@ -146,7 +148,7 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
                                 existing.WarehouseProcessOpe = userId;
 
                                 InsertWarehouseProcessTypeHistory(
-                                    db,
+                                    JetfDb,
                                     shipmentInboundId,
                                     oldWarehouseProcessType,
                                     (byte)newProcessType.Value,
@@ -154,7 +156,7 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
                             }
                         }
 
-                        db.SaveChanges();
+                        JetfDb.SaveChanges();
                         tx.Commit();
                     }
                     catch
@@ -259,9 +261,8 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
 
             if (trackingNos.Any())
             {
-                using (var db = CreateJetfDbContext())
                 {
-                    var existing = db.ShipmentInbounds
+                    var existing = JetfDb.ShipmentInbounds
                         .AsNoTracking()
                         .Where(x => trackingNos.Contains(x.TrackingNo))
                         .Select(x => x.TrackingNo)

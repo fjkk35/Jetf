@@ -30,7 +30,8 @@ namespace Service.Services.SeaWorkErrorOrderReport
         XSSFFont font1;
         XSSFCellStyle cs_Title, cs_Title_Left, cs_Center, cs_Center_Blue, cs_Int, cs_Int_Blue, cs_Double, cs_Percent, cs_Percent2, dateStyle, date2Style;
 
-        public SeaWorkErrorOrderReportService(WorkDayService workDayService)
+        public SeaWorkErrorOrderReportService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, WorkDayService workDayService)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _workDayService = workDayService;
         }

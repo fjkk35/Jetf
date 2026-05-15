@@ -14,7 +14,12 @@ namespace JETFTAX.Controllers
 {
     public class InvoiceNewController : Controller
     {
-        InvoiceNewService invoiceNewService = new InvoiceNewService();
+        private readonly InvoiceNewService _invoiceNewService;
+
+        public InvoiceNewController(InvoiceNewService invoiceNewService)
+        {
+            _invoiceNewService = invoiceNewService;
+        }
 
         /// <summary>
         /// 開立電子發票作業New
@@ -59,7 +64,7 @@ namespace JETFTAX.Controllers
                         file.SaveAs(filePath);
                         
                         // 讀取檔案並直接產生 Excel
-                        resopnseModel = invoiceNewService.InvoiceWorkNew(filePath, uploadFileName, Session["user_id"].ToString());
+                        resopnseModel = _invoiceNewService.InvoiceWorkNew(filePath, uploadFileName, Session["user_id"].ToString());
 
                         if (resopnseModel.status == Status.success)
                         {

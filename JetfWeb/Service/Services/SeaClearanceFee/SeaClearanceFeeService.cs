@@ -12,6 +12,11 @@ namespace Service.Services.SeaClearanceFee
 {
     public class SeaClearanceFeeService : _BaseService
     {
+        public SeaClearanceFeeService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         public List<SeaClearanceFeeModel> GetSeaClearanceFee() 
         {
             var sql = @"

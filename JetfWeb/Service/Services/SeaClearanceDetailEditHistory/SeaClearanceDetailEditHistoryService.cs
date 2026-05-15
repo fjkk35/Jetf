@@ -14,6 +14,11 @@ namespace Service.Services.SeaClearanceDetailEditHistory
 {
     public class SeaClearanceDetailEditHistoryService : _BaseService
     {
+        public SeaClearanceDetailEditHistoryService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 記錄編輯歷史的通用函式
         /// </summary>

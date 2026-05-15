@@ -16,8 +16,15 @@ namespace Service.Services
 {
     public class DownloadService : _BaseService
     {
-        private TaxService _taxService = new TaxService();
-        private CustomerService customerService = new CustomerService();
+        private readonly TaxService _taxService;
+        private readonly CustomerService _customerService;
+
+        public DownloadService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, TaxService taxService, CustomerService customerService)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+            _taxService = taxService;
+            _customerService = customerService;
+        }
       
         /// <summary>
         /// 更新菜鳥海運、空運，稅金方式P
@@ -295,7 +302,7 @@ namespace Service.Services
 
 
             //特殊客戶
-            DataTable dt_Customer_Special = customerService.GetCustomer_Special("空運");
+            DataTable dt_Customer_Special = _customerService.GetCustomer_Special("空運");
 
             if (dt_Data.Rows.Count > 0)
             {

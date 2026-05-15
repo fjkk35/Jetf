@@ -21,6 +21,11 @@ namespace Service.Services.Tact
 {
     public partial class TactService : _BaseService
     {
+        public TactService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         private const string BASE_URL = "https://www.tactl.com";
         private const string LOGIN_URL = BASE_URL + "/login.php";
         private const string QUERY_URL = BASE_URL + "/ehuweb/ehu_hwb_query.php";

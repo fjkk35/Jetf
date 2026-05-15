@@ -20,8 +20,14 @@ namespace JETFTAX.Controllers
 {
     public class IncomeController : Controller
     {
-        GlobalService globalService = new GlobalService();
-        IncomeService incomeService = new IncomeService();
+        private readonly GlobalService _globalService;
+        private readonly IncomeService _incomeService;
+
+        public IncomeController(GlobalService globalService, IncomeService incomeService)
+        {
+            _globalService = globalService;
+            _incomeService = incomeService;
+        }
 
         IFont fontB, font2;
         XSSFDataFormat format;
@@ -67,7 +73,7 @@ namespace JETFTAX.Controllers
                 if (vm.rdoSearchType == "Yes")
                 {
                     //重新轉檔
-                    incomeService.Insert_Income_Report(vm.sDate, vm.eDate);
+                    _incomeService.Insert_Income_Report(vm.sDate, vm.eDate);
                 }
 
                 //日統計表營收去年比報表
@@ -77,8 +83,8 @@ namespace JETFTAX.Controllers
                 var lastSDate = new DateTime(sDateTime.Year, sDateTime.Month, 1).AddYears(-1);
                 //去年結束日期
                 var lastEDate = lastSDate.AddMonths(+1).AddDays(-1);
-                var lastList = incomeService.IncomeReportCustomerRate(lastSDate.ToString("yyyyMMdd"), lastEDate.ToString("yyyyMMdd"));
-                var list = incomeService.IncomeReportCustomerRate(sDate, eDate);
+                var lastList = _incomeService.IncomeReportCustomerRate(lastSDate.ToString("yyyyMMdd"), lastEDate.ToString("yyyyMMdd"));
+                var list = _incomeService.IncomeReportCustomerRate(sDate, eDate);
 
                 IWorkbook workbook = new XSSFWorkbook();
                 //日倉儲營收
@@ -117,7 +123,7 @@ namespace JETFTAX.Controllers
         /// <param name="eDate"></param>
         void GetIncomeReportDetailsSheet(IWorkbook workbook, string sDate, string eDate)
         {
-            DataTableModel dataTableModel = incomeService.IncomeReport_Details(sDate, eDate);
+            DataTableModel dataTableModel = _incomeService.IncomeReport_Details(sDate, eDate);
             DataTable dt = dataTableModel.dt;
 
             int total_fee, total_tax, total_ccfee, total_bag_number, total_count;
@@ -223,7 +229,7 @@ namespace JETFTAX.Controllers
         /// <param name="eDate"></param>
         void GetIncomeReportDaySheet(IWorkbook workbook, string sDate, string eDate)
         {
-            DataTableModel dataTableModel = incomeService.IncomeReport_Day(sDate, eDate);
+            DataTableModel dataTableModel = _incomeService.IncomeReport_Day(sDate, eDate);
             DataTable dt = dataTableModel.dt;
 
             int rowCount = 0, subCount = 0, total_fee2, total_bag_number, total_count, total_fee2Add, total_bag_numberAdd, total_countAdd, total_tax_N, total_tax_Y, total_tax_Nadd, total_tax_Yadd, total_ccfee, total_ccfeeadd, total_diff, total_diffadd, total_income, total_incomeadd;
@@ -607,7 +613,7 @@ namespace JETFTAX.Controllers
         /// <param name="eDate"></param>
         void GetIncomeReportDay2Sheet(IWorkbook workbook, string sDate, string eDate)
         {
-            DataTableModel dataTableModel = incomeService.IncomeReport_Day2(sDate, eDate);
+            DataTableModel dataTableModel = _incomeService.IncomeReport_Day2(sDate, eDate);
             DataTable dt = dataTableModel.dt;
 
             int rowCount = 0, total_fee2, total_bag_number, total_count, total_fee2Add, total_bag_numberAdd, total_countAdd, total_tax_N, total_tax_Y, total_tax_Nadd, total_tax_Yadd, total_ccfee, total_ccfeeadd, total_diff, total_diffadd, total_income, total_incomeadd;
@@ -1207,7 +1213,7 @@ namespace JETFTAX.Controllers
             if (vm.rdoSearchType == "Yes")
             {
                 //重新轉檔
-                incomeService.Insert_Income_ETA_Report(vm.sDate, vm.eDate);
+                _incomeService.Insert_Income_ETA_Report(vm.sDate, vm.eDate);
             }
 
             string sDate = Convert.ToDateTime(vm.sDate).ToString("yyyyMMdd");
@@ -1245,7 +1251,7 @@ namespace JETFTAX.Controllers
             IWorkbook workbook = new XSSFWorkbook();
 
             //倉儲總表
-            DataTable dt_Report_Type = incomeService.IncomeETAReport_Type(sDate, eDate).dt;
+            DataTable dt_Report_Type = _incomeService.IncomeETAReport_Type(sDate, eDate).dt;
             //用倉儲區分 sheet
             var dt_Type = from t in dt_Report_Type.AsEnumerable()
                           group t by new { DATA_TYPE = t.Field<string>("DATA_TYPE") } into g
@@ -1278,7 +1284,7 @@ namespace JETFTAX.Controllers
             GetIncomeETAReportSheet(workbook, "總表", sDate, eDate);
 
             //總表
-            DataTable dt_Report_Day = incomeService.IncomeETAReport_Day(sDate, eDate).dt;
+            DataTable dt_Report_Day = _incomeService.IncomeETAReport_Day(sDate, eDate).dt;
             //用客戶區分 sheet
             var dt_Customer = from t in dt_Report_Day.AsEnumerable()
                               group t by new { customer = t.Field<string>("DESPATCH_NAME") } into g
@@ -1304,7 +1310,7 @@ namespace JETFTAX.Controllers
             }
 
             //明細
-            DataTable dt_Report_Day2 = incomeService.IncomeETAReport_Day2(sDate, eDate).dt;
+            DataTable dt_Report_Day2 = _incomeService.IncomeETAReport_Day2(sDate, eDate).dt;
             //客戶明細
             foreach (var item in dt_Customer)
             {
@@ -1334,7 +1340,7 @@ namespace JETFTAX.Controllers
         void GetIncomeETAReportSheet(IWorkbook workbook, string sheetName, string sDate, string eDate)
         {
             //總表
-            DataTable dt_Report = incomeService.IncomeETAReport(sDate, eDate).dt;
+            DataTable dt_Report = _incomeService.IncomeETAReport(sDate, eDate).dt;
 
             int total_fee2, total_bag_number, total_count, total_piece, total_in_time_piece, total_tax_N, total_tax_Y, total_tax_C, total_ccfee;
             double total_cc, total_gw, total_in_time_gw, total_tariff;
@@ -2083,7 +2089,7 @@ namespace JETFTAX.Controllers
             IWorkbook workbook = new XSSFWorkbook();
 
             //總表
-            DataTable dt_Report = incomeService.IncomeDetailsReport(original, sDate, eDate).dt;
+            DataTable dt_Report = _incomeService.IncomeDetailsReport(original, sDate, eDate).dt;
             //用客戶區分 sheet
             var dt_Customer = from t in dt_Report.AsEnumerable()
                               group t by new { customer = t.Field<string>("DESPATCH_NAME") } into g
@@ -2115,7 +2121,7 @@ namespace JETFTAX.Controllers
             }
 
             //明細
-            DataTable dt_Details = incomeService.IncomeDetails(original, sDate, eDate).dt;
+            DataTable dt_Details = _incomeService.IncomeDetails(original, sDate, eDate).dt;
 
             ////客戶明細
             foreach (var item in dt_Customer)
@@ -2783,7 +2789,7 @@ namespace JETFTAX.Controllers
             IWorkbook workbook = new XSSFWorkbook();
 
             //總表
-            DataTable dt_Report = incomeService.IncomeDetailsReport(original, sDate, eDate).dt;
+            DataTable dt_Report = _incomeService.IncomeDetailsReport(original, sDate, eDate).dt;
             //用客戶區分 sheet
             var dt_Customer = from t in dt_Report.AsEnumerable()
                               group t by new { customer = t.Field<string>("DESPATCH_NAME") } into g
@@ -2815,7 +2821,7 @@ namespace JETFTAX.Controllers
             }
 
             //明細
-            DataTable dt_Details = incomeService.IncomeDetails(original, sDate, eDate).dt;
+            DataTable dt_Details = _incomeService.IncomeDetails(original, sDate, eDate).dt;
 
             ////客戶明細
             foreach (var item in dt_Customer)

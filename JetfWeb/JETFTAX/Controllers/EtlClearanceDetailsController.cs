@@ -19,13 +19,13 @@ namespace JETFTAX.Controllers
     public class EtlClearanceDetailsController : Controller
     {
         private readonly EtlClearanceDetailsService _etlClearanceDetailsService;
+        private readonly GlobalService _globalService;
 
-        public EtlClearanceDetailsController(EtlClearanceDetailsService etlClearanceDetailsService) 
+        public EtlClearanceDetailsController(EtlClearanceDetailsService etlClearanceDetailsService, GlobalService globalService) 
         {
             _etlClearanceDetailsService = etlClearanceDetailsService;
+            _globalService = globalService;
         }
-
-        GlobalService globalService = new GlobalService();
 
         /// <summary>
         /// 空快清關明細表
@@ -67,7 +67,7 @@ namespace JETFTAX.Controllers
                 {
                     WorkName = "空快清關明細表",
                     DownloadTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                    Ip = globalService.GetIPAddress(),
+                    Ip = _globalService.GetIPAddress(),
                     UserId = Session["user_id"].ToString()
                 });
             }

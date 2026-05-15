@@ -15,6 +15,11 @@ namespace Service.Services.SjlBatchImport
 {
     public class SjlBatchImportService : _BaseService
     {
+        public SjlBatchImportService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         private static readonly string[] RequiredHeaders =
         {
             "運送編號",

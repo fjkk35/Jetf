@@ -15,6 +15,11 @@ namespace Service.Services
 {
     public class SendPhoneMessageService :_BaseService
     {
+        public SendPhoneMessageService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
 
         public SendMessageResponse SendPhoneMessage(int id,string phone,string message) 
         {

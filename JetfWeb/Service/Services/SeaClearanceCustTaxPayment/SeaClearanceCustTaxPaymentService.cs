@@ -13,6 +13,11 @@ namespace Service.Services.SeaClearanceCustTaxPayment
 {
     public class SeaClearanceCustTaxPaymentService :_BaseService
     {
+        public SeaClearanceCustTaxPaymentService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 新增資料
         /// </summary>

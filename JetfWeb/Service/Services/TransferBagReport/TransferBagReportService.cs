@@ -25,7 +25,8 @@ namespace Service.Services.TransferBagReport
         XSSFCellStyle cs_Title, cs_Title_Left, cs_Center, cs_Center_Blue, cs_Int, cs_Int_Blue, cs_Double, cs_Percent2, dateStyle;
         iTextSharp.text.Font font8, font9, font10, font11, font12, font14, font16, font18, font20, fontB18;
 
-        public TransferBagReportService() 
+        public TransferBagReportService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext) 
+            : base(jetfDbContext, dataCenterDbContext)
         {
 
         }

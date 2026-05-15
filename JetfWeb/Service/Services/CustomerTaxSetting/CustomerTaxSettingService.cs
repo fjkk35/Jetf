@@ -11,6 +11,11 @@ namespace Service.Services.CustomerTaxSetting
 {
     public class CustomerTaxSettingService : _BaseService
     {
+        public CustomerTaxSettingService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得SEA客戶列表
         /// </summary>

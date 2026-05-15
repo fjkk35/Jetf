@@ -13,6 +13,11 @@ namespace Service.Services.ShipmentOutboundBatchImportRevoke
 {
     public class ShipmentOutboundBatchImportRevokeService : _BaseService
     {
+        public ShipmentOutboundBatchImportRevokeService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 批量取消貨件出庫
         /// </summary>
@@ -114,9 +119,8 @@ namespace Service.Services.ShipmentOutboundBatchImportRevoke
             var threeDaysAgo = DateTime.Now.Date.AddDays(-3);
             Dictionary<string, Data.ShipmentInboundEntity> dataDict;
 
-            using (var db = CreateJetfDbContext())
             {
-                dataDict = db.ShipmentInbounds
+                dataDict = JetfDb.ShipmentInbounds
                     .AsNoTracking()
                     .Where(x => trackingNos.Contains(x.TrackingNo) && x.OutboundDate.HasValue)
                     .ToDictionary(x => x.TrackingNo, x => x);
@@ -170,13 +174,12 @@ namespace Service.Services.ShipmentOutboundBatchImportRevoke
                 .Select(x => x.ShipmentInboundId.Value)
                 .ToList();
 
-            using (var db = CreateJetfDbContext())
             {
-                using (var transaction = db.Database.BeginTransaction())
+                using (var transaction = JetfDb.Database.BeginTransaction())
                 {
                     try
                     {
-                        var entities = db.ShipmentInbounds
+                        var entities = JetfDb.ShipmentInbounds
                             .Where(x => ids.Contains(x.Id))
                             .ToDictionary(x => x.Id, x => x);
 
@@ -196,7 +199,7 @@ namespace Service.Services.ShipmentOutboundBatchImportRevoke
                             entity.WarehouseProcessTime = null;
                             entity.WarehouseProcessOpe = null;
 
-                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                            JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = item.ShipmentInboundId.Value,
                                 FieldName = "出庫日期",
@@ -207,7 +210,7 @@ namespace Service.Services.ShipmentOutboundBatchImportRevoke
                             });
                         }
 
-                        db.SaveChanges();
+                        JetfDb.SaveChanges();
                         transaction.Commit();
                     }
                     catch

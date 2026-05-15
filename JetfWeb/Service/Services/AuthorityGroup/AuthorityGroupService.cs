@@ -13,6 +13,11 @@ namespace Service.Services.AuthorityGroup
 {
     public class AuthorityGroupService : _BaseService
     {
+        public AuthorityGroupService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得所有權限清單 (依 PartnerId, Sort 排序)
         /// </summary>

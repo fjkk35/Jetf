@@ -20,7 +20,8 @@ namespace Service.Services.ShipmentInboundExceptionRecord
     {
         private readonly ShipmentInboundExceptionImageStorageService _imageStorageService;
 
-        public ShipmentInboundExceptionRecordService(ShipmentInboundExceptionImageStorageService imageStorageService)
+        public ShipmentInboundExceptionRecordService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, ShipmentInboundExceptionImageStorageService imageStorageService)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _imageStorageService = imageStorageService;
         }
@@ -34,9 +35,8 @@ namespace Service.Services.ShipmentInboundExceptionRecord
         {
             request = NormalizeRequest(request);
 
-            using (var db = CreateJetfDbContext())
             {
-                var query = BuildQuery(db, request);
+                var query = BuildQuery(JetfDb, request);
                 var totalCount = query.Count();
                 var data = query
                     .OrderByDescending(x => x.InboundDate)
@@ -60,9 +60,8 @@ namespace Service.Services.ShipmentInboundExceptionRecord
         /// <returns>異常原因清單。</returns>
         public List<SelectListModel> GetExceptionReasonList()
         {
-            using (var db = CreateJetfDbContext())
             {
-                return db.ShipmentInboundExceptionReasons
+                return JetfDb.ShipmentInboundExceptionReasons
                     .AsNoTracking()
                     .OrderBy(x => x.Reason)
                     .Select(x => new SelectListModel
@@ -86,9 +85,8 @@ namespace Service.Services.ShipmentInboundExceptionRecord
             request.PageSize = 100000;
 
             List<ShipmentInboundExceptionRecordModel> data;
-            using (var db = CreateJetfDbContext())
             {
-                data = BuildQuery(db, request)
+                data = BuildQuery(JetfDb, request)
                     .OrderByDescending(x => x.InboundDate)
                     .ThenBy(x => x.MainNumber)
                     .ThenBy(x => x.TrackingNo)
@@ -286,9 +284,8 @@ namespace Service.Services.ShipmentInboundExceptionRecord
             var shipmentIds = data.Select(x => x.Id).Distinct().ToList();
             List<ShipmentInboundExceptionImageExportModel> images;
 
-            using (var db = CreateJetfDbContext())
             {
-                images = db.ShipmentInboundExceptions
+                images = JetfDb.ShipmentInboundExceptions
                     .AsNoTracking()
                     .Where(x => shipmentIds.Contains(x.ShipmentInboundId) && !string.IsNullOrEmpty(x.FilePath))
                     .OrderBy(x => x.CreatedTime)

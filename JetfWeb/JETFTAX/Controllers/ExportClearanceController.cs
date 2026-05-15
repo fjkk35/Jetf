@@ -13,8 +13,12 @@ namespace JETFTAX.Controllers
 {
     public class ExportClearanceController : Controller
     {
+        private readonly ExportClearanceService _exportClearanceService;
 
-        ExportClearanceService exportClearanceService = new ExportClearanceService();
+        public ExportClearanceController(ExportClearanceService exportClearanceService)
+        {
+            _exportClearanceService = exportClearanceService;
+        }
 
         /// <summary>
         /// 上傳空運出口航班及出入倉時間
@@ -57,7 +61,7 @@ namespace JETFTAX.Controllers
                             fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
-                            resopnseModel = exportClearanceService.UploadExportFlight(filePath, Session["user_id"].ToString());
+                            resopnseModel = _exportClearanceService.UploadExportFlight(filePath, Session["user_id"].ToString());
                         }
                     }
                 }

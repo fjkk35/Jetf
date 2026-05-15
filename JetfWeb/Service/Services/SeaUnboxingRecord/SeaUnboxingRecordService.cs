@@ -22,6 +22,11 @@ namespace Service.Services.SeaUnboxingRecord
 {
     public class SeaUnboxingRecordService : _BaseService
     {
+        public SeaUnboxingRecordService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
 
         public ResponseModel Upload(string filePath, string userId)
         {

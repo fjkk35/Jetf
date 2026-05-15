@@ -17,7 +17,7 @@ namespace JETFTAX.Controllers
 
         public BatchUploadProcessController(BatchUploadProcessService batchUploadProcessService)
         {
-            _batchUploadProcessService = new BatchUploadProcessService();
+            _batchUploadProcessService = batchUploadProcessService;
         }
 
         [UserAuthorize(Authority.BatchUploadProcess)]

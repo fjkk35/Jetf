@@ -19,12 +19,14 @@ namespace Service.Services
 {
     public class CargoService
     {
-        private SqlConnection conn;
+        private readonly SqlConnection conn;
+        private readonly GlobalService _globalService;
         /// <summary>
         /// 建構式
         /// </summary>
-        public CargoService()
+        public CargoService(GlobalService globalService)
         {
+            _globalService = globalService;
             conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString);
         }
 
@@ -35,7 +37,6 @@ namespace Service.Services
         public DataTable GetFee_Master(string invoice)
         {
             DateTime date;
-            GlobalService globalService = new GlobalService();
             StringBuilder sb = new StringBuilder();
             sb.Append("select DATADATE,SOURCE,TYPE,isnull(b.CUST_NAME,a.CUSTOMER) as CUST_NAME,IN_DATETIME,OUT_DATETIME,MAIN_NUMBER,TRACKINGNO as 'BAG_NUMBER',DLV_INV,TAX_NUMBER,DLV_COM as 'TRANS_NAME',RECIPIENT,RECPHONE,RECADDRESS,a.INCLUDE_TAX,CCFEE,a.FEE,a.COD,a.TAX1,a.TAX2,TO_DLV_COD from [jetf].[dbo].[FEE_MASTER] a ");
             sb.Append("left join Data_center.dbo.sys_cust b on a.CUSTOMER=b.CUST_CODE ");
@@ -67,7 +68,7 @@ namespace Service.Services
                 {
                     dt.Rows[i]["Format_OUT_DATETIME"] = date.ToString("yyyy-MM-dd");
                 }
-                dt.Rows[i]["INCLUDE_TAX"] = globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString());
+                dt.Rows[i]["INCLUDE_TAX"] = _globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString());
             }
 
             return dt;
@@ -145,7 +146,6 @@ namespace Service.Services
             }
 
             DateTime date;
-            GlobalService globalService = new GlobalService();
             StringBuilder sb = new StringBuilder();
             sb.Append("select a.Id,ORIGINAL,ETA,GW,PIECE,F_DataDate,I_DATA_TYPE,I_CLEARANCE_TYPE,DESPATCH_NAME,a.CUSTOMER,I_SIGN_IN_TIME,I_SIGN_OUT_TIME,MAINNUMBER,BL_NO,JETF_SERIAL,F_TAX_NUMBER,a.TRANS_NAME,IMPORTER,IM_PHONENO,IM_ADD,F_INCLUDE_TAX,F_CCFEE,F_FEE,F_COD,F_TAX1,F_TAX2,F_TO_DLV_COD,ITEM_NAME,CC,DELIVERYNO,FIELD_X,TRANS_TAXPAYMENT,isnull(b.TRANS_NAME,TRANS_TAXPAYMENT) as 'TRANS_NAME_NEW',ORDER_NO,EXPRESS_NO,TRACKINGNO from [jetf].[dbo].[MERGE_ORIGINALLIST](nolock) a ");
             sb.Append("left join [jetf].[dbo].[customer_master] b on a.DESPATCH_NAME=b.CUST_ID and a.TRANS_TAXPAYMENT=b.TRANS_NO ");
@@ -416,7 +416,6 @@ namespace Service.Services
         public void FormatData(DataTable dt)
         {
             DateTime date;
-            GlobalService globalService = new GlobalService();
             dt.Columns.Add("Format_OUT_DATETIME", typeof(string));
             for (int i = 0; i < dt.Rows.Count; i++)
             {
@@ -424,7 +423,7 @@ namespace Service.Services
                 {
                     dt.Rows[i]["Format_OUT_DATETIME"] = date.ToString("yyyy-MM-dd");
                 }
-                dt.Rows[i]["F_INCLUDE_TAX"] = globalService.GetTaxType(dt.Rows[i]["F_INCLUDE_TAX"].ToString());
+                dt.Rows[i]["F_INCLUDE_TAX"] = _globalService.GetTaxType(dt.Rows[i]["F_INCLUDE_TAX"].ToString());
             }
         }
 

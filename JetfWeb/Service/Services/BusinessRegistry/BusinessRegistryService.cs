@@ -15,6 +15,11 @@ namespace Service.Services.BatchUploadProcess
 {
     public class BusinessRegistryService : _BaseService
     {
+        public BusinessRegistryService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         public ResponseModel GetExecl(string businessId)
         {
             try

@@ -16,8 +16,14 @@ namespace JETFTAX.Controllers
 {
     public class InvoiceController : Controller
     {
-        GlobalService globalService = new GlobalService();
-        InvoiceService invoiceService = new InvoiceService();
+        private readonly GlobalService _globalService;
+        private readonly InvoiceService _invoiceService;
+
+        public InvoiceController(GlobalService globalService, InvoiceService invoiceService)
+        {
+            _globalService = globalService;
+            _invoiceService = invoiceService;
+        }
 
         IFont fontB;
         XSSFDataFormat format;
@@ -65,7 +71,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
                             //寫入資料
-                            resopnseModel = invoiceService.InvoiceWork(filePath, fileName, Session["user_id"].ToString());
+                            resopnseModel = _invoiceService.InvoiceWork(filePath, fileName, Session["user_id"].ToString());
                         }
                     }
                 }
@@ -128,7 +134,7 @@ namespace JETFTAX.Controllers
         {
             IWorkbook workbook = new XSSFWorkbook();
             //取得空快錯單袋號資料
-            DataTable dt = invoiceService.GetInvoiceWork(upload_time, upload_ope).dt;
+            DataTable dt = _invoiceService.GetInvoiceWork(upload_time, upload_ope).dt;
             //產生EXCEL
             GetInvoiceWorkSheet(workbook, dt, "開立電子發票作業");
             return workbook;

@@ -15,13 +15,14 @@ namespace Service.Services
 {
     public class InvoiceService
     {
-        private SqlConnection conn;
-        private CustomerService customerService = new CustomerService();
+        private readonly SqlConnection conn;
+        private readonly CustomerService _customerService;
         /// <summary>
         /// 建構式
         /// </summary>
-        public InvoiceService()
+        public InvoiceService(CustomerService customerService)
         {
+            _customerService = customerService;
             conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString);
         }
 

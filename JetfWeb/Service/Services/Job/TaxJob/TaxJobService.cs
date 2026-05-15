@@ -19,6 +19,11 @@ namespace Service.Services
 {
     public class TaxJobService : _BaseService
     {
+        public TaxJobService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
 
         /// <summary>
         /// 海運稅金傳送給捷利

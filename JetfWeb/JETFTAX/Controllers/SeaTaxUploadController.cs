@@ -15,11 +15,12 @@ namespace JETFTAX.Controllers
     public class SeaTaxUploadController : Controller
     {
         private readonly DropDownListService _dropDownListService;
-        private readonly SeaTaxUploadService _seaTaxUploadService = new SeaTaxUploadService();
+        private readonly SeaTaxUploadService _seaTaxUploadService;
 
-        public SeaTaxUploadController(DropDownListService dropDownListService)
+        public SeaTaxUploadController(DropDownListService dropDownListService, SeaTaxUploadService seaTaxUploadService)
         {
             _dropDownListService = dropDownListService;
+            _seaTaxUploadService = seaTaxUploadService;
         }
 
         /// <summary>

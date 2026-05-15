@@ -19,6 +19,11 @@ namespace Service.Services.AccsShopee
 {
     public class AccsShopeeService : _BaseService
     {
+        public AccsShopeeService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         private const string BASE_URL = "https://accs.tradevan.com.tw";
         private const string LOGIN_URL = BASE_URL + "/accsw-bin/APACCS/userLoginAction.do";
         private const string QUERY_PAGE_URL = BASE_URL + "/accsw-bin/APACCS/customer/FrmImMergeQuery.jsp";

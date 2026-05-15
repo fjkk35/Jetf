@@ -16,6 +16,11 @@ namespace Service.Services.LineLogin
 {
     public class LineLoginService : _BaseService
     {
+        public LineLoginService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         // LINE Login Channel ID
         private readonly string clientId = "2006503112";     
         // LINE Login Channel Secret

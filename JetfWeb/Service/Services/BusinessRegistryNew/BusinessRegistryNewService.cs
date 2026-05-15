@@ -14,7 +14,8 @@ namespace Service.Services.BusinessRegistryNew
     {
         private readonly CompanyRegistration _companyRegistration;
 
-        public BusinessRegistryNewService() 
+        public BusinessRegistryNewService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext) 
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _companyRegistration = new CompanyRegistration();        }
 

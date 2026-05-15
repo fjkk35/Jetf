@@ -22,8 +22,15 @@ namespace Service.Services.SeaTaxUpload
     {
         private const string SeaSourceType = "1";
 
-        private readonly DownloadService _downloadService = new DownloadService();
-        private readonly TaxService _taxService = new TaxService();
+        private readonly DownloadService _downloadService;
+        private readonly TaxService _taxService;
+
+        public SeaTaxUploadService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, DownloadService downloadService, TaxService taxService)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+            _downloadService = downloadService;
+            _taxService = taxService;
+        }
 
         /// <summary>
         /// 上傳海運稅金檔案。
@@ -40,23 +47,21 @@ namespace Service.Services.SeaTaxUpload
             var uploadTime = DateTime.Now;
             List<SeaTaxModifyRow> modifyRows;
 
-            using (var jetfDb = CreateJetfDbContext())
-            using (var dataCenterDb = CreateDataCenterDbContext())
             {
-                jetfDb.Database.CommandTimeout = 600;
-                dataCenterDb.Database.CommandTimeout = 600;
+                JetfDb.Database.CommandTimeout = 600;
+                DataCenterDb.Database.CommandTimeout = 600;
 
-                using (var transaction = jetfDb.Database.BeginTransaction())
+                using (var transaction = JetfDb.Database.BeginTransaction())
                 {
                     try
                     {
-                        InsertSeaTaxUploads(jetfDb, uploadRows, uploadTime, userId);
+                        InsertSeaTaxUploads(JetfDb, uploadRows, uploadTime, userId);
 
-                        modifyRows = GetMissingModifyRows(dataCenterDb, uploadRows, dataDate, source);
-                        RefreshFeeMasterModifySnapshot(jetfDb, dataCenterDb, modifyRows, dataDate);
-                        AppendModifyRowsToUpload(jetfDb, uploadRows, modifyRows, uploadTime, userId);
+                        modifyRows = GetMissingModifyRows(DataCenterDb, uploadRows, dataDate, source);
+                        RefreshFeeMasterModifySnapshot(JetfDb, DataCenterDb, modifyRows, dataDate);
+                        AppendModifyRowsToUpload(JetfDb, uploadRows, modifyRows, uploadTime, userId);
 
-                        jetfDb.SaveChanges();
+                        JetfDb.SaveChanges();
                         transaction.Commit();
                     }
                     catch (Exception ex)
@@ -83,24 +88,21 @@ namespace Service.Services.SeaTaxUpload
             }
 
             List<SeaTaxFeeMasterRow> feeMasterRows;
-            using (var jetfDb = CreateJetfDbContext())
-            using (var dataCenterDb = CreateDataCenterDbContext())
             {
-                jetfDb.Database.CommandTimeout = 600;
-                dataCenterDb.Database.CommandTimeout = 600;
-                feeMasterRows = BuildFeeMasterRows(jetfDb, dataCenterDb, uploadRows, source);
+                JetfDb.Database.CommandTimeout = 600;
+                DataCenterDb.Database.CommandTimeout = 600;
+                feeMasterRows = BuildFeeMasterRows(JetfDb, DataCenterDb, uploadRows, source);
             }
 
-            using (var jetfDb = CreateJetfDbContext())
             {
-                jetfDb.Database.CommandTimeout = 600;
+                JetfDb.Database.CommandTimeout = 600;
 
-                using (var transaction = jetfDb.Database.BeginTransaction())
+                using (var transaction = JetfDb.Database.BeginTransaction())
                 {
                     try
                     {
-                        ReplaceFeeMaster(jetfDb, feeMasterRows, dataDate, source);
-                        jetfDb.SaveChanges();
+                        ReplaceFeeMaster(JetfDb, feeMasterRows, dataDate, source);
+                        JetfDb.SaveChanges();
                         transaction.Commit();
                     }
                     catch (Exception ex)

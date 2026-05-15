@@ -26,6 +26,11 @@ namespace Service.Services.SevenElevenEtlTaxTax
 {
     public class SevenElevenEtlTaxService : _BaseService
     {
+        public SevenElevenEtlTaxService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得7-11稅金
         /// </summary>

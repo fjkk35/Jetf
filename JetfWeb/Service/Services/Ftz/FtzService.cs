@@ -20,6 +20,11 @@ namespace Service.Services.Ftz
 {
     public partial class FtzService : _BaseService
     {
+        public FtzService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         private const string BASE_URL = "https://ehu.ftz.com.tw/FTZEHU";
         private const string LOGIN_URL = BASE_URL + "/login.do";
         private const string QUERY_URL = BASE_URL + "/HWBQUERY_01.do";

@@ -12,6 +12,11 @@ namespace Service.Services.CainiaoTaixinStarTax
 {
     public class CainiaoTaixinStarTaxService : _BaseService
     {
+        public CainiaoTaixinStarTaxService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         public IWorkbook GetWorkbook(string startDate, string endDate)
         {
             var workbook = new XSSFWorkbook();

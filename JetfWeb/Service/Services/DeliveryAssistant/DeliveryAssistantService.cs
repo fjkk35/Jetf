@@ -17,6 +17,11 @@ namespace Service.Services.DeliveryAssistant
 {
     public class DeliveryAssistantService : _BaseService
     {
+        public DeliveryAssistantService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         //private const string BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIzNTI0IiwiYXBpVXNlcklkIjoiaXRyaSIsInN5c1VzZXJJZCI6IjM1MjQiLCJzeXNDb3JwSWQiOiI2OCIsInVzZXJJZCI6Iml0cmkiLCJ1c2VyTmFtZSI6Iuezu-e1seS4suaOpeeuoeeQhiIsInN5c0dyb3VwSWQiOiI0IiwiZ3JvdXBJZCI6IjA0MCIsImNvcnBTaG9ydE5hbWUiOiLmjbfnqanpgJrnianmtYEiLCJuYmYiOjE3NTU2NzQ1NDMsImV4cCI6MjA3MTIwNzM0MywiaWF0IjoxNzU1Njc0NTQzLCJpc3MiOiJKd3RBdXRoRGVtbyJ9.cjdnYHSR4wZ8-6hiMcShFEgjSpv3jotmf_AxlQxzaB0";
         private const string BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiIzNTI0IiwiYXBpVXNlcklkIjoiaXRyaSIsInN5c1VzZXJJZCI6IjM1MjQiLCJzeXNDb3JwSWQiOiI2OCIsInVzZXJJZCI6Iml0cmkiLCJ1c2VyTmFtZSI6Iuezu-e1seS4suaOpeeuoeeQhiIsInN5c0dyb3VwSWQiOiI0IiwiZ3JvdXBJZCI6IjA0MCIsImNvcnBTaG9ydE5hbWUiOiLmjbfnqanpgJrnianmtYEiLCJuYmYiOjE3NzMxOTg0OTksImV4cCI6MjA4ODgxNzY5OSwiaWF0IjoxNzczMTk4NDk5LCJpc3MiOiJKd3RBdXRoRGVtbyJ9.FE4fnJB_jEOyShb4rOUsPVlWFJdBN5UYL5FR9Fo-xHY";
         private const string UploadApiUrl = "https://gcp.dasgo.com.tw/api/Common/Upload_OrderInfo";

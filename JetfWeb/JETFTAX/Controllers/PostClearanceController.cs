@@ -16,7 +16,12 @@ namespace JETFTAX.Controllers
 {
     public class PostClearanceController : Controller
     {
-        PostClearanceService postClearanceService = new PostClearanceService();
+        private readonly PostClearanceService _postClearanceService;
+
+        public PostClearanceController(PostClearanceService postClearanceService)
+        {
+            _postClearanceService = postClearanceService;
+        }
 
         public ActionResult UploadFile()
         {
@@ -56,7 +61,7 @@ namespace JETFTAX.Controllers
                             fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
-                            resopnseModel = postClearanceService.UploadFile(filePath, vm.DataDate, Session["user_id"].ToString());
+                            resopnseModel = _postClearanceService.UploadFile(filePath, vm.DataDate, Session["user_id"].ToString());
                         }
                     }
                 }
@@ -90,7 +95,7 @@ namespace JETFTAX.Controllers
             IWorkbook workbook;
             try
             {
-                workbook = postClearanceService.GetPostClearanceWorkbook(upload_time, upload_ope);
+                workbook = _postClearanceService.GetPostClearanceWorkbook(upload_time, upload_ope);
                 fileName = $"{DateTime.Now.ToString("yyyyMMddHHmmss")}後段報關明細表.xlsx";
                 using (MemoryStream fileStream = new MemoryStream())
                 {

@@ -26,15 +26,16 @@ namespace JETFTAX.Controllers
     {
         private readonly ScanCargoCustomerService _scanCargoCustomerService;
         private readonly EtlClearanceDetailsService _etlClearanceDetailsService;
+        private readonly GlobalService _globalService;
+        private readonly CCLWorkService _cclWorkService;
 
-        public CCLWorkController(ScanCargoCustomerService scanCargoCustomerService, EtlClearanceDetailsService etlClearanceDetailsService) 
+        public CCLWorkController(ScanCargoCustomerService scanCargoCustomerService, EtlClearanceDetailsService etlClearanceDetailsService, GlobalService globalService, CCLWorkService cclWorkService) 
         {
             _scanCargoCustomerService = scanCargoCustomerService;
             _etlClearanceDetailsService = etlClearanceDetailsService;
+            _globalService = globalService;
+            _cclWorkService = cclWorkService;
         }
-
-        GlobalService globalService = new GlobalService();
-        CCLWorkService cCLWorkService = new CCLWorkService();
 
         IFont fontB;
         XSSFDataFormat format;
@@ -86,7 +87,7 @@ namespace JETFTAX.Controllers
                 {
                     WorkName = "空快清關主號明細表",
                     DownloadTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                    Ip = globalService.GetIPAddress(),
+                    Ip = _globalService.GetIPAddress(),
                     UserId = Session["user_id"].ToString()
                 });
             }
@@ -110,7 +111,7 @@ namespace JETFTAX.Controllers
             string mawbNo;
             IWorkbook workbook = new XSSFWorkbook();
             //空快清關明細表
-            DataTable dt_Order_Cargo_Manifest = cCLWorkService.GetOrder_Cargo_Manifest(sDate, eDate);
+            DataTable dt_Order_Cargo_Manifest = _cclWorkService.GetOrder_Cargo_Manifest(sDate, eDate);
             //主號X類
             var dt_Group = from t in dt_Order_Cargo_Manifest.AsEnumerable()
                            group t by new { MawbNo = t.Field<string>("MawbNo") } into g
@@ -308,7 +309,7 @@ namespace JETFTAX.Controllers
                             fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
-                            resopnseModel = cCLWorkService.UploadFileB6F(filePath, vm.source, Session["user_id"].ToString());
+                            resopnseModel = _cclWorkService.UploadFileB6F(filePath, vm.source, Session["user_id"].ToString());
                         }
                     }
                 }
@@ -338,7 +339,7 @@ namespace JETFTAX.Controllers
             DateTime date = DateTime.Now;
             vm.sDate = $"{date.ToString("yyyy-MM-dd")} 00:00";
             vm.eDate = $"{date.ToString("yyyy-MM-dd")} 23:59";
-            DataTable dt_DataType = cCLWorkService.GetPdtDataType();
+            DataTable dt_DataType = _cclWorkService.GetPdtDataType();
             List<SelectListItem> dataTypeList = new List<SelectListItem>();
             foreach (DataRow item in dt_DataType.Rows)
             {
@@ -393,13 +394,13 @@ namespace JETFTAX.Controllers
             DataTable dt = new DataTable();
             if (dataType == "TACT" || dataType == "FTZ" || dataType == "華儲通關" || dataType == "遠雄通關")
             {
-                dt = cCLWorkService.GetB6F_Unpacking_Upload(sDate, eDate, dataType);
+                dt = _cclWorkService.GetB6F_Unpacking_Upload(sDate, eDate, dataType);
                 //B6F已拆袋明細
                 GetB6FUnpackingDetailsSheet(workbook, dt, "B6F已拆袋明細表", sDate, eDate);
             }
             else
             {
-                dt = cCLWorkService.GetB6F_Sea_Unpacking_Upload(sDate, eDate, dataType);
+                dt = _cclWorkService.GetB6F_Sea_Unpacking_Upload(sDate, eDate, dataType);
                 //B6F已拆袋明細
                 GetB6FSeaUnpackingDetailsSheet(workbook, dt, "B6F已拆袋明細表", sDate, eDate);
             }
@@ -538,7 +539,7 @@ namespace JETFTAX.Controllers
             DateTime date = DateTime.Now;
             vm.sDate = $"{date.ToString("yyyy-MM-dd")} 00:00";
             vm.eDate = $"{date.ToString("yyyy-MM-dd")} 23:59";
-            DataTable dt_DataType = cCLWorkService.GetPdtDataType();
+            DataTable dt_DataType = _cclWorkService.GetPdtDataType();
             List<SelectListItem> dataTypeList = new List<SelectListItem>();
             foreach (DataRow item in dt_DataType.Rows)
             {
@@ -591,7 +592,7 @@ namespace JETFTAX.Controllers
         {
             IWorkbook workbook = new XSSFWorkbook();
             //拆袋明細資料
-            DataTable dt = cCLWorkService.GetPdtUnpacking(dataType, sDate, eDate);
+            DataTable dt = _cclWorkService.GetPdtUnpacking(dataType, sDate, eDate);
             //拆袋明細
             GetUnpackingDetailsSheet(workbook, dt, $"拆袋明細表", sDate, eDate);
 
@@ -653,7 +654,7 @@ namespace JETFTAX.Controllers
             DateTime date = DateTime.Now;
             vm.sDate = $"{date.ToString("yyyy-MM-dd")} 00:00";
             vm.eDate = $"{date.ToString("yyyy-MM-dd")} 23:59";
-            DataTable dt_DataType = cCLWorkService.GetPdtDataType();
+            DataTable dt_DataType = _cclWorkService.GetPdtDataType();
             List<SelectListItem> dataTypeList = new List<SelectListItem>();
             foreach (DataRow item in dt_DataType.Rows)
             {
@@ -661,7 +662,7 @@ namespace JETFTAX.Controllers
             }
             vm.ddlDataTypeList = dataTypeList;
 
-            DataTable dt_Trans = cCLWorkService.GetPdtTrans();
+            DataTable dt_Trans = _cclWorkService.GetPdtTrans();
             List<SelectListItem> transList = new List<SelectListItem>();
             foreach (DataRow item in dt_Trans.Rows)
             {
@@ -680,7 +681,7 @@ namespace JETFTAX.Controllers
         public ActionResult ScanCargoDetailsPdf(ScanCargoDetailsViewModel vm)
         {
             ResponseModel resopnseModel = new ResponseModel();
-            DataTable dt = cCLWorkService.GetScanCargoDetailsPdf(vm.trans, vm.dataType, vm.sDate, vm.eDate);
+            DataTable dt = _cclWorkService.GetScanCargoDetailsPdf(vm.trans, vm.dataType, vm.sDate, vm.eDate);
             if (dt.Rows.Count > 0)
             {
                 string dataDate = Convert.ToDateTime(vm.eDate).ToString("yyyy/MM/dd");
@@ -718,9 +719,9 @@ namespace JETFTAX.Controllers
 
                 IWorkbook workbook = GetScanCargoDetailsWorkbook(dt, dt_Exclude);
                 //拆袋作業差異表
-                DataTable dt_Diff = cCLWorkService.GetClearanceInfoScanCargoDetails(vm.dataType, vm.sDate, vm.eDate);
+                DataTable dt_Diff = _cclWorkService.GetClearanceInfoScanCargoDetails(vm.dataType, vm.sDate, vm.eDate);
                 //客戶名稱
-                DataTable dt_Cust = cCLWorkService.GetClearanceInfoScanCargoCustomer(vm.dataType, vm.sDate, vm.eDate);
+                DataTable dt_Cust = _cclWorkService.GetClearanceInfoScanCargoCustomer(vm.dataType, vm.sDate, vm.eDate);
                 GetClearanceInfoScanCargoDetailsSheet(workbook, dt_Diff, dt_Cust);
 
                 using (MemoryStream fileStream = new MemoryStream())
@@ -1118,7 +1119,7 @@ namespace JETFTAX.Controllers
             .Select(r => r.MergeNumber))
             .ToList();
 
-            var process = cCLWorkService.GetProcess(list);
+            var process = _cclWorkService.GetProcess(list);
 
 
             irow = 1;

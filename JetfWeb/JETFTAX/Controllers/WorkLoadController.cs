@@ -23,16 +23,19 @@ namespace JETFTAX.Controllers
 {
     public class WorkLoadController : Controller
     {
-       
-        CargoService cargoService = new CargoService();
-        IncomeService incomeService = new IncomeService();
+        private readonly CargoService _cargoService;
+        private readonly IncomeService _incomeService;
+        private readonly CustomerService _customerService;
         private readonly WorkDayService _workDayService;
         private readonly WorkLoadService _workLoadService;
 
-        public WorkLoadController(WorkDayService workDayService, WorkLoadService workLoadService)
+        public WorkLoadController(WorkDayService workDayService, WorkLoadService workLoadService, CargoService cargoService, IncomeService incomeService, CustomerService customerService)
         {
             _workLoadService = workLoadService;
             _workDayService = workDayService;
+            _cargoService = cargoService;
+            _incomeService = incomeService;
+            _customerService = customerService;
         }
 
         IFont fontB;
@@ -120,7 +123,7 @@ namespace JETFTAX.Controllers
         {
             IWorkbook workbook = new XSSFWorkbook();
             //總表
-            DataTable dt_Report = incomeService.IncomeDetailsReport(original, sDate, eDate).dt;
+            DataTable dt_Report = _incomeService.IncomeDetailsReport(original, sDate, eDate).dt;
             //海快通關狀態彙總表
             GetCCStatusSetReportSheet(workbook, dt_Report, "海快通關狀態彙總表", sDate, eDate);
 
@@ -371,7 +374,7 @@ namespace JETFTAX.Controllers
         {
             IWorkbook workbook = new XSSFWorkbook();
             //總表
-            DataTable dt_Report = incomeService.IncomeDetailsReport(original, sDate, eDate).dt;
+            DataTable dt_Report = _incomeService.IncomeDetailsReport(original, sDate, eDate).dt;
             //空快通關狀態彙總表
             GetCCStatusEtlReportSheet(workbook, dt_Report, "空快通關狀態彙總表", sDate, eDate);
             return workbook;
@@ -1158,8 +1161,7 @@ namespace JETFTAX.Controllers
         {
             string custId, custName, type;
             //客戶
-            CustomerService customerService = new CustomerService();
-            DataTable dt_CustList = customerService.GetCustomerList();
+            DataTable dt_CustList = _customerService.GetCustomerList();
             List<SelectListItem> customerList = new List<SelectListItem>();
             for (int i = 0; i < dt_CustList.Rows.Count; i++)
             {

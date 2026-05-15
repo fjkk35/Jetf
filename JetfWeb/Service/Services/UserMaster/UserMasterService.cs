@@ -11,6 +11,11 @@ namespace Service.Services.UserMaster
 {
     public class UserMasterService : _BaseService
     {
+        public UserMasterService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得所有會員清單
         /// </summary>

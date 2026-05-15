@@ -19,10 +19,13 @@ namespace Service.Services.WorkLoad
     public partial class WorkLoadService : _BaseService
     {
         private readonly WorkDayService _workDayService;
+        private readonly CustomerService _customerService;
 
-        public WorkLoadService(WorkDayService workDayService)
+        public WorkLoadService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, WorkDayService workDayService, CustomerService customerService)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _workDayService = workDayService;
+            _customerService = customerService;
         }
 
         /// <summary>
@@ -109,10 +112,9 @@ namespace Service.Services.WorkLoad
 
 
             //客戶名稱轉換成代號
-            CustomerService customerService = new CustomerService();
             DataRow[] dr_Customer, dr_TransName;
-            DataTable dt_Customer = customerService.GetCustomerList();
-            DataTable dt_TransName = customerService.GetTransNameList();
+            DataTable dt_Customer = _customerService.GetCustomerList();
+            DataTable dt_TransName = _customerService.GetTransNameList();
             for (int i = 0; i < dt_Arrive.Rows.Count; i++)
             {
                 //客戶名稱轉換代號

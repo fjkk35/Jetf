@@ -16,7 +16,8 @@ namespace Service.Services.EtlErrorG
     {
         private readonly CptTradeVanService _cptTradeVanService;
 
-        public EtlErrorGService(CptTradeVanService cptTradeVanService)
+        public EtlErrorGService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, CptTradeVanService cptTradeVanService)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             this._cptTradeVanService = cptTradeVanService;
         }

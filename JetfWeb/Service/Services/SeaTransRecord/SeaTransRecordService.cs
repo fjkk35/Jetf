@@ -19,6 +19,11 @@ namespace Service.Services.SeaTransRecord
 {
     public class SeaTransRecordService : _BaseService
     {
+        public SeaTransRecordService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         public ResponseModel Upload(string filePath, string userId)
         {
             try

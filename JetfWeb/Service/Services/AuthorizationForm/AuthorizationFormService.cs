@@ -11,6 +11,11 @@ namespace Service.Services.AuthorizationForm
 {
     public class AuthorizationFormService : _BaseService
     {
+        public AuthorizationFormService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得所有文件名稱
         /// </summary>

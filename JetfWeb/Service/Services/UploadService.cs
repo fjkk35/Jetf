@@ -20,9 +20,17 @@ namespace Service.Services
 {
     public class UploadService : _BaseService
     {
-        private TaxService _taxService = new TaxService();
-        private CustomerService customerService = new CustomerService();
-        private DownloadService downloadService = new DownloadService();
+        private readonly TaxService _taxService;
+        private readonly CustomerService _customerService;
+        private readonly DownloadService _downloadService;
+
+        public UploadService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, TaxService taxService, CustomerService customerService, DownloadService downloadService)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+            _taxService = taxService;
+            _customerService = customerService;
+            _downloadService = downloadService;
+        }
 
         /// <summary>
         /// 上傳檔案 海運-台北貨櫃、台灣港務、高雄郵務
@@ -71,7 +79,7 @@ namespace Service.Services
             }
 
             //更新菜鳥海運、空運，稅金方式P
-            resopnseModel = downloadService.UpdateCainiaoTaxEdit();
+            resopnseModel = _downloadService.UpdateCainiaoTaxEdit();
             if (resopnseModel.status != Status.success)
             {
                 return resopnseModel;
@@ -1252,7 +1260,7 @@ and a.BAG_NUMBER=BL_NO and a.MAIN_NUMBER = MAIN_NUMBER)
             dt_Fee_Master.Columns.Add("Customer_Cod", typeof(string));
 
             //特殊客戶
-            DataTable dt_Customer_Special = customerService.GetCustomer_Special("海運");
+            DataTable dt_Customer_Special = _customerService.GetCustomer_Special("海運");
 
             //海運上傳資料
             DataTable dt_Data = GetSeaTaxUpload(taxType, upload_Time, userId);

@@ -13,6 +13,11 @@ namespace Service.Services.BatchUploadProcess
 {
     public class BatchUploadProcessService : _BaseService
     {
+        public BatchUploadProcessService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
 
         /// <summary>
         /// 處置說明批次上傳

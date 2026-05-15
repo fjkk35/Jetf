@@ -27,7 +27,8 @@ namespace Service.Services.SeaUnreceivedOrder
     {
         private readonly WorkDayService _workDayService;
 
-        public SeaUnreceivedOrderService(WorkDayService workDayService)
+        public SeaUnreceivedOrderService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, WorkDayService workDayService)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _workDayService = workDayService;
         }

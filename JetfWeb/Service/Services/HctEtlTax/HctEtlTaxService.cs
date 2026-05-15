@@ -15,6 +15,11 @@ namespace Service.Services.HctEtlTax
 {
     public class HctEtlTaxService : _BaseService
     {
+        public HctEtlTaxService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         public IWorkbook GetWorkbook(string custCode,string startDate, string endDate)
         {
             var list = GetData(custCode, startDate, endDate);

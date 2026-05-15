@@ -18,6 +18,11 @@ namespace Service.Services.CustomerTaxCalculate
 {
     public class CustomerTaxCalculateService : _BaseService
     {
+        public CustomerTaxCalculateService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得稅金時間列表
         /// </summary>

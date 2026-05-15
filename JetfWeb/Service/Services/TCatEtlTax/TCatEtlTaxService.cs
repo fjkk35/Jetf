@@ -12,6 +12,11 @@ namespace Service.Services
 {
     public class TCatEtlTaxService :_BaseService
     {
+        public TCatEtlTaxService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得稅金明細表
         /// </summary>

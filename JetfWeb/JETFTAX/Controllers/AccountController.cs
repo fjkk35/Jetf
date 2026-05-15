@@ -15,6 +15,13 @@ namespace JETFTAX.Controllers
 {
     public class AccountController : Controller
     {
+        private readonly AccountService _accountService;
+
+        public AccountController(AccountService accountService)
+        {
+            _accountService = accountService;
+        }
+
         // GET: Account
         public ActionResult Login()
         {
@@ -24,7 +31,6 @@ namespace JETFTAX.Controllers
         [HttpPost]
         public JsonResult Login(AccountViewModel vm)
         {
-            AccountService accountService = new AccountService();
             ResponseModel resopnseModel = new ResponseModel();
             //resopnseModel.status = Status.success;
             //resopnseModel.msg = "";
@@ -36,8 +42,8 @@ namespace JETFTAX.Controllers
             resopnseModel.msg = "";
             Session["user_id"] = "admin";
             Session["user_name"] = "admin";
-            Session["user_partner"] = accountService.GetAuthority("admin").Item1;
-            Session["user_auth"] = accountService.GetAuthority("admin").Item2;
+            Session["user_partner"] = _accountService.GetAuthority("admin").Item1;
+            Session["user_auth"] = _accountService.GetAuthority("admin").Item2;
             return Json(resopnseModel, JsonRequestBehavior.AllowGet);
 #endif
 
@@ -56,12 +62,12 @@ namespace JETFTAX.Controllers
                 return Json(resopnseModel, JsonRequestBehavior.AllowGet);
             }
 
-            UserMasterModel model = accountService.GetUserMaster(vm.account, vm.password);
+            UserMasterModel model = _accountService.GetUserMaster(vm.account, vm.password);
             resopnseModel.status = model.Status;
             resopnseModel.msg = model.Msg;
             if (model.Status == Status.success)
             {
-                var authority = accountService.GetAuthority(model.Id);
+                var authority = _accountService.GetAuthority(model.Id);
 
                 Session["user_id"] = model.Id;
                 Session["user_name"] = model.Name;

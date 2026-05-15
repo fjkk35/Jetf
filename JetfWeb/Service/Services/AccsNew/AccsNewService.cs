@@ -19,6 +19,11 @@ namespace Service.Services.AccsNew
 {
     public class AccsNewService : _BaseService
     {
+        public AccsNewService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         private const string API_BASE_URL = "https://accsn.tradevan.com.tw/APACCS/api/v1";
         private const string VERIFY_CODE_URL = API_BASE_URL + "/login/verfiryCode";
         private const string LOGIN_URL = API_BASE_URL + "/login";

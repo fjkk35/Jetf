@@ -12,6 +12,11 @@ namespace Service.Services.CainiaoHiLifeTaxDetails
 {
     public class CainiaoHiLifeTaxDetailsService :_BaseService
     {
+        public CainiaoHiLifeTaxDetailsService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得萊爾富接收稅金明細表
         /// </summary>

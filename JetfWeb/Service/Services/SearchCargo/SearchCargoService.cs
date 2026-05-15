@@ -15,6 +15,14 @@ namespace Service.Services.SearchCargo
 {
     public class SearchCargoService : _BaseService
     {
+        private readonly GlobalService _globalService;
+
+        public SearchCargoService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, GlobalService globalService)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+            _globalService = globalService;
+        }
+
         /// <summary>
         /// 查詢貨況列表
         /// </summary>
@@ -76,11 +84,10 @@ namespace Service.Services.SearchCargo
             }
 
             // 格式化資料
-            GlobalService globalService = new GlobalService();
             foreach (var item in list)
             {
                 item.Format_OUT_DATETIME = item.I_SIGN_OUT_TIME?.ToString("yyyy-MM-dd") ?? "";
-                item.F_INCLUDE_TAX = globalService.GetTaxType(item.F_INCLUDE_TAX ?? "");
+                item.F_INCLUDE_TAX = _globalService.GetTaxType(item.F_INCLUDE_TAX ?? "");
             }
 
             var result = list.Select(row => new SearchCargoResponse

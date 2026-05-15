@@ -12,6 +12,11 @@ namespace Service.Services.ErrorOrderSendCustomer
 {
     public class ErrorOrderSendCustomerService :_BaseService
     {
+        public ErrorOrderSendCustomerService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
 
         /// <summary>
         /// 取得客戶平台對應

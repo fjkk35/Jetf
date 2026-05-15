@@ -19,12 +19,12 @@ namespace JETFTAX.Controllers
     public class BatchEditOrderController : Controller
     {
         private readonly BatchEditOrderService _batchEditOrderService;
+        private readonly CargoService _cargoService;
 
-        CargoService cargoService = new CargoService();
-
-        public BatchEditOrderController(BatchEditOrderService batchEditOrderService) 
+        public BatchEditOrderController(BatchEditOrderService batchEditOrderService, CargoService cargoService) 
         {
             _batchEditOrderService = batchEditOrderService;
+            _cargoService = cargoService;
         }
 
         // GET: BatchEditOrder

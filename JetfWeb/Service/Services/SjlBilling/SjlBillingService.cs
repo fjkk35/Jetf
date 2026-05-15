@@ -16,6 +16,11 @@ namespace Service.Services.SjlBilling
     /// </summary>
     public class SjlBillingService : _BaseService
     {
+        public SjlBillingService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         private const decimal BaseFee = 55m;
         private const decimal MinimumAddressCharge = 300m;
 

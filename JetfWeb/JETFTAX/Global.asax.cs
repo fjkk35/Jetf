@@ -4,6 +4,7 @@ using Autofac.Integration.Mvc;
 using Hangfire;
 using JETFTAX.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Service.Data;
 using Service.Services;
 using Service.Services.Job.CainiaoCheckJob;
 using Service.Services.Job.CainiaoNeedJob;
@@ -67,6 +68,9 @@ namespace JETFTAX
 
         private void RegisterAllServices(ContainerBuilder builder)
         {
+            builder.RegisterType<JetfDbContext>().AsSelf().InstancePerRequest();
+            builder.RegisterType<DataCenterDbContext>().AsSelf().InstancePerRequest();
+
             // 取得當前應用程式域的所有組件
             var serviceAssembly = AppDomain.CurrentDomain.GetAssemblies()
                 .FirstOrDefault(a => a.GetName().Name == "Service");

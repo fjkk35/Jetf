@@ -11,6 +11,11 @@ namespace Service.Services.SeaClearanceProcessor
 {
     public class SeaClearanceProcessorService : _BaseService
     {
+        public SeaClearanceProcessorService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 查詢負責人列表
         /// </summary>

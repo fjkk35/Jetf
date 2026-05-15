@@ -12,6 +12,11 @@ namespace Service.Services.PdtScanCargoArrivalTime
 {
     public class PdtScanCargoArrivalTimeService : _BaseService
     {
+        public PdtScanCargoArrivalTimeService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         public List<SelectListModel> GetDataTypeList()
         {
             const string sql = @"

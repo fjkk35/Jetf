@@ -15,6 +15,11 @@ namespace Service.Services.BatchSearchShenzhenCargo
 {
     public class BatchSearchShenzhenCargoService : _BaseService
     {
+        public BatchSearchShenzhenCargoService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 批量查詢速派新遞物流貨號
         /// </summary>

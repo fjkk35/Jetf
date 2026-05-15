@@ -34,7 +34,8 @@ namespace Service.Services.ErrorOrderSend
 
         private readonly ErrorOrderSendCustomerService _errorOrderSendCustomerService;
 
-        public ErrorOrderSendService(SendPhoneMessageService sendPhoneMessageService, ErrorOrderSendCustomerService errorOrderSendCustomerService)
+        public ErrorOrderSendService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, SendPhoneMessageService sendPhoneMessageService, ErrorOrderSendCustomerService errorOrderSendCustomerService)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _sendPhoneMessageService = sendPhoneMessageService;
             _errorOrderSendCustomerService = errorOrderSendCustomerService;

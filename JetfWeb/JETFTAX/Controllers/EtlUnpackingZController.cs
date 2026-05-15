@@ -16,7 +16,12 @@ namespace JETFTAX.Controllers
 {
     public class EtlUnpackingZController : Controller
     {
-        EtlUnpackingZService etlUnpackingZService = new EtlUnpackingZService();
+        private readonly EtlUnpackingZService _etlUnpackingZService;
+
+        public EtlUnpackingZController(EtlUnpackingZService etlUnpackingZService)
+        {
+            _etlUnpackingZService = etlUnpackingZService;
+        }
 
         public ActionResult Upload()
         {
@@ -61,7 +66,7 @@ namespace JETFTAX.Controllers
 
                                 filePaths.Add(filePath);
                             }
-                            resopnseModel = etlUnpackingZService.Upload(filePaths, Session["user_id"].ToString());
+                            resopnseModel = _etlUnpackingZService.Upload(filePaths, Session["user_id"].ToString());
                         }
                     }
                 }
@@ -95,7 +100,7 @@ namespace JETFTAX.Controllers
                                        .Where(line => !string.IsNullOrWhiteSpace(line))
                                        .ToList();
 
-                IWorkbook workbook = etlUnpackingZService.Download(list);
+                IWorkbook workbook = _etlUnpackingZService.Download(list);
 
                 using (MemoryStream fileStream = new MemoryStream())
                 {

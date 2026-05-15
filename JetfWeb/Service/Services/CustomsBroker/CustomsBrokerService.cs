@@ -13,6 +13,11 @@ namespace Service.Services.CustomsBroker
 {
     public class CustomsBrokerService : _BaseService
     {
+        public CustomsBrokerService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得報驗公司列表 (含聯絡人)
         /// </summary>

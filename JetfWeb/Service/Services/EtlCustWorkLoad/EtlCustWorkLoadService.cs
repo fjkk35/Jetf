@@ -16,7 +16,7 @@ namespace Service.Services.EtlCustWorkLoad
 {
     public class EtlCustWorkLoadService
     {
-        CustomerService customerService = new CustomerService();
+        private readonly CustomerService _customerService;
 
         IFont fontB;
         XSSFDataFormat format;
@@ -27,8 +27,9 @@ namespace Service.Services.EtlCustWorkLoad
         /// <summary>
         /// 建構式
         /// </summary>
-        public EtlCustWorkLoadService()
+        public EtlCustWorkLoadService(CustomerService customerService)
         {
+            _customerService = customerService;
             conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString);
         }
 
@@ -48,7 +49,7 @@ namespace Service.Services.EtlCustWorkLoad
             //取得客戶名稱
             if (dt_Details.Rows.Count > 0)
             {
-                custName = customerService.GetCustomerName("空運", dt_Details.Rows[0]["DESPATCH_NAME"].ToString());
+                custName = _customerService.GetCustomerName("空運", dt_Details.Rows[0]["DESPATCH_NAME"].ToString());
             }
             //班次到達時間
             DataTable dt_Arrive = GetArriveList(custId, sDate, eDate);

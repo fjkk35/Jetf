@@ -34,7 +34,8 @@ namespace Service.Services
         private readonly HttpClient _httpClient;
         private readonly CptPortalApi _cptPortalApi;
 
-        public CptTradeVanService(IHttpClientFactory httpClientFactory, CptPortalApi cptPortalApi)
+        public CptTradeVanService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, IHttpClientFactory httpClientFactory, CptPortalApi cptPortalApi)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _httpClient = httpClientFactory.CreateClient();
             _cptPortalApi = cptPortalApi;

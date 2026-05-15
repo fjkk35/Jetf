@@ -16,6 +16,11 @@ namespace Service.Services.EtlErrorWork
 {
     public class EtlErrorWorkService : _BaseService
     {
+        public EtlErrorWorkService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         #region 資料查詢方法
 
         /// <summary>

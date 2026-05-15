@@ -14,6 +14,11 @@ namespace Service.Services.ScanCargoCustomerDiff
 {
     public class ScanCargoCustomerDiffService : _BaseService
     {
+        public ScanCargoCustomerDiffService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 取得作業地區下拉選項
         /// </summary>

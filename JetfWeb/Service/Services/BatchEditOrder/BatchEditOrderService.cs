@@ -14,6 +14,11 @@ namespace Service.Services.BatchEditOrder
 {
     public class BatchEditOrderService : _BaseService
     {
+        public BatchEditOrderService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         IFont fontB;
         XSSFDataFormat format;
         XSSFFont font1;

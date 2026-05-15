@@ -25,7 +25,8 @@ namespace Service.Services.Job.IncomeJob
         XSSFFont font1;
         XSSFCellStyle cs_Title, cs_Title_Left, cs_Center, cs_Letf, cs_Center_Thick, cs_Center_Blue, cs_Center_Blue_Thick, cs_Int, cs_Int_Thick, cs_Int_Blue, cs_Int_Blue_Thick, cs_Double, cs_Percent, cs_Percent2;
         
-        public IncomeJobService(TelegramBot telegramBot)
+        public IncomeJobService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, TelegramBot telegramBot)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _telegramBot = telegramBot;
         }

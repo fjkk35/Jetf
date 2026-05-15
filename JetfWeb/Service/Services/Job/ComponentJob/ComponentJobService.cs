@@ -16,7 +16,8 @@ namespace Service.Services.Job.ComponentJob
     {
         private readonly TelegramBot _telegramBot;
 
-        public ComponentJobService(TelegramBot telegramBot)
+        public ComponentJobService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, TelegramBot telegramBot)
+            : base(jetfDbContext, dataCenterDbContext)
         {
             _telegramBot = telegramBot;
         }

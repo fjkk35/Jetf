@@ -14,6 +14,11 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
     /// </summary>
     public class ShipmentInboundProcessStageTransferJobService : _BaseService
     {
+        public ShipmentInboundProcessStageTransferJobService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         private const string JobName = "預先登記處理轉檔排程";
         private const string TransferSourceValue = "預先登記處理";
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -29,11 +34,10 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
         {
             try
             {
-                using (var db = CreateJetfDbContext())
-                using (var tx = db.Database.BeginTransaction())
+                using (var tx = JetfDb.Database.BeginTransaction())
                 {
                     // Step 1: 一次查出尚未匹配的 Stage 與對應未出庫 ShipmentInbound。
-                    var pairs = GetPendingStageShipmentPairs(db);
+                    var pairs = GetPendingStageShipmentPairs(JetfDb);
                     if (!pairs.Any())
                     {
                         return Task.CompletedTask;
@@ -48,7 +52,7 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
 
                         var processOpe = stage.ProcessOpe;
 
-                        AddEditHistories(db, shipment, stage, syncTime, processOpe);
+                        AddEditHistories(JetfDb, shipment, stage, syncTime, processOpe);
                         ApplyStageValues(stage, shipment, syncTime, processOpe);
 
                         stage.IsMatch = true;
@@ -56,7 +60,7 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
                     }
 
                     // Step 3: 儲存本次批次同步結果。
-                    db.SaveChanges();
+                    JetfDb.SaveChanges();
                     tx.Commit();
                 }
             }

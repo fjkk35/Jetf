@@ -25,9 +25,16 @@ namespace JETFTAX.Controllers
 {
     public class CargoController : Controller
     {
-        GlobalService globalService = new GlobalService();
-        CargoService cargoService = new CargoService();
-        CustomerService customerService = new CustomerService();
+        private readonly GlobalService _globalService;
+        private readonly CargoService _cargoService;
+        private readonly CustomerService _customerService;
+
+        public CargoController(GlobalService globalService, CargoService cargoService, CustomerService customerService)
+        {
+            _globalService = globalService;
+            _cargoService = cargoService;
+            _customerService = customerService;
+        }
 
         IFont fontB;
         XSSFDataFormat format;
@@ -55,7 +62,7 @@ namespace JETFTAX.Controllers
             JObject obj = JObject.Parse(data);
             string invoice = obj["invoice"].Value<string>();
 
-            DataTable dt_Fee_Master = cargoService.GetFee_Master(invoice);
+            DataTable dt_Fee_Master = _cargoService.GetFee_Master(invoice);
             int count = dt_Fee_Master.Rows.Count;
             JDataTableModel model = new JDataTableModel()
             {
@@ -80,7 +87,7 @@ namespace JETFTAX.Controllers
             DialogCargoViewModel vm = new DialogCargoViewModel();
             vm.DialogCargoList = new List<Models.DialogCargo>();
             //明細
-            DataTable dt_Fee_Master = cargoService.GetFee_Master(trans_number);
+            DataTable dt_Fee_Master = _cargoService.GetFee_Master(trans_number);
             if (dt_Fee_Master.Rows.Count > 0)
             {
                 vm.Source = dt_Fee_Master.Rows[0]["Source"].ToString();
@@ -118,7 +125,7 @@ namespace JETFTAX.Controllers
             }
 
             //配送進度
-            DataTable dt_Cargo_Status = cargoService.GetCargo_Status_Detail(trans_number);
+            DataTable dt_Cargo_Status = _cargoService.GetCargo_Status_Detail(trans_number);
 
             for (int i = 0; i < dt_Cargo_Status.Rows.Count; i++)
             {
@@ -130,12 +137,12 @@ namespace JETFTAX.Controllers
             }
 
             //紀錄LOG
-            cargoService.InsertLog_Cargo_Status(new LogCargoStatusModel()
+            _cargoService.InsertLog_Cargo_Status(new LogCargoStatusModel()
             {
                 Dlv_Inv = trans_number,
                 Remark = "貨況查詢",
                 Search_Time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                User_Ip = globalService.GetIPAddress(),
+                User_Ip = _globalService.GetIPAddress(),
                 User_Id = Session["user_id"].ToString()
             });
 
@@ -179,38 +186,38 @@ namespace JETFTAX.Controllers
                 switch (searchType)
                 {
                     case "phone":
-                        dt_Merge_Originallist = cargoService.GetMerge_Originallist_Phone(invoice);
+                        dt_Merge_Originallist = _cargoService.GetMerge_Originallist_Phone(invoice);
                         break;
                     case "invoice":
-                        dt_Merge_Originallist = cargoService.GetMerge_Originallist_Deliveryno(invoice);
+                        dt_Merge_Originallist = _cargoService.GetMerge_Originallist_Deliveryno(invoice);
                         if (dt_Merge_Originallist.Rows.Count == 0)
                         {
-                            var trackingNo = cargoService.GetShenzhenCargoTrackingNo(invoice);
+                            var trackingNo = _cargoService.GetShenzhenCargoTrackingNo(invoice);
                             if (!string.IsNullOrEmpty(trackingNo))
                             {
-                                dt_Merge_Originallist = cargoService.GetMerge_Originallist_Bl_No(trackingNo);
+                                dt_Merge_Originallist = _cargoService.GetMerge_Originallist_Bl_No(trackingNo);
                             }
                         }
                         break;
                     case "trackingNo":
-                        dt_Merge_Originallist = cargoService.GetMerge_Originallist_Jetf_Serial(invoice);
+                        dt_Merge_Originallist = _cargoService.GetMerge_Originallist_Jetf_Serial(invoice);
                         if (dt_Merge_Originallist.Rows.Count == 0)
                         {
-                            dt_Merge_Originallist = cargoService.GetMerge_Originallist_Bl_No(invoice);
+                            dt_Merge_Originallist = _cargoService.GetMerge_Originallist_Bl_No(invoice);
                         }
                         break;
                     case "fieldX":
-                        string bagNo = cargoService.GetOriginallist_BagNo(invoice);
+                        string bagNo = _cargoService.GetOriginallist_BagNo(invoice);
                         if (bagNo != "")
                         {
-                            dt_Merge_Originallist = cargoService.GetMerge_Originallist_Bl_No(bagNo);
+                            dt_Merge_Originallist = _cargoService.GetMerge_Originallist_Bl_No(bagNo);
                         }
                         break;
                     case "orderNo":
-                        string deliveryno = cargoService.GetOriginallist_Deliveryno(invoice);
+                        string deliveryno = _cargoService.GetOriginallist_Deliveryno(invoice);
                         if (deliveryno != "")
                         {
-                            dt_Merge_Originallist = cargoService.GetMerge_Originallist_Deliveryno(deliveryno);
+                            dt_Merge_Originallist = _cargoService.GetMerge_Originallist_Deliveryno(deliveryno);
                         }
                         break;
                 }
@@ -241,7 +248,7 @@ namespace JETFTAX.Controllers
             DialogCargoViewModel vm = new DialogCargoViewModel();
             vm.DialogCargoList = new List<Models.DialogCargo>();
             //明細
-            DataTable dt_Merge_Originallist = cargoService.GetMerge_Originallist_Id(id);
+            DataTable dt_Merge_Originallist = _cargoService.GetMerge_Originallist_Id(id);
             if (dt_Merge_Originallist.Rows.Count > 0)
             {
                 //資料來源 空運、海運
@@ -282,11 +289,11 @@ namespace JETFTAX.Controllers
                 }
 
                 //取得稅金資料
-                var feeMaster = cargoService.GetFeeMaster(vm.Deliveryno);
+                var feeMaster = _cargoService.GetFeeMaster(vm.Deliveryno);
 
                 if (feeMaster == null)
                 {
-                    feeMaster = cargoService.GetFeeMaster(vm.Dlv_Inv);
+                    feeMaster = _cargoService.GetFeeMaster(vm.Dlv_Inv);
                 }
 
             
@@ -307,7 +314,7 @@ namespace JETFTAX.Controllers
 
                 //取得稅單編號
                 vm.TaxNumberList = new List<TaxNumberItem>();
-                DataTable dt_TaxNumber = cargoService.GetTaxNumber(original, vm.Bag_Number, vm.Dlv_Inv);
+                DataTable dt_TaxNumber = _cargoService.GetTaxNumber(original, vm.Bag_Number, vm.Dlv_Inv);
                 for (int i = 0; i < dt_TaxNumber.Rows.Count; i++)
                 {
                     taxNumber = dt_TaxNumber.Rows[i]["TAX_NUMBER"].ToString();
@@ -317,7 +324,7 @@ namespace JETFTAX.Controllers
                     });
                 }
                 //取得掃貨上車掃讀時間、掃讀人員
-                DataTable dt_ScanCargo = cargoService.GetPdtScanCargoUpload(vm.Bag_Number, vm.Dlv_Inv);
+                DataTable dt_ScanCargo = _cargoService.GetPdtScanCargoUpload(vm.Bag_Number, vm.Dlv_Inv);
                 if (dt_ScanCargo.Rows.Count > 0)
                 {
                     vm.ScanCargoUploadTime = Convert.ToDateTime(dt_ScanCargo.Rows[0]["UploadTime"]).ToString("yyyy-MM-dd HH:mm:ss");
@@ -327,7 +334,7 @@ namespace JETFTAX.Controllers
                 };
 
                 //取得錯單類別
-                DataTable dt_ErrorReason = cargoService.GetErrorReason(original, vm.Main_Number, vm.Bag_Number, vm.Dlv_Inv);
+                DataTable dt_ErrorReason = _cargoService.GetErrorReason(original, vm.Main_Number, vm.Bag_Number, vm.Dlv_Inv);
                 var reason = string.Join("，",
                        dt_ErrorReason.AsEnumerable()
                        .Select(r => r.Field<string>("Reason"))
@@ -339,7 +346,7 @@ namespace JETFTAX.Controllers
                 if (original.ToUpper() == "ETL")
                 {
                     //空運
-                    vm.Status = cargoService.GetEtlStatus(vm.TrackingNo);
+                    vm.Status = _cargoService.GetEtlStatus(vm.TrackingNo);
                 }
                 else 
                 {
@@ -350,7 +357,7 @@ namespace JETFTAX.Controllers
 
 
                     //配送進度
-                    DataTable dt_Cargo_Status = cargoService.GetCargo_Status_Detail(vm.Deliveryno);
+                    DataTable dt_Cargo_Status = _cargoService.GetCargo_Status_Detail(vm.Deliveryno);
 
                 for (int i = 0; i < dt_Cargo_Status.Rows.Count; i++)
                 {
@@ -362,12 +369,12 @@ namespace JETFTAX.Controllers
                 }
 
                 //紀錄LOG
-                cargoService.InsertLog_Cargo_Status(new LogCargoStatusModel()
+                _cargoService.InsertLog_Cargo_Status(new LogCargoStatusModel()
                 {
                     Dlv_Inv = vm.Dlv_Inv,
                     Remark = "貨況查詢",
                     Search_Time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                    User_Ip = globalService.GetIPAddress(),
+                    User_Ip = _globalService.GetIPAddress(),
                     User_Id = Session["user_id"].ToString()
                 });
             }
@@ -383,7 +390,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SearchCargo)]
         public ActionResult GetProcess(string data)
         {
-            DataTable dt = cargoService.GetProcess(data);
+            DataTable dt = _cargoService.GetProcess(data);
             int count = dt.Rows.Count;
             JDataTableModel model = new JDataTableModel()
             {
@@ -446,7 +453,7 @@ namespace JETFTAX.Controllers
                 }
 
                 //寫入資料
-                return Json(cargoService.InsertProcess(model), JsonRequestBehavior.AllowGet);
+                return Json(_cargoService.InsertProcess(model), JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
@@ -464,7 +471,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SearchCargo)]
         public ActionResult DeleteProcess(string id)
         {
-            ResponseModel resopnseModel = cargoService.DeleteProcess(id, Session["user_id"].ToString());
+            ResponseModel resopnseModel = _cargoService.DeleteProcess(id, Session["user_id"].ToString());
             return Json(resopnseModel, JsonRequestBehavior.AllowGet);
         }
 
@@ -476,7 +483,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SearchCargo)]
         public ActionResult FinishProcess(string dlv_inv)
         {
-            ResponseModel resopnseModel = cargoService.FinishProcess(dlv_inv, Session["user_id"].ToString());
+            ResponseModel resopnseModel = _cargoService.FinishProcess(dlv_inv, Session["user_id"].ToString());
             return Json(resopnseModel, JsonRequestBehavior.AllowGet);
         }
 
@@ -514,12 +521,12 @@ namespace JETFTAX.Controllers
             try
             {
                 //紀錄LOG
-                cargoService.InsertLog_Cargo_Status(new LogCargoStatusModel()
+                _cargoService.InsertLog_Cargo_Status(new LogCargoStatusModel()
                 {
                     Dlv_Inv = taxNumber,
                     Remark = "稅單查詢",
                     Search_Time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                    User_Ip = globalService.GetIPAddress(),
+                    User_Ip = _globalService.GetIPAddress(),
                     User_Id = Session["user_id"].ToString()
                 });
 
@@ -529,7 +536,7 @@ namespace JETFTAX.Controllers
                 ftp.Credentials = new NetworkCredential("tax_user", "a5d+46b2j59");
                 ftp.Connect();
                 //取得稅單Pdf路徑
-                string filePath = cargoService.GetClearance_Tax_Pdf(taxNumber);
+                string filePath = _cargoService.GetClearance_Tax_Pdf(taxNumber);
                 if (filePath == "")
                 {
                     return Content("查無資料");
@@ -569,7 +576,7 @@ namespace JETFTAX.Controllers
             ftp.Credentials = new NetworkCredential("sign_user", "b9Q5-841ph66");
             ftp.Connect();
             //簽收單路徑
-            DataTable dt = cargoService.GetCargo_Sign_Receipt(cargoNumber);
+            DataTable dt = _cargoService.GetCargo_Sign_Receipt(cargoNumber);
             for (int i = 0; i < dt.Rows.Count; i++)
             {
                 content = null;
@@ -585,12 +592,12 @@ namespace JETFTAX.Controllers
             }
             ftp.Dispose();
             //紀錄LOG
-            cargoService.InsertLog_Cargo_Status(new LogCargoStatusModel()
+            _cargoService.InsertLog_Cargo_Status(new LogCargoStatusModel()
             {
                 Dlv_Inv = cargoNumber,
                 Remark = "簽收單查詢",
                 Search_Time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                User_Ip = globalService.GetIPAddress(),
+                User_Ip = _globalService.GetIPAddress(),
                 User_Id = Session["user_id"].ToString()
             });
 
@@ -607,7 +614,7 @@ namespace JETFTAX.Controllers
         {
             DialogLogCargoStatusViewModel vm = new DialogLogCargoStatusViewModel();
             vm.DialogLogCargoStatusList = new List<Models.DialogLogCargoStatus>();
-            DataTable dt = cargoService.GetLog_Cargo_Status(dlv_inv);
+            DataTable dt = _cargoService.GetLog_Cargo_Status(dlv_inv);
             for (int i = 0; i < dt.Rows.Count; i++)
             {
                 vm.DialogLogCargoStatusList.Add(new Models.DialogLogCargoStatus()
@@ -631,7 +638,7 @@ namespace JETFTAX.Controllers
         {
             TargetBagNumberViewModel vm = new TargetBagNumberViewModel();
             vm.List = new List<TargetBagNumber>();
-            DataTable dt = cargoService.GetTargetBagNumber(bagNumber);
+            DataTable dt = _cargoService.GetTargetBagNumber(bagNumber);
             for (int i = 0; i < dt.Rows.Count; i++)
             {
                 var item = new TargetBagNumber();
@@ -665,7 +672,7 @@ namespace JETFTAX.Controllers
         {
             TargetBagNumberViewModel vm = new TargetBagNumberViewModel();
             vm.List = new List<TargetBagNumber>();
-            DataTable dt = cargoService.GetTargetTrackingNo(bagNumber);
+            DataTable dt = _cargoService.GetTargetTrackingNo(bagNumber);
             for (int i = 0; i < dt.Rows.Count; i++)
             {
                 var item = new TargetBagNumber();
@@ -699,7 +706,7 @@ namespace JETFTAX.Controllers
         {
             ShenzhenCargoViewModel vm = new ShenzhenCargoViewModel();
             vm.List = new List<ShenzhenCargo>();
-            DataTable dt = cargoService.GetShenzhenCargoDeliveryNo(bagNumber);
+            DataTable dt = _cargoService.GetShenzhenCargoDeliveryNo(bagNumber);
 
             dt.AsEnumerable().ToList().ForEach(r =>
             {
@@ -755,7 +762,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
                             //寫入資料
-                            resopnseModel = cargoService.BatchSearchCargo2(filePath, fileName, Session["user_id"].ToString());
+                            resopnseModel = _cargoService.BatchSearchCargo2(filePath, fileName, Session["user_id"].ToString());
                         }
                     }
                 }
@@ -849,7 +856,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
                             //寫入資料
-                            resopnseModel = cargoService.BatchSearchCargo2(filePath, fileName, Session["user_id"].ToString());
+                            resopnseModel = _cargoService.BatchSearchCargo2(filePath, fileName, Session["user_id"].ToString());
                         }
                     }
                 }
@@ -912,7 +919,7 @@ namespace JETFTAX.Controllers
         {
             IWorkbook workbook = new XSSFWorkbook();
             //取得批量貨況查詢明細表
-            DataTable dt_Report = cargoService.GetBatchSearchCargo2(upload_time, upload_ope).dt;
+            DataTable dt_Report = _cargoService.GetBatchSearchCargo2(upload_time, upload_ope).dt;
             //產生EXCEL
             GetBatchSearchCargo2Sheet(workbook, dt_Report, "批量貨況查詢明細表");
             return workbook;
@@ -1089,7 +1096,7 @@ namespace JETFTAX.Controllers
         {
             IWorkbook workbook = new XSSFWorkbook();
             //取得批量貨況查詢明細表
-            DataTable dt_Report = cargoService.GetBatchSearchCargo2(upload_time, upload_ope).dt;
+            DataTable dt_Report = _cargoService.GetBatchSearchCargo2(upload_time, upload_ope).dt;
             //產生EXCEL
             GetBatchSearchCargoShopeeSheet(workbook, dt_Report, "Details");
             return workbook;
@@ -1195,7 +1202,7 @@ namespace JETFTAX.Controllers
             vm.sDate = DateTime.Now.ToString("yyyy-MM-dd");
             vm.eDate = DateTime.Now.ToString("yyyy-MM-dd");
             //客戶
-            var dt_CustList = customerService.GetCustomerList();
+            var dt_CustList = _customerService.GetCustomerList();
 
             var customerList = new List<SelectListItem>();
             customerList.Add(new SelectListItem() { Text = "全部", Value = "All" });
@@ -1237,7 +1244,7 @@ namespace JETFTAX.Controllers
         {
             var sDate = Convert.ToDateTime(vm.sDate).ToString("yyyyMMdd");
             var eDate = Convert.ToDateTime(vm.eDate).ToString("yyyyMMdd");
-            var dataTableModel = cargoService.ProcessReport(vm.custId, sDate, eDate, vm.ProcessType,vm.Finish);
+            var dataTableModel = _cargoService.ProcessReport(vm.custId, sDate, eDate, vm.ProcessType,vm.Finish);
             if (dataTableModel.status == Status.error)
                 return new JsonResult() { Data = new { msg = dataTableModel.msg } };
 
@@ -1385,7 +1392,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SearchWork)]
         public ActionResult GetLogWork()
         {
-            DataTable dt = cargoService.GetLog_Work();
+            DataTable dt = _cargoService.GetLog_Work();
             string data = JsonConvert.SerializeObject(dt);
             return Json(data, JsonRequestBehavior.AllowGet);
         }

@@ -13,6 +13,11 @@ namespace Service.Services.Job.FtzWebClientJob
 {
     public class FtzWebClientJobService : _BaseService
     {
+        public FtzWebClientJobService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         public async Task<bool> RunFtzWebClientJobAsync()
         {
             // 建立 HttpClientHandler 以保留 Cookie

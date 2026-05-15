@@ -17,13 +17,13 @@ namespace JETFTAX.Controllers
 {
     public class UploadController : Controller
     {
-        UploadService uploadService = new UploadService();
-
+        private readonly UploadService _uploadService;
         private readonly DropDownListService _dropDownListService;
 
-        public UploadController(DropDownListService dropDownListService) 
+        public UploadController(DropDownListService dropDownListService, UploadService uploadService) 
         {
             _dropDownListService = dropDownListService;
+            _uploadService = uploadService;
         }
 
         IFont fontB;
@@ -148,7 +148,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
 
-                            resopnseModel = uploadService.UploadFile(date, filePath, vm.taxType, Session["user_id"].ToString());
+                            resopnseModel = _uploadService.UploadFile(date, filePath, vm.taxType, Session["user_id"].ToString());
                             //記錄LOG
                             //InsertLog_Rec($"海運稅金{vm.taxType}", fileName);
                         }
@@ -219,7 +219,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
 
-                            resopnseModel = uploadService.UploadFileG(date, filePath, Session["user_id"].ToString());
+                            resopnseModel = _uploadService.UploadFileG(date, filePath, Session["user_id"].ToString());
                             //記錄LOG
                             //InsertLog_Rec($"海運G類{vm.taxType}", fileName);
                         }
@@ -281,7 +281,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
 
-                            resopnseModel = uploadService.UploadFileReceive(filePath, Session["user_id"].ToString());
+                            resopnseModel = _uploadService.UploadFileReceive(filePath, Session["user_id"].ToString());
                             //記錄LOG
                             //InsertLog_Rec($"海運稅金{vm.taxType}", fileName);
                         }
@@ -343,7 +343,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
 
-                            resopnseModel = uploadService.UploadFileTransfer(filePath, Session["user_id"].ToString());
+                            resopnseModel = _uploadService.UploadFileTransfer(filePath, Session["user_id"].ToString());
                             //記錄LOG
                             //InsertLog_Rec($"海運稅金{vm.taxType}", fileName);
                         }
@@ -425,7 +425,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
                             //寫入資料
-                            resopnseModel = uploadService.CainiaoTaxEdit(filePath, fileName, source, column, Session["user_id"].ToString());
+                            resopnseModel = _uploadService.CainiaoTaxEdit(filePath, fileName, source, column, Session["user_id"].ToString());
                         }
                     }
                 }
@@ -488,7 +488,7 @@ namespace JETFTAX.Controllers
         {
             IWorkbook workbook = new XSSFWorkbook();
             //取得菜鳥包稅稅金方式修改資料
-            DataTable dt_Report = uploadService.GetCainiaoTaxEdit(source, column, upload_time, upload_ope).dt;
+            DataTable dt_Report = _uploadService.GetCainiaoTaxEdit(source, column, upload_time, upload_ope).dt;
             //產生EXCEL
             GetCainiaoTaxEditSheet(workbook, dt_Report, "菜鳥包稅稅金方式修改");
             return workbook;
@@ -655,7 +655,7 @@ namespace JETFTAX.Controllers
         //                    filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
         //                    file.SaveAs(filePath);
 
-        //                    resopnseModel = uploadService.UploadFileAgainCargo(filePath, Session["user_id"].ToString());
+        //                    resopnseModel = _uploadService.UploadFileAgainCargo(filePath, Session["user_id"].ToString());
         //                }
         //            }
         //        }

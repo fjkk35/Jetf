@@ -9,6 +9,11 @@ namespace Service.Services.ShipmentInboundLocationTransfer
 {
     public class ShipmentInboundLocationTransferService : _BaseService
     {
+        public ShipmentInboundLocationTransferService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         /// <summary>
         /// 查詢儲位資料
         /// </summary>
@@ -16,9 +21,8 @@ namespace Service.Services.ShipmentInboundLocationTransfer
         /// <returns>儲位資料列表</returns>
         public LocationTransferResponse GetData(LocationTransferRequest request)
         {
-            using (var db = CreateJetfDbContext())
             {
-                var query = db.ShipmentInbounds
+                var query = JetfDb.ShipmentInbounds
                     .AsNoTracking()
                     .Where(x => !x.OutboundDate.HasValue);
 
@@ -63,13 +67,12 @@ namespace Service.Services.ShipmentInboundLocationTransfer
 
             var userId = GetUserId();
 
-            using (var db = CreateJetfDbContext())
             {
-                using (var transaction = db.Database.BeginTransaction())
+                using (var transaction = JetfDb.Database.BeginTransaction())
                 {
                     try
                     {
-                        var existingData = db.ShipmentInbounds
+                        var existingData = JetfDb.ShipmentInbounds
                             .Where(x => request.Ids.Contains(x.Id))
                             .ToList();
 
@@ -80,7 +83,7 @@ namespace Service.Services.ShipmentInboundLocationTransfer
 
                         foreach (var item in existingData)
                         {
-                            db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                            JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
                             {
                                 ShipmentInboundId = item.Id,
                                 FieldName = "儲位",
@@ -93,7 +96,7 @@ namespace Service.Services.ShipmentInboundLocationTransfer
                             item.LocationCode = request.NewLocationCode;
                         }
 
-                        db.SaveChanges();
+                        JetfDb.SaveChanges();
                         transaction.Commit();
                     }
                     catch

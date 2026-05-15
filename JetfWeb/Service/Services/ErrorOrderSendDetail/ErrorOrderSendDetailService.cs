@@ -13,6 +13,11 @@ namespace Service.Services.ErrorOrderSendDetail
 {
     public class ErrorOrderSendDetailService :_BaseService
     {
+        public ErrorOrderSendDetailService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+            : base(jetfDbContext, dataCenterDbContext)
+        {
+        }
+
         public ResponseModel GetErrorOrderSendDetail(string startDate,string endDate,string trackingNo) 
         {
             var sqlQuery = @"
