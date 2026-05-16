@@ -112,7 +112,7 @@ namespace Service.Data
         /// 稅基。
         /// </summary>
         [Column("TAX_BASE")]
-        public string TaxBase { get; set; }
+        public int? TaxBase { get; set; }
 
         /// <summary>
         /// 第一筆稅金。
@@ -178,7 +178,7 @@ namespace Service.Data
         /// 應向物流代收金額。
         /// </summary>
         [Column("TO_DLV_COD")]
-        public int? ToDlvCod { get; set; }
+        public string ToDlvCod { get; set; }
 
         /// <summary>
         /// 派件公司。
@@ -196,7 +196,7 @@ namespace Service.Data
         /// 物流代收金額。
         /// </summary>
         [Column("DLV_COD")]
-        public int? DlvCod { get; set; }
+        public string DlvCod { get; set; }
 
         /// <summary>
         /// 物流代收代碼。
@@ -226,13 +226,13 @@ namespace Service.Data
         /// 匯款金額。
         /// </summary>
         [Column("DLV_REMIT_AMOUT")]
-        public decimal? DlvRemitAmout { get; set; }
+        public string DlvRemitAmout { get; set; }
 
         /// <summary>
         /// 匯款手續費。
         /// </summary>
         [Column("DLV_REMIT_AMOUT_FEE")]
-        public decimal? DlvRemitAmoutFee { get; set; }
+        public string DlvRemitAmoutFee { get; set; }
 
         /// <summary>
         /// 匯款代碼。

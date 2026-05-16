@@ -1,5 +1,6 @@
 ﻿using System.Web;
 using System.Web.Mvc;
+using JETFTAX.Infrastructure;
 
 namespace JETFTAX
 {
@@ -8,6 +9,7 @@ namespace JETFTAX
         public static void RegisterGlobalFilters(GlobalFilterCollection filters)
         {
             filters.Add(new HandleErrorAttribute());
+            filters.Add(new RequestTraceFilter());
         }
     }
 }

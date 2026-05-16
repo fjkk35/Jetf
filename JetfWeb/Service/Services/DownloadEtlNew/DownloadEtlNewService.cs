@@ -1,17 +1,21 @@
-using Microsoft.VisualBasic;
+﻿using Microsoft.VisualBasic;
+using NLog;
 using Service.Data;
 using Service.Models;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
+using System.Globalization;
 using System.Linq;
 
 namespace Service.Services.DownloadEtlNew
 {
     public class DownloadEtlNewService : _BaseService
     {
-        private const int AirSourceType = 3;
+        private const string AirSourceType = "3";
         private const int BatchSize = 500;
+        private const int CommandTimeoutSeconds = 600;
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         /// <summary>
         /// 初始化物流代收檔下載服務。
@@ -52,12 +56,15 @@ namespace Service.Services.DownloadEtlNew
 
             try
             {
+                JetfDb.Database.CommandTimeout = CommandTimeoutSeconds;
+                DataCenterDb.Database.CommandTimeout = CommandTimeoutSeconds;
+
                 // 先同步更新菜鳥稅金調整結果，確保後續組出的代收資料與既有流程一致。
-                responseModel = UpdateCainiaoTaxEdit();
-                if (responseModel.status != Status.success)
-                {
-                    return responseModel;
-                }
+                //responseModel = UpdateCainiaoTaxEdit();
+                //if (responseModel.status != Status.success)
+                //{
+                //    return responseModel;
+                //}
 
                 // 再依清關、稅單、原始單資料組出本次要寫回的 fee master 草稿。
                 var feeMasterDrafts = BuildFeeMasterDrafts(startDate, endDate);
@@ -89,6 +96,8 @@ namespace Service.Services.DownloadEtlNew
 
             try
             {
+                JetfDb.Database.CommandTimeout = CommandTimeoutSeconds;
+                DataCenterDb.Database.CommandTimeout = CommandTimeoutSeconds;
                 if (!TryBuildDateRange(date, timeBetween, sTime, eTime, out var startDate, out var endDate, out _, out var errorMessage))
                 {
                     result.status = Status.error;
@@ -101,10 +110,28 @@ namespace Service.Services.DownloadEtlNew
                     .AsNoTracking()
                     .Where(x =>
                         (x.Source == "tact" || x.Source == "ftz") &&
-                        x.SourceType == AirSourceType.ToString() &&
+                        x.SourceType == AirSourceType &&
                         x.OutDateTime.HasValue &&
                         x.OutDateTime.Value >= startDate &&
                         x.OutDateTime.Value <= endDate)
+                    .Select(x => new
+                    {
+                        x.BagNumber,
+                        x.TrackingNo,
+                        x.Tax1,
+                        x.Tax2,
+                        x.Fee,
+                        x.Cod,
+                        x.ToDlvCod,
+                        x.Recipient,
+                        x.RecPhone,
+                        x.DlvInv,
+                        x.IncludeTax,
+                        x.Customer,
+                        x.DlvCom,
+                        x.OutDateTime
+                    })
+                    .ToList()
                     .Select(x => new DownloadEtlNewReportItem
                     {
                         BagNumber = x.BagNumber,
@@ -113,7 +140,7 @@ namespace Service.Services.DownloadEtlNew
                         Tax2 = x.Tax2 ?? 0,
                         Fee = x.Fee ?? 0,
                         Cod = x.Cod ?? 0,
-                        ToDlvCod = x.ToDlvCod ?? 0,
+                        ToDlvCod = ToInt(x.ToDlvCod),
                         Recipient = x.Recipient,
                         RecPhone = x.RecPhone,
                         DlvInv = x.DlvInv,
@@ -272,26 +299,16 @@ namespace Service.Services.DownloadEtlNew
         /// <returns>單一來源的合併結果。</returns>
         private List<CombinedRow> GetCombinedRowsBySource(string dataType, DateTime startDate, DateTime endDate)
         {
+            void LogStep(string step, string status, string content)
+            {
+                Logger.Debug($"{step} {status}: {content}");
+            }
+
             // step 1: 先抓出這個時間區間內已出倉的清關資料，作為本次處理的主集合。
-            var clearances = DataCenterDb.ClearanceInfos
-                .AsNoTracking()
-                .Where(x =>
-                    x.DataType == dataType &&
-                    x.SignOutTime.HasValue &&
-                    x.SignOutTime.Value >= startDate &&
-                    x.SignOutTime.Value <= endDate)
-                .Select(x => new ClearanceLookupRow
-                {
-                    DataType = x.DataType,
-                    ClearanceType = x.ClearanceType,
-                    ClearanceNumber = x.ClearanceNumber,
-                    SignInTime = x.SignInTime,
-                    SignOutTime = x.SignOutTime,
-                    MainNumber = x.MainNumber,
-                    BagNumber = x.BagNumber,
-                    MergeNumber = x.MergeNumber
-                })
-                .ToList();
+            LogStep("step 1", "開始", "取得 ClearanceInfo 資料");
+            var clearanceQuery = BuildClearanceQuery(dataType, startDate, endDate);
+            var clearances = clearanceQuery.ToList();
+            LogStep("step 1", "結束", $"取得 ClearanceInfo 資料，筆數={clearances.Count}");
 
             if (!clearances.Any())
             {
@@ -299,6 +316,7 @@ namespace Service.Services.DownloadEtlNew
             }
 
             // step 2: 從清關資料整理主提單號與袋號，作為後續稅單、原始單查詢條件。
+            LogStep("step 2", "開始", "整理主提單號與候選袋號");
             var mainNumbers = clearances
                 .Select(x => x.MainNumber)
                 .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -310,8 +328,10 @@ namespace Service.Services.DownloadEtlNew
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct()
                 .ToList();
+            LogStep("step 2", "結束", $"整理主提單號與候選袋號，主號筆數={mainNumbers.Count}，袋號筆數={candidateBagNumbers.Count}");
 
             // step 3: 依來源分開查詢稅單資料，再轉成 dictionary，避免在 SQL 端做過大的 join。
+            LogStep("step 3", "開始", "取得稅單資料並建立 taxLookup");
             var taxes = dataType == "tact"
                 ? GetTactTaxes(mainNumbers, candidateBagNumbers)
                 : GetFtzTaxes(mainNumbers, candidateBagNumbers);
@@ -319,9 +339,11 @@ namespace Service.Services.DownloadEtlNew
             var taxLookup = taxes
                 .GroupBy(x => BuildCompositeKey(x.MainNumber, x.BagNumber))
                 .ToDictionary(x => x.Key, x => x.OrderBy(y => y.TaxNumber).ThenBy(y => y.BagNumber).ToList());
+            LogStep("step 3", "結束", $"取得稅單資料並建立 taxLookup，稅單筆數={taxes.Count}，taxLookup 筆數={taxLookup.Count}");
 
-            // step 4: 撈出原始單資料並建立袋號 / tracking_ub 對照，供後續回填提單與收件資訊。
-            var originals = GetOriginalLists(mainNumbers, candidateBagNumbers);
+            // step 4: 直接沿用同一份清關條件撈出原始單，避免重複維護查詢條件。
+            LogStep("step 4", "開始", "取得 OriginalList 資料並建立袋號與 TrackingUb 對照");
+            var originals = GetOriginalLists(dataType, clearanceQuery);
             var originalByBag = originals
                 .Where(x => !string.IsNullOrWhiteSpace(x.BagNo))
                 .GroupBy(x => BuildCompositeKey(x.MainNumber, x.BagNo))
@@ -331,9 +353,15 @@ namespace Service.Services.DownloadEtlNew
                 .Where(x => !string.IsNullOrWhiteSpace(x.TrackingUb))
                 .GroupBy(x => BuildCompositeKey(x.MainNumber, x.TrackingUb))
                 .ToDictionary(x => x.Key, x => x.OrderBy(y => y.TrackingNo).ThenBy(y => y.Id).ToList());
+            LogStep("step 4", "結束", $"取得 OriginalList 資料並建立對照，原始單筆數={originals.Count}，BagNo 對照筆數={originalByBag.Count}，TrackingUb 對照筆數={originalByTrackingUb.Count}");
 
-            // step 5: 建立客戶主檔 dictionary，最後逐筆把清關、稅單、原始單組成一筆完整資料。
+            // step 5: 建立客戶主檔 dictionary。
+            LogStep("step 5", "開始", "建立客戶主檔對照資料");
             var customerLookup = BuildCustomerLookup(originals);
+            LogStep("step 5", "結束", $"建立客戶主檔對照資料，筆數={customerLookup.Count}");
+
+            // step 6: 逐筆把清關、稅單、原始單組成完整資料，最後依 TAX_NUMBER 去重。
+            LogStep("step 6", "開始", "組合 CombinedRow 並依 TAX_NUMBER 去重");
             var result = new List<CombinedRow>();
 
             foreach (var clearance in clearances)
@@ -383,10 +411,42 @@ namespace Service.Services.DownloadEtlNew
             }
 
             // 舊 SQL 透過 ROW_NUMBER 針對 TAX_NUMBER 去重，這裡保留每張稅單排序後的第一筆資料。
-            return result
+            var dedupedRows = result
                 .GroupBy(x => x.TaxNumber)
                 .Select(x => x.OrderBy(y => y.TrackingNo ?? y.BagNumber).First())
                 .ToList();
+            LogStep("step 6", "結束", $"組合 CombinedRow 並依 TAX_NUMBER 去重，原始筆數={result.Count}，去重後筆數={dedupedRows.Count}");
+
+            return dedupedRows;
+        }
+
+        /// <summary>
+        /// 建立清關資料的共用查詢條件。
+        /// </summary>
+        /// <param name="dataType">資料來源代碼。</param>
+        /// <param name="startDate">查詢起始時間。</param>
+        /// <param name="endDate">查詢結束時間。</param>
+        /// <returns>符合條件的清關資料查詢。</returns>
+        private IQueryable<ClearanceLookupRow> BuildClearanceQuery(string dataType, DateTime startDate, DateTime endDate)
+        {
+            return DataCenterDb.ClearanceInfos
+                .AsNoTracking()
+                .Where(x =>
+                    x.DataType == dataType &&
+                    x.SignOutTime.HasValue &&
+                    x.SignOutTime.Value >= startDate &&
+                    x.SignOutTime.Value <= endDate)
+                .Select(x => new ClearanceLookupRow
+                {
+                    DataType = x.DataType,
+                    ClearanceType = x.ClearanceType,
+                    ClearanceNumber = x.ClearanceNumber,
+                    SignInTime = x.SignInTime,
+                    SignOutTime = x.SignOutTime,
+                    MainNumber = x.MainNumber,
+                    BagNumber = x.BagNumber,
+                    MergeNumber = x.MergeNumber
+                });
         }
 
         /// <summary>
@@ -398,28 +458,36 @@ namespace Service.Services.DownloadEtlNew
         private List<TaxLookupRow> GetTactTaxes(List<string> mainNumbers, List<string> bagNumbers)
         {
             var bagNumberSet = new HashSet<string>(bagNumbers.Where(x => !string.IsNullOrWhiteSpace(x)));
-            var rows = new List<TaxLookupRow>();
 
-            foreach (var batch in Batch(mainNumbers, BatchSize))
+            if (!mainNumbers.Any() || bagNumberSet.Count == 0)
             {
-                // 分批查詢避免 Contains 清單過大，保留在記憶體端過濾候選袋號。
-                var items = DataCenterDb.EtlTactTaxes
-                    .AsNoTracking()
-                    .Where(x => batch.Contains(x.MainNumber))
-                    .Select(x => new TaxLookupRow
-                    {
-                        MainNumber = x.MainNumber,
-                        BagNumber = x.BagNumber,
-                        TaxNumber = x.TaxNumber,
-                        TaxAmount = x.TaxAmount.HasValue ? x.TaxAmount.Value.ToString() : string.Empty,
-                        TaxBase = x.TaxBase
-                    })
-                    .ToList();
-
-                rows.AddRange(items.Where(x => bagNumberSet.Contains(x.BagNumber ?? string.Empty)));
+                return new List<TaxLookupRow>();
             }
 
-            return rows;
+            // 主提單號筆數不多，直接一次查出後再用候選袋號過濾即可。
+            var items = DataCenterDb.EtlTactTaxes
+                .AsNoTracking()
+                .Where(x => mainNumbers.Contains(x.MainNumber))
+                .Select(x => new
+                {
+                    x.MainNumber,
+                    x.BagNumber,
+                    x.TaxNumber,
+                    x.TaxAmount,
+                    x.TaxBase
+                })
+                .ToList()
+                .Select(x => new TaxLookupRow
+                {
+                    MainNumber = x.MainNumber,
+                    BagNumber = x.BagNumber,
+                    TaxNumber = x.TaxNumber,
+                    TaxAmount = x.TaxAmount.HasValue ? x.TaxAmount.Value.ToString() : string.Empty,
+                    TaxBase = ToNullableInt(x.TaxBase)
+                })
+                .ToList();
+
+            return items.Where(x => bagNumberSet.Contains(x.BagNumber ?? string.Empty)).ToList();
         }
 
         /// <summary>
@@ -431,54 +499,127 @@ namespace Service.Services.DownloadEtlNew
         private List<TaxLookupRow> GetFtzTaxes(List<string> mainNumbers, List<string> bagNumbers)
         {
             var bagNumberSet = new HashSet<string>(bagNumbers.Where(x => !string.IsNullOrWhiteSpace(x)));
-            var rows = new List<TaxLookupRow>();
 
-            foreach (var batch in Batch(mainNumbers, BatchSize))
+            if (!mainNumbers.Any() || bagNumberSet.Count == 0)
             {
-                var items = DataCenterDb.EtlFtzTaxes
-                    .AsNoTracking()
-                    .Where(x => batch.Contains(x.MainNumber))
-                    .Select(x => new TaxLookupRow
-                    {
-                        MainNumber = x.MainNumber,
-                        BagNumber = x.BagNumber,
-                        TaxNumber = x.TaxNumber,
-                        TaxAmount = x.TaxAmount,
-                        TaxBase = x.TaxBase
-                    })
-                    .ToList();
-
-                rows.AddRange(items.Where(x => bagNumberSet.Contains(x.BagNumber ?? string.Empty)));
+                return new List<TaxLookupRow>();
             }
 
-            return rows;
+            var items = DataCenterDb.EtlFtzTaxes
+                .AsNoTracking()
+                .Where(x => mainNumbers.Contains(x.MainNumber))
+                .Select(x => new
+                {
+                    x.MainNumber,
+                    x.BagNumber,
+                    x.TaxNumber,
+                    x.TaxAmount,
+                    x.TaxBase
+                })
+                .ToList()
+                .Select(x => new TaxLookupRow
+                {
+                    MainNumber = x.MainNumber,
+                    BagNumber = x.BagNumber,
+                    TaxNumber = x.TaxNumber,
+                    TaxAmount = x.TaxAmount,
+                    TaxBase = ToNullableInt(x.TaxBase)
+                })
+                .ToList();
+
+            return items.Where(x => bagNumberSet.Contains(x.BagNumber ?? string.Empty)).ToList();
         }
 
         /// <summary>
         /// 取得對應主提單號的原始單資料。
         /// </summary>
-        /// <param name="mainNumbers">主提單號清單。</param>
-        /// <param name="bagNumbers">候選袋號清單。</param>
+        /// <param name="dataType">資料來源代碼。</param>
+        /// <param name="clearanceQuery">清關資料查詢。</param>
         /// <returns>原始單資料。</returns>
-        private List<OriginalListEntity> GetOriginalLists(List<string> mainNumbers, List<string> bagNumbers)
+        private List<OriginalListLookupRow> GetOriginalLists(string dataType, IQueryable<ClearanceLookupRow> clearanceQuery)
         {
-            var bagNumberSet = new HashSet<string>(bagNumbers.Where(x => !string.IsNullOrWhiteSpace(x)));
-            var rows = new List<OriginalListEntity>();
-
-            foreach (var batch in Batch(mainNumbers, BatchSize))
+            if (clearanceQuery == null)
             {
-                // 原始單同樣先按主提單號批次抓，再用袋號 / tracking_ub 在記憶體端縮小範圍。
-                var items = DataCenterDb.OriginalLists
-                    .AsNoTracking()
-                    .Where(x => batch.Contains(x.MainNumber))
-                    .ToList();
-
-                rows.AddRange(items.Where(x =>
-                    bagNumberSet.Contains(x.BagNo ?? string.Empty) ||
-                    bagNumberSet.Contains(x.TrackingUb ?? string.Empty)));
+                return new List<OriginalListLookupRow>();
             }
 
+            Logger.Debug("step 4-1 開始: 使用 join 取得 OriginalList 資料");
+
+            var bagJoinRows = new List<OriginalListLookupRow>();
+            if (dataType == "tact")
+            {
+                bagJoinRows = ProjectOriginalListQuery(
+                    from clearance in clearanceQuery
+                    join original in DataCenterDb.OriginalLists.AsNoTracking()
+                        on new
+                        {
+                            clearance.MainNumber,
+                            BagNumber = clearance.BagNumber
+                        }
+                        equals new
+                        {
+                            original.MainNumber,
+                            BagNumber = original.BagNo
+                        }
+                    where !string.IsNullOrEmpty(clearance.MainNumber) && !string.IsNullOrEmpty(clearance.BagNumber)
+                    select original)
+                    .ToList();
+            }
+
+            var trackingJoinRows = ProjectOriginalListQuery(
+                from clearance in clearanceQuery
+                join original in DataCenterDb.OriginalLists.AsNoTracking()
+                    on new
+                    {
+                        clearance.MainNumber,
+                        MergeNumber = clearance.MergeNumber
+                    }
+                    equals new
+                    {
+                        original.MainNumber,
+                        MergeNumber = original.TrackingUb
+                    }
+                where !string.IsNullOrEmpty(clearance.MainNumber) && !string.IsNullOrEmpty(clearance.MergeNumber)
+                select original)
+                .ToList();
+
+            Logger.Debug($"step 4-1 結束: 使用 join 取得 OriginalList 資料，BagNo join 筆數={bagJoinRows.Count}，TrackingUb join 筆數={trackingJoinRows.Count}");
+
+            Logger.Debug("step 4-2 開始: 合併並去除重複的 OriginalList");
+            var rows = bagJoinRows
+                .Concat(trackingJoinRows)
+                .GroupBy(x => x.Id)
+                .Select(x => x.First())
+                .ToList();
+            Logger.Debug($"step 4-2 結束: 合併並去除重複的 OriginalList，BagNo join 筆數={bagJoinRows.Count}，TrackingUb join 筆數={trackingJoinRows.Count}，去重後筆數={rows.Count}");
+
             return rows;
+        }
+
+        /// <summary>
+        /// 只投影 UploadEtl 流程實際用到的 ORIGINALLIST 欄位，避免查詢整列大欄位資料。
+        /// </summary>
+        /// <param name="query">原始 ORIGINALLIST 查詢。</param>
+        /// <returns>縮欄位後的查詢。</returns>
+        private static IQueryable<OriginalListLookupRow> ProjectOriginalListQuery(IQueryable<OriginalListEntity> query)
+        {
+            return query.Select(x => new OriginalListLookupRow
+            {
+                Id = x.Id,
+                MainNumber = x.MainNumber,
+                BagNo = x.BagNo,
+                TrackingNo = x.TrackingNo,
+                Recipient = x.Recipient,
+                RecPhone = x.RecPhone,
+                RecAddress = x.RecAddress,
+                RecId = x.RecId,
+                Cc = x.Cc,
+                DespatchNo = x.DespatchNo,
+                TrackingUb = x.TrackingUb,
+                DeliveryNo = x.DeliveryNo,
+                TransTaxPayment = x.TransTaxPayment,
+                Ecm = x.Ecm
+            });
         }
 
         /// <summary>
@@ -486,7 +627,7 @@ namespace Service.Services.DownloadEtlNew
         /// </summary>
         /// <param name="originals">原始單資料。</param>
         /// <returns>客戶代號與派件公司對照表。</returns>
-        private Dictionary<string, CustomerMasterEntity> BuildCustomerLookup(IEnumerable<OriginalListEntity> originals)
+        private Dictionary<string, CustomerMasterEntity> BuildCustomerLookup(IEnumerable<OriginalListLookupRow> originals)
         {
             var customerCodes = originals
                 .Select(x => PadCustomerCode(x.DespatchNo))
@@ -583,20 +724,23 @@ namespace Service.Services.DownloadEtlNew
         /// <returns>正規化後的電話集合。</returns>
         private HashSet<string> GetSpecialPhoneSet()
         {
-            return new HashSet<string>(JetfDb.CustomerSpecials
+            var phones = JetfDb.CustomerSpecials
                 .AsNoTracking()
                 .Where(x => x.TranType == "空運")
                 .Select(x => x.Phone)
-                .ToList()
+                .ToList();
+            var normalizedPhones = phones
                 .Select(NormalizeSpecialPhone)
-                .Where(x => !string.IsNullOrWhiteSpace(x)));
+                .Where(x => !string.IsNullOrWhiteSpace(x));
+
+            return new HashSet<string>(normalizedPhones);
         }
 
-            /// <summary>
-            /// 將草稿資料新增或更新到 FEE_MASTER_TEST，並保留舊資料 log。
-            /// </summary>
-            /// <param name="drafts">待寫入的草稿資料。</param>
-            /// <param name="dataDate">資料日期。</param>
+        /// <summary>
+        /// 將草稿資料新增或更新到 FEE_MASTER_TEST。
+        /// </summary>
+        /// <param name="drafts">待寫入的草稿資料。</param>
+        /// <param name="dataDate">資料日期。</param>
         private void SaveFeeMasters(List<FeeMasterDraft> drafts, string dataDate)
         {
             if (drafts == null || drafts.Count == 0)
@@ -611,35 +755,33 @@ namespace Service.Services.DownloadEtlNew
                     // 先把現有資料載入成 lookup，後續可直接判斷新增或更新。
                     var existingRows = LoadExistingFeeMasters(drafts);
                     var existingLookup = existingRows.ToDictionary(x => BuildCompositeKey(x.MainNumber, x.TrackingNo));
-                    var logEntities = new List<FeeMasterLogEntity>();
                     var updateTime = DateTime.Now;
+                    var insertedRows = new List<FeeMasterTestEntity>();
+                    var updatedRows = new List<FeeMasterTestEntity>();
 
                     foreach (var draft in drafts)
                     {
                         var key = BuildCompositeKey(draft.MainNumber, draft.TrackingNo);
                         if (existingLookup.TryGetValue(key, out var existingRow))
                         {
-                            // 舊系統若已匯款成功(DLV_REMIT_CODE=Y)就不覆寫；其餘情況先寫 log 再更新主檔。
-                            if (string.Equals(existingRow.DlvRemitCode, "Y", StringComparison.OrdinalIgnoreCase))
-                            {
-                                continue;
-                            }
-
-                            logEntities.Add(CreateFeeMasterLogEntity(existingRow, updateTime));
                             ApplyDraftToEntity(existingRow, draft, dataDate, updateTime);
+                            updatedRows.Add(existingRow);
                             continue;
                         }
 
-                        JetfDb.FeeMasterTests.Add(CreateFeeMasterEntity(draft, dataDate));
+                        insertedRows.Add(CreateFeeMasterEntity(draft, dataDate));
                     }
 
-                    if (logEntities.Count > 0)
+                    if (insertedRows.Count > 0)
                     {
-                        // 舊資料先寫入 log，保留異動前快照。
-                        JetfDb.FeeMasterLogs.AddRange(logEntities);
+                        JetfDb.BulkInsert(insertedRows);
                     }
 
-                    JetfDb.SaveChanges();
+                    if (updatedRows.Count > 0)
+                    {
+                        JetfDb.BulkUpdate(updatedRows);
+                    }
+
                     transaction.Commit();
                 }
                 catch
@@ -672,19 +814,23 @@ namespace Service.Services.DownloadEtlNew
             var keys = new HashSet<string>(drafts.Select(x => BuildCompositeKey(x.MainNumber, x.TrackingNo)));
             var rows = new List<FeeMasterTestEntity>();
 
-            foreach (var mainBatch in Batch(mainNumbers, BatchSize))
+            if (!mainNumbers.Any() || !trackingNos.Any())
             {
-                foreach (var trackingBatch in Batch(trackingNos, BatchSize))
-                {
-                    var items = JetfDb.FeeMasterTests
-                        .Where(x =>
-                            x.SourceType == AirSourceType.ToString() &&
-                            mainBatch.Contains(x.MainNumber) &&
-                            trackingBatch.Contains(x.TrackingNo))
-                        .ToList();
+                return rows;
+            }
 
-                    rows.AddRange(items.Where(x => keys.Contains(BuildCompositeKey(x.MainNumber, x.TrackingNo))));
-                }
+            foreach (var trackingBatch in Batch(trackingNos, BatchSize))
+            {
+                var items = JetfDb.FeeMasterTests
+                    .AsNoTracking()
+                    .Where(x =>
+                        x.SourceType == AirSourceType.ToString() &&
+                        mainNumbers.Contains(x.MainNumber) &&
+                        trackingBatch.Contains(x.TrackingNo))
+                    .ToList();
+                var matchedItems = items.Where(x => keys.Contains(BuildCompositeKey(x.MainNumber, x.TrackingNo))).ToList();
+
+                rows.AddRange(matchedItems);
             }
 
             return rows;
@@ -753,9 +899,9 @@ namespace Service.Services.DownloadEtlNew
         /// <param name="mainNumber">主提單號。</param>
         /// <param name="bagNumber">袋號。</param>
         /// <returns>最適合的原始單資料。</returns>
-        private static OriginalListEntity FindBestOriginal(
-            Dictionary<string, List<OriginalListEntity>> originalByBag,
-            Dictionary<string, List<OriginalListEntity>> originalByTrackingUb,
+        private static OriginalListLookupRow FindBestOriginal(
+            Dictionary<string, List<OriginalListLookupRow>> originalByBag,
+            Dictionary<string, List<OriginalListLookupRow>> originalByTrackingUb,
             string mainNumber,
             string bagNumber)
         {
@@ -797,7 +943,7 @@ namespace Service.Services.DownloadEtlNew
                 InDateTime = draft.InDateTime,
                 OutDateTime = draft.OutDateTime,
                 Combine = NormalizeText(draft.Combine),
-                TaxBase = NormalizeText(draft.TaxBase),
+                TaxBase = draft.TaxBase,
                 Tax1 = draft.Tax1,
                 Tax2 = draft.Tax2,
                 Cod = draft.Cod,
@@ -807,7 +953,7 @@ namespace Service.Services.DownloadEtlNew
                 RecPhone = NormalizeText(draft.RecPhone),
                 RecAddress = NormalizeText(draft.RecAddress),
                 RecId = NormalizeText(draft.RecId),
-                ToDlvCod = draft.ToDlvCod,
+                ToDlvCod = draft.ToDlvCod.ToString(CultureInfo.InvariantCulture),
                 DlvCom = NormalizeText(draft.DlvCom),
                 Arrival = NormalizeText(draft.Arrival),
                 CustomerCod = draft.CustomerCod,
@@ -836,7 +982,7 @@ namespace Service.Services.DownloadEtlNew
             entity.InDate = NormalizeText(draft.InDate);
             entity.InDateTime = draft.InDateTime;
             entity.OutDateTime = draft.OutDateTime;
-            entity.TaxBase = NormalizeText(draft.TaxBase);
+            entity.TaxBase = draft.TaxBase;
             entity.Tax1 = draft.Tax1;
             entity.Tax2 = draft.Tax2;
             entity.DlvCom = NormalizeText(draft.DlvCom);
@@ -848,75 +994,13 @@ namespace Service.Services.DownloadEtlNew
             entity.RecAddress = NormalizeText(draft.RecAddress);
             entity.RecId = NormalizeText(draft.RecId);
             entity.Cod = draft.Cod;
-            entity.ToDlvCod = draft.ToDlvCod;
+            entity.ToDlvCod = draft.ToDlvCod.ToString(CultureInfo.InvariantCulture);
             entity.DlvInv = NormalizeText(draft.DlvInv);
             entity.Arrival = NormalizeText(draft.Arrival);
             entity.CustomerCod = draft.CustomerCod;
             entity.TransCod = draft.TransCod;
             entity.UpdateDate = updateTime;
             entity.RecordFeeMaster = "0";
-        }
-
-        /// <summary>
-        /// 建立 FEE_MASTER_LOG entity，保留更新前的主檔快照。
-        /// </summary>
-        /// <param name="row">既有 fee master 資料。</param>
-        /// <param name="insTime">log 建立時間。</param>
-        /// <returns>fee master log entity。</returns>
-        private static FeeMasterLogEntity CreateFeeMasterLogEntity(FeeMasterTestEntity row, DateTime insTime)
-        {
-            return new FeeMasterLogEntity
-            {
-                Id = row.Id,
-                InsTime = insTime,
-                DataDate = row.DataDate,
-                Source = row.Source,
-                SourceType = row.SourceType,
-                Type = row.Type,
-                Customer = row.Customer,
-                MainNumber = row.MainNumber,
-                TrackingNo = row.TrackingNo,
-                ClearanceNumber = row.ClearanceNumber,
-                BagNumber = row.BagNumber,
-                TaxNumber = row.TaxNumber,
-                DlvInv = row.DlvInv,
-                InDate = row.InDate,
-                InDateTime = row.InDateTime,
-                OutDateTime = row.OutDateTime,
-                Combine = row.Combine,
-                TaxBase = row.TaxBase,
-                Tax1 = row.Tax1,
-                Tax2 = row.Tax2,
-                Ccfee = row.Ccfee,
-                Cod = row.Cod,
-                Fee = row.Fee,
-                IncludeTax = row.IncludeTax,
-                Recipient = row.Recipient,
-                RecPhone = row.RecPhone,
-                RecAddress = row.RecAddress,
-                RecId = row.RecId,
-                ToDlvCod = row.ToDlvCod,
-                DlvCom = row.DlvCom,
-                DlvComStn = row.DlvComStn,
-                DlvCod = row.DlvCod,
-                DlvCodCode = row.DlvCodCode,
-                DlvCodTime = row.DlvCodTime,
-                DlvCodOpe = row.DlvCodOpe,
-                DlvRemitDate = row.DlvRemitDate,
-                DlvRemitAmout = row.DlvRemitAmout,
-                DlvRemitAmoutFee = row.DlvRemitAmoutFee,
-                DlvRemitCode = row.DlvRemitCode,
-                DlvRemitTime = row.DlvRemitTime,
-                DlvRemitOpe = row.DlvRemitOpe,
-                UpdateDate = row.UpdateDate,
-                ModiftyDate = row.ModiftyDate,
-                Download = row.Download,
-                RecordFeeMaster = row.RecordFeeMaster,
-                TaxPayer = row.TaxPayer,
-                Arrival = row.Arrival,
-                CustomerCod = row.CustomerCod,
-                TransCod = row.TransCod
-            };
         }
 
         /// <summary>
@@ -1222,6 +1306,16 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
+        /// 將字串安全轉成可為 null 的整數。
+        /// </summary>
+        /// <param name="value">原始字串。</param>
+        /// <returns>整數結果，失敗時回傳 null。</returns>
+        private static int? ToNullableInt(string value)
+        {
+            return int.TryParse(value, out var number) ? number : (int?)null;
+        }
+
+        /// <summary>
         /// 將電話正規化成僅保留末九碼數字，供特殊客戶比對使用。
         /// </summary>
         /// <param name="phone">原始電話。</param>
@@ -1283,7 +1377,38 @@ namespace Service.Services.DownloadEtlNew
 
             public string TaxAmount { get; set; }
 
-            public string TaxBase { get; set; }
+            public int? TaxBase { get; set; }
+        }
+
+        private sealed class OriginalListLookupRow
+        {
+            public int Id { get; set; }
+
+            public string MainNumber { get; set; }
+
+            public string BagNo { get; set; }
+
+            public string TrackingNo { get; set; }
+
+            public string Recipient { get; set; }
+
+            public string RecPhone { get; set; }
+
+            public string RecAddress { get; set; }
+
+            public string RecId { get; set; }
+
+            public string Cc { get; set; }
+
+            public string DespatchNo { get; set; }
+
+            public string TrackingUb { get; set; }
+
+            public string DeliveryNo { get; set; }
+
+            public string TransTaxPayment { get; set; }
+
+            public string Ecm { get; set; }
         }
 
         private sealed class CombinedRow
@@ -1306,7 +1431,7 @@ namespace Service.Services.DownloadEtlNew
 
             public string TaxAmount { get; set; }
 
-            public string TaxBase { get; set; }
+            public int? TaxBase { get; set; }
 
             public string Ecm { get; set; }
 
@@ -1367,7 +1492,7 @@ namespace Service.Services.DownloadEtlNew
 
             public string Combine { get; set; }
 
-            public string TaxBase { get; set; }
+            public int? TaxBase { get; set; }
 
             public int Tax1 { get; set; }
 

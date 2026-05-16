@@ -4,6 +4,7 @@ using Autofac.Integration.Mvc;
 using Hangfire;
 using JETFTAX.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using NLog;
 using Service.Data;
 using Service.Services;
 using Service.Services.Job.CainiaoCheckJob;
@@ -16,18 +17,25 @@ using Service.Services.Job.SjlJob;
 using Service.Services.Job.TactWebClientJob;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
+using System.Web.SessionState;
 using TelegramLibrary;
 
 namespace JETFTAX
 {
     public class MvcApplication : System.Web.HttpApplication
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         protected void Application_Start()
         {
+            CleanupExpiredLogFolders();
+
             AreaRegistration.RegisterAllAreas();
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
@@ -123,6 +131,59 @@ namespace JETFTAX
                 services.AddTransient(ctrl);
             }
             services.AddHttpClient();
+        }
+
+        protected void Application_AcquireRequestState()
+        {
+            var hasSessionState = Context?.Handler is IRequiresSessionState || Context?.Handler is IReadOnlySessionState;
+            var userId = hasSessionState ? Session?["user_id"]?.ToString() : null;
+            MappedDiagnosticsLogicalContext.Set("userId", string.IsNullOrWhiteSpace(userId) ? "Unknown" : userId.Trim());
+        }
+
+        protected void Application_EndRequest()
+        {
+            MappedDiagnosticsLogicalContext.Remove("userId");
+        }
+
+        protected void Application_Error()
+        {
+            var exception = Server.GetLastError();
+            if (exception == null)
+            {
+                return;
+            }
+
+            var request = Context?.Request;
+            var method = request?.HttpMethod ?? "UNKNOWN";
+            var path = request?.Url?.AbsolutePath ?? request?.RawUrl ?? string.Empty;
+
+            Logger.Error(exception, $"Unhandled_Exception[Error] - [{method}] {path}");
+        }
+
+        private static void CleanupExpiredLogFolders()
+        {
+            var logRootPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Log");
+            if (!Directory.Exists(logRootPath))
+            {
+                return;
+            }
+
+            var expiredDate = DateTime.Today.AddDays(-7);
+            foreach (var directory in Directory.GetDirectories(logRootPath))
+            {
+                var directoryName = Path.GetFileName(directory);
+                if (!DateTime.TryParseExact(directoryName, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var logDate))
+                {
+                    continue;
+                }
+
+                if (logDate >= expiredDate)
+                {
+                    continue;
+                }
+
+                Directory.Delete(directory, true);
+            }
         }
     }
 

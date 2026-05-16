@@ -52,7 +52,7 @@ namespace JETFTAX.Controllers
         /// </summary>
         [HttpGet]
         [UserAuthorize(Authority.SearchCargo)]
-        public ActionResult Detail(string id)
+        public ActionResult Detail(string id, string source)
         {
             return View();
         }
@@ -62,11 +62,11 @@ namespace JETFTAX.Controllers
         /// </summary>
         [HttpPost]
         [UserAuthorize(Authority.SearchCargo)]
-        public JsonResult GetDetail(string id)
+        public JsonResult GetDetail(string id, string source)
         {
             try
             {
-                var detail = _searchCargoService.GetCargoDetail(id);
+            var detail = _searchCargoService.GetCargoDetail(source, id);
 
                 if (detail == null)
                 {

@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Service.Data;
 using Service.Models;
 using Service.Models.Shenzhen;
 using Service.Services.SearchCargo.Domain;
@@ -8,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlClient;
+using System.Data.Entity;
 using System.Linq;
 using System.Text;
 
@@ -15,6 +17,8 @@ namespace Service.Services.SearchCargo
 {
     public class SearchCargoService : _BaseService
     {
+        private const string AirSource = "Air";
+        private const string SeaSource = "Sea";
         private readonly GlobalService _globalService;
 
         public SearchCargoService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, GlobalService globalService)
@@ -35,50 +39,50 @@ namespace Service.Services.SearchCargo
                 return new List<SearchCargoResponse>();
             }
 
-            List<MergeOriginalListModel> list = new List<MergeOriginalListModel>();
+            List<CargoQueryRowModel> list = new List<CargoQueryRowModel>();
 
             switch (request.SearchType)
             {
                 case "phone":
-                    list = GetMerge_Originallist_Phone(searchValue);
+                    list = GetCargoRowsByPhone(searchValue);
                     break;
                 case "invoice":
-                    list = GetMerge_Originallist_Deliveryno(searchValue);
+                    list = GetCargoRowsByDeliveryNo(searchValue);
                     if (list.Count == 0)
                     {
                         var trackingNo = GetShenzhenCargoTrackingNo(searchValue);
                         if (!string.IsNullOrEmpty(trackingNo))
                         {
-                            list = GetMerge_Originallist_Bl_No(trackingNo);
+                            list = GetCargoRowsByBagNo(trackingNo);
                         }
                     }
                     break;
                 case "trackingNo":
-                    list = GetMerge_Originallist_Jetf_Serial(searchValue);
+                    list = GetCargoRowsByJetfSerial(searchValue);
                     if (list.Count == 0)
                     {
-                        list = GetMerge_Originallist_Bl_No(searchValue);
+                        list = GetCargoRowsByBagNo(searchValue);
                     }
                     break;
                 case "fieldX":
                     string bagNo = GetOriginallist_BagNo(searchValue);
                     if (!string.IsNullOrEmpty(bagNo))
                     {
-                        list = GetMerge_Originallist_Bl_No(bagNo);
+                        list = GetCargoRowsByBagNo(bagNo);
                     }
                     break;
                 case "cainiaoFieldX":
                     var deliveryNoList = GetOriginallist_DeliverynoListByFieldX(searchValue);
                     if (deliveryNoList.Count > 0)
                     {
-                        list = GetMerge_Originallist_DeliverynoList(deliveryNoList);
+                        list = GetCargoRowsByDeliveryNoList(deliveryNoList);
                     }
                     break;
                 case "orderNo":
                     string deliveryno = GetOriginallist_Deliveryno(searchValue);
                     if (!string.IsNullOrEmpty(deliveryno))
                     {
-                        list = GetMerge_Originallist_Deliveryno(deliveryno);
+                        list = GetCargoRowsByDeliveryNo(deliveryno);
                     }
                     break;
             }
@@ -93,6 +97,7 @@ namespace Service.Services.SearchCargo
             var result = list.Select(row => new SearchCargoResponse
             {
                 Id = row.Id,
+                Source = row.Source,
                 F_DataDate = row.F_DataDate,
                 I_DATA_TYPE = row.I_DATA_TYPE,
                 Format_OUT_DATETIME = row.Format_OUT_DATETIME,
@@ -110,9 +115,9 @@ namespace Service.Services.SearchCargo
         /// <summary>
         /// 取得貨況明細
         /// </summary>
-        public CargoDetailResponse GetCargoDetail(string id)
+        public CargoDetailResponse GetCargoDetail(string source, string id)
         {
-            var data = GetMerge_Originallist_Id(id);
+            var data = GetCargoRowBySourceAndId(source, id);
             if (data == null)
             {
                 return null;
@@ -503,156 +508,155 @@ namespace Service.Services.SearchCargo
         /// <summary>
         /// 取得貨況-電話
         /// </summary>
-        private List<MergeOriginalListModel> GetMerge_Originallist_Phone(string phone)
+        private List<CargoQueryRowModel> GetCargoRowsByPhone(string phone)
         {
-            string phone2 = phone.Substring(1);
-            string phone3 = "886" + phone;
-            string phone4 = "886" + phone.Substring(1);
-            string phone5 = "+886" + phone;
-            string phone6 = "+886" + phone.Substring(1);
-            string phone11 = "00886" + phone;
-            string phone12 = "00886" + phone.Substring(1);
-            string phone7, phone8, phone9, phone10;
+            var phoneCandidates = BuildPhoneCandidates(phone);
+            var airRows = DataCenterDb.OriginalLists
+                .AsNoTracking()
+                .Where(x => phoneCandidates.Contains(x.RecPhone))
+                .OrderByDescending(x => x.CreateDate)
+                .ToList();
 
-            if (phone.Length > 7)
-            {
-                phone7 = "886-" + phone.Insert(6, "-").Insert(2, "-");
-                phone8 = "886-" + phone.Substring(1).Insert(5, "-").Insert(1, "-");
-                phone9 = "+886-" + phone.Insert(6, "-").Insert(2, "-");
-                phone10 = "+886-" + phone.Substring(1).Insert(5, "-").Insert(1, "-");
-            }
-            else
-            {
-                phone7 = phone;
-                phone8 = phone;
-                phone9 = phone;
-                phone10 = phone;
-            }
+            var seaRows = DataCenterDb.SeaOrderOriginals
+                .AsNoTracking()
+                .Where(x => phoneCandidates.Contains(x.ImporterPhone) || phoneCandidates.Contains(x.ImporterPhoneShort))
+                .OrderByDescending(x => x.CreateDate)
+                .ToList();
 
-            string sql = @"
-     select a.Id,ORIGINAL,ETA,GW,PIECE,F_DataDate,I_DATA_TYPE,I_CLEARANCE_TYPE,DESPATCH_NAME,a.CUSTOMER,
-     I_SIGN_IN_TIME,I_SIGN_OUT_TIME,MAINNUMBER,BL_NO,JETF_SERIAL,F_TAX_NUMBER,a.TRANS_NAME,IMPORTER,
-        IM_PHONENO,IM_ADD,F_INCLUDE_TAX,F_CCFEE,F_FEE,F_COD,F_TAX1,F_TAX2,F_TO_DLV_COD,ITEM_NAME,CC,
-   DELIVERYNO,FIELD_X,TRANS_TAXPAYMENT,isnull(b.TRANS_NAME,TRANS_TAXPAYMENT) as TRANS_NAME_NEW,
-        ORDER_NO,EXPRESS_NO,TRACKINGNO 
-      from [jetf].[dbo].[MERGE_ORIGINALLIST](nolock) a 
-          left join [jetf].[dbo].[customer_master] b on a.DESPATCH_NAME=b.CUST_ID and a.TRANS_TAXPAYMENT=b.TRANS_NO 
-   where IM_PHONENO in (@phone, @phone2, @phone3, @phone4, @phone5, @phone6, @phone7, @phone8, @phone9, @phone10, @phone11, @phone12)
-     order by a.CREATEDATE desc";
-
-            using (var connection = new SqlConnection(conn.ConnectionString))
-            {
-                return connection.Query<MergeOriginalListModel>(sql, new
-                {
-                    phone,
-                    phone2,
-                    phone3,
-                    phone4,
-                    phone5,
-                    phone6,
-                    phone7,
-                    phone8,
-                    phone9,
-                    phone10,
-                    phone11,
-                    phone12
-                }).ToList();
-            }
+            return BuildCargoQueryRows(airRows, seaRows);
         }
 
         /// <summary>
         /// 取得貨況-Id
         /// </summary>
-        private MergeOriginalListModel GetMerge_Originallist_Id(string id)
+        private CargoQueryRowModel GetCargoRowBySourceAndId(string source, string id)
         {
-            string sql = @"
-              select a.Id,ORIGINAL,ETA,GW,PIECE,DESPATCH_NAME,a.CUSTOMER,
-                MAINNUMBER,BL_NO,JETF_SERIAL,a.TRANS_NAME,IMPORTER,
-                IM_PHONENO,IM_ADD,ITEM_NAME,CC,
-                DELIVERYNO,FIELD_X,TRANS_TAXPAYMENT,isnull(b.TRANS_NAME,TRANS_TAXPAYMENT) as TRANS_NAME_NEW,
-                ORDER_NO,EXPRESS_NO,TRACKINGNO
-                from [jetf].[dbo].[MERGE_ORIGINALLIST] (nolock) a 
-                left join [jetf].[dbo].[customer_master] b on a.DESPATCH_NAME=b.CUST_ID and a.TRANS_TAXPAYMENT=b.TRANS_NO 
-                where a.Id=@Id";
-
-            using (var connection = new SqlConnection(conn.ConnectionString))
+            if (string.IsNullOrWhiteSpace(id))
             {
-                return connection.QueryFirstOrDefault<MergeOriginalListModel>(sql, new { Id = id });
+                return null;
             }
+
+            source = NormalizeSource(source);
+
+            if (source == AirSource)
+            {
+                if (!int.TryParse(id, out var airId))
+                {
+                    return null;
+                }
+
+                var airRow = DataCenterDb.OriginalLists
+                    .AsNoTracking()
+                    .FirstOrDefault(x => x.Id == airId);
+
+                return airRow == null
+                    ? null
+                    : BuildCargoQueryRows(new[] { airRow }, Enumerable.Empty<SeaOrderOriginalEntity>()).FirstOrDefault();
+            }
+
+            if (!int.TryParse(id, out var seaId))
+            {
+                return null;
+            }
+
+            var seaRow = DataCenterDb.SeaOrderOriginals
+                .AsNoTracking()
+                .FirstOrDefault(x => x.RowId == seaId);
+
+            return seaRow == null
+                ? null
+                : BuildCargoQueryRows(Enumerable.Empty<OriginalListEntity>(), new[] { seaRow }).FirstOrDefault();
         }
 
         /// <summary>
         /// 取得貨況-物流貨號
         /// </summary>
-        private List<MergeOriginalListModel> GetMerge_Originallist_Deliveryno(string deliveryno)
+        private List<CargoQueryRowModel> GetCargoRowsByDeliveryNo(string deliveryno)
         {
-            string sql = @"
-select a.Id,ORIGINAL,ETA,GW,PIECE,F_DataDate,I_DATA_TYPE,I_CLEARANCE_TYPE,DESPATCH_NAME,a.CUSTOMER,
-         I_SIGN_IN_TIME,I_SIGN_OUT_TIME,MAINNUMBER,BL_NO,JETF_SERIAL,F_TAX_NUMBER,a.TRANS_NAME,IMPORTER,
-     IM_PHONENO,IM_ADD,F_INCLUDE_TAX,F_CCFEE,F_FEE,F_COD,F_TAX1,F_TAX2,F_TO_DLV_COD,ITEM_NAME,CC,
-          DELIVERYNO,FIELD_X,TRANS_TAXPAYMENT,isnull(b.TRANS_NAME,TRANS_TAXPAYMENT) as TRANS_NAME_NEW,
- ORDER_NO,EXPRESS_NO,TRACKINGNO 
-          from [jetf].[dbo].[MERGE_ORIGINALLIST] (nolock) a 
-            left join [jetf].[dbo].[customer_master] b on a.DESPATCH_NAME=b.CUST_ID and a.TRANS_TAXPAYMENT=b.TRANS_NO 
-         where DELIVERYNO=@DELIVERYNO";
+            var airRows = DataCenterDb.OriginalLists
+                .AsNoTracking()
+                .Where(x => x.DeliveryNo == deliveryno)
+                .OrderByDescending(x => x.CreateDate)
+                .ToList();
 
-            using (var connection = new SqlConnection(conn.ConnectionString))
-            {
-                return connection.Query<MergeOriginalListModel>(sql, new { DELIVERYNO = deliveryno }).ToList();
-            }
+            var seaRows = DataCenterDb.SeaOrderOriginals
+                .AsNoTracking()
+                .Where(x => x.JetfSerial == deliveryno)
+                .OrderByDescending(x => x.CreateDate)
+                .ToList();
+
+            return BuildCargoQueryRows(airRows, seaRows);
         }
 
         /// <summary>
         /// 取得貨況-多筆物流貨號
         /// </summary>
-        private List<MergeOriginalListModel> GetMerge_Originallist_DeliverynoList(IEnumerable<string> deliveryNoList)
+        private List<CargoQueryRowModel> GetCargoRowsByDeliveryNoList(IEnumerable<string> deliveryNoList)
         {
-            return deliveryNoList
+            var deliveryNos = (deliveryNoList ?? Enumerable.Empty<string>())
                 .Where(deliveryNo => !string.IsNullOrWhiteSpace(deliveryNo))
-                .SelectMany(deliveryNo => GetMerge_Originallist_Deliveryno(deliveryNo.Trim()))
+                .Select(deliveryNo => deliveryNo.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+
+            if (!deliveryNos.Any())
+            {
+                return new List<CargoQueryRowModel>();
+            }
+
+            var airRows = DataCenterDb.OriginalLists
+                .AsNoTracking()
+                .Where(x => deliveryNos.Contains(x.DeliveryNo))
+                .OrderByDescending(x => x.CreateDate)
+                .ToList();
+
+            var seaRows = DataCenterDb.SeaOrderOriginals
+                .AsNoTracking()
+                .Where(x => deliveryNos.Contains(x.JetfSerial))
+                .OrderByDescending(x => x.CreateDate)
+                .ToList();
+
+            return BuildCargoQueryRows(airRows, seaRows);
         }
 
         /// <summary>
         /// 取得貨況-分提單號
         /// </summary>
-        private List<MergeOriginalListModel> GetMerge_Originallist_Jetf_Serial(string jetf_Serial)
+        private List<CargoQueryRowModel> GetCargoRowsByJetfSerial(string jetf_Serial)
         {
-            string sql = @"
- select a.Id,ORIGINAL,ETA,GW,PIECE,F_DataDate,I_DATA_TYPE,I_CLEARANCE_TYPE,DESPATCH_NAME,a.CUSTOMER,
-      I_SIGN_IN_TIME,I_SIGN_OUT_TIME,MAINNUMBER,BL_NO,JETF_SERIAL,F_TAX_NUMBER,a.TRANS_NAME,IMPORTER,
-            IM_PHONENO,IM_ADD,F_INCLUDE_TAX,F_CCFEE,F_FEE,F_COD,F_TAX1,F_TAX2,F_TO_DLV_COD,ITEM_NAME,CC,
-             DELIVERYNO,FIELD_X,TRANS_TAXPAYMENT,isnull(b.TRANS_NAME,TRANS_TAXPAYMENT) as TRANS_NAME_NEW,
-               ORDER_NO,EXPRESS_NO,TRACKINGNO 
-                from [jetf].[dbo].[MERGE_ORIGINALLIST] (nolock) a 
-           left join [jetf].[dbo].[customer_master] b on a.DESPATCH_NAME=b.CUST_ID and a.TRANS_TAXPAYMENT=b.TRANS_NO 
-     where JETF_SERIAL=@JETF_SERIAL";
+            var airRows = DataCenterDb.OriginalLists
+                .AsNoTracking()
+                .Where(x => x.TrackingNo == jetf_Serial)
+                .OrderByDescending(x => x.CreateDate)
+                .ToList();
 
-            using (var connection = new SqlConnection(conn.ConnectionString))
-            {
-                return connection.Query<MergeOriginalListModel>(sql, new { JETF_SERIAL = jetf_Serial }).ToList();
-            }
+            var seaRows = DataCenterDb.SeaOrderOriginals
+                .AsNoTracking()
+                .Where(x => x.JetfSerial == jetf_Serial)
+                .OrderByDescending(x => x.CreateDate)
+                .ToList();
+
+            return BuildCargoQueryRows(airRows, seaRows);
         }
 
         /// <summary>
         /// 取得貨況-袋號
         /// </summary>
-        private List<MergeOriginalListModel> GetMerge_Originallist_Bl_No(string bl_No)
+        private List<CargoQueryRowModel> GetCargoRowsByBagNo(string bl_No)
         {
-            string sql = @"
-         select a.Id,ORIGINAL,ETA,GW,PIECE,F_DataDate,I_DATA_TYPE,I_CLEARANCE_TYPE,DESPATCH_NAME,a.CUSTOMER,
-            I_SIGN_IN_TIME,I_SIGN_OUT_TIME,MAINNUMBER,BL_NO,JETF_SERIAL,F_TAX_NUMBER,a.TRANS_NAME,IMPORTER,
-              IM_PHONENO,IM_ADD,F_INCLUDE_TAX,F_CCFEE,F_FEE,F_COD,F_TAX1,F_TAX2,F_TO_DLV_COD,ITEM_NAME,CC,
- DELIVERYNO,FIELD_X,TRANS_TAXPAYMENT,isnull(b.TRANS_NAME,TRANS_TAXPAYMENT) as TRANS_NAME_NEW,
-           ORDER_NO,EXPRESS_NO,TRACKINGNO 
-     from [jetf].[dbo].[MERGE_ORIGINALLIST] (nolock) a 
-     left join [jetf].[dbo].[customer_master] b on a.DESPATCH_NAME=b.CUST_ID and a.TRANS_TAXPAYMENT=b.TRANS_NO 
-          where BL_NO=@BL_NO";
+            var airRows = DataCenterDb.OriginalLists
+                .AsNoTracking()
+                .Where(x => x.BagNo == bl_No)
+                .OrderByDescending(x => x.CreateDate)
+                .ToList();
 
-            using (var connection = new SqlConnection(conn.ConnectionString))
-            {
-                return connection.Query<MergeOriginalListModel>(sql, new { BL_NO = bl_No }).ToList();
-            }
+            var seaRows = DataCenterDb.SeaOrderOriginals
+                .AsNoTracking()
+                .Where(x => x.BlNo == bl_No)
+                .OrderByDescending(x => x.CreateDate)
+                .ToList();
+
+            return BuildCargoQueryRows(airRows, seaRows);
         }
 
         /// <summary>
@@ -673,12 +677,11 @@ select a.Id,ORIGINAL,ETA,GW,PIECE,F_DataDate,I_DATA_TYPE,I_CLEARANCE_TYPE,DESPAT
         /// </summary>
         private string GetOriginallist_BagNo(string field_X)
         {
-            string sql = "select BAGNO from [DATA_CENTER].[dbo].[ORIGINALLIST] (nolock) where FIELD_X=@FIELD_X";
-
-            using (var connection = new SqlConnection(conn.ConnectionString))
-            {
-                return connection.QueryFirstOrDefault<string>(sql, new { FIELD_X = field_X })?.Trim() ?? "";
-            }
+            return DataCenterDb.OriginalLists
+                .AsNoTracking()
+                .Where(x => x.FieldX == field_X)
+                .Select(x => x.BagNo)
+                .FirstOrDefault()?.Trim() ?? "";
         }
 
         /// <summary>
@@ -686,16 +689,15 @@ select a.Id,ORIGINAL,ETA,GW,PIECE,F_DataDate,I_DATA_TYPE,I_CLEARANCE_TYPE,DESPAT
         /// </summary>
         private List<string> GetOriginallist_DeliverynoListByFieldX(string field_X)
         {
-            string sql = "select DELIVERYNO from [DATA_CENTER].[dbo].[ORIGINALLIST] (nolock) where FIELD_X=@FIELD_X";
-
-            using (var connection = new SqlConnection(conn.ConnectionString))
-            {
-                return connection.Query<string>(sql, new { FIELD_X = field_X })
-                    .Where(deliveryNo => !string.IsNullOrWhiteSpace(deliveryNo))
-                    .Select(deliveryNo => deliveryNo.Trim())
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-            }
+            return DataCenterDb.OriginalLists
+                .AsNoTracking()
+                .Where(x => x.FieldX == field_X)
+                .Select(x => x.DeliveryNo)
+                .ToList()
+                .Where(deliveryNo => !string.IsNullOrWhiteSpace(deliveryNo))
+                .Select(deliveryNo => deliveryNo.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 
         /// <summary>
@@ -703,12 +705,11 @@ select a.Id,ORIGINAL,ETA,GW,PIECE,F_DataDate,I_DATA_TYPE,I_CLEARANCE_TYPE,DESPAT
         /// </summary>
         private string GetOriginallist_Deliveryno(string Order_No)
         {
-            string sql = "select DELIVERYNO from [DATA_CENTER].[dbo].[ORIGINALLIST] (nolock) where ORDER_NO=@ORDER_NO";
-
-            using (var connection = new SqlConnection(conn.ConnectionString))
-            {
-                return connection.QueryFirstOrDefault<string>(sql, new { ORDER_NO = Order_No })?.Trim() ?? "";
-            }
+            return DataCenterDb.OriginalLists
+                .AsNoTracking()
+                .Where(x => x.OrderNo == Order_No)
+                .Select(x => x.DeliveryNo)
+                .FirstOrDefault()?.Trim() ?? "";
         }
 
         /// <summary>
@@ -1019,6 +1020,308 @@ order by CRTDATETIME desc";
             {
                 return connection.QueryFirstOrDefault<string>(sql, new { TRACKINGNO = trackingNo }) ?? "";
             }
+        }
+
+        private List<string> BuildPhoneCandidates(string phone)
+        {
+            string phone2 = phone.Substring(1);
+            string phone3 = "886" + phone;
+            string phone4 = "886" + phone.Substring(1);
+            string phone5 = "+886" + phone;
+            string phone6 = "+886" + phone.Substring(1);
+            string phone11 = "00886" + phone;
+            string phone12 = "00886" + phone.Substring(1);
+            string phone7;
+            string phone8;
+            string phone9;
+            string phone10;
+
+            if (phone.Length > 7)
+            {
+                phone7 = "886-" + phone.Insert(6, "-").Insert(2, "-");
+                phone8 = "886-" + phone.Substring(1).Insert(5, "-").Insert(1, "-");
+                phone9 = "+886-" + phone.Insert(6, "-").Insert(2, "-");
+                phone10 = "+886-" + phone.Substring(1).Insert(5, "-").Insert(1, "-");
+            }
+            else
+            {
+                phone7 = phone;
+                phone8 = phone;
+                phone9 = phone;
+                phone10 = phone;
+            }
+
+            return new[]
+            {
+                phone,
+                phone2,
+                phone3,
+                phone4,
+                phone5,
+                phone6,
+                phone7,
+                phone8,
+                phone9,
+                phone10,
+                phone11,
+                phone12
+            }
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        }
+
+        private List<CargoQueryRowModel> BuildCargoQueryRows(
+            IEnumerable<OriginalListEntity> airRows,
+            IEnumerable<SeaOrderOriginalEntity> seaRows)
+        {
+            var airList = (airRows ?? Enumerable.Empty<OriginalListEntity>()).ToList();
+            var seaList = (seaRows ?? Enumerable.Empty<SeaOrderOriginalEntity>()).ToList();
+
+            var airCustomerLookup = BuildAirCustomerLookup(airList);
+            var airCustomerNames = GetAirCustomerNames(airList.Select(x => x.DespatchNo));
+            var seaCustomerLookup = BuildSeaCustomerLookup(seaList);
+            var seaCustomerNames = GetSeaCustomerNames(seaList.Select(x => x.DespatchName));
+
+            var list = airList.Select(row => MapAirCargoQueryRow(row, airCustomerLookup, airCustomerNames))
+                .Concat(seaList.Select(row => MapSeaCargoQueryRow(row, seaCustomerLookup, seaCustomerNames)))
+                .GroupBy(row => row.Source + ":" + row.Id)
+                .Select(group => group.First())
+                .ToList();
+
+            ApplyClearanceInfo(list);
+
+            return list
+                .OrderByDescending(row => row.I_SIGN_OUT_TIME ?? row.SOURCE_CREATEDATE)
+                .ThenByDescending(row => row.SOURCE_CREATEDATE)
+                .ThenByDescending(row => row.Id)
+                .ToList();
+        }
+
+        private CargoQueryRowModel MapAirCargoQueryRow(
+            OriginalListEntity row,
+            IReadOnlyDictionary<string, CustomerMasterEntity> customerLookup,
+            IReadOnlyDictionary<string, string> customerNames)
+        {
+            var customerCode = PadCustomerCode(row.DespatchNo);
+            var lookupKey = BuildCompositeKey(customerCode, row.TransTaxPayment);
+            customerLookup.TryGetValue(lookupKey, out var customer);
+
+            var customerName = customer?.Customer;
+            if (string.IsNullOrWhiteSpace(customerName) && !string.IsNullOrWhiteSpace(row.DespatchNo))
+            {
+                customerNames.TryGetValue(row.DespatchNo.Trim(), out customerName);
+            }
+
+            var transName = customer?.TransName;
+            if (string.IsNullOrWhiteSpace(transName))
+            {
+                transName = row.Dispatcher;
+            }
+
+            return new CargoQueryRowModel
+            {
+                Id = row.Id.ToString(),
+                Source = AirSource,
+                ORIGINAL = "ETL",
+                ETA = null,
+                GW = FormatNullableNumber(row.BagWeight) ?? FormatNullableNumber(row.Weight),
+                PIECE = row.Pieces?.ToString() ?? string.Empty,
+                F_DataDate = row.CreateDate?.ToString("yyyyMMdd") ?? string.Empty,
+                I_DATA_TYPE = "空運",
+                I_CLEARANCE_TYPE = string.Empty,
+                DESPATCH_NAME = customerCode,
+                CUSTOMER = customerName ?? string.Empty,
+                I_SIGN_IN_TIME = row.SignInTime,
+                I_SIGN_OUT_TIME = row.SignOutTime,
+                MAINNUMBER = row.MainNumber,
+                BL_NO = row.BagNo,
+                JETF_SERIAL = row.TrackingNo,
+                F_TAX_NUMBER = string.Empty,
+                TRANS_NAME = transName ?? string.Empty,
+                IMPORTER = row.Recipient,
+                IM_PHONENO = row.RecPhone,
+                IM_ADD = row.RecAddress,
+                F_INCLUDE_TAX = row.IncludeTax,
+                F_CCFEE = string.Empty,
+                F_FEE = string.Empty,
+                F_COD = string.Empty,
+                F_TAX1 = string.Empty,
+                F_TAX2 = string.Empty,
+                F_TO_DLV_COD = string.Empty,
+                ITEM_NAME = row.Items,
+                CC = row.Cc,
+                DELIVERYNO = row.DeliveryNo,
+                FIELD_X = row.FieldX,
+                TRANS_TAXPAYMENT = row.TransTaxPayment,
+                TRANS_NAME_NEW = transName ?? row.TransTaxPayment ?? string.Empty,
+                ORDER_NO = row.OrderNo,
+                EXPRESS_NO = row.ExpressNo,
+                TRACKINGNO = row.TrackingNo,
+                STATUS = row.Status,
+                SOURCE_CREATEDATE = row.CreateDate
+            };
+        }
+
+        private CargoQueryRowModel MapSeaCargoQueryRow(
+            SeaOrderOriginalEntity row,
+            IReadOnlyDictionary<string, CustomerMasterEntity> customerLookup,
+            IReadOnlyDictionary<string, string> customerNames)
+        {
+            var lookupKey = BuildCompositeKey(row.DespatchName, row.TransName);
+            customerLookup.TryGetValue(lookupKey, out var customer);
+
+            var customerName = customer?.Customer;
+            if (string.IsNullOrWhiteSpace(customerName) && !string.IsNullOrWhiteSpace(row.DespatchName))
+            {
+                customerNames.TryGetValue(row.DespatchName.Trim(), out customerName);
+            }
+
+            return new CargoQueryRowModel
+            {
+                Id = row.RowId.ToString(),
+                Source = SeaSource,
+                ORIGINAL = "SEA",
+                ETA = row.Eta,
+                GW = FormatNullableNumber(row.Gw),
+                PIECE = row.Piece?.ToString() ?? string.Empty,
+                F_DataDate = row.CreateDate?.ToString("yyyyMMdd") ?? string.Empty,
+                I_DATA_TYPE = "海運",
+                I_CLEARANCE_TYPE = string.Empty,
+                DESPATCH_NAME = row.DespatchName,
+                CUSTOMER = customerName ?? string.Empty,
+                I_SIGN_IN_TIME = null,
+                I_SIGN_OUT_TIME = null,
+                MAINNUMBER = row.MainNumber,
+                BL_NO = row.BlNo,
+                JETF_SERIAL = row.JetfSerial,
+                F_TAX_NUMBER = string.Empty,
+                TRANS_NAME = row.TransName,
+                IMPORTER = row.Importer,
+                IM_PHONENO = row.ImporterPhone,
+                IM_ADD = row.ImporterAddress,
+                F_INCLUDE_TAX = row.IncludeTax,
+                F_CCFEE = string.Empty,
+                F_FEE = string.Empty,
+                F_COD = string.Empty,
+                F_TAX1 = string.Empty,
+                F_TAX2 = string.Empty,
+                F_TO_DLV_COD = string.Empty,
+                ITEM_NAME = row.ItemName,
+                CC = row.Cc?.ToString(),
+                DELIVERYNO = row.JetfSerial,
+                FIELD_X = string.Empty,
+                TRANS_TAXPAYMENT = row.TransName,
+                TRANS_NAME_NEW = customer?.TransName ?? row.TransName ?? string.Empty,
+                ORDER_NO = string.Empty,
+                EXPRESS_NO = string.Empty,
+                TRACKINGNO = row.BlNo,
+                STATUS = row.Status,
+                SOURCE_CREATEDATE = row.CreateDate
+            };
+        }
+
+        private void ApplyClearanceInfo(IEnumerable<CargoQueryRowModel> list)
+        {
+            foreach (var item in list ?? Enumerable.Empty<CargoQueryRowModel>())
+            {
+                var clearanceInfo = GetClearanceInfo(item.MAINNUMBER, item.BL_NO)
+                    ?? GetClearanceInfoByJetfSerial(item.MAINNUMBER, item.JETF_SERIAL);
+
+                if (clearanceInfo == null)
+                {
+                    continue;
+                }
+
+                item.I_DATA_TYPE = clearanceInfo.DATA_TYPE ?? item.I_DATA_TYPE;
+                item.I_CLEARANCE_TYPE = clearanceInfo.CLEARANCE_TYPE ?? item.I_CLEARANCE_TYPE;
+                item.I_SIGN_IN_TIME = clearanceInfo.SIGN_IN_TIME ?? item.I_SIGN_IN_TIME;
+                item.I_SIGN_OUT_TIME = clearanceInfo.SIGN_OUT_TIME ?? item.I_SIGN_OUT_TIME;
+            }
+        }
+
+        private Dictionary<string, CustomerMasterEntity> BuildAirCustomerLookup(IEnumerable<OriginalListEntity> rows)
+        {
+            var customerCodes = rows
+                .Select(x => PadCustomerCode(x.DespatchNo))
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+
+            var transNos = rows
+                .Select(x => x.TransTaxPayment)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+
+            if (!customerCodes.Any() || !transNos.Any())
+            {
+                return new Dictionary<string, CustomerMasterEntity>();
+            }
+
+            return JetfDb.CustomerMasters
+                .AsNoTracking()
+                .Where(x => x.TranType == "空運" && customerCodes.Contains(x.CustId) && transNos.Contains(x.TransNo))
+                .ToList()
+                .GroupBy(x => BuildCompositeKey(x.CustId, x.TransNo))
+                .ToDictionary(group => group.Key, group => group.First());
+        }
+
+        private Dictionary<string, CustomerMasterEntity> BuildSeaCustomerLookup(IEnumerable<SeaOrderOriginalEntity> rows)
+        {
+            var customerCodes = rows
+                .Select(x => x.DespatchName)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+
+            var transNames = rows
+                .Select(x => x.TransName)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+
+            if (!customerCodes.Any() || !transNames.Any())
+            {
+                return new Dictionary<string, CustomerMasterEntity>();
+            }
+
+            return JetfDb.CustomerMasters
+                .AsNoTracking()
+                .Where(x => x.TranType == "海運" && customerCodes.Contains(x.CustId) && transNames.Contains(x.TransName))
+                .ToList()
+                .GroupBy(x => BuildCompositeKey(x.CustId, x.TransName))
+                .ToDictionary(group => group.Key, group => group.First());
+        }
+
+        private static string PadCustomerCode(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return value.Trim().PadLeft(5, '0');
+        }
+
+        private static string BuildCompositeKey(string left, string right)
+        {
+            return (left ?? string.Empty).Trim() + "|" + (right ?? string.Empty).Trim();
+        }
+
+        private static string FormatNullableNumber(decimal? value)
+        {
+            return value.HasValue ? value.Value.ToString("0.##") : string.Empty;
+        }
+
+        private static string NormalizeSource(string source)
+        {
+            if (string.Equals(source, SeaSource, StringComparison.OrdinalIgnoreCase))
+            {
+                return SeaSource;
+            }
+
+            return AirSource;
         }
 
         /// <summary>

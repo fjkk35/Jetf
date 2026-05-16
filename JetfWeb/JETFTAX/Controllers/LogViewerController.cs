@@ -2,21 +2,26 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Web.Mvc;
 using static JETFTAX.Controllers.AccountController;
 
 namespace JETFTAX.Controllers
 {
     /// <summary>
-    /// ¤é»xºÞ²z±±¨î¾¹
+    /// ï¿½ï¿½xï¿½Þ²zï¿½ï¿½ï¿½î¾¹
     /// </summary>
     [LoginFilter]
     public class LogViewerController : Controller
     {
-        private readonly string logBasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
+        private static readonly Regex LogFileNameRegex = new Regex(
+            @"^(?<date>\d{4}-\d{2}-\d{2})\[(?<level>[^\]]+)\]\[(?<userId>[^\]]+)\]\.log$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        private readonly string logBasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Log");
 
         /// <summary>
-        /// ¤é»xÀËµø­º­¶
+        /// ï¿½ï¿½xï¿½Ëµï¿½ï¿½ï¿½ï¿½ï¿½
         /// </summary>
         public ActionResult Index()
         {
@@ -26,10 +31,10 @@ namespace JETFTAX.Controllers
         }
 
         /// <summary>
-        /// ¨ú±o«ü©w¨Ï¥ÎªÌªº¤é»x¦Cªí
+        /// ï¿½ï¿½ï¿½oï¿½ï¿½ï¿½wï¿½Ï¥ÎªÌªï¿½ï¿½ï¿½xï¿½Cï¿½ï¿½
         /// </summary>
-        /// <param name="userId">¨Ï¥ÎªÌID</param>
-        /// <param name="date">¤é´Á (¥i¿ï)</param>
+        /// <param name="userId">ï¿½Ï¥Îªï¿½ID</param>
+        /// <param name="date">ï¿½ï¿½ï¿½ (ï¿½iï¿½ï¿½)</param>
         /// <returns></returns>
         public ActionResult GetUserLogs(string userId, string date = null)
         {
@@ -37,48 +42,42 @@ namespace JETFTAX.Controllers
             {
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Json(new { success = false, message = "¨Ï¥ÎªÌID¤£¯à¬°ªÅ" }, JsonRequestBehavior.AllowGet);
+                    return Json(new { success = false, message = "ï¿½Ï¥Îªï¿½IDï¿½ï¿½ï¿½à¬°ï¿½ï¿½" }, JsonRequestBehavior.AllowGet);
                 }
 
-                var userLogPath = Path.Combine(logBasePath, "UserActions", userId);
-                
-                if (!Directory.Exists(userLogPath))
-                {
-                    return Json(new { success = false, message = $"¨Ï¥ÎªÌ {userId} ¨S¦³¤é»x°O¿ý" }, JsonRequestBehavior.AllowGet);
-                }
-
-                var logFiles = Directory.GetFiles(userLogPath, "*.log")
+                var logFiles = GetLogEntries(userId, date)
                     .Select(f => new
                     {
-                        FileName = Path.GetFileName(f),
-                        Date = Path.GetFileNameWithoutExtension(f),
-                        Size = FormatFileSize(new FileInfo(f).Length),
-                        LastModified = new FileInfo(f).LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss")
+                        f.FileName,
+                        f.Date,
+                        f.Level,
+                        Size = FormatFileSize(f.Size),
+                        LastModified = f.LastModified.ToString("yyyy-MM-dd HH:mm:ss")
                     })
                     .OrderByDescending(f => f.Date)
+                    .ThenByDescending(f => f.LastModified)
                     .ToList();
 
-                // ¦pªG«ü©w¤F¤é´Á¡A¥uªð¦^¸Ó¤é´ÁªºÀÉ®×
-                if (!string.IsNullOrEmpty(date))
+                if (!logFiles.Any())
                 {
-                    logFiles = logFiles.Where(f => f.Date == date).ToList();
+                    return Json(new { success = false, message = $"ï¿½Ï¥Îªï¿½ {userId} ï¿½Sï¿½ï¿½ï¿½ï¿½xï¿½Oï¿½ï¿½" }, JsonRequestBehavior.AllowGet);
                 }
 
                 return Json(new { success = true, data = logFiles }, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = $"Åª¨ú¤é»x¦Cªí¥¢±Ñ: {ex.Message}" }, JsonRequestBehavior.AllowGet);
+                return Json(new { success = false, message = $"Åªï¿½ï¿½ï¿½ï¿½xï¿½Cï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: {ex.Message}" }, JsonRequestBehavior.AllowGet);
             }
         }
 
         /// <summary>
-        /// Åª¨ú¤é»x¤º®e
+        /// Åªï¿½ï¿½ï¿½ï¿½xï¿½ï¿½ï¿½e
         /// </summary>
-        /// <param name="userId">¨Ï¥ÎªÌID</param>
-        /// <param name="fileName">ÀÉ®×¦WºÙ</param>
-        /// <param name="lines">Åª¨ú¦æ¼Æ (¹w³]100¦æ)</param>
-        /// <param name="searchText">·j´M¤å¦r</param>
+        /// <param name="userId">ï¿½Ï¥Îªï¿½ID</param>
+        /// <param name="fileName">ï¿½É®×¦Wï¿½ï¿½</param>
+        /// <param name="lines">Åªï¿½ï¿½ï¿½ï¿½ï¿½ (ï¿½wï¿½]100ï¿½ï¿½)</param>
+        /// <param name="searchText">ï¿½jï¿½Mï¿½ï¿½r</param>
         /// <returns></returns>
         public ActionResult ReadLogContent(string userId, string fileName, int lines = 100, string searchText = null)
         {
@@ -86,25 +85,25 @@ namespace JETFTAX.Controllers
             {
                 if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(fileName))
                 {
-                    return Json(new { success = false, message = "°Ñ¼Æ¤£§¹¾ã" }, JsonRequestBehavior.AllowGet);
+                    return Json(new { success = false, message = "ï¿½Ñ¼Æ¤ï¿½ï¿½ï¿½ï¿½ï¿½" }, JsonRequestBehavior.AllowGet);
                 }
 
-                var logFilePath = Path.Combine(logBasePath, "UserActions", userId, fileName);
+                var logFilePath = FindLogFilePath(userId, fileName);
                 
-                if (!System.IO.File.Exists(logFilePath))
+                if (string.IsNullOrEmpty(logFilePath) || !System.IO.File.Exists(logFilePath))
                 {
-                    return Json(new { success = false, message = "¤é»xÀÉ®×¤£¦s¦b" }, JsonRequestBehavior.AllowGet);
+                    return Json(new { success = false, message = "ï¿½ï¿½xï¿½É®×¤ï¿½ï¿½sï¿½b" }, JsonRequestBehavior.AllowGet);
                 }
 
                 var logLines = System.IO.File.ReadAllLines(logFilePath);
                 
-                // ¦pªG¦³·j´M¤å¦r¡A¹LÂo¤º®e
+                // ï¿½pï¿½Gï¿½ï¿½ï¿½jï¿½Mï¿½ï¿½rï¿½Aï¿½Lï¿½oï¿½ï¿½ï¿½e
                 if (!string.IsNullOrEmpty(searchText))
                 {
                     logLines = logLines.Where(line => line.Contains(searchText)).ToArray();
                 }
 
-                // ¨ú³Ì·sªº«ü©w¦æ¼Æ
+                // ï¿½ï¿½ï¿½Ì·sï¿½ï¿½ï¿½ï¿½ï¿½wï¿½ï¿½ï¿½
                 var recentLines = logLines.Skip(Math.Max(0, logLines.Length - lines)).Take(lines).ToList();
 
                 return Json(new { 
@@ -116,15 +115,15 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = $"Åª¨ú¤é»x¤º®e¥¢±Ñ: {ex.Message}" }, JsonRequestBehavior.AllowGet);
+                return Json(new { success = false, message = $"Åªï¿½ï¿½ï¿½ï¿½xï¿½ï¿½ï¿½eï¿½ï¿½ï¿½ï¿½: {ex.Message}" }, JsonRequestBehavior.AllowGet);
             }
         }
 
         /// <summary>
-        /// ¤U¸ü¤é»xÀÉ®×
+        /// ï¿½Uï¿½ï¿½ï¿½ï¿½xï¿½É®ï¿½
         /// </summary>
-        /// <param name="userId">¨Ï¥ÎªÌID</param>
-        /// <param name="fileName">ÀÉ®×¦WºÙ</param>
+        /// <param name="userId">ï¿½Ï¥Îªï¿½ID</param>
+        /// <param name="fileName">ï¿½É®×¦Wï¿½ï¿½</param>
         /// <returns></returns>
         public ActionResult DownloadLog(string userId, string fileName)
         {
@@ -132,14 +131,14 @@ namespace JETFTAX.Controllers
             {
                 if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(fileName))
                 {
-                    return new HttpStatusCodeResult(400, "°Ñ¼Æ¤£§¹¾ã");
+                    return new HttpStatusCodeResult(400, "ï¿½Ñ¼Æ¤ï¿½ï¿½ï¿½ï¿½ï¿½");
                 }
 
-                var logFilePath = Path.Combine(logBasePath, "UserActions", userId, fileName);
+                var logFilePath = FindLogFilePath(userId, fileName);
                 
-                if (!System.IO.File.Exists(logFilePath))
+                if (string.IsNullOrEmpty(logFilePath) || !System.IO.File.Exists(logFilePath))
                 {
-                    return new HttpStatusCodeResult(404, "¤é»xÀÉ®×¤£¦s¦b");
+                    return new HttpStatusCodeResult(404, "ï¿½ï¿½xï¿½É®×¤ï¿½ï¿½sï¿½b");
                 }
 
                 var fileBytes = System.IO.File.ReadAllBytes(logFilePath);
@@ -149,27 +148,26 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return new HttpStatusCodeResult(500, $"¤U¸ü¤é»xÀÉ®×¥¢±Ñ: {ex.Message}");
+                return new HttpStatusCodeResult(500, $"ï¿½Uï¿½ï¿½ï¿½ï¿½xï¿½É®×¥ï¿½ï¿½ï¿½: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// ¨ú±o©Ò¦³¦³¤é»x°O¿ýªº¨Ï¥ÎªÌ¦Cªí
+        /// ï¿½ï¿½ï¿½oï¿½Ò¦ï¿½ï¿½ï¿½ï¿½ï¿½xï¿½Oï¿½ï¿½ï¿½ï¿½ï¿½Ï¥ÎªÌ¦Cï¿½ï¿½
         /// </summary>
         /// <returns></returns>
         private List<string> GetAllLogUsers()
         {
             try
             {
-                var userActionsPath = Path.Combine(logBasePath, "UserActions");
-                
-                if (!Directory.Exists(userActionsPath))
+                if (!Directory.Exists(logBasePath))
                 {
                     return new List<string>();
                 }
 
-                return Directory.GetDirectories(userActionsPath)
-                    .Select(Path.GetFileName)
+                return GetLogEntries()
+                    .Select(x => x.UserId)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
                     .OrderBy(u => u)
                     .ToList();
             }
@@ -180,7 +178,7 @@ namespace JETFTAX.Controllers
         }
 
         /// <summary>
-        /// ®æ¦¡¤ÆÀÉ®×¤j¤p
+        /// ï¿½æ¦¡ï¿½ï¿½ï¿½É®×¤jï¿½p
         /// </summary>
         /// <param name="bytes"></param>
         /// <returns></returns>
@@ -198,10 +196,10 @@ namespace JETFTAX.Controllers
         }
 
         /// <summary>
-        /// ¨ú±o¤é»x²Î­p¸ê°T
+        /// ï¿½ï¿½ï¿½oï¿½ï¿½xï¿½Î­pï¿½ï¿½T
         /// </summary>
-        /// <param name="userId">¨Ï¥ÎªÌID</param>
-        /// <param name="date">¤é´Á</param>
+        /// <param name="userId">ï¿½Ï¥Îªï¿½ID</param>
+        /// <param name="date">ï¿½ï¿½ï¿½</param>
         /// <returns></returns>
         public ActionResult GetLogStatistics(string userId, string date)
         {
@@ -209,23 +207,27 @@ namespace JETFTAX.Controllers
             {
                 if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(date))
                 {
-                    return Json(new { success = false, message = "°Ñ¼Æ¤£§¹¾ã" }, JsonRequestBehavior.AllowGet);
+                    return Json(new { success = false, message = "ï¿½Ñ¼Æ¤ï¿½ï¿½ï¿½ï¿½ï¿½" }, JsonRequestBehavior.AllowGet);
                 }
 
-                var logFilePath = Path.Combine(logBasePath, "UserActions", userId, $"{date}.log");
-                
-                if (!System.IO.File.Exists(logFilePath))
+                var logFilePaths = GetLogEntries(userId, date)
+                    .Select(x => x.FilePath)
+                    .ToList();
+
+                if (!logFilePaths.Any())
                 {
-                    return Json(new { success = false, message = "¤é»xÀÉ®×¤£¦s¦b" }, JsonRequestBehavior.AllowGet);
+                    return Json(new { success = false, message = "ï¿½ï¿½xï¿½É®×¤ï¿½ï¿½sï¿½b" }, JsonRequestBehavior.AllowGet);
                 }
 
-                var lines = System.IO.File.ReadAllLines(logFilePath);
+                var lines = logFilePaths
+                    .SelectMany(System.IO.File.ReadAllLines)
+                    .ToArray();
                 var totalLines = lines.Length;
                 var requestCount = lines.Count(line => line.Contains("REQUEST |"));
                 var responseCount = lines.Count(line => line.Contains("RESPONSE |"));
                 var errorCount = lines.Count(line => line.Contains("| ERROR |"));
 
-                // ²Î­p¦U­Ó Controller ªº¨Ï¥Î¦¸¼Æ
+                // ï¿½Î­pï¿½Uï¿½ï¿½ Controller ï¿½ï¿½ï¿½Ï¥Î¦ï¿½ï¿½ï¿½
                 var controllerStats = lines
                     .Where(line => line.Contains("REQUEST |"))
                     .Select(line =>
@@ -261,8 +263,95 @@ namespace JETFTAX.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = $"¨ú±o²Î­p¸ê°T¥¢±Ñ: {ex.Message}" }, JsonRequestBehavior.AllowGet);
+                return Json(new { success = false, message = $"ï¿½ï¿½ï¿½oï¿½Î­pï¿½ï¿½Tï¿½ï¿½ï¿½ï¿½: {ex.Message}" }, JsonRequestBehavior.AllowGet);
             }
+        }
+
+        private string FindLogFilePath(string userId, string fileName)
+        {
+            return GetLogEntries(userId)
+                .Where(x => string.Equals(x.FileName, fileName, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(x => x.LastModified)
+                .Select(x => x.FilePath)
+                .FirstOrDefault();
+        }
+
+        private List<LogEntryInfo> GetLogEntries(string userId = null, string date = null)
+        {
+            if (!Directory.Exists(logBasePath))
+            {
+                return new List<LogEntryInfo>();
+            }
+
+            var dateDirectories = string.IsNullOrWhiteSpace(date)
+                ? Directory.GetDirectories(logBasePath)
+                : new[] { Path.Combine(logBasePath, date) }.Where(Directory.Exists).ToArray();
+
+            var entries = new List<LogEntryInfo>();
+            foreach (var dateDirectory in dateDirectories)
+            {
+                foreach (var levelDirectory in Directory.GetDirectories(dateDirectory))
+                {
+                    foreach (var filePath in Directory.GetFiles(levelDirectory, "*.log"))
+                    {
+                        if (!TryParseLogFile(filePath, out var entry))
+                        {
+                            continue;
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(userId) && !string.Equals(entry.UserId, userId, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        entries.Add(entry);
+                    }
+                }
+            }
+
+            return entries;
+        }
+
+        private static bool TryParseLogFile(string filePath, out LogEntryInfo entry)
+        {
+            entry = null;
+            var fileName = Path.GetFileName(filePath);
+            var match = LogFileNameRegex.Match(fileName ?? string.Empty);
+            if (!match.Success)
+            {
+                return false;
+            }
+
+            var info = new FileInfo(filePath);
+            entry = new LogEntryInfo
+            {
+                FilePath = filePath,
+                FileName = fileName,
+                Date = match.Groups["date"].Value,
+                Level = match.Groups["level"].Value,
+                UserId = match.Groups["userId"].Value,
+                Size = info.Length,
+                LastModified = info.LastWriteTime
+            };
+
+            return true;
+        }
+
+        private sealed class LogEntryInfo
+        {
+            public string FilePath { get; set; }
+
+            public string FileName { get; set; }
+
+            public string Date { get; set; }
+
+            public string Level { get; set; }
+
+            public string UserId { get; set; }
+
+            public long Size { get; set; }
+
+            public DateTime LastModified { get; set; }
         }
     }
 }

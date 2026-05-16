@@ -363,7 +363,7 @@ namespace Service.Services.DownloadSeaNew
                 DlvInv = entity.DlvInv ?? string.Empty,
                 Tax1 = entity.Tax1 ?? 0,
                 Tax2 = entity.Tax2 ?? 0,
-                ToDlvCod = entity.ToDlvCod ?? 0,
+                ToDlvCod = ParseInt(entity.ToDlvCod),
                 Recipient = entity.Recipient ?? string.Empty,
                 RecPhone = entity.RecPhone ?? string.Empty,
                 IncludeTax = entity.IncludeTax ?? string.Empty,
@@ -371,6 +371,16 @@ namespace Service.Services.DownloadSeaNew
                 Type = entity.Type ?? string.Empty,
                 DlvCom = entity.DlvCom ?? string.Empty
             };
+        }
+
+        /// <summary>
+        /// 將 fee master 的文字金額安全轉成整數。
+        /// </summary>
+        /// <param name="value">原始文字。</param>
+        /// <returns>整數結果，失敗時回傳 0。</returns>
+        private static int ParseInt(string value)
+        {
+            return int.TryParse(value, out var number) ? number : 0;
         }
 
         /// <summary>

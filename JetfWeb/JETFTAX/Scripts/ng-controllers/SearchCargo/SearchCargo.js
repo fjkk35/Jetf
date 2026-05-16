@@ -87,8 +87,8 @@ $scope.data = response.data.data || [];
     };
 
     // 開啟明細頁面 (新分頁)
-    $scope.openDetail = function (id) {
- var url = Router.action('SearchCargo', 'Detail') + '?id=' + id;
+     $scope.openDetail = function (id, source) {
+   var url = Router.action('SearchCargo', 'Detail') + '?id=' + encodeURIComponent(id) + '&source=' + encodeURIComponent(source || '');
         $window.open(url, '_blank');
     };
 

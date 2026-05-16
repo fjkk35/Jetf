@@ -20,8 +20,9 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
     // 從URL獲取ID
     var urlParams = new URLSearchParams($window.location.search);
     var id = urlParams.get('id');
+    var source = urlParams.get('source');
 
-    if (!id) {
+    if (!id || !source) {
         swal({
             title: "錯誤",
             text: "缺少必要參數",
@@ -36,7 +37,7 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
     $scope.loadDetail = function () {
         $scope.loading = true;
 
-        $http.post(Router.action('SearchCargo', 'GetDetail'), { id: id })
+        $http.post(Router.action('SearchCargo', 'GetDetail'), { id: id, source: source })
             .then(function (response) {
                 if (response.data.Redirect) {
                     window.location = Router.action('Account', 'Login');

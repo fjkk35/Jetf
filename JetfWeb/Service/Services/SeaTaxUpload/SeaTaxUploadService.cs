@@ -593,8 +593,6 @@ namespace Service.Services.SeaTaxUpload
 
             if (existingRows.Count > 0)
             {
-                var insTime = DateTime.Now;
-                jetfDb.FeeMasterLogs.AddRange(existingRows.Select(row => CreateFeeMasterLogEntity(row, insTime)).ToList());
                 jetfDb.FeeMasterTests.RemoveRange(existingRows);
             }
 
@@ -617,7 +615,7 @@ namespace Service.Services.SeaTaxUpload
                 InDate = NormalizeText(row.InDate),
                 InDateTime = ParseDateTime(row.InDateTime),
                 OutDateTime = ParseDateTime(row.OutDateTime),
-                TaxBase = NormalizeText(row.TaxBase),
+                TaxBase = ParseNullableInt(row.TaxBase),
                 Tax1 = ParseNullableInt(row.Tax1),
                 Tax2 = ParseNullableInt(row.Tax2),
                 DlvCom = NormalizeText(row.DlvCom),
@@ -629,69 +627,13 @@ namespace Service.Services.SeaTaxUpload
                 RecAddress = NormalizeText(row.RecAddress),
                 RecId = NormalizeText(row.RecId),
                 Cod = ParseNullableInt(row.Cod),
-                ToDlvCod = ParseNullableInt(row.ToDlvCod),
+                ToDlvCod = NormalizeText(row.ToDlvCod),
                 DlvInv = NormalizeText(row.DlvInv),
                 TaxPayer = NormalizeText(row.TaxPayer),
                 Arrival = NormalizeText(row.Arrival),
                 CustomerCod = ParseNullableInt(row.CustomerCod),
                 TransCod = ParseNullableInt(row.TransCod),
                 TaxRecId = NormalizeText(row.TaxRecId)
-            };
-        }
-
-        private static FeeMasterLogEntity CreateFeeMasterLogEntity(FeeMasterTestEntity row, DateTime insTime)
-        {
-            return new FeeMasterLogEntity
-            {
-                Id = row.Id,
-                InsTime = insTime,
-                DataDate = row.DataDate,
-                Source = row.Source,
-                SourceType = row.SourceType,
-                Type = row.Type,
-                Customer = row.Customer,
-                MainNumber = row.MainNumber,
-                TrackingNo = row.TrackingNo,
-                ClearanceNumber = row.ClearanceNumber,
-                BagNumber = row.BagNumber,
-                TaxNumber = row.TaxNumber,
-                DlvInv = row.DlvInv,
-                InDate = row.InDate,
-                InDateTime = row.InDateTime,
-                OutDateTime = row.OutDateTime,
-                Combine = row.Combine,
-                TaxBase = row.TaxBase,
-                Tax1 = row.Tax1,
-                Tax2 = row.Tax2,
-                Ccfee = row.Ccfee,
-                Cod = row.Cod,
-                Fee = row.Fee,
-                IncludeTax = row.IncludeTax,
-                Recipient = row.Recipient,
-                RecPhone = row.RecPhone,
-                RecAddress = row.RecAddress,
-                RecId = row.RecId,
-                ToDlvCod = row.ToDlvCod,
-                DlvCom = row.DlvCom,
-                DlvComStn = row.DlvComStn,
-                DlvCod = row.DlvCod,
-                DlvCodCode = row.DlvCodCode,
-                DlvCodTime = row.DlvCodTime,
-                DlvCodOpe = row.DlvCodOpe,
-                DlvRemitDate = row.DlvRemitDate,
-                DlvRemitAmout = row.DlvRemitAmout,
-                DlvRemitAmoutFee = row.DlvRemitAmoutFee,
-                DlvRemitCode = row.DlvRemitCode,
-                DlvRemitTime = row.DlvRemitTime,
-                DlvRemitOpe = row.DlvRemitOpe,
-                UpdateDate = row.UpdateDate,
-                ModiftyDate = row.ModiftyDate,
-                Download = row.Download,
-                RecordFeeMaster = row.RecordFeeMaster,
-                TaxPayer = row.TaxPayer,
-                Arrival = row.Arrival,
-                CustomerCod = row.CustomerCod,
-                TransCod = row.TransCod
             };
         }
 

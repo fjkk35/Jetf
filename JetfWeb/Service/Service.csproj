@@ -222,6 +222,9 @@
       <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.Razor.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml.Linq" />
+    <Reference Include="Z.EntityFramework.Extensions">
+      <HintPath>..\packages\Z.EntityFramework.Extensions.10.105.5\lib\net45\Z.EntityFramework.Extensions.dll</HintPath>
+    </Reference>
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
@@ -610,7 +613,7 @@
     <Compile Include="Services\SearchCargo\Domain\CargoTargetBagNumberModel.cs" />
     <Compile Include="Services\SearchCargo\Domain\CargoTargetTrackingNoModel.cs" />
     <Compile Include="Services\SearchCargo\Domain\ErrorReasonModel.cs" />
-    <Compile Include="Services\SearchCargo\Domain\MergeOriginalListModel.cs" />
+    <Compile Include="Services\SearchCargo\Domain\CargoQueryRowModel.cs" />
     <Compile Include="Services\SearchCargo\Domain\PdtScanCargoUploadModel.cs" />
     <Compile Include="Services\SearchCargo\Domain\ProcessInfoModel.cs" />
     <Compile Include="Services\SearchCargo\Domain\SearchCargoRequest.cs" />

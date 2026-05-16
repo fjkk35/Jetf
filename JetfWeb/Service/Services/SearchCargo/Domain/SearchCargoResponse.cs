@@ -1,64 +1,65 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Service.Services.SearchCargo.Domain
 {
     /// <summary>
-    /// ³fªp¬d¸ß¦^À³
+    /// è²¨æ³æŸ¥è©¢åˆ—è¡¨å›å‚³è³‡æ–™ã€‚
     /// </summary>
     public class SearchCargoResponse
     {
         /// <summary>
-        /// ID
+        /// è³‡æ–™ä¸»éµã€‚
         /// </summary>
         public string Id { get; set; }
 
-   /// <summary>
-      /// µ|ª÷§@·~¤é
-  /// </summary>
+        /// <summary>
+        /// è³‡æ–™ä¾†æºï¼Œåƒ…å›å‚³ Air æˆ– Seaã€‚
+        /// </summary>
+        public string Source { get; set; }
+
+        /// <summary>
+        /// ç¨…é‡‘ä½œæ¥­æ—¥ã€‚
+        /// </summary>
         public string F_DataDate { get; set; }
 
-  /// <summary>
-        /// ­ÜÀxÃş«¬
-  /// </summary>
+        /// <summary>
+        /// å€‰å„²é¡å‹ã€‚
+        /// </summary>
         public string I_DATA_TYPE { get; set; }
 
         /// <summary>
- /// ¥X­Ü¤é´Á
+        /// å‡ºå€‰æ—¥æœŸæ ¼å¼åŒ–å­—ä¸²ã€‚
         /// </summary>
         public string Format_OUT_DATETIME { get; set; }
 
         /// <summary>
-   /// «È¤á¦WºÙ
+        /// å®¢æˆ¶åç¨±ã€‚
         /// </summary>
- public string CUSTOMER { get; set; }
+        public string CUSTOMER { get; set; }
 
         /// <summary>
-   /// ¥D´£³æ¸¹
-   /// </summary>
+        /// ä¸»æå–®è™Ÿã€‚
+        /// </summary>
         public string MAINNUMBER { get; set; }
 
-     /// <summary>
-/// ²MÃö³U¸¹
+        /// <summary>
+        /// æ¸…é—œè¢‹è™Ÿã€‚
         /// </summary>
         public string BL_NO { get; set; }
 
         /// <summary>
-   /// ¥ó¼Æ
+        /// ä»¶æ•¸ã€‚
         /// </summary>
-   public string PIECE { get; set; }
+        public string PIECE { get; set; }
 
         /// <summary>
-        /// ª«¬y³f¸¹
-    /// </summary>
-     public string DELIVERYNO { get; set; }
+        /// ç‰©æµè²¨è™Ÿã€‚
+        /// </summary>
+        public string DELIVERYNO { get; set; }
 
         /// <summary>
-        /// «~¦W
+        /// å“åã€‚
         /// </summary>
-    public string ITEM_NAME { get; set; }
+        public string ITEM_NAME { get; set; }
     }
 }
