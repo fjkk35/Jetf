@@ -47,7 +47,8 @@ mainApp.controller('LayoutController', function ($scope, $http) {
         {
             id: 'taxNew', title: '稅金操作(新)', icon: 'fas fa-fw fa-file-invoice-dollar', partner: 'Tax', children: [
                 { id: 'SeaTaxUploadNew', text: '1-1.海運稅金資料上傳(新)', url: '~/SeaTaxUpload/Index', auth: ['UploadSeaTax'] },
-                { id: 'DownloadEtlNew', text: '1-2.物流代收檔下載-空運(新)', url: '~/DownloadEtlNew/Index', auth: ['DownloadEtlTax'] }
+                { id: 'DownloadSeaNew', text: '1-2.物流代收檔下載-海運(新)', url: '~/DownloadSeaNew/Index', auth: ['DownloadSeaTax'] },
+                { id: 'DownloadEtlNew', text: '1-3.物流代收檔下載-空運(新)', url: '~/DownloadEtlNew/Index', auth: ['DownloadEtlTax'] }
             ]
         },
         {

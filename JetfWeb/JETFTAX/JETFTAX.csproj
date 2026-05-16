@@ -315,6 +315,7 @@
     <Compile Include="Controllers\ExportClearanceController.cs" />
     <Compile Include="Controllers\FtzController.cs" />
     <Compile Include="Controllers\DownloadEtlNewController.cs" />
+    <Compile Include="Controllers\DownloadSeaNewController.cs" />
     <Compile Include="Controllers\HctEtlTaxController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\ImporterController.cs" />
@@ -831,6 +832,7 @@
     <Content Include="Scripts\ng-controllers\SearchCargo\SearchCargo.js" />
     <Content Include="Scripts\ng-controllers\SearchCargo\SearchCargoDetail.js" />
     <Content Include="Scripts\ng-controllers\Download\DownloadEtlNew.js" />
+    <Content Include="Scripts\ng-controllers\Download\DownloadSeaNew.js" />
     <Content Include="Scripts\ng-controllers\Upload\SeaTaxUpload.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundBatchImport\ShipmentInboundBatchImport.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundLocationTransfer\ShipmentInboundLocationTransfer.js" />
@@ -2794,6 +2796,7 @@
     <Content Include="Views\Upload\Seatax.cshtml" />
     <Content Include="Views\SeaTaxUpload\Index.cshtml" />
     <Content Include="Views\DownloadEtlNew\Index.cshtml" />
+    <Content Include="Views\DownloadSeaNew\Index.cshtml" />
     <Content Include="Views\Upload\SeataxG.cshtml" />
     <Content Include="Views\Download\DownloadSea.cshtml" />
     <Content Include="Views\Download\DownloadEtl.cshtml" />
@@ -2966,6 +2969,7 @@
     <TypeScriptCompile Include="Scripts\ng-controllers\SjlBatchImport\SjlBatchImportSearch.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SjlBilling\SjlBilling.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\Download\DownloadEtlNew.ts" />
+    <TypeScriptCompile Include="Scripts\ng-controllers\Download\DownloadSeaNew.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\Upload\SeaTaxUpload.ts" />
     <TypeScriptCompile Include="Scripts\types\global.d.ts" />
   </ItemGroup>
