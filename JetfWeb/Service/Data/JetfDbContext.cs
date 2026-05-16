@@ -78,6 +78,8 @@ namespace Service.Data
 
         public DbSet<ShipmentInboundEditHistoryEntity> ShipmentInboundEditHistories { get; set; }
 
+        public DbSet<FeeMasterTestEntity> FeeMasterTests { get; set; }
+
         public DbSet<ShipmentInboundLocationHistoryEntity> ShipmentInboundLocationHistories { get; set; }
 
         public DbSet<FeeMasterEntity> FeeMasters { get; set; }

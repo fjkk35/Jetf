@@ -24,7 +24,7 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 依指定日期區間重算空運代收資料，並回寫 FEE_MASTER。
+        /// 依指定日期區間重算空運代收資料，並回寫 FEE_MASTER_TEST。
         /// </summary>
         /// <param name="date">畫面選擇日期。</param>
         /// <param name="timeBetween">畫面選擇的時間區間代碼。</param>
@@ -97,7 +97,7 @@ namespace Service.Services.DownloadEtlNew
                 }
 
                 // 先以 fee master 當作報表底稿，後續再依代收類型與物流公司條件做篩選。
-                var feeMasters = JetfDb.FeeMasters
+                var feeMasters = JetfDb.FeeMasterTests
                     .AsNoTracking()
                     .Where(x =>
                         (x.Source == "tact" || x.Source == "ftz") &&
@@ -593,7 +593,7 @@ namespace Service.Services.DownloadEtlNew
         }
 
             /// <summary>
-            /// 將草稿資料新增或更新到 FEE_MASTER，並保留舊資料 log。
+            /// 將草稿資料新增或更新到 FEE_MASTER_TEST，並保留舊資料 log。
             /// </summary>
             /// <param name="drafts">待寫入的草稿資料。</param>
             /// <param name="dataDate">資料日期。</param>
@@ -630,7 +630,7 @@ namespace Service.Services.DownloadEtlNew
                             continue;
                         }
 
-                        JetfDb.FeeMasters.Add(CreateFeeMasterEntity(draft, dataDate));
+                        JetfDb.FeeMasterTests.Add(CreateFeeMasterEntity(draft, dataDate));
                     }
 
                     if (logEntities.Count > 0)
@@ -651,11 +651,11 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 依本次草稿資料載入既有 FEE_MASTER。
+        /// 依本次草稿資料載入既有 FEE_MASTER_TEST。
         /// </summary>
         /// <param name="drafts">待比對的草稿資料。</param>
         /// <returns>既有 fee master 清單。</returns>
-        private List<FeeMasterEntity> LoadExistingFeeMasters(IEnumerable<FeeMasterDraft> drafts)
+        private List<FeeMasterTestEntity> LoadExistingFeeMasters(IEnumerable<FeeMasterDraft> drafts)
         {
             var mainNumbers = drafts
                 .Select(x => x.MainNumber)
@@ -670,13 +670,13 @@ namespace Service.Services.DownloadEtlNew
                 .ToList();
 
             var keys = new HashSet<string>(drafts.Select(x => BuildCompositeKey(x.MainNumber, x.TrackingNo)));
-            var rows = new List<FeeMasterEntity>();
+            var rows = new List<FeeMasterTestEntity>();
 
             foreach (var mainBatch in Batch(mainNumbers, BatchSize))
             {
                 foreach (var trackingBatch in Batch(trackingNos, BatchSize))
                 {
-                    var items = JetfDb.FeeMasters
+                    var items = JetfDb.FeeMasterTests
                         .Where(x =>
                             x.SourceType == AirSourceType.ToString() &&
                             mainBatch.Contains(x.MainNumber) &&
@@ -773,14 +773,14 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 將草稿資料轉成新的 FEE_MASTER entity。
+        /// 將草稿資料轉成新的 FEE_MASTER_TEST entity。
         /// </summary>
         /// <param name="draft">待寫入草稿。</param>
         /// <param name="dataDate">資料日期。</param>
         /// <returns>新的 fee master entity。</returns>
-        private static FeeMasterEntity CreateFeeMasterEntity(FeeMasterDraft draft, string dataDate)
+        private static FeeMasterTestEntity CreateFeeMasterEntity(FeeMasterDraft draft, string dataDate)
         {
-            return new FeeMasterEntity
+            return new FeeMasterTestEntity
             {
                 DataDate = dataDate,
                 Source = NormalizeText(draft.Source),
@@ -816,13 +816,13 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 將草稿資料覆寫到既有 FEE_MASTER entity。
+        /// 將草稿資料覆寫到既有 FEE_MASTER_TEST entity。
         /// </summary>
         /// <param name="entity">既有 fee master。</param>
         /// <param name="draft">最新草稿。</param>
         /// <param name="dataDate">資料日期。</param>
         /// <param name="updateTime">更新時間。</param>
-        private static void ApplyDraftToEntity(FeeMasterEntity entity, FeeMasterDraft draft, string dataDate, DateTime updateTime)
+        private static void ApplyDraftToEntity(FeeMasterTestEntity entity, FeeMasterDraft draft, string dataDate, DateTime updateTime)
         {
             entity.DataDate = dataDate;
             entity.Source = NormalizeText(draft.Source);
@@ -863,7 +863,7 @@ namespace Service.Services.DownloadEtlNew
         /// <param name="row">既有 fee master 資料。</param>
         /// <param name="insTime">log 建立時間。</param>
         /// <returns>fee master log entity。</returns>
-        private static FeeMasterLogEntity CreateFeeMasterLogEntity(FeeMasterEntity row, DateTime insTime)
+        private static FeeMasterLogEntity CreateFeeMasterLogEntity(FeeMasterTestEntity row, DateTime insTime)
         {
             return new FeeMasterLogEntity
             {

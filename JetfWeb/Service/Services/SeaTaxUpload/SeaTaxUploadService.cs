@@ -587,7 +587,7 @@ namespace Service.Services.SeaTaxUpload
                 return;
             }
 
-            var existingRows = jetfDb.FeeMasters
+            var existingRows = jetfDb.FeeMasterTests
                 .Where(row => row.DataDate == dataDate && row.Source == source && row.SourceType == SeaSourceType)
                 .ToList();
 
@@ -595,15 +595,15 @@ namespace Service.Services.SeaTaxUpload
             {
                 var insTime = DateTime.Now;
                 jetfDb.FeeMasterLogs.AddRange(existingRows.Select(row => CreateFeeMasterLogEntity(row, insTime)).ToList());
-                jetfDb.FeeMasters.RemoveRange(existingRows);
+                jetfDb.FeeMasterTests.RemoveRange(existingRows);
             }
 
-            jetfDb.FeeMasters.AddRange(feeMasterRows.Select(row => CreateFeeMasterEntity(row, dataDate)).ToList());
+            jetfDb.FeeMasterTests.AddRange(feeMasterRows.Select(row => CreateFeeMasterEntity(row, dataDate)).ToList());
         }
 
-        private static FeeMasterEntity CreateFeeMasterEntity(SeaTaxFeeMasterRow row, string dataDate)
+        private static FeeMasterTestEntity CreateFeeMasterEntity(SeaTaxFeeMasterRow row, string dataDate)
         {
-            return new FeeMasterEntity
+            return new FeeMasterTestEntity
             {
                 DataDate = dataDate,
                 Source = NormalizeText(row.Source),
@@ -639,7 +639,7 @@ namespace Service.Services.SeaTaxUpload
             };
         }
 
-        private static FeeMasterLogEntity CreateFeeMasterLogEntity(FeeMasterEntity row, DateTime insTime)
+        private static FeeMasterLogEntity CreateFeeMasterLogEntity(FeeMasterTestEntity row, DateTime insTime)
         {
             return new FeeMasterLogEntity
             {
