@@ -565,7 +565,6 @@
     <Compile Include="Services\ErrorOrderSend\ErrorOrderSendService.cs" />
     <Compile Include="Services\ErrorOrderSmsMessage\ErrorOrderSmsMessageService.cs" />
     <Compile Include="Services\EtlClearanceDetails\EtlClearanceDetailsService.cs" />
-    <Compile Include="Services\EtlCustWorkLoad\EtlCustWorkLoadService.cs" />
     <Compile Include="Services\EtlErrorG\EtlErrorGService.cs" />
     <Compile Include="Services\EtlMergeBagNoService.cs" />
     <Compile Include="Services\EtlUnpackingZService.cs" />

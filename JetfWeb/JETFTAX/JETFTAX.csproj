@@ -311,7 +311,6 @@
     <Compile Include="Controllers\ErrorOrderSmsMessageController.cs" />
     <Compile Include="Controllers\EtlClearanceDetailsController.cs" />
     <Compile Include="Controllers\EtlCustomerWorkLoadReportController.cs" />
-    <Compile Include="Controllers\EtlCustWorkLoadController.cs" />
     <Compile Include="Controllers\EtlErrorGController.cs" />
     <Compile Include="Controllers\EtlErrorWorkController.cs" />
     <Compile Include="Controllers\EtlMergeBagNoController.cs" />
@@ -412,7 +411,6 @@
     <Compile Include="Models\CCStatusReportViewModel.cs" />
     <Compile Include="Models\CptTradeVan\CptTradeVanViewModel.cs" />
     <Compile Include="Models\CustomerViewModel.cs" />
-    <Compile Include="Models\CustWorkLoadReportViewModel.cs" />
     <Compile Include="Models\DialogCargoViewModel.cs" />
     <Compile Include="Models\DialogLogCargoStatusViewModel.cs" />
     <Compile Include="Models\DialogProcessViewModel.cs" />
@@ -2831,7 +2829,6 @@
     <Content Include="Views\WorkLoad\CCStatusReport.cshtml" />
     <Content Include="Views\Cargo\SearchWork.cshtml" />
     <Content Include="Views\BatchUploadProcess\Index.cshtml" />
-    <Content Include="Views\EtlCustWorkLoad\CustWorkLoadReport.cshtml" />
     <Content Include="Views\WorkLoad\UploadFile.cshtml" />
     <Content Include="Views\CCLWork\ETLCCLDetails.cshtml" />
     <Content Include="Views\CCLWork\ETLCCLMainDetails.cshtml" />
