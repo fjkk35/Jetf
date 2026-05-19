@@ -84,6 +84,8 @@ namespace Service.Data
 
         public DbSet<FeeMasterEntity> FeeMasters { get; set; }
 
+        public DbSet<FeeMasterDstailEntity> FeeMasterDstails { get; set; }
+
         public DbSet<FeeMasterLogEntity> FeeMasterLogs { get; set; }
 
         public DbSet<FeeMasterModifyEntity> FeeMasterModifies { get; set; }

@@ -123,7 +123,7 @@ namespace JETFTAX.Controllers
                 msg = ex.Message;
             }
 
-            return Json(new { fileGuid = handle, fileName = fileName, msg = msg }, JsonRequestBehavior.AllowGet);
+            return Json(new { fileGuid = handle, fileName = AppendTestSuffix(fileName), msg = msg }, JsonRequestBehavior.AllowGet);
         }
 
         [UserAuthorize(Authority.DownloadEtlTax)]
@@ -141,7 +141,7 @@ namespace JETFTAX.Controllers
                 TempData[handle] = fileStream.ToArray();
             }
 
-            return Json(new { fileGuid = handle, fileName = fileName, msg = reportResult.msg }, JsonRequestBehavior.AllowGet);
+            return Json(new { fileGuid = handle, fileName = AppendTestSuffix(fileName), msg = reportResult.msg }, JsonRequestBehavior.AllowGet);
         }
 
         [UserAuthorize(Authority.DownloadEtlTax)]
@@ -188,7 +188,19 @@ namespace JETFTAX.Controllers
                 reportResult.msg = ex.Message;
             }
 
-            return Json(new { fileGuid = handle, fileName = fileName, msg = reportResult.msg }, JsonRequestBehavior.AllowGet);
+            return Json(new { fileGuid = handle, fileName = AppendTestSuffix(fileName), msg = reportResult.msg }, JsonRequestBehavior.AllowGet);
+        }
+
+        private static string AppendTestSuffix(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                return fileName;
+            }
+
+            return fileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase)
+                ? fileName.Replace(".xlsx", "(測試).xlsx")
+                : fileName + "(測試)";
         }
 
         private IWorkbook GetEtlWorkbook(IReadOnlyList<DownloadEtlNewReportItem> rows)

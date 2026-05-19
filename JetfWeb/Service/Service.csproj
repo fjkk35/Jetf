@@ -260,6 +260,7 @@
     <Compile Include="Data\Models\DataCenter\SysAirBagEntity.cs" />
     <Compile Include="Data\Models\DataCenter\SysParamEntity.cs" />
     <Compile Include="Data\Models\Jetf\CustomerMasterEntity.cs" />
+    <Compile Include="Data\Models\Jetf\FeeMasterDstailEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterTestEntity.cs" />
     <Compile Include="Data\Models\Jetf\AbnormalStateEntity.cs" />
@@ -440,6 +441,7 @@
     <Compile Include="Models\SevenElevenEtlTax\SagawaSevenElevenEtlTaxModel.cs" />
     <Compile Include="Models\Shenzhen\ShenzhenCargoModel.cs" />
     <Compile Include="Models\Step\StepModel.cs" />
+    <Compile Include="Models\Tax\TaxCalculationInput.cs" />
     <Compile Include="Models\Tax\TaxData.cs" />
     <Compile Include="Models\TelegramGroup\TelegramGroupModel.cs" />
     <Compile Include="Models\TpctContainer\QueryCntrStatusModel.cs" />
@@ -733,7 +735,13 @@
     <Compile Include="Services\UnpackingStatistics\UnpackingStatisticsService.cs" />
     <Compile Include="Services\DownloadEtlNew\DownloadEtlNewService.cs" />
     <Compile Include="Services\DownloadSeaNew\DownloadSeaNewService.cs" />
+    <Compile Include="Services\SeaTaxUpload\SeaTaxFeeMasterDetailRow.cs" />
+    <Compile Include="Services\SeaTaxUpload\SeaTaxFeeMasterRow.cs" />
+    <Compile Include="Services\SeaTaxUpload\SeaTaxModifyRow.cs" />
+    <Compile Include="Services\SeaTaxUpload\SeaTaxUploadExcelRow.cs" />
+    <Compile Include="Services\SeaTaxUpload\SeaTaxUploadJoinedRow.cs" />
     <Compile Include="Services\SeaTaxUpload\SeaTaxUploadService.cs" />
+    <Compile Include="Services\SeaTaxUpload\UploadKey.cs" />
     <Compile Include="Services\UploadService.cs" />
     <Compile Include="Services\UserContextService.cs" />
     <Compile Include="Services\UserMaster\Domain\UserMasterDto.cs" />

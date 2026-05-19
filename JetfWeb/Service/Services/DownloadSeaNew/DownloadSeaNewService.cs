@@ -427,20 +427,39 @@ namespace Service.Services.DownloadSeaNew
         private static string BuildFileName(SeaExportFileType fileType, string taxType, string date, int count)
         {
             var dataDate = Convert.ToDateTime(date).ToString("yyyyMMdd");
+            var fileName = string.Empty;
 
             switch (fileType)
             {
                 case SeaExportFileType.Normal:
-                    return BuildNormalFileName(taxType, dataDate, count);
+                    fileName = BuildNormalFileName(taxType, dataDate, count);
+                    break;
                 case SeaExportFileType.Error:
-                    return BuildErrorFileName(taxType, dataDate, count);
+                    fileName = BuildErrorFileName(taxType, dataDate, count);
+                    break;
                 case SeaExportFileType.SpecialD:
-                    return BuildSpecialDFileName(taxType, dataDate, count);
+                    fileName = BuildSpecialDFileName(taxType, dataDate, count);
+                    break;
                 case SeaExportFileType.SpecialC:
-                    return BuildSpecialCFileName(taxType, dataDate, count);
+                    fileName = BuildSpecialCFileName(taxType, dataDate, count);
+                    break;
                 default:
                     return string.Empty;
             }
+
+            return AppendTestSuffix(fileName);
+        }
+
+        private static string AppendTestSuffix(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                return fileName;
+            }
+
+            return fileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase)
+                ? fileName.Replace(".xlsx", "(測試).xlsx")
+                : fileName + "(測試)";
         }
 
         /// <summary>

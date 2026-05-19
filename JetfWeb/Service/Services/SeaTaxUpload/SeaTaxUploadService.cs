@@ -1,14 +1,16 @@
-using Microsoft.International.Converters.TraditionalChineseToSimplifiedConverter;
+﻿using Microsoft.International.Converters.TraditionalChineseToSimplifiedConverter;
+using NLog;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.Data;
 using Service.EnumTax;
 using Service.Models;
+using Service.Models.Tax;
 using Service.Services.Tax;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Entity;
+using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -21,11 +23,13 @@ namespace Service.Services.SeaTaxUpload
     public class SeaTaxUploadService : _BaseService
     {
         private const string SeaSourceType = "1";
+        private const int CommandTimeoutSeconds = 600;
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         private readonly DownloadService _downloadService;
         private readonly TaxService _taxService;
 
-        public SeaTaxUploadService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, DownloadService downloadService, TaxService taxService)
+        public SeaTaxUploadService(JetfDbContext jetfDbContext, DataCenterDbContext dataCenterDbContext, DownloadService downloadService, TaxService taxService)
             : base(jetfDbContext, dataCenterDbContext)
         {
             _downloadService = downloadService;
@@ -42,44 +46,63 @@ namespace Service.Services.SeaTaxUpload
         /// <returns>處理結果。</returns>
         public ResponseModel UploadFile(string dataDate, string filePath, SeaTaxType taxType, string userId)
         {
+            ConfigureCommandTimeout();
+
+            Logger.Debug($"step1 開始: 讀取海運稅金 Excel，檔案={filePath}");
             var uploadRows = ReadExcelIpost(filePath);
+            Logger.Debug($"step1 結束: 讀取海運稅金 Excel，筆數={uploadRows.Count}");
+
             var source = taxType.ToString();
             var uploadTime = DateTime.Now;
             List<SeaTaxModifyRow> modifyRows;
 
+            using (var transaction = JetfDb.Database.BeginTransaction())
             {
-                JetfDb.Database.CommandTimeout = 600;
-                DataCenterDb.Database.CommandTimeout = 600;
-
-                using (var transaction = JetfDb.Database.BeginTransaction())
+                try
                 {
-                    try
-                    {
-                        InsertSeaTaxUploads(JetfDb, uploadRows, uploadTime, userId);
+                    Logger.Debug($"step2 開始: 寫入 SeaTaxUpload 原始資料，筆數={uploadRows.Count}");
+                    InsertSeaTaxUploads(JetfDb, uploadRows, uploadTime, userId);
+                    Logger.Debug($"step2 結束: 寫入 SeaTaxUpload 原始資料，筆數={uploadRows.Count}");
 
-                        modifyRows = GetMissingModifyRows(DataCenterDb, uploadRows, dataDate, source);
-                        RefreshFeeMasterModifySnapshot(JetfDb, DataCenterDb, modifyRows, dataDate);
-                        AppendModifyRowsToUpload(JetfDb, uploadRows, modifyRows, uploadTime, userId);
+                    Logger.Debug($"step3 開始: 查詢缺漏異動資料，資料日期={dataDate}，稅別={source}");
+                    modifyRows = GetMissingModifyRows(JetfDb, dataDate, source, uploadTime, userId);
+                    Logger.Debug($"step3 結束: 查詢缺漏異動資料，補遺筆數={modifyRows.Count}");
 
-                        JetfDb.SaveChanges();
-                        transaction.Commit();
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        return CreateErrorResponse(ex.Message);
-                    }
+                    //測試中先註解掉，正式上線再移除註解
+                    //Logger.Debug($"step4 開始: 重建 FeeMasterModify 快照，補遺筆數={modifyRows.Count}");
+                    //RefreshFeeMasterModifySnapshot(JetfDb, DataCenterDb, modifyRows, dataDate);
+                    //Logger.Debug($"step4 結束: 重建 FeeMasterModify 快照，補遺筆數={modifyRows.Count}");
+
+                    Logger.Debug($"step5 開始: 將補遺資料回補至上傳集合與 SeaTaxUpload，補遺筆數={modifyRows.Count}");
+                    AppendModifyRowsToUpload(JetfDb, uploadRows, modifyRows, uploadTime, userId);
+                    Logger.Debug($"step5 結束: 回補完成，目前總上傳筆數={uploadRows.Count}");
+
+                    JetfDb.SaveChanges();
+                    transaction.Commit();
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    Logger.Error(ex, "step2-step5 失敗: 海運稅金上傳前置資料處理異常");
+                    return CreateErrorResponse(ex.Message);
                 }
             }
 
-            var updateResponse = _downloadService.UpdateCainiaoTaxEdit();
-            if (updateResponse.status != Status.success)
-            {
-                return updateResponse;
-            }
+            //測試中先註解掉，正式上線再移除註解
+            //Logger.Debug("step6 開始: 更新菜鳥海空運稅金方式");
+            //var updateResponse = _downloadService.UpdateCainiaoTaxEdit();
+            //if (updateResponse.status != Status.success)
+            //{
+            //    Logger.Debug($"step6 結束: 更新菜鳥海空運稅金方式失敗，訊息={updateResponse.msg}");
+            //    return updateResponse;
+            //}
+
+            //Logger.Debug("step6 結束: 更新菜鳥海空運稅金方式成功");
+            Logger.Debug($"step7 開始: 檢查可處理筆數，筆數={uploadRows.Count}");
 
             if (uploadRows.Count == 0)
             {
+                Logger.Debug("step7 結束: 無可處理資料");
                 return new ResponseModel
                 {
                     status = Status.error,
@@ -87,29 +110,26 @@ namespace Service.Services.SeaTaxUpload
                 };
             }
 
-            List<SeaTaxFeeMasterRow> feeMasterRows;
-            {
-                JetfDb.Database.CommandTimeout = 600;
-                DataCenterDb.Database.CommandTimeout = 600;
-                feeMasterRows = BuildFeeMasterRows(JetfDb, DataCenterDb, uploadRows, source);
-            }
+            Logger.Debug($"step7 結束: 可處理筆數={uploadRows.Count}");
+            Logger.Debug("step8 開始: 組裝 FeeMaster 資料");
+            var feeMasterRows = BuildFeeMasterRows(JetfDb, DataCenterDb, uploadRows, source, uploadTime, userId);
+            Logger.Debug($"step8 結束: 組裝 FeeMaster 資料完成，筆數={feeMasterRows.Count}");
 
+            using (var transaction = JetfDb.Database.BeginTransaction())
             {
-                JetfDb.Database.CommandTimeout = 600;
-
-                using (var transaction = JetfDb.Database.BeginTransaction())
+                try
                 {
-                    try
-                    {
-                        ReplaceFeeMaster(JetfDb, feeMasterRows, dataDate, source);
-                        JetfDb.SaveChanges();
-                        transaction.Commit();
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        return CreateErrorResponse(ex.Message);
-                    }
+                    Logger.Debug($"step9 開始: 置換 FEE_MASTER_TEST，資料日期={dataDate}，來源={source}，筆數={feeMasterRows.Count}");
+                    ReplaceFeeMaster(JetfDb, feeMasterRows, dataDate, source);
+                    JetfDb.SaveChanges();
+                    transaction.Commit();
+                    Logger.Debug($"step9 結束: 置換 FEE_MASTER_TEST 完成，筆數={feeMasterRows.Count}");
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    Logger.Error(ex, "step9 失敗: 置換 FEE_MASTER_TEST 異常");
+                    return CreateErrorResponse(ex.Message);
                 }
             }
 
@@ -120,6 +140,9 @@ namespace Service.Services.SeaTaxUpload
             };
         }
 
+        /// <summary>
+        /// 建立統一的錯誤回傳格式。
+        /// </summary>
         private static ResponseModel CreateErrorResponse(string message)
         {
             return new ResponseModel
@@ -129,6 +152,18 @@ namespace Service.Services.SeaTaxUpload
             };
         }
 
+        /// <summary>
+        /// 統一設定這次上傳流程的資料庫 CommandTimeout。
+        /// </summary>
+        private void ConfigureCommandTimeout()
+        {
+            JetfDb.Database.CommandTimeout = CommandTimeoutSeconds;
+            DataCenterDb.Database.CommandTimeout = CommandTimeoutSeconds;
+        }
+
+        /// <summary>
+        /// 將 Excel 讀到的原始海運稅金資料批次寫入 SEA_TAX_UPLOAD。
+        /// </summary>
         private void InsertSeaTaxUploads(
             JetfDbContext jetfDb,
             IEnumerable<SeaTaxUploadExcelRow> uploadRows,
@@ -144,46 +179,78 @@ namespace Service.Services.SeaTaxUpload
                 return;
             }
 
-            jetfDb.SeaTaxUploads.AddRange(entities);
+            jetfDb.BulkInsert(entities);
         }
 
+        /// <summary>
+        /// 查出當天清關異動但尚未出現在本次 SEA_TAX_UPLOAD 的補遺資料。
+        /// </summary>
         private List<SeaTaxModifyRow> GetMissingModifyRows(
-            DataCenterDbContext dataCenterDb,
-            IEnumerable<SeaTaxUploadExcelRow> uploadRows,
+            JetfDbContext jetfDb,
             string dataDate,
-            string taxType)
+            string taxType,
+            DateTime uploadTime,
+            string userId)
         {
             var startDate = DateTime.ParseExact($"{dataDate}000000", "yyyyMMddHHmmss", CultureInfo.InvariantCulture);
             var endDate = DateTime.ParseExact($"{dataDate}235959", "yyyyMMddHHmmss", CultureInfo.InvariantCulture);
-            var uploadKeys = new HashSet<string>(
-                (uploadRows ?? Enumerable.Empty<SeaTaxUploadExcelRow>())
-                    .Select(row => BuildUploadKey(row.MainNumber, row.BlNo)),
-                StringComparer.OrdinalIgnoreCase);
+            var sql = @"
+select
+    a.ROW_ID as Id,
+    a.DATA_TYPE as DataType,
+    a.MAIN_NUMBER as MainNumber,
+    a.BAG_NUMBER as BagNumber,
+    a.MERGE_NUMBER as MergeNumber,
+    a.TAX_NUMBER as TaxNumber,
+    a.TAX_BASE as TaxBase,
+    a.TAX_AMOUNT as TaxAmount,
+    a.FREQ_SIGN as FreqSign,
+    a.STATUS as Status,
+    a.MODIFY_SEQ as ModifySeq,
+    a.MODIFY_FILE as ModifyFile,
+    a.MODIFY_TIME as ModifyTime
+from DATA_CENTER.dbo.CLEARANCE_TAX a
+where a.DATA_TYPE = @DATA_TYPE
+and a.MODIFY_TIME between @SDate and @EDate
+and not exists (
+    select 1
+    from jetf.dbo.SEA_TAX_UPLOAD b
+    where b.UPLOAD_TIME = @UPLOAD_TIME
+    and b.UPLOAD_OPE = @UPLOAD_OPE
+    and a.BAG_NUMBER = b.BL_NO
+    and a.MAIN_NUMBER = b.MAIN_NUMBER)
+";
 
-            return dataCenterDb.ClearanceTaxes
-                .AsNoTracking()
-                .Where(row => row.DataType == taxType && row.ModifyTime >= startDate && row.ModifyTime <= endDate)
+            return jetfDb.Database.SqlQuery<SeaTaxModifyRow>(
+                    sql,
+                    new SqlParameter("@DATA_TYPE", taxType),
+                    new SqlParameter("@SDate", startDate),
+                    new SqlParameter("@EDate", endDate),
+                    new SqlParameter("@UPLOAD_TIME", uploadTime),
+                    new SqlParameter("@UPLOAD_OPE", userId))
                 .ToList()
-                .Where(row => !uploadKeys.Contains(BuildUploadKey(row.MainNumber, row.BagNumber)))
-                .Select(row => new SeaTaxModifyRow
+                .Select(item => new SeaTaxModifyRow
                 {
-                    Id = row.RowId,
-                    DataType = NormalizeText(row.DataType),
-                    MainNumber = NormalizeKeyText(row.MainNumber),
-                    BagNumber = NormalizeKeyText(row.BagNumber),
-                    MergeNumber = NormalizeText(row.MergeNumber),
-                    TaxNumber = NormalizeText(row.TaxNumber),
-                    TaxBase = row.TaxBase,
-                    TaxAmount = row.TaxAmount,
-                    FreqSign = NormalizeText(row.FreqSign),
-                    Status = NormalizeText(row.Status),
-                    ModifySeq = row.ModifySeq,
-                    ModifyFile = NormalizeText(row.ModifyFile),
-                    ModifyTime = row.ModifyTime
+                    Id = item.Id,
+                    DataType = NormalizeText(item.DataType),
+                    MainNumber = NormalizeText(item.MainNumber),
+                    BagNumber = NormalizeText(item.BagNumber),
+                    MergeNumber = NormalizeText(item.MergeNumber),
+                    TaxNumber = NormalizeText(item.TaxNumber),
+                    TaxBase = item.TaxBase,
+                    TaxAmount = item.TaxAmount,
+                    FreqSign = NormalizeText(item.FreqSign),
+                    Status = NormalizeText(item.Status),
+                    ModifySeq = item.ModifySeq,
+                    ModifyFile = NormalizeText(item.ModifyFile),
+                    ModifyTime = item.ModifyTime
                 })
                 .ToList();
         }
 
+        /// <summary>
+        /// 依補遺資料重建 FEE_MASTER_MODIFY 快照，供後續人工追蹤使用。
+        /// </summary>
         private void RefreshFeeMasterModifySnapshot(
             JetfDbContext jetfDb,
             DataCenterDbContext dataCenterDb,
@@ -201,24 +268,42 @@ namespace Service.Services.SeaTaxUpload
                 modifyRows.Select(row => new UploadKey(row.MainNumber, row.BagNumber)).ToList());
 
             var existingRows = jetfDb.FeeMasterModifies
+                .AsNoTracking()
                 .Where(row => row.ModifyDataDate == dataDate && row.DataType == dataType)
                 .ToList();
 
             if (existingRows.Count > 0)
             {
-                jetfDb.FeeMasterModifies.RemoveRange(existingRows);
+                jetfDb.BulkDelete(existingRows);
             }
 
-            var snapshotRows = modifyRows
-                .Select(row => CreateFeeMasterModifyEntity(
-                    row,
-                    latestOrders.TryGetValue(BuildUploadKey(row.MainNumber, row.BagNumber), out var order) ? order : null,
-                    dataDate))
+            var snapshotRows = (
+                from row in modifyRows
+                join order in latestOrders
+                    on new
+                    {
+                        MainNumber = NormalizeText(row.MainNumber),
+                        BlNo = NormalizeText(row.BagNumber)
+                    }
+                    equals new
+                    {
+                        MainNumber = NormalizeText(order.MainNumber),
+                        BlNo = NormalizeText(order.BlNo)
+                    }
+                    into orderGroup
+                from order in orderGroup.DefaultIfEmpty()
+                select CreateFeeMasterModifyEntity(row, order, dataDate))
                 .ToList();
 
-            jetfDb.FeeMasterModifies.AddRange(snapshotRows);
+            if (snapshotRows.Count > 0)
+            {
+                jetfDb.BulkInsert(snapshotRows);
+            }
         }
 
+        /// <summary>
+        /// 將補遺資料同步加回本次上傳集合，並補寫至 SEA_TAX_UPLOAD。
+        /// </summary>
         private void AppendModifyRowsToUpload(
             JetfDbContext jetfDb,
             List<SeaTaxUploadExcelRow> uploadRows,
@@ -229,8 +314,8 @@ namespace Service.Services.SeaTaxUpload
             var rows = (modifyRows ?? Enumerable.Empty<SeaTaxModifyRow>())
                 .Select(row => new SeaTaxUploadExcelRow
                 {
-                    MainNumber = NormalizeKeyText(row.MainNumber),
-                    BlNo = NormalizeKeyText(row.BagNumber),
+                    MainNumber = NormalizeText(row.MainNumber),
+                    BlNo = NormalizeText(row.BagNumber),
                     Tax = row.TaxAmount.HasValue ? row.TaxAmount.Value.ToString(CultureInfo.InvariantCulture) : string.Empty,
                     TaxNumber = NormalizeText(row.TaxNumber)
                 })
@@ -242,42 +327,71 @@ namespace Service.Services.SeaTaxUpload
             }
 
             uploadRows.AddRange(rows);
-            jetfDb.SeaTaxUploads.AddRange(rows.Select(row => CreateSeaTaxUploadEntity(row, uploadTime, userId)).ToList());
+
+            var entities = rows.Select(row => CreateSeaTaxUploadEntity(row, uploadTime, userId)).ToList();
+            if (entities.Count > 0)
+            {
+                jetfDb.BulkInsert(entities);
+            }
         }
 
+        /// <summary>
+        /// 將本次上傳資料轉成 FEE_MASTER_TEST 與 FEE_MASTER_DSTAIL 所需的資料結構。
+        /// </summary>
         private List<SeaTaxFeeMasterRow> BuildFeeMasterRows(
             JetfDbContext jetfDb,
             DataCenterDbContext dataCenterDb,
             List<SeaTaxUploadExcelRow> uploadRows,
-            string taxType)
+            string taxType,
+            DateTime uploadTime,
+            string userId)
         {
-            var uploadKeys = uploadRows
-                .Select(row => new UploadKey(row.MainNumber, row.BlNo))
-                .ToList();
+            Logger.Debug($"step8-1 開始: 使用 join 查詢清關、稅基與原單資料，來源筆數={uploadRows.Count}");
+            var joinedRows = GetJoinedUploadRows(jetfDb, uploadTime, userId);
+            Logger.Debug($"step8-1 結束: 完成 join 查詢，整併筆數={joinedRows.Count}");
 
-            var clearanceLookup = GetLatestClearanceInfoLookup(dataCenterDb, uploadKeys);
-            var etlTipcTaxLookup = GetLatestEtlTipcTaxLookup(dataCenterDb, uploadKeys);
-            var latestOrders = GetLatestSeaOrderLookup(dataCenterDb, uploadKeys);
-            var customerLookup = GetSeaCustomerLookup(jetfDb, latestOrders.Values);
-            var customerSpecialTable = CreateCustomerSpecialTable(
-                jetfDb.CustomerSpecials
-                    .AsNoTracking()
-                    .Where(row => row.TranType == "海運")
-                    .Select(row => row.Phone)
-                    .ToList());
-
-            var joinedRows = uploadRows
-                .Select(row => BuildJoinedRow(row, clearanceLookup, etlTipcTaxLookup, latestOrders, customerLookup))
-                .ToList();
-
-            var uploadGroupCounts = uploadRows
-                .GroupBy(row => BuildUploadKey(row.MainNumber, row.BlNo))
-                .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
+            Logger.Debug("step8-2 開始: 建立客戶主檔與特殊客戶資料");
+            var customerMasters = GetSeaCustomerLookup(jetfDb, joinedRows);
+            var customerSpecialPhones = GetSeaSpecialPhoneSet(jetfDb);
+            ApplyCustomerMasterValues(joinedRows, customerMasters);
+            Logger.Debug($"step8-2 結束: 客戶主檔筆數={customerMasters.Count}，特殊客戶電話筆數={customerSpecialPhones.Count}");
 
             var feeMasterRows = new List<SeaTaxFeeMasterRow>();
-            foreach (var group in joinedRows.GroupBy(row => BuildUploadKey(row.MainNumber, row.BlNo)))
+            var groupedRows = (
+                from joinedGroup in joinedRows.GroupBy(row => new
+                {
+                    MainNumber = NormalizeText(row.MainNumber),
+                    BlNo = NormalizeText(row.BlNo)
+                })
+                join uploadGroup in uploadRows.GroupBy(row => new
+                {
+                    MainNumber = NormalizeText(row.MainNumber),
+                    BlNo = NormalizeText(row.BlNo)
+                })
+                    on new
+                    {
+                        joinedGroup.Key.MainNumber,
+                        joinedGroup.Key.BlNo
+                    }
+                    equals new
+                    {
+                        uploadGroup.Key.MainNumber,
+                        uploadGroup.Key.BlNo
+                    }
+                    into uploadGroupMatch
+                from uploadGroup in uploadGroupMatch.DefaultIfEmpty()
+                select new
+                {
+                    Rows = joinedGroup.ToList(),
+                    UploadCount = uploadGroup == null ? joinedGroup.Count() : uploadGroup.Count()
+                })
+                .ToList();
+
+            foreach (var group in groupedRows)
             {
-                var orderedRows = group
+                // 同一主號/提單可能有多筆稅單，主表保留最新一筆，其餘稅額併入 Tax2，
+                // 但 detail 仍需完整保留每一筆資料。
+                var orderedRows = group.Rows
                     .OrderByDescending(row => row.SignOutTime ?? DateTime.MinValue)
                     .ThenByDescending(row => row.SignInTime ?? DateTime.MinValue)
                     .ToList();
@@ -287,210 +401,251 @@ namespace Service.Services.SeaTaxUpload
                     continue;
                 }
 
-                var latestRow = orderedRows[0];
-                var feeMasterRow = new SeaTaxFeeMasterRow
+                var groupCount = group.UploadCount;
+                var effectiveRowCount = Math.Min(groupCount, orderedRows.Count);
+                var detailSourceRows = orderedRows.Take(effectiveRowCount).ToList();
+                if (detailSourceRows.Count == 0)
                 {
-                    Source = taxType,
-                    Type = NormalizeText(latestRow.ClearanceType),
-                    Customer = NormalizeText(latestRow.DespatchName),
-                    MainNumber = NormalizeKeyText(latestRow.MainNumber),
-                    TrackingNo = NormalizeKeyText(latestRow.BlNo),
-                    ClearanceNumber = NormalizeText(latestRow.ClearanceNumber),
-                    TaxNumber = NormalizeText(latestRow.TaxNumber),
-                    TaxBase = NormalizeText(latestRow.TaxBase),
-                    TaxRecId = NormalizeText(latestRow.TaxRecId),
-                    TaxPayer = NormalizeText(latestRow.TaxPayer),
-                    Fee = ToNullableIntText(latestRow.CodFee),
-                    IncludeTax = NormalizeText(latestRow.IncludeTax),
-                    DlvCom = ConvertLanguage(NormalizeText(latestRow.TransTaxPayment), "Big5"),
-                    Recipient = NormalizeText(latestRow.Importer),
-                    RecPhone = NormalizeText(latestRow.ImporterPhone),
-                    RecAddress = NormalizeText(latestRow.ImporterAddr),
-                    RecId = Truncate(NormalizeText(latestRow.ImporterId), 20),
-                    DlvInv = NormalizeText(latestRow.JetfSerial),
-                    Cod = ToNullableIntText(latestRow.Cod),
-                    Memo = NormalizeText(latestRow.Memo),
-                    Arrival = NormalizeText(latestRow.Arrival)
-                };
-
-                if (latestRow.SignInTime.HasValue)
-                {
-                    feeMasterRow.InDate = latestRow.SignInTime.Value.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
-                    feeMasterRow.InDateTime = latestRow.SignInTime.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                    continue;
                 }
 
-                if (latestRow.SignOutTime.HasValue)
-                {
-                    feeMasterRow.OutDateTime = latestRow.SignOutTime.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-                }
-
-                var groupCount = uploadGroupCounts.TryGetValue(group.Key, out var count) ? count : 0;
-                if (groupCount > 1)
-                {
-                    feeMasterRow.Combine = "Y";
-                    feeMasterRow.Tax1 = NormalizeText(latestRow.Tax);
-                    feeMasterRow.Tax2 = orderedRows
-                        .Skip(1)
-                        .Take(groupCount - 1)
-                        .Sum(row => ParseNullableInt(row.Tax) ?? 0)
-                        .ToString(CultureInfo.InvariantCulture);
-                }
-                else
-                {
-                    feeMasterRow.Tax1 = NormalizeText(latestRow.Tax);
-                }
-
-                ApplyTaxRule(feeMasterRow, latestRow, customerSpecialTable);
-                feeMasterRows.Add(feeMasterRow);
+                var latestRow = detailSourceRows[0];
+                feeMasterRows.Add(BuildMainFeeMasterRow(latestRow, detailSourceRows, groupCount, taxType, customerSpecialPhones));
             }
 
             return feeMasterRows;
         }
 
-        private static SeaTaxUploadJoinedRow BuildJoinedRow(
-            SeaTaxUploadExcelRow uploadRow,
-            IReadOnlyDictionary<string, ClearanceInfoEntity> clearanceLookup,
-            IReadOnlyDictionary<string, EtlTipcTaxEntity> etlTipcTaxLookup,
-            IReadOnlyDictionary<string, SeaOrderOriginalEntity> latestOrders,
-            IReadOnlyDictionary<string, CustomerMasterEntity> customerLookup)
+        /// <summary>
+        /// 將客戶主檔資料回填到 joined rows，供主檔與明細計算代收邏輯使用。
+        /// </summary>
+        private static void ApplyCustomerMasterValues(
+            IEnumerable<SeaTaxUploadJoinedRow> joinedRows,
+            IEnumerable<CustomerMasterEntity> customerMasters)
         {
-            var uploadKey = BuildUploadKey(uploadRow.MainNumber, uploadRow.BlNo);
-            clearanceLookup.TryGetValue(uploadKey, out var clearanceInfo);
-            etlTipcTaxLookup.TryGetValue(uploadKey, out var etlTipcTax);
-            latestOrders.TryGetValue(uploadKey, out var seaOrder);
+            var matchedRows = (
+                from row in joinedRows ?? Enumerable.Empty<SeaTaxUploadJoinedRow>()
+                join customerMaster in customerMasters ?? Enumerable.Empty<CustomerMasterEntity>()
+                    on new
+                    {
+                        Customer = NormalizeText(row.DespatchName),
+                        TransName = NormalizeText(row.TransTaxPayment)
+                    }
+                    equals new
+                    {
+                        Customer = NormalizeText(customerMaster.CustId),
+                        TransName = NormalizeText(customerMaster.TransName)
+                    }
+                    into customerGroup
+                from customerMaster in customerGroup.DefaultIfEmpty()
+                select new
+                {
+                    Row = row,
+                    CustomerMaster = customerMaster
+                })
+                .ToList();
 
-            CustomerMasterEntity customerMaster = null;
-            if (seaOrder != null)
+            foreach (var item in matchedRows)
             {
-                customerLookup.TryGetValue(BuildCustomerLookupKey(seaOrder.CustCode, seaOrder.TransTaxPayment), out customerMaster);
+                if (item.CustomerMaster == null)
+                {
+                    continue;
+                }
+
+                item.Row.CodFee = item.CustomerMaster.CodFee;
+                item.Row.IncludeTax = NormalizeText(item.CustomerMaster.IncludeTax);
+                item.Row.Company = NormalizeText(item.CustomerMaster.Company);
+                item.Row.IsCainiaoP = item.CustomerMaster.IsCainiaoP;
+            }
+        }
+
+        /// <summary>
+        /// 以本次 SEA_TAX_UPLOAD 為起點，串接清關、原單與稅基資料。
+        /// </summary>
+        private List<SeaTaxUploadJoinedRow> GetJoinedUploadRows(
+            JetfDbContext jetfDb,
+            DateTime uploadTime,
+            string userId)
+        {
+            var sql = @"
+with CTE_SEA_ORDER_ORIGINAL as 
+(
+        select MAINNUMBER,BL_NO,DESPATCH_NAME as DespatchName,TRANS_TAXPAYMENT,IMPORTER,IM_PHONENO as ImporterPhone,IM_ADD as ImporterAddr,IMPORTER_ID,JETF_SERIAL,CC,MEMO,ARRIVAL
+    from DATA_CENTER.dbo.SEA_ORDER_ORIGINAL a
+    where GW > 0 and MODIFTYDATE = (
+        select MAX(MODIFTYDATE)
+        from DATA_CENTER.dbo.SEA_ORDER_ORIGINAL
+        where BL_NO = a.BL_NO and MAINNUMBER = a.MAINNUMBER)
+),
+CTE_ETL_TIPC_TAX as
+(
+    select ROW_ID,MAIN_NUMBER,BAG_NUMBER,TAX_NUMBER,TAX_BASE,TAX_AMOUNT
+    from DATA_CENTER.dbo.ETL_TIPC_TAX a
+    where ROW_ID = (
+        select MAX(ROW_ID)
+        from DATA_CENTER.dbo.ETL_TIPC_TAX
+        where MAIN_NUMBER = a.MAIN_NUMBER and BAG_NUMBER = a.BAG_NUMBER)
+)
+select
+    a.BL_NO as BlNo,
+    a.CLEARANCE_NUMBER as ClearanceNumber,
+    a.CLEARANCE_TYPE as ClearanceType,
+    a.TAX as Tax,
+    a.TAX_NUMBER as TaxNumber,
+    a.MAIN_NUMBER as MainNumber,
+    b.SIGN_IN_TIME as SignInTime,
+    b.SIGN_OUT_TIME as SignOutTime,
+    d.TAX_BASE as TaxBase,
+    cast(null as int) as CodFee,
+    cast(null as nvarchar(10)) as IncludeTax,
+    cast(null as nvarchar(50)) as Company,
+    cast(null as bit) as IsCainiaoP,
+    a.TAX_PAYER as TaxPayer,
+    a.TAX_RECID as TaxRecId,
+    c.DespatchName,
+    c.TRANS_TAXPAYMENT as TransTaxPayment,
+    c.IMPORTER as Importer,
+    c.ImporterPhone,
+    c.ImporterAddr,
+    c.IMPORTER_ID as ImporterId,
+    c.JETF_SERIAL as JetfSerial,
+    c.CC as Cod,
+    c.MEMO as Memo,
+    c.ARRIVAL as Arrival
+from jetf.dbo.SEA_TAX_UPLOAD a
+left join DATA_CENTER.dbo.CLEARANCE_INFO b on a.MAIN_NUMBER = b.MAIN_NUMBER and a.BL_NO = b.BAG_NUMBER
+left join CTE_SEA_ORDER_ORIGINAL c on a.MAIN_NUMBER = c.MAINNUMBER and a.BL_NO = c.BL_NO
+left join CTE_ETL_TIPC_TAX d on b.MAIN_NUMBER = d.MAIN_NUMBER and b.BAG_NUMBER = d.BAG_NUMBER
+where a.UPLOAD_TIME = @UPLOAD_TIME and a.UPLOAD_OPE = @UPLOAD_OPE
+";
+
+            return jetfDb.Database.SqlQuery<SeaTaxUploadJoinedRow>(
+                    sql,
+                    new SqlParameter("@UPLOAD_TIME", uploadTime),
+                    new SqlParameter("@UPLOAD_OPE", userId))
+                .ToList()
+                .Select(row => new SeaTaxUploadJoinedRow
+                {
+                    BlNo = NormalizeText(row.BlNo),
+                    ClearanceNumber = NormalizeText(row.ClearanceNumber),
+                    ClearanceType = NormalizeText(row.ClearanceType),
+                    Tax = NormalizeText(row.Tax),
+                    TaxNumber = NormalizeText(row.TaxNumber),
+                    MainNumber = NormalizeText(row.MainNumber),
+                    SignInTime = row.SignInTime,
+                    SignOutTime = row.SignOutTime,
+                    TaxBase = NormalizeText(row.TaxBase),
+                    CodFee = row.CodFee,
+                    IncludeTax = NormalizeText(row.IncludeTax),
+                    Company = NormalizeText(row.Company),
+                    IsCainiaoP = row.IsCainiaoP,
+                    TaxPayer = NormalizeText(row.TaxPayer),
+                    TaxRecId = NormalizeText(row.TaxRecId),
+                    DespatchName = NormalizeText(row.DespatchName),
+                    TransTaxPayment = NormalizeText(row.TransTaxPayment),
+                    Importer = NormalizeText(row.Importer),
+                    ImporterPhone = NormalizeText(row.ImporterPhone),
+                    ImporterAddr = NormalizeText(row.ImporterAddr),
+                    ImporterId = NormalizeText(row.ImporterId),
+                    JetfSerial = NormalizeText(row.JetfSerial),
+                    Cod = row.Cod,
+                    Memo = NormalizeText(row.Memo),
+                    Arrival = NormalizeText(row.Arrival)
+                })
+                .ToList();
+        }
+
+        /// <summary>
+        /// 依主號與提單抓取最新的海運原單資料。
+        /// </summary>
+        private static List<SeaOrderOriginalEntity> GetLatestSeaOrderLookup(
+            DataCenterDbContext dataCenterDb,
+            List<UploadKey> uploadKeys)
+        {
+            var normalizedKeys = (uploadKeys ?? new List<UploadKey>())
+                .Select(row => new
+                {
+                    MainNumber = NormalizeText(row.MainNumber),
+                    BlNo = NormalizeText(row.BlNo)
+                })
+                .Where(row => !string.IsNullOrWhiteSpace(row.MainNumber) && !string.IsNullOrWhiteSpace(row.BlNo))
+                .Distinct()
+                .ToList();
+
+            if (normalizedKeys.Count == 0)
+            {
+                return new List<SeaOrderOriginalEntity>();
             }
 
-            return new SeaTaxUploadJoinedRow
-            {
-                BlNo = NormalizeKeyText(uploadRow.BlNo),
-                ClearanceNumber = NormalizeText(uploadRow.ClearanceNumber),
-                ClearanceType = NormalizeText(uploadRow.ClearanceType),
-                Tax = NormalizeText(uploadRow.Tax),
-                TaxNumber = NormalizeText(uploadRow.TaxNumber),
-                MainNumber = NormalizeKeyText(uploadRow.MainNumber),
-                SignInTime = clearanceInfo?.SignInTime,
-                SignOutTime = clearanceInfo?.SignOutTime,
-                TaxBase = NormalizeText(etlTipcTax?.TaxBase),
-                CodFee = customerMaster?.CodFee,
-                IncludeTax = NormalizeText(customerMaster?.IncludeTax),
-                Company = NormalizeText(customerMaster?.Company),
-                IsCainiaoP = customerMaster?.IsCainiaoP,
-                TaxPayer = NormalizeText(uploadRow.TaxPayer),
-                TaxRecId = NormalizeText(uploadRow.TaxRecId),
-                DespatchName = NormalizeText(seaOrder?.CustCode),
-                TransTaxPayment = NormalizeText(seaOrder?.TransTaxPayment),
-                Importer = NormalizeText(seaOrder?.Importer),
-                ImporterPhone = NormalizeText(seaOrder?.ImporterPhone),
-                ImporterAddr = NormalizeText(seaOrder?.ImporterAddr),
-                ImporterId = NormalizeText(seaOrder?.ImporterId),
-                JetfSerial = NormalizeText(seaOrder?.JetfSerial),
-                Cod = seaOrder?.CC,
-                Memo = NormalizeText(seaOrder?.Memo),
-                Arrival = NormalizeText(seaOrder?.Arrival)
-            };
-        }
+            var mainNumbers = normalizedKeys.Select(row => row.MainNumber).Distinct().ToList();
+            var bagNumbers = normalizedKeys.Select(row => row.BlNo).Distinct().ToList();
 
-        private static IReadOnlyDictionary<string, ClearanceInfoEntity> GetLatestClearanceInfoLookup(
-            DataCenterDbContext dataCenterDb,
-            List<UploadKey> uploadKeys)
-        {
-            var mainNumbers = uploadKeys.Select(row => row.MainNumber).Distinct().ToList();
-            var bagNumbers = uploadKeys.Select(row => row.BlNo).Distinct().ToList();
-            var keySet = new HashSet<string>(uploadKeys.Select(row => BuildUploadKey(row.MainNumber, row.BlNo)), StringComparer.OrdinalIgnoreCase);
-
-            return dataCenterDb.ClearanceInfos
-                .AsNoTracking()
-                .Where(row => mainNumbers.Contains(row.MainNumber) && bagNumbers.Contains(row.BagNumber))
-                .ToList()
-                .Where(row => keySet.Contains(BuildUploadKey(row.MainNumber, row.BagNumber)))
-                .GroupBy(row => BuildUploadKey(row.MainNumber, row.BagNumber))
-                .ToDictionary(
-                    group => group.Key,
-                    group => group
-                        .OrderByDescending(row => row.SignOutTime ?? DateTime.MinValue)
-                        .ThenByDescending(row => row.SignInTime ?? DateTime.MinValue)
-                        .First(),
-                    StringComparer.OrdinalIgnoreCase);
-        }
-
-        private static IReadOnlyDictionary<string, EtlTipcTaxEntity> GetLatestEtlTipcTaxLookup(
-            DataCenterDbContext dataCenterDb,
-            List<UploadKey> uploadKeys)
-        {
-            var mainNumbers = uploadKeys.Select(row => row.MainNumber).Distinct().ToList();
-            var bagNumbers = uploadKeys.Select(row => row.BlNo).Distinct().ToList();
-            var keySet = new HashSet<string>(uploadKeys.Select(row => BuildUploadKey(row.MainNumber, row.BlNo)), StringComparer.OrdinalIgnoreCase);
-
-            return dataCenterDb.EtlTipcTaxes
-                .AsNoTracking()
-                .Where(row => mainNumbers.Contains(row.MainNumber) && bagNumbers.Contains(row.BagNumber))
-                .ToList()
-                .Where(row => keySet.Contains(BuildUploadKey(row.MainNumber, row.BagNumber)))
-                .GroupBy(row => BuildUploadKey(row.MainNumber, row.BagNumber))
-                .ToDictionary(
-                    group => group.Key,
-                    group => group.OrderByDescending(row => row.RowId).First(),
-                    StringComparer.OrdinalIgnoreCase);
-        }
-
-        private static IReadOnlyDictionary<string, SeaOrderOriginalEntity> GetLatestSeaOrderLookup(
-            DataCenterDbContext dataCenterDb,
-            List<UploadKey> uploadKeys)
-        {
-            var mainNumbers = uploadKeys.Select(row => row.MainNumber).Distinct().ToList();
-            var bagNumbers = uploadKeys.Select(row => row.BlNo).Distinct().ToList();
-            var keySet = new HashSet<string>(uploadKeys.Select(row => BuildUploadKey(row.MainNumber, row.BlNo)), StringComparer.OrdinalIgnoreCase);
-
-            return dataCenterDb.SeaOrderOriginals
+            return (from row in dataCenterDb.SeaOrderOriginals
                 .AsNoTracking()
                 .Where(row => row.Gw.HasValue && row.Gw.Value > 0 && mainNumbers.Contains(row.MainNumber) && bagNumbers.Contains(row.BlNo))
                 .ToList()
-                .Where(row => keySet.Contains(BuildUploadKey(row.MainNumber, row.BlNo)))
-                .GroupBy(row => BuildUploadKey(row.MainNumber, row.BlNo))
-                .ToDictionary(
-                    group => group.Key,
-                    group => group
-                        .OrderByDescending(row => row.ModifyDate ?? DateTime.MinValue)
-                        .ThenByDescending(row => row.Id)
-                        .First(),
-                    StringComparer.OrdinalIgnoreCase);
+                    join key in normalizedKeys
+                        on new
+                        {
+                            MainNumber = NormalizeText(row.MainNumber),
+                            BlNo = NormalizeText(row.BlNo)
+                        }
+                        equals new
+                        {
+                            key.MainNumber,
+                            key.BlNo
+                        }
+                    select row)
+                .GroupBy(row => new
+                {
+                    MainNumber = NormalizeText(row.MainNumber),
+                    BlNo = NormalizeText(row.BlNo)
+                })
+                .Select(group => group
+                    .OrderByDescending(row => row.ModifyDate ?? DateTime.MinValue)
+                    .ThenByDescending(row => row.Id)
+                    .First())
+                .ToList();
         }
 
-        private static IReadOnlyDictionary<string, CustomerMasterEntity> GetSeaCustomerLookup(
+        /// <summary>
+        /// 查出這批海運資料可能用到的客戶主檔。
+        /// </summary>
+        private static List<CustomerMasterEntity> GetSeaCustomerLookup(
             JetfDbContext jetfDb,
-            IEnumerable<SeaOrderOriginalEntity> seaOrders)
+            IEnumerable<SeaTaxUploadJoinedRow> joinedRows)
         {
-            var customerKeys = new HashSet<string>(
-                (seaOrders ?? Enumerable.Empty<SeaOrderOriginalEntity>())
-                    .Select(row => BuildCustomerLookupKey(row.CustCode, row.TransTaxPayment))
-                    .Where(key => !string.IsNullOrWhiteSpace(key)),
-                StringComparer.OrdinalIgnoreCase);
+            var customerCodes = (joinedRows ?? Enumerable.Empty<SeaTaxUploadJoinedRow>())
+                .Select(row => NormalizeText(row.DespatchName))
+                .Where(row => !string.IsNullOrWhiteSpace(row))
+                .Distinct()
+                .ToList();
+            var transNames = (joinedRows ?? Enumerable.Empty<SeaTaxUploadJoinedRow>())
+                .Select(row => NormalizeText(row.TransTaxPayment))
+                .Where(row => !string.IsNullOrWhiteSpace(row))
+                .Distinct()
+                .ToList();
 
-            if (customerKeys.Count == 0)
+            if (!customerCodes.Any() || !transNames.Any())
             {
-                return new Dictionary<string, CustomerMasterEntity>(StringComparer.OrdinalIgnoreCase);
+                return new List<CustomerMasterEntity>();
             }
 
             return jetfDb.CustomerMasters
                 .AsNoTracking()
-                .Where(row => row.TranType == "海運")
-                .ToList()
-                .Where(row => customerKeys.Contains(BuildCustomerLookupKey(row.CustId, row.TransName)))
-                .GroupBy(row => BuildCustomerLookupKey(row.CustId, row.TransName), StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+                .Where(row => row.TranType == "海運" && customerCodes.Contains(row.CustId) && transNames.Contains(row.TransName))
+                .ToList();
         }
 
+        /// <summary>
+        /// 依包稅方式與客戶條件計算主表的代收邏輯。
+        /// </summary>
         private void ApplyTaxRule(
             SeaTaxFeeMasterRow feeMasterRow,
             SeaTaxUploadJoinedRow latestRow,
-            DataTable customerSpecialTable)
+            IEnumerable<string> customerSpecialPhones)
         {
-            var taxCalculationRow = CreateTaxCalculationRow(feeMasterRow);
+            var taxCalculationInput = CreateTaxCalculationInput(feeMasterRow);
             var includeTax = NormalizeText(latestRow.IncludeTax);
             var memo = NormalizeText(feeMasterRow.Memo);
             var company = NormalizeText(latestRow.Company);
@@ -498,7 +653,7 @@ namespace Service.Services.SeaTaxUpload
 
             if (includeTax == "Y")
             {
-                var taxData = _taxService.GetTaxY(taxCalculationRow);
+                var taxData = _taxService.GetTaxY(taxCalculationInput);
                 feeMasterRow.TransCod = taxData.TransCod.ToString(CultureInfo.InvariantCulture);
                 feeMasterRow.CustomerCod = taxData.CustomerCod.ToString(CultureInfo.InvariantCulture);
                 feeMasterRow.ToDlvCod = taxData.ToDlvCod.ToString(CultureInfo.InvariantCulture);
@@ -507,18 +662,14 @@ namespace Service.Services.SeaTaxUpload
 
             if (latestRow.IsCainiaoP.GetValueOrDefault())
             {
-                var taxData = _taxService.GetTaxP(taxCalculationRow);
-                feeMasterRow.IncludeTax = taxData.TransCod > 0 ? "N" : feeMasterRow.IncludeTax;
-                feeMasterRow.Fee = taxData.TransCod > 0 ? feeMasterRow.Fee : "0";
-                feeMasterRow.TransCod = taxData.TransCod.ToString(CultureInfo.InvariantCulture);
-                feeMasterRow.CustomerCod = taxData.CustomerCod.ToString(CultureInfo.InvariantCulture);
-                feeMasterRow.ToDlvCod = taxData.ToDlvCod.ToString(CultureInfo.InvariantCulture);
+                var taxData = _taxService.GetTaxP(taxCalculationInput);
+                ApplyCainiaoPTaxRule(feeMasterRow, taxData);
                 return;
             }
 
-            if (includeTax == "D" || _taxService.IsSeaSpecial(customerSpecialTable, company, recPhone))
+            if (includeTax == "D" || _taxService.IsSeaSpecial(customerSpecialPhones, company, recPhone))
             {
-                var taxData = _taxService.GetTaxD(taxCalculationRow);
+                var taxData = _taxService.GetTaxD(taxCalculationInput);
                 feeMasterRow.IncludeTax = "D";
                 feeMasterRow.Fee = "0";
                 feeMasterRow.TransCod = taxData.TransCod.ToString(CultureInfo.InvariantCulture);
@@ -529,7 +680,7 @@ namespace Service.Services.SeaTaxUpload
 
             if (includeTax == "C" || memo.IndexOf("DDP", StringComparison.OrdinalIgnoreCase) > -1)
             {
-                var taxData = _taxService.GetTaxC(taxCalculationRow);
+                var taxData = _taxService.GetTaxC(taxCalculationInput);
                 feeMasterRow.IncludeTax = "C";
                 feeMasterRow.Fee = "0";
                 feeMasterRow.TransCod = taxData.TransCod.ToString(CultureInfo.InvariantCulture);
@@ -538,44 +689,269 @@ namespace Service.Services.SeaTaxUpload
                 return;
             }
 
-            var defaultTaxData = _taxService.GetTaxN(taxCalculationRow);
+            var defaultTaxData = _taxService.GetTaxN(taxCalculationInput);
             feeMasterRow.TransCod = defaultTaxData.TransCod.ToString(CultureInfo.InvariantCulture);
             feeMasterRow.CustomerCod = defaultTaxData.CustomerCod.ToString(CultureInfo.InvariantCulture);
             feeMasterRow.ToDlvCod = defaultTaxData.ToDlvCod.ToString(CultureInfo.InvariantCulture);
         }
 
-        private static DataRow CreateTaxCalculationRow(SeaTaxFeeMasterRow feeMasterRow)
+        /// <summary>
+        /// 建立主檔資料。
+        /// step1 先決定主檔要保留哪一筆資料。
+        /// step2 再計算主檔的 Tax1、Tax2、Combine 與代收邏輯。
+        /// step3 最後再把同組的明細逐筆建立出來。
+        /// </summary>
+        private SeaTaxFeeMasterRow BuildMainFeeMasterRow(
+            SeaTaxUploadJoinedRow latestRow,
+            List<SeaTaxUploadJoinedRow> detailRows,
+            int groupCount,
+            string taxType,
+            IEnumerable<string> customerSpecialPhones)
         {
-            var table = new DataTable();
-            table.Columns.Add("tax1", typeof(string));
-            table.Columns.Add("tax2", typeof(string));
-            table.Columns.Add("cod", typeof(string));
-            table.Columns.Add("fee", typeof(string));
-
-            var row = table.NewRow();
-            row["tax1"] = NormalizeText(feeMasterRow.Tax1);
-            row["tax2"] = NormalizeText(feeMasterRow.Tax2);
-            row["cod"] = NormalizeText(feeMasterRow.Cod);
-            row["fee"] = NormalizeText(feeMasterRow.Fee);
-            table.Rows.Add(row);
-            return row;
-        }
-
-        private static DataTable CreateCustomerSpecialTable(IEnumerable<string> phones)
-        {
-            var table = new DataTable();
-            table.Columns.Add("PHONE", typeof(string));
-
-            foreach (var phone in phones ?? Enumerable.Empty<string>())
+            var feeMasterRow = new SeaTaxFeeMasterRow
             {
-                var row = table.NewRow();
-                row["PHONE"] = NormalizeText(phone);
-                table.Rows.Add(row);
+                Source = taxType,
+                Type = latestRow.ClearanceType,
+                Customer = latestRow.DespatchName,
+                MainNumber = latestRow.MainNumber,
+                TrackingNo = latestRow.BlNo,
+                ClearanceNumber = latestRow.ClearanceNumber,
+                TaxNumber = latestRow.TaxNumber,
+                TaxBase = latestRow.TaxBase,
+                TaxRecId = latestRow.TaxRecId,
+                TaxPayer = latestRow.TaxPayer,
+                Fee = ToNullableIntText(latestRow.CodFee),
+                IncludeTax = latestRow.IncludeTax,
+                DlvCom = ConvertLanguage(latestRow.TransTaxPayment, "Big5"),
+                Recipient = latestRow.Importer,
+                RecPhone = latestRow.ImporterPhone,
+                RecAddress = latestRow.ImporterAddr,
+                RecId = Truncate(latestRow.ImporterId, 20),
+                DlvInv = latestRow.JetfSerial,
+                Cod = ToNullableIntText(latestRow.Cod),
+                Memo = latestRow.Memo,
+                Arrival = latestRow.Arrival
+            };
+
+            if (latestRow.SignInTime.HasValue)
+            {
+                feeMasterRow.InDate = latestRow.SignInTime.Value.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
+                feeMasterRow.InDateTime = latestRow.SignInTime.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
             }
 
-            return table;
+            if (latestRow.SignOutTime.HasValue)
+            {
+                feeMasterRow.OutDateTime = latestRow.SignOutTime.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            }
+
+            feeMasterRow.Tax1 = latestRow.Tax;
+            if (groupCount > 1)
+            {
+                feeMasterRow.Combine = "Y";
+                feeMasterRow.Tax2 = detailRows
+                    .Skip(1)
+                    .Sum(row => ParseNullableInt(row.Tax) ?? 0)
+                    .ToString(CultureInfo.InvariantCulture);
+            }
+
+            ApplyTaxRule(feeMasterRow, latestRow, customerSpecialPhones);
+            feeMasterRow.DetailRows = CreateFeeMasterDetailRows(detailRows, customerSpecialPhones);
+            return feeMasterRow;
         }
 
+        /// <summary>
+        /// 將目前主表資料轉成稅額計算所需的輸入模型。
+        /// </summary>
+        private static TaxCalculationInput CreateTaxCalculationInput(SeaTaxFeeMasterRow feeMasterRow)
+        {
+            return CreateTaxCalculationInput(
+                ParseNullableInt(feeMasterRow.Tax1) ?? 0,
+                ParseNullableInt(feeMasterRow.Tax2) ?? 0,
+                ParseNullableInt(feeMasterRow.Cod) ?? 0,
+                ParseNullableInt(feeMasterRow.Fee) ?? 0);
+        }
+
+        /// <summary>
+        /// 建立稅額計算輸入模型。
+        /// </summary>
+        private static TaxCalculationInput CreateTaxCalculationInput(int tax1, int tax2, int cod, int fee)
+        {
+            return new TaxCalculationInput
+            {
+                Tax1 = tax1,
+                Tax2 = tax2,
+                Cod = cod,
+                Fee = fee
+            };
+        }
+
+        /// <summary>
+        /// 取得海運特殊客戶電話集合，供 D 類稅金判斷使用。
+        /// </summary>
+        private static HashSet<string> GetSeaSpecialPhoneSet(JetfDbContext jetfDb)
+        {
+            var phones = jetfDb.CustomerSpecials
+                .AsNoTracking()
+                .Where(row => row.TranType == "海運")
+                .Select(row => row.Phone)
+                .ToList();
+
+            return new HashSet<string>(
+                phones.Select(NormalizeText).Where(row => !string.IsNullOrWhiteSpace(row)),
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 建立同一主單下所有 detail rows。
+        /// 這個方法只處理明細資料，不處理主檔資料的組裝與計算。
+        /// </summary>
+        private List<SeaTaxFeeMasterDetailRow> CreateFeeMasterDetailRows(
+            IEnumerable<SeaTaxUploadJoinedRow> detailRows,
+            IEnumerable<string> customerSpecialPhones)
+        {
+            var sourceRows = (detailRows ?? Enumerable.Empty<SeaTaxUploadJoinedRow>()).ToList();
+            if (sourceRows.Count == 0)
+            {
+                return new List<SeaTaxFeeMasterDetailRow>();
+            }
+
+            if (sourceRows[0].IsCainiaoP.GetValueOrDefault())
+            {
+                return CreateCainiaoPDetailRows(sourceRows);
+            }
+
+            return sourceRows
+                .Select(row => CreateRegularDetailRow(row, customerSpecialPhones))
+                .ToList();
+        }
+
+        /// <summary>
+        /// 建立一般明細資料。
+        /// </summary>
+        private SeaTaxFeeMasterDetailRow CreateRegularDetailRow(
+            SeaTaxUploadJoinedRow row,
+            IEnumerable<string> customerSpecialPhones)
+        {
+            var taxAmount = ParseNullableInt(row.Tax) ?? 0;
+            var codAmount = ParseNullableInt(row.Cod) ?? 0;
+            var feeAmount = ParseNullableInt(row.CodFee) ?? 0;
+            var detailFee = feeAmount;
+            var taxCalculationInput = CreateTaxCalculationInput(taxAmount, 0, codAmount, feeAmount);
+            var includeTax = NormalizeText(row.IncludeTax);
+            var memo = NormalizeText(row.Memo);
+            var company = NormalizeText(row.Company);
+            var recPhone = NormalizeText(row.ImporterPhone).Trim();
+            TaxData taxData;
+
+            if (includeTax == "Y")
+            {
+                taxData = _taxService.GetTaxY(taxCalculationInput);
+            }
+            else if (includeTax == "D" || _taxService.IsSeaSpecial(customerSpecialPhones, company, recPhone))
+            {
+                taxData = _taxService.GetTaxD(taxCalculationInput);
+                detailFee = 0;
+            }
+            else if (includeTax == "C" || memo.IndexOf("DDP", StringComparison.OrdinalIgnoreCase) > -1)
+            {
+                taxData = _taxService.GetTaxC(taxCalculationInput);
+                detailFee = 0;
+            }
+            else
+            {
+                taxData = _taxService.GetTaxN(taxCalculationInput);
+            }
+
+            return CreateFeeMasterDetailRow(row, detailFee, taxData.ToDlvCod);
+        }
+
+        /// <summary>
+        /// 建立菜鳥 P 明細資料。
+        /// step1 先用客戶可吸收的 1000 額度逐筆往下扣。
+        /// step2 額度扣完後，超出的稅額才轉成派件公司代收稅額。
+        /// step3 手續費只放在第一筆真的有代收稅額的明細，避免重複帶入。
+        /// </summary>
+        private List<SeaTaxFeeMasterDetailRow> CreateCainiaoPDetailRows(
+            IEnumerable<SeaTaxUploadJoinedRow> detailRows)
+        {
+            var sourceRows = (detailRows ?? Enumerable.Empty<SeaTaxUploadJoinedRow>()).ToList();
+            var result = new List<SeaTaxFeeMasterDetailRow>();
+            var remainingCustomerTax = 1000;
+            var feeAssigned = false;
+
+            foreach (var row in sourceRows)
+            {
+                var taxAmount = ParseNullableInt(row.Tax) ?? 0;
+                var codAmount = ParseNullableInt(row.Cod) ?? 0;
+                var feeAmount = ParseNullableInt(row.CodFee) ?? 0;
+
+                // step1: 客戶可吸收的 1000 額度先從當前稅額扣除。
+                var customerTax = Math.Min(Math.Max(remainingCustomerTax, 0), taxAmount);
+
+                // step2: 超過剩餘額度的部分，才轉成派件公司代收稅額。
+                var transTax = taxAmount - customerTax;
+
+                remainingCustomerTax -= customerTax;
+
+                var detailFee = 0;
+                if (transTax > 0 && !feeAssigned)
+                {
+                    // step3: 手續費只掛在第一筆實際有代收稅額的明細。
+                    detailFee = feeAmount;
+                    feeAssigned = true;
+                }
+
+                result.Add(CreateFeeMasterDetailRow(row, detailFee, codAmount + transTax + detailFee));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 將單筆 joined row 與已計算完成的明細結果轉成 detail row。
+        /// </summary>
+        private static SeaTaxFeeMasterDetailRow CreateFeeMasterDetailRow(
+            SeaTaxUploadJoinedRow row,
+            int feeAmount,
+            int toDlvCod)
+        {
+            return new SeaTaxFeeMasterDetailRow
+            {
+                MainNumber = row.MainNumber,
+                TrackingNo = row.BlNo,
+                ClearanceNumber = row.ClearanceNumber,
+                BagNumber = row.BlNo,
+                TaxNumber = row.TaxNumber,
+                TaxPayer = row.TaxPayer,
+                TaxRecId = row.TaxRecId,
+                DlvInv = row.JetfSerial,
+                TaxBase = row.TaxBase,
+                Tax = row.Tax,
+                Ccfee = string.Empty,
+                Cod = ToNullableIntText(row.Cod),
+                Fee = feeAmount.ToString(CultureInfo.InvariantCulture),
+                Recipient = row.Importer,
+                RecPhone = row.ImporterPhone,
+                RecAddress = row.ImporterAddr,
+                ToDlvCod = toDlvCod.ToString(CultureInfo.InvariantCulture)
+            };
+        }
+
+        /// <summary>
+        /// 套用菜鳥 P 計算結果到主表或明細暫存列。
+        /// </summary>
+        private static void ApplyCainiaoPTaxRule(SeaTaxFeeMasterRow feeMasterRow, TaxData taxData)
+        {
+            feeMasterRow.IncludeTax = taxData.TransCod > 0 ? "N" : feeMasterRow.IncludeTax;
+            feeMasterRow.Fee = taxData.TransCod > 0 ? feeMasterRow.Fee : "0";
+            feeMasterRow.TransCod = taxData.TransCod.ToString(CultureInfo.InvariantCulture);
+            feeMasterRow.CustomerCod = taxData.CustomerCod.ToString(CultureInfo.InvariantCulture);
+            feeMasterRow.ToDlvCod = taxData.ToDlvCod.ToString(CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// 以同資料日期/來源整批覆蓋 FEE_MASTER_TEST 與 FEE_MASTER_DSTAIL。
+        /// </summary>
         private void ReplaceFeeMaster(
             JetfDbContext jetfDb,
             List<SeaTaxFeeMasterRow> feeMasterRows,
@@ -588,17 +964,47 @@ namespace Service.Services.SeaTaxUpload
             }
 
             var existingRows = jetfDb.FeeMasterTests
+                .AsNoTracking()
                 .Where(row => row.DataDate == dataDate && row.Source == source && row.SourceType == SeaSourceType)
                 .ToList();
 
+            // step1: 先刪除同資料日期/來源的舊明細與舊主檔，確保這次上傳會整批覆蓋。
             if (existingRows.Count > 0)
             {
-                jetfDb.FeeMasterTests.RemoveRange(existingRows);
+                var existingIds = existingRows.Select(row => row.Id).ToList();
+                var existingDetailRows = jetfDb.FeeMasterDstails
+                    .Where(row => existingIds.Contains(row.FeeMasterId))
+                    .ToList();
+
+                // 先刪 detail 再刪 master，避免留下舊關聯資料。
+                if (existingDetailRows.Count > 0)
+                {
+                    jetfDb.BulkDelete(existingDetailRows);
+                }
+
+                jetfDb.BulkDelete(existingRows);
             }
 
-            jetfDb.FeeMasterTests.AddRange(feeMasterRows.Select(row => CreateFeeMasterEntity(row, dataDate)).ToList());
+            // step2: 寫入新的主檔，取得主檔 Id 後，再把對應明細一併寫入。
+            var entities = feeMasterRows.Select(row => CreateFeeMasterEntity(row, dataDate)).ToList();
+            if (entities.Count > 0)
+            {
+                jetfDb.BulkInsert(entities, operation => operation.AutoMapOutputDirection = true);
+
+                var detailEntities = feeMasterRows
+                    .SelectMany((row, index) => row.DetailRows.Select(detail => CreateFeeMasterDstailEntity(detail, entities[index].Id)))
+                    .ToList();
+
+                if (detailEntities.Count > 0)
+                {
+                    jetfDb.BulkInsert(detailEntities);
+                }
+            }
         }
 
+        /// <summary>
+        /// 建立 FEE_MASTER_TEST 寫入實體。
+        /// </summary>
         private static FeeMasterTestEntity CreateFeeMasterEntity(SeaTaxFeeMasterRow row, string dataDate)
         {
             return new FeeMasterTestEntity
@@ -608,8 +1014,8 @@ namespace Service.Services.SeaTaxUpload
                 SourceType = SeaSourceType,
                 Type = NormalizeText(row.Type),
                 Customer = NormalizeText(row.Customer),
-                MainNumber = NormalizeKeyText(row.MainNumber),
-                TrackingNo = NormalizeKeyText(row.TrackingNo),
+                MainNumber = NormalizeText(row.MainNumber),
+                TrackingNo = NormalizeText(row.TrackingNo),
                 ClearanceNumber = NormalizeText(row.ClearanceNumber),
                 Combine = NormalizeText(row.Combine),
                 InDate = NormalizeText(row.InDate),
@@ -637,6 +1043,9 @@ namespace Service.Services.SeaTaxUpload
             };
         }
 
+        /// <summary>
+        /// 建立 FEE_MASTER_MODIFY 寫入實體。
+        /// </summary>
         private static FeeMasterModifyEntity CreateFeeMasterModifyEntity(
             SeaTaxModifyRow row,
             SeaOrderOriginalEntity seaOrder,
@@ -647,8 +1056,8 @@ namespace Service.Services.SeaTaxUpload
                 ModifyDataDate = dataDate,
                 Id = row.Id,
                 DataType = NormalizeText(row.DataType),
-                MainNumber = NormalizeKeyText(row.MainNumber),
-                BagNumber = NormalizeKeyText(row.BagNumber),
+                MainNumber = NormalizeText(row.MainNumber),
+                BagNumber = NormalizeText(row.BagNumber),
                 MergeNumber = NormalizeText(row.MergeNumber),
                 TaxNumber = NormalizeText(row.TaxNumber),
                 TaxBase = row.TaxBase,
@@ -662,6 +1071,37 @@ namespace Service.Services.SeaTaxUpload
             };
         }
 
+        /// <summary>
+        /// 建立 FEE_MASTER_DSTAIL 寫入實體。
+        /// </summary>
+        private static FeeMasterDstailEntity CreateFeeMasterDstailEntity(SeaTaxFeeMasterDetailRow row, int feeMasterId)
+        {
+            return new FeeMasterDstailEntity
+            {
+                FeeMasterId = feeMasterId,
+                MainNumber = NormalizeText(row.MainNumber),
+                TrackingNo = NormalizeText(row.TrackingNo),
+                ClearanceNumber = NormalizeText(row.ClearanceNumber),
+                BagNumber = NormalizeText(row.BagNumber),
+                TaxNumber = NormalizeText(row.TaxNumber),
+                TaxPayer = NormalizeText(row.TaxPayer),
+                TaxRecId = NormalizeText(row.TaxRecId),
+                DlvInv = NormalizeText(row.DlvInv),
+                TaxBase = ParseNullableInt(row.TaxBase),
+                Tax = ParseNullableInt(row.Tax),
+                Ccfee = ParseNullableInt(row.Ccfee),
+                Cod = ParseNullableInt(row.Cod),
+                Fee = ParseNullableInt(row.Fee),
+                Recipient = NormalizeText(row.Recipient),
+                RecPhone = NormalizeText(row.RecPhone),
+                RecAddress = NormalizeText(row.RecAddress),
+                ToDlvCod = NormalizeText(row.ToDlvCod)
+            };
+        }
+
+        /// <summary>
+        /// 建立 SEA_TAX_UPLOAD 寫入實體。
+        /// </summary>
         private static SeaTaxUploadEntity CreateSeaTaxUploadEntity(
             SeaTaxUploadExcelRow row,
             DateTime uploadTime,
@@ -669,22 +1109,25 @@ namespace Service.Services.SeaTaxUpload
         {
             return new SeaTaxUploadEntity
             {
-                MainNumber = NormalizeKeyText(row.MainNumber),
-                ClearanceNumber = NormalizeKeyText(row.ClearanceNumber),
+                MainNumber = NormalizeText(row.MainNumber),
+                ClearanceNumber = NormalizeText(row.ClearanceNumber),
                 ClearanceType = NormalizeText(row.ClearanceType),
-                BlNo = NormalizeKeyText(row.BlNo),
+                BlNo = NormalizeText(row.BlNo),
                 RegNo = NormalizeText(row.RegNo),
                 Mainfest = NormalizeText(row.Mainfest),
-                TaxNumber = NormalizeKeyText(row.TaxNumber),
-                Tax = NormalizeKeyText(row.Tax),
+                TaxNumber = NormalizeText(row.TaxNumber),
+                Tax = NormalizeText(row.Tax),
                 PrtTime = row.PrtTime,
                 UploadTime = uploadTime,
-                UploadOpe = NormalizeKeyText(userId),
+                UploadOpe = NormalizeText(userId),
                 TaxPayer = NormalizeText(row.TaxPayer),
                 TaxRecId = NormalizeText(row.TaxRecId)
             };
         }
 
+        /// <summary>
+        /// 讀取上傳 Excel，轉成系統內部使用的海運稅金列資料。
+        /// </summary>
         private List<SeaTaxUploadExcelRow> ReadExcelIpost(string filePath)
         {
             var result = new List<SeaTaxUploadExcelRow>();
@@ -739,32 +1182,26 @@ namespace Service.Services.SeaTaxUpload
             return result;
         }
 
+        /// <summary>
+        /// 取得指定欄位的文字內容。
+        /// </summary>
         private static string GetCellText(IRow row, int index)
         {
             var cell = row.GetCell(index);
             return cell == null ? string.Empty : cell.ToString().Trim();
         }
 
-        private static string BuildUploadKey(string mainNumber, string blNo)
-        {
-            return $"{NormalizeKeyText(mainNumber)}__{NormalizeKeyText(blNo)}";
-        }
-
-        private static string BuildCustomerLookupKey(string customerCode, string transTaxPayment)
-        {
-            return $"{NormalizeText(customerCode)}__{NormalizeText(transTaxPayment)}";
-        }
-
-        private static string NormalizeKeyText(string value)
-        {
-            return (value ?? string.Empty).Trim();
-        }
-
+        /// <summary>
+        /// 一般文字欄位的標準化處理。
+        /// </summary>
         private static string NormalizeText(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
+        /// <summary>
+        /// 將字串安全轉成 nullable int。
+        /// </summary>
         private static int? ParseNullableInt(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -786,6 +1223,9 @@ namespace Service.Services.SeaTaxUpload
             return null;
         }
 
+        /// <summary>
+        /// 將 decimal 安全轉成 nullable int。
+        /// </summary>
         private static int? ParseNullableInt(decimal? value)
         {
             if (!value.HasValue)
@@ -796,6 +1236,9 @@ namespace Service.Services.SeaTaxUpload
             return decimal.ToInt32(decimal.Truncate(value.Value));
         }
 
+        /// <summary>
+        /// 將字串安全轉成 nullable DateTime。
+        /// </summary>
         private static DateTime? ParseDateTime(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -806,23 +1249,35 @@ namespace Service.Services.SeaTaxUpload
             return DateTime.TryParse(value, out var parsed) ? parsed : (DateTime?)null;
         }
 
+        /// <summary>
+        /// 將 nullable int 轉回字串表示。
+        /// </summary>
         private static string ToNullableIntText(int? value)
         {
             return value.HasValue ? value.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
         }
 
+        /// <summary>
+        /// 將 nullable decimal 轉回字串表示。
+        /// </summary>
         private static string ToNullableIntText(decimal? value)
         {
             var parsed = ParseNullableInt(value);
             return parsed.HasValue ? parsed.Value.ToString(CultureInfo.InvariantCulture) : string.Empty;
         }
 
+        /// <summary>
+        /// 將字串截斷到指定長度。
+        /// </summary>
         private static string Truncate(string value, int maxLength)
         {
             var text = NormalizeText(value);
             return text.Length <= maxLength ? text : text.Substring(0, maxLength);
         }
 
+        /// <summary>
+        /// 將文字轉換成指定語系版本。
+        /// </summary>
         private static string ConvertLanguage(string sourceString, string language)
         {
             switch (language)
@@ -836,187 +1291,5 @@ namespace Service.Services.SeaTaxUpload
             }
         }
 
-        private sealed class UploadKey
-        {
-            public UploadKey(string mainNumber, string blNo)
-            {
-                MainNumber = NormalizeKeyText(mainNumber);
-                BlNo = NormalizeKeyText(blNo);
-            }
-
-            public string MainNumber { get; }
-
-            public string BlNo { get; }
-        }
-
-        private sealed class SeaTaxUploadExcelRow
-        {
-            public string MainNumber { get; set; }
-
-            public string ClearanceNumber { get; set; }
-
-            public string ClearanceType { get; set; }
-
-            public string BlNo { get; set; }
-
-            public string RegNo { get; set; }
-
-            public string Mainfest { get; set; }
-
-            public string TaxNumber { get; set; }
-
-            public string TaxRecId { get; set; }
-
-            public string TaxPayer { get; set; }
-
-            public string Tax { get; set; }
-
-            public DateTime? PrtTime { get; set; }
-        }
-
-        private sealed class SeaTaxModifyRow
-        {
-            public int Id { get; set; }
-
-            public string DataType { get; set; }
-
-            public string MainNumber { get; set; }
-
-            public string BagNumber { get; set; }
-
-            public string MergeNumber { get; set; }
-
-            public string TaxNumber { get; set; }
-
-            public int? TaxBase { get; set; }
-
-            public int? TaxAmount { get; set; }
-
-            public string FreqSign { get; set; }
-
-            public string Status { get; set; }
-
-            public int? ModifySeq { get; set; }
-
-            public string ModifyFile { get; set; }
-
-            public DateTime? ModifyTime { get; set; }
-        }
-
-        private sealed class SeaTaxUploadJoinedRow
-        {
-            public string BlNo { get; set; }
-
-            public string ClearanceNumber { get; set; }
-
-            public string ClearanceType { get; set; }
-
-            public string Tax { get; set; }
-
-            public string TaxNumber { get; set; }
-
-            public string MainNumber { get; set; }
-
-            public DateTime? SignInTime { get; set; }
-
-            public DateTime? SignOutTime { get; set; }
-
-            public string TaxBase { get; set; }
-
-            public int? CodFee { get; set; }
-
-            public string IncludeTax { get; set; }
-
-            public string Company { get; set; }
-
-            public bool? IsCainiaoP { get; set; }
-
-            public string TaxPayer { get; set; }
-
-            public string TaxRecId { get; set; }
-
-            public string DespatchName { get; set; }
-
-            public string TransTaxPayment { get; set; }
-
-            public string Importer { get; set; }
-
-            public string ImporterPhone { get; set; }
-
-            public string ImporterAddr { get; set; }
-
-            public string ImporterId { get; set; }
-
-            public string JetfSerial { get; set; }
-
-            public decimal? Cod { get; set; }
-
-            public string Memo { get; set; }
-
-            public string Arrival { get; set; }
-        }
-
-        private sealed class SeaTaxFeeMasterRow
-        {
-            public string Source { get; set; }
-
-            public string Type { get; set; }
-
-            public string Customer { get; set; }
-
-            public string MainNumber { get; set; }
-
-            public string TrackingNo { get; set; }
-
-            public string ClearanceNumber { get; set; }
-
-            public string Combine { get; set; }
-
-            public string InDate { get; set; }
-
-            public string InDateTime { get; set; }
-
-            public string OutDateTime { get; set; }
-
-            public string TaxBase { get; set; }
-
-            public string Tax1 { get; set; }
-
-            public string Tax2 { get; set; } = string.Empty;
-
-            public string DlvCom { get; set; }
-
-            public string TaxNumber { get; set; }
-
-            public string TaxRecId { get; set; }
-
-            public string TaxPayer { get; set; }
-
-            public string Cod { get; set; }
-
-            public string Fee { get; set; }
-
-            public string IncludeTax { get; set; }
-
-            public string Recipient { get; set; }
-
-            public string RecPhone { get; set; }
-
-            public string RecAddress { get; set; }
-
-            public string RecId { get; set; }
-
-            public string ToDlvCod { get; set; }
-
-            public string DlvInv { get; set; }
-
-            public string Memo { get; set; }
-
-            public string Arrival { get; set; }
-
-            public string TransCod { get; set; } = string.Empty;
-
-            public string CustomerCod { get; set; } = string.Empty;
-        }
     }
 }

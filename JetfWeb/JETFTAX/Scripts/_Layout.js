@@ -45,10 +45,10 @@ mainApp.controller('LayoutController', function ($scope, $http) {
             ]
         },
         {
-            id: 'taxNew', title: '稅金操作(新)', icon: 'fas fa-fw fa-file-invoice-dollar', partner: 'Tax', children: [
-                { id: 'SeaTaxUploadNew', text: '1-1.海運稅金資料上傳(新)', url: '~/SeaTaxUpload/Index', auth: ['UploadSeaTax'] },
-                { id: 'DownloadSeaNew', text: '1-2.物流代收檔下載-海運(新)', url: '~/DownloadSeaNew/Index', auth: ['DownloadSeaTax'] },
-                { id: 'DownloadEtlNew', text: '1-3.物流代收檔下載-空運(新)', url: '~/DownloadEtlNew/Index', auth: ['DownloadEtlTax'] }
+            id: 'taxNew', title: '稅金操作(測試)', icon: 'fas fa-fw fa-file-invoice-dollar', partner: 'Tax', children: [
+                { id: 'SeaTaxUploadNew', text: '1-1.海運稅金資料上傳(測試)', url: '~/SeaTaxUpload/Index', auth: ['UploadSeaTax'] },
+                { id: 'DownloadSeaNew', text: '1-2.物流代收檔下載-海運(測試)', url: '~/DownloadSeaNew/Index', auth: ['DownloadSeaTax'] },
+                { id: 'DownloadEtlNew', text: '1-3.物流代收檔下載-空運(測試)', url: '~/DownloadEtlNew/Index', auth: ['DownloadEtlTax'] }
             ]
         },
         {
@@ -85,7 +85,6 @@ mainApp.controller('LayoutController', function ($scope, $http) {
         {
             id: 'workLoad', title: '作業量', icon: 'fas fa-fw fa-chart-bar', partner: 'WorkLoad', children: [
                 { id: 'CCStatusReport', text: '海空快通關狀態彙總表', url: '~/WorkLoad/CCStatusReport', auth: ['ClearanceStatusReport'] },
-                { id: 'CustWorkLoadReport', text: '空快客戶作業量報表', url: '~/EtlCustWorkLoad/CustWorkLoadReport', auth: ['EtlCustomerWorkLoadReport'] },
                 { id: 'EtlCustomerWorkLoadReport', text: '空快客戶作業量報表V2', url: '~/EtlCustomerWorkLoadReport/Index', auth: ['EtlCustomerWorkLoadReport'] },
                 { id: 'UploadFile', text: '上傳檔案(A03、B6F、班機派件送達)', url: '~/WorkLoad/UploadFile', auth: ['UploadFlightArrival'] },
                 { id: 'UploadFileEtlBagNo', text: '上傳空快錯單袋號', url: '~/WorkLoad/UploadFileEtlBagNo', auth: ['UploadEtlErrorBagNo'] },

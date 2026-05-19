@@ -3,3 +3,4 @@ obj/
 .vs/
 *.user
 *.suo
+JetfWeb/build_output.txt
