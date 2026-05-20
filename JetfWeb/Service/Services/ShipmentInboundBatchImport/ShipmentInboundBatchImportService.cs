@@ -148,7 +148,7 @@ namespace Service.Services.ShipmentInboundBatchImport
         /// <param name="shipmentInboundList">貨件入庫資料列表</param>
         private void CheckDuplicateData(List<ShipmentInboundModel> shipmentInboundList)
         {
-            _trackingNoService.CheckDuplicateData(shipmentInboundList);
+            _trackingNoService.CheckDuplicateData(shipmentInboundList, validateSeqNo: true);
         }
 
         /// <summary>

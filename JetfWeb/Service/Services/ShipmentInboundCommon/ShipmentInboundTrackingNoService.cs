@@ -127,6 +127,7 @@ namespace Service.Services.ShipmentInboundCommon
         public void CheckDuplicateData(
             List<ShipmentInboundModel> shipmentInboundList,
             IEnumerable<int> excludedShipmentInboundIds = null,
+            bool validateSeqNo = false,
             bool validateLocationCode = true,
             bool validateSourceType = true)
         {
@@ -139,10 +140,19 @@ namespace Service.Services.ShipmentInboundCommon
 
             foreach (var shipment in shipmentInboundList)
             {
+                shipment.SeqNo = shipment.SeqNo?.Trim();
+
                 if (string.IsNullOrWhiteSpace(shipment.TrackingNo) || shipment.InboundDate == DateTime.MinValue)
                 {
                     shipment.UploadStatus = "失敗";
                     shipment.FailReason = "入庫日期或追蹤單號為空";
+                    continue;
+                }
+
+                if (validateSeqNo && string.IsNullOrWhiteSpace(shipment.SeqNo))
+                {
+                    shipment.UploadStatus = "失敗";
+                    shipment.FailReason = "流水編號為空";
                     continue;
                 }
 
@@ -169,6 +179,7 @@ namespace Service.Services.ShipmentInboundCommon
             var validList = shipmentInboundList
                 .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo)
                     && x.InboundDate != DateTime.MinValue
+                    && (!validateSeqNo || !string.IsNullOrWhiteSpace(x.SeqNo))
                     && x.UploadStatus != "失敗")
                 .ToList();
 
@@ -177,10 +188,73 @@ namespace Service.Services.ShipmentInboundCommon
                 return;
             }
 
+            if (validateSeqNo)
+            {
+                var duplicateSeqNos = validList
+                    .GroupBy(x => x.SeqNo, StringComparer.OrdinalIgnoreCase)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => g.Key)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var shipment in validList.Where(x => duplicateSeqNos.Contains(x.SeqNo)))
+                {
+                    shipment.UploadStatus = "失敗";
+                    shipment.FailReason = "流水編號重複";
+                }
+
+                validList = validList
+                    .Where(x => x.UploadStatus != "失敗")
+                    .ToList();
+
+                if (validList.Count == 0)
+                {
+                    return;
+                }
+            }
+
             var trackingNos = validList.Select(x => x.TrackingNo).Distinct().ToList();
+            var seqNos = validateSeqNo
+                ? validList.Select(x => x.SeqNo).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+                : new List<string>();
             var excludedIdList = (excludedShipmentInboundIds ?? Enumerable.Empty<int>()).Distinct().ToList();
             var threeDaysAgo = DateTime.Now.Date.AddDays(-3);
             Dictionary<string, List<DateTime?>> existingDict;
+            HashSet<string> existingSeqNoSet;
+
+            if (validateSeqNo)
+            {
+                var seqNoQuery = JetfDb.ShipmentInbounds
+                    .AsNoTracking()
+                    .Where(x => seqNos.Contains(x.SeqNo));
+
+                if (excludedIdList.Count > 0)
+                {
+                    seqNoQuery = seqNoQuery.Where(x => !excludedIdList.Contains(x.Id));
+                }
+
+                existingSeqNoSet = seqNoQuery
+                    .Select(x => x.SeqNo)
+                    .ToList()
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var shipment in validList.Where(x => existingSeqNoSet.Contains(x.SeqNo)))
+                {
+                    shipment.UploadStatus = "失敗";
+                    shipment.FailReason = "流水編號重複";
+                }
+
+                validList = validList
+                    .Where(x => x.UploadStatus != "失敗")
+                    .ToList();
+
+                if (validList.Count == 0)
+                {
+                    return;
+                }
+
+                trackingNos = validList.Select(x => x.TrackingNo).Distinct().ToList();
+            }
 
             {
                 var query = JetfDb.ShipmentInbounds
