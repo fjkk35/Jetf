@@ -62,5 +62,17 @@ namespace Service.EnumTax
         /// </summary>
         [Description("空快現場帶回")]
         EtlSite = 9,
+
+        /// <summary>
+        /// 大榮退件
+        /// </summary>
+        [Description("大榮退件")]
+        Ktj = 10,
+
+        /// <summary>
+        /// 蝦皮現場帶回
+        /// </summary>
+        [Description("蝦皮現場帶回")]
+        ShopeeSite = 11,
     }
 }
