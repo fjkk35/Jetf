@@ -137,6 +137,25 @@ public sealed class PortalService(
     {
         try
         {
+            var seqNo = request.SeqNo ?? string.Empty;
+            if (string.IsNullOrEmpty(seqNo))
+            {
+                return ServiceResult.Fail(
+                    "SEQ_NO_REQUIRED",
+                    "流水編號必填",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var isDuplicateSeqNo = await IsDuplicateShipmentInboundSeqNoAsync(seqNo, cancellationToken);
+            if (isDuplicateSeqNo)
+            {
+                _logger.LogDebug("入庫流水編號重複 SeqNo: {SeqNo}", seqNo);
+                return ServiceResult.Fail(
+                    "DUPLICATE_SEQ_NO",
+                    "流水編號已存在，請確認後再寫入",
+                    StatusCodes.Status409Conflict);
+            }
+
             var isDuplicate = await IsDuplicateShipmentInboundAsync(request.TrackingNo, cancellationToken);
             if (isDuplicate)
             {
@@ -205,7 +224,7 @@ public sealed class PortalService(
 				DataType = dataType,
                 InboundDate = request.InboundDate.LocalDateTime,
 				TrackingNo = request.TrackingNo,
-				SeqNo = request.SeqNo,
+				SeqNo = seqNo,
  				LocationCode = request.LocationCode,
  				SourceType = request.SourceType,
  				ReturnTrackingNo = request.ReturnTrackingNo ?? string.Empty,
@@ -751,6 +770,29 @@ public sealed class PortalService(
         catch (Exception exception)
         {
             _logger.LogError(exception, "檢查入庫重複資料失敗，TrackingNo: {TrackingNo}", trackingNo);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 檢查入庫流水編號是否重複。
+    /// </summary>
+    /// <param name="seqNo">流水編號。</param>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>存在相同流水編號時回傳 true，否則回傳 false。</returns>
+    private async Task<bool> IsDuplicateShipmentInboundSeqNoAsync(string seqNo, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _jetfDbContext.ShipmentInbounds
+                .AsNoTracking()
+                .AnyAsync(
+                    entity => entity.SeqNo == seqNo,
+                    cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "檢查入庫流水編號重複失敗，SeqNo: {SeqNo}", seqNo);
             throw;
         }
     }

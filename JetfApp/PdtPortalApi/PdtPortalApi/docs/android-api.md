@@ -348,6 +348,7 @@ API 文件頁面:
 | --- | --- | --- |
 | 400 | VALIDATION_ERROR | request body 缺欄位 |
 | 401 | INVALID_SIGNATURE | 簽章錯誤或 timestamp 過期 |
+| 409 | DUPLICATE_SEQ_NO | 流水編號重複 |
 | 409 | DUPLICATE_TRACKING_NO | 入庫資料重複 |
 | 500 | INTERNAL_SERVER_ERROR | 系統錯誤 |
 

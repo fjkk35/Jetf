@@ -89,7 +89,9 @@ public sealed class ShipmentInboundController(
     /// <returns>寫入結果。</returns>
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ApiResponse<bool>>> CreateAsync(
         [FromHeader(Name = "X-Timestamp")] long timestamp,
