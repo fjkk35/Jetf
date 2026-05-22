@@ -43,6 +43,25 @@ namespace Service.Services.ShipmentInboundReturnImport
                 var failList = shipmentInboundList.FindAll(x => x.UploadStatus == "失敗");
                 var successList = shipmentInboundList.FindAll(x => x.UploadStatus == "成功");
 
+                if (failList.Count > 0)
+                {
+                    var failMessage = $"上傳失敗，共 {failList.Count} 筆資料有錯誤，整批未寫入";
+
+                    return new ResponseModel
+                    {
+                        IsSuccess = false,
+                        status = Status.error,
+                        msg = failMessage,
+                        ReturnObject = new
+                        {
+                            count = 0,
+                            failCount = failList.Count,
+                            data = failList,
+                            message = failMessage
+                        }
+                    };
+                }
+
                 if (successList.Count > 0)
                 {
                     InsertShipmentInbound(successList);
