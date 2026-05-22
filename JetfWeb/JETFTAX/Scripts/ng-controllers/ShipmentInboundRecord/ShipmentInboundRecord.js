@@ -404,8 +404,13 @@
     // 產生頁碼陣列
     $scope.getPages = function () {
         var pages = [];
-        var startPage = Math.max(1, $scope.currentPage - 2);
-        var endPage = Math.min($scope.totalPages, $scope.currentPage + 2);
+        var maxVisible = 10;
+        var startPage = Math.max(1, $scope.currentPage - Math.floor(maxVisible / 2));
+        var endPage = Math.min($scope.totalPages, startPage + maxVisible - 1);
+
+        if (endPage - startPage < maxVisible - 1) {
+            startPage = Math.max(1, endPage - maxVisible + 1);
+        }
 
         for (var i = startPage; i <= endPage; i++) {
             pages.push(i);
@@ -421,7 +426,7 @@
 
         var start = ($scope.currentPage - 1) * parseInt($scope.pageSize) + 1;
         var end = Math.min($scope.currentPage * parseInt($scope.pageSize), $scope.totalCount);
-        $scope.recordsInfo = '顯示第 ' + start + ' 至 ' + end + ' 筆，共 ' + $scope.totalCount + ' 筵';
+        $scope.recordsInfo = '顯示第 ' + start + ' 至 ' + end + ' 筆，共 ' + $scope.totalCount + ' 筆';
     }
 
     // 格式化日期
