@@ -44,6 +44,10 @@ namespace Service.Services.ShipmentInboundReturnImport.Domain
 
         public string OutboundTrackingNo { get; set; }
 
+        public string UnknownShipmentFlag { get; set; }
+
+        public bool IsOrderOriginal { get; set; }
+
         public string CustCode { get; set; }
 
         public string TransNo { get; set; }

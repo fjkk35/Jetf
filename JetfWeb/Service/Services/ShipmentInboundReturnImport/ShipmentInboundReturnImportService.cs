@@ -120,6 +120,7 @@ namespace Service.Services.ShipmentInboundReturnImport
                         ReturnTrackingNo = row.GetCellData(11),
                         Size = row.GetCellData(12),
                         OutboundTrackingNo = row.GetCellData(13),
+                        UnknownShipmentFlag = row.GetCellData(14),
                         UploadOpe = GetUserId()
                     };
 
@@ -161,7 +162,8 @@ namespace Service.Services.ShipmentInboundReturnImport
                 && string.IsNullOrWhiteSpace(model.ReturnReason)
                 && string.IsNullOrWhiteSpace(model.ReturnTrackingNo)
                 && string.IsNullOrWhiteSpace(model.Size)
-                && string.IsNullOrWhiteSpace(model.OutboundTrackingNo);
+                && string.IsNullOrWhiteSpace(model.OutboundTrackingNo)
+                && string.IsNullOrWhiteSpace(model.UnknownShipmentFlag);
         }
 
         private bool TryParseDate(string dateString, out DateTime result)
@@ -207,7 +209,23 @@ namespace Service.Services.ShipmentInboundReturnImport
                 shipment.Size = shipment.Size?.Trim();
                 shipment.Remark = shipment.Remark?.Trim();
                 shipment.OutboundTrackingNo = shipment.OutboundTrackingNo?.Trim();
+                shipment.UnknownShipmentFlag = shipment.UnknownShipmentFlag?.Trim();
                 shipment.TransName = shipment.DispatchName;
+
+                if (!string.IsNullOrWhiteSpace(shipment.UnknownShipmentFlag)
+                    && !string.Equals(shipment.UnknownShipmentFlag, "V", StringComparison.OrdinalIgnoreCase))
+                {
+                    shipment.UploadStatus = "失敗";
+                    shipment.FailReason = "是否不明貨件只允許空白或 V";
+                    continue;
+                }
+
+                shipment.IsOrderOriginal = !string.Equals(shipment.UnknownShipmentFlag, "V", StringComparison.OrdinalIgnoreCase);
+
+                if (!shipment.IsOrderOriginal)
+                {
+                    continue;
+                }
 
                 if (shipment.DataType == "海運")
                 {
@@ -334,14 +352,14 @@ namespace Service.Services.ShipmentInboundReturnImport
                     shipment.OutboundDate = outboundDate;
                 }
 
-                if (string.IsNullOrWhiteSpace(shipment.VendorName))
+                if (shipment.IsOrderOriginal && string.IsNullOrWhiteSpace(shipment.VendorName))
                 {
                     shipment.UploadStatus = "失敗";
                     shipment.FailReason = "廠商為空";
                     continue;
                 }
 
-                if (string.IsNullOrWhiteSpace(shipment.DispatchName))
+                if (shipment.IsOrderOriginal && string.IsNullOrWhiteSpace(shipment.DispatchName))
                 {
                     shipment.UploadStatus = "失敗";
                     shipment.FailReason = "派件為空";
@@ -369,7 +387,7 @@ namespace Service.Services.ShipmentInboundReturnImport
                     continue;
                 }
 
-                if (string.IsNullOrWhiteSpace(shipment.CustCode))
+                if (shipment.IsOrderOriginal && string.IsNullOrWhiteSpace(shipment.CustCode))
                 {
                     shipment.UploadStatus = "失敗";
                     shipment.FailReason = shipment.DataType == "海運"
@@ -527,6 +545,7 @@ namespace Service.Services.ShipmentInboundReturnImport
                         OutboundDate = x.OutboundDate,
                         OutboundTrackingNo = x.OutboundTrackingNo,
                         WarehouseProcessType = x.WarehouseProcessType,
+                        IsOrderOriginal = x.IsOrderOriginal,
                         UploadOpe = x.UploadOpe,
                         CreatedTime = DateTime.Now
                     }).ToList();
