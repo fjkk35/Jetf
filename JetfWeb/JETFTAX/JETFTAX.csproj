@@ -349,6 +349,7 @@
     <Compile Include="Controllers\SevenElevenEtlTaxController.cs" />
     <Compile Include="Controllers\ShenzhenController.cs" />
     <Compile Include="Controllers\ShipmentInboundBatchImportController.cs" />
+    <Compile Include="Controllers\ShipmentInboundReturnImportController.cs" />
     <Compile Include="Controllers\ShipmentInboundLocationTransferController.cs" />
     <Compile Include="Controllers\ShipmentInboundPickController.cs" />
     <Compile Include="Controllers\ShipmentInboundProcessController.cs" />
@@ -837,6 +838,7 @@
     <Content Include="Scripts\ng-controllers\Download\DownloadSeaNew.js" />
     <Content Include="Scripts\ng-controllers\Upload\SeaTaxUpload.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundBatchImport\ShipmentInboundBatchImport.js" />
+    <Content Include="Scripts\ng-controllers\ShipmentInboundReturnImport\ShipmentInboundReturnImport.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundLocationTransfer\ShipmentInboundLocationTransfer.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundPick\ShipmentInboundPick.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundProcess\ShipmentInboundProcess.js" />
@@ -2929,6 +2931,7 @@
     <Content Include="Views\EtlErrorWork\Index.cshtml" />
     <Content Include="Views\EtlCustomerWorkLoadReport\Index.cshtml" />
     <Content Include="Views\ShipmentInboundBatchImport\Index.cshtml" />
+    <Content Include="Views\ShipmentInboundReturnImport\Index.cshtml" />
     <Content Include="Views\ShipmentInboundProcess\Index.cshtml" />
     <Content Include="Views\ShipmentInboundProcessStage\Index.cshtml" />
     <Content Include="Views\ShipmentInboundExceptionRecord\Index.cshtml" />

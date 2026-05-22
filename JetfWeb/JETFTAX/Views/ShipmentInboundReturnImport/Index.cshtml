@@ -1,0 +1,96 @@
+﻿@{
+    ViewBag.Title = "貨件導入上傳";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="ShipmentInboundReturnImportController">
+    <span class="headtype">貨件導入上傳</span>
+    <hr />
+
+    <div class="containertype">
+        <div class="col-lg-12" style="margin-bottom:0.5rem;">
+            <label>進口方式</label>
+            <select class="form-control" ng-model="dataType">
+                <option value="">請選擇</option>
+                <option value="海運">海運</option>
+                <option value="空運">空運</option>
+            </select>
+        </div>
+
+        <div class="col-lg-12" style="margin-bottom:0.5rem;">
+            <label>選擇檔案</label>
+            <input type="file" id="shipmentInboundReturnImportFileInput" accept=".xlsx" class="form-control" />
+        </div>
+
+        <div class="col-lg-12 text-muted" style="margin:0.5rem 0;">
+            Excel 欄位順序：清點日期、廠商、派件、單號/袋號、流水編號、板號、貨物來源、貨物狀態、出貨日期、備註、退件原因、退貨單號、尺寸、重派件單號
+        </div>
+
+        <div class="col-lg-12" style="margin:0.5rem 0;">
+            <button type="button" class="btn btn-primary confirmbtn" ng-click="uploadFile()" ng-disabled="uploading">
+                <i class="fas fa-upload"></i> {{ uploading ? '上傳中...' : '上傳' }}
+            </button>
+        </div>
+
+        <div class="loader loader-bar" ng-class="{'is-active': uploading}" data-rounded data-text="檔案上傳中"></div>
+
+        <div class="col-lg-12" style="margin-top:1rem;" ng-if="uploadResult">
+            <div class="alert" ng-class="{'alert-success': uploadResult.success, 'alert-danger': !uploadResult.success}">
+                {{ uploadResult.message }}
+            </div>
+        </div>
+
+        <div class="col-lg-12" style="margin-top:1rem;" ng-if="uploadData && uploadData.length > 0">
+            <h4>失敗明細（共 {{ uploadData.length }} 筆）</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>狀態</th>
+                            <th>失敗原因</th>
+                            <th>進口方式</th>
+                            <th>清點日期</th>
+                            <th>廠商</th>
+                            <th>派件</th>
+                            <th>單號/袋號</th>
+                            <th>流水編號</th>
+                            <th>板號</th>
+                            <th>貨物來源</th>
+                            <th>貨物狀態</th>
+                            <th>出貨日期</th>
+                            <th>備註</th>
+                            <th>退件原因</th>
+                            <th>退貨單號</th>
+                            <th>尺寸</th>
+                            <th>重派件單號</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="item in uploadData" ng-class="{'table-danger': item.UploadStatus === '失敗', 'table-success': item.UploadStatus === '成功'}">
+                            <td>
+                                <span ng-if="item.UploadStatus === '成功'" class="badge badge-success">{{ item.UploadStatus }}</span>
+                                <span ng-if="item.UploadStatus === '失敗'" class="badge badge-danger">{{ item.UploadStatus }}</span>
+                            </td>
+                            <td>{{ item.FailReason }}</td>
+                            <td>{{ item.DataType }}</td>
+                            <td>{{ item.InboundDate | customDate }}</td>
+                            <td>{{ item.VendorName }}</td>
+                            <td>{{ item.DispatchName }}</td>
+                            <td>{{ item.TrackingNo }}</td>
+                            <td>{{ item.SeqNo }}</td>
+                            <td>{{ item.LocationCode }}</td>
+                            <td>{{ item.SourceTypeDisplay }}</td>
+                            <td>{{ item.WarehouseProcessTypeText }}</td>
+                            <td>{{ item.OutboundDate | customDate }}</td>
+                            <td>{{ item.Remark }}</td>
+                            <td>{{ item.ReturnReason }}</td>
+                            <td>{{ item.ReturnTrackingNo }}</td>
+                            <td>{{ item.Size }}</td>
+                            <td>{{ item.OutboundTrackingNo }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
