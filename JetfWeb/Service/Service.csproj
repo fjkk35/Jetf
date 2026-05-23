@@ -222,8 +222,11 @@
       <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.7\lib\net45\System.Web.WebPages.Razor.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="Z.EntityFramework.Extensions">
-      <HintPath>..\packages\Z.EntityFramework.Extensions.10.105.5\lib\net45\Z.EntityFramework.Extensions.dll</HintPath>
+    <Reference Include="Z.EntityFramework.Plus.EF6">
+      <HintPath>..\packages\Z.EntityFramework.Plus.EF6.10.105.5\lib\net45\Z.EntityFramework.Plus.EF6.dll</HintPath>
+    </Reference>
+    <Reference Include="Z.Expressions.Eval">
+      <HintPath>..\packages\Z.Expressions.Eval.6.3.10\lib\net45\Z.Expressions.Eval.dll</HintPath>
     </Reference>
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -342,6 +345,7 @@
     <Compile Include="Extensions\ConvertToDateTimeExtensions.cs" />
     <Compile Include="Extensions\ConvertToEnumExtensions.cs" />
     <Compile Include="Extensions\ConvertToNumberExtensions.cs" />
+    <Compile Include="Extensions\EntityFrameworkBulkExtensions.cs" />
     <Compile Include="Extensions\SqlBuilderExtensions.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="Extensions\EnumHelper.cs" />

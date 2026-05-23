@@ -9,6 +9,7 @@ using Service.Models.Tax;
 using Service.Services.Tax;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Entity;
 using System.Data.SqlClient;
 using System.Globalization;
@@ -346,9 +347,9 @@ and not exists (
             DateTime uploadTime,
             string userId)
         {
-            Logger.Debug($"step8-1 開始: 使用 join 查詢清關、稅基與原單資料，來源筆數={uploadRows.Count}");
-            var joinedRows = GetJoinedUploadRows(jetfDb, uploadTime, userId);
-            Logger.Debug($"step8-1 結束: 完成 join 查詢，整併筆數={joinedRows.Count}");
+            Logger.Debug($"step8-1 開始: 分開查詢清關、稅基與原單資料，來源筆數={uploadRows.Count}");
+            var joinedRows = GetJoinedUploadRows(jetfDb, dataCenterDb, uploadTime, userId);
+            Logger.Debug($"step8-1 結束: 完成資料整併，整併筆數={joinedRows.Count}");
 
             Logger.Debug("step8-2 開始: 建立客戶主檔與特殊客戶資料");
             var customerMasters = GetSeaCustomerLookup(jetfDb, joinedRows);
@@ -464,95 +465,187 @@ and not exists (
         /// </summary>
         private List<SeaTaxUploadJoinedRow> GetJoinedUploadRows(
             JetfDbContext jetfDb,
+            DataCenterDbContext dataCenterDb,
             DateTime uploadTime,
             string userId)
         {
-            var sql = @"
-with CTE_SEA_ORDER_ORIGINAL as 
-(
-        select MAINNUMBER,BL_NO,DESPATCH_NAME as DespatchName,TRANS_TAXPAYMENT,IMPORTER,IM_PHONENO as ImporterPhone,IM_ADD as ImporterAddr,IMPORTER_ID,JETF_SERIAL,CC,MEMO,ARRIVAL
-    from DATA_CENTER.dbo.SEA_ORDER_ORIGINAL a
-    where GW > 0 and MODIFTYDATE = (
-        select MAX(MODIFTYDATE)
-        from DATA_CENTER.dbo.SEA_ORDER_ORIGINAL
-        where BL_NO = a.BL_NO and MAINNUMBER = a.MAINNUMBER)
-),
-CTE_ETL_TIPC_TAX as
-(
-    select ROW_ID,MAIN_NUMBER,BAG_NUMBER,TAX_NUMBER,TAX_BASE,TAX_AMOUNT
-    from DATA_CENTER.dbo.ETL_TIPC_TAX a
-    where ROW_ID = (
-        select MAX(ROW_ID)
-        from DATA_CENTER.dbo.ETL_TIPC_TAX
-        where MAIN_NUMBER = a.MAIN_NUMBER and BAG_NUMBER = a.BAG_NUMBER)
-)
-select
-    a.BL_NO as BlNo,
-    a.CLEARANCE_NUMBER as ClearanceNumber,
-    a.CLEARANCE_TYPE as ClearanceType,
-    a.TAX as Tax,
-    a.TAX_NUMBER as TaxNumber,
-    a.MAIN_NUMBER as MainNumber,
-    b.SIGN_IN_TIME as SignInTime,
-    b.SIGN_OUT_TIME as SignOutTime,
-    d.TAX_BASE as TaxBase,
-    cast(null as int) as CodFee,
-    cast(null as nvarchar(10)) as IncludeTax,
-    cast(null as nvarchar(50)) as Company,
-    cast(null as bit) as IsCainiaoP,
-    a.TAX_PAYER as TaxPayer,
-    a.TAX_RECID as TaxRecId,
-    c.DespatchName,
-    c.TRANS_TAXPAYMENT as TransTaxPayment,
-    c.IMPORTER as Importer,
-    c.ImporterPhone,
-    c.ImporterAddr,
-    c.IMPORTER_ID as ImporterId,
-    c.JETF_SERIAL as JetfSerial,
-    c.CC as Cod,
-    c.MEMO as Memo,
-    c.ARRIVAL as Arrival
-from jetf.dbo.SEA_TAX_UPLOAD a
-left join DATA_CENTER.dbo.CLEARANCE_INFO b on a.MAIN_NUMBER = b.MAIN_NUMBER and a.BL_NO = b.BAG_NUMBER
-left join CTE_SEA_ORDER_ORIGINAL c on a.MAIN_NUMBER = c.MAINNUMBER and a.BL_NO = c.BL_NO
-left join CTE_ETL_TIPC_TAX d on b.MAIN_NUMBER = d.MAIN_NUMBER and b.BAG_NUMBER = d.BAG_NUMBER
-where a.UPLOAD_TIME = @UPLOAD_TIME and a.UPLOAD_OPE = @UPLOAD_OPE
-";
-
-            return jetfDb.Database.SqlQuery<SeaTaxUploadJoinedRow>(
-                    sql,
-                    new SqlParameter("@UPLOAD_TIME", uploadTime),
-                    new SqlParameter("@UPLOAD_OPE", userId))
+            var uploadRows = jetfDb.SeaTaxUploads
+                .AsNoTracking()
+                .Where(row => row.UploadTime == uploadTime && row.UploadOpe == userId)
                 .ToList()
-                .Select(row => new SeaTaxUploadJoinedRow
-                {
-                    BlNo = NormalizeText(row.BlNo),
-                    ClearanceNumber = NormalizeText(row.ClearanceNumber),
-                    ClearanceType = NormalizeText(row.ClearanceType),
-                    Tax = NormalizeText(row.Tax),
-                    TaxNumber = NormalizeText(row.TaxNumber),
-                    MainNumber = NormalizeText(row.MainNumber),
-                    SignInTime = row.SignInTime,
-                    SignOutTime = row.SignOutTime,
-                    TaxBase = NormalizeText(row.TaxBase),
-                    CodFee = row.CodFee,
-                    IncludeTax = NormalizeText(row.IncludeTax),
-                    Company = NormalizeText(row.Company),
-                    IsCainiaoP = row.IsCainiaoP,
-                    TaxPayer = NormalizeText(row.TaxPayer),
-                    TaxRecId = NormalizeText(row.TaxRecId),
-                    DespatchName = NormalizeText(row.DespatchName),
-                    TransTaxPayment = NormalizeText(row.TransTaxPayment),
-                    Importer = NormalizeText(row.Importer),
-                    ImporterPhone = NormalizeText(row.ImporterPhone),
-                    ImporterAddr = NormalizeText(row.ImporterAddr),
-                    ImporterId = NormalizeText(row.ImporterId),
-                    JetfSerial = NormalizeText(row.JetfSerial),
-                    Cod = row.Cod,
-                    Memo = NormalizeText(row.Memo),
-                    Arrival = NormalizeText(row.Arrival)
-                })
+                .Select(NormalizeSeaTaxUpload)
                 .ToList();
+
+            if (uploadRows.Count == 0)
+            {
+                return new List<SeaTaxUploadJoinedRow>();
+            }
+
+            var uploadKeys = uploadRows
+                .Select(row => new UploadKey(row.MainNumber, row.BlNo))
+                .ToList();
+
+            var clearanceLookup = GetClearanceInfoLookup(dataCenterDb, uploadKeys);
+            var latestOrderLookup = GetLatestSeaOrderLookup(dataCenterDb, uploadKeys)
+                .ToDictionary(row => BuildLookupKey(row.MainNumber, row.BlNo), row => row);
+            var latestTaxLookup = GetLatestEtlTipcTaxLookup(dataCenterDb, uploadKeys);
+
+            return uploadRows
+                .SelectMany(row => CreateJoinedRows(row, clearanceLookup, latestOrderLookup, latestTaxLookup))
+                .ToList();
+        }
+
+        /// <summary>
+        /// 將本次 SEA_TAX_UPLOAD 的基礎欄位先標準化。
+        /// </summary>
+        private static SeaTaxUploadJoinedRow NormalizeSeaTaxUpload(SeaTaxUploadEntity row)
+        {
+            return new SeaTaxUploadJoinedRow
+            {
+                BlNo = NormalizeText(row.BlNo),
+                ClearanceNumber = NormalizeText(row.ClearanceNumber),
+                ClearanceType = NormalizeText(row.ClearanceType),
+                Tax = NormalizeText(row.Tax),
+                TaxNumber = NormalizeText(row.TaxNumber),
+                MainNumber = NormalizeText(row.MainNumber),
+                TaxPayer = NormalizeText(row.TaxPayer),
+                TaxRecId = NormalizeText(row.TaxRecId)
+            };
+        }
+
+        /// <summary>
+        /// 模擬原本 left join 的組合方式，將各查詢結果用 dictionary/lookup 組回 joined row。
+        /// </summary>
+        private static IEnumerable<SeaTaxUploadJoinedRow> CreateJoinedRows(
+            SeaTaxUploadJoinedRow uploadRow,
+            ILookup<string, ClearanceInfoEntity> clearanceLookup,
+            Dictionary<string, SeaOrderOriginalEntity> latestOrderLookup,
+            Dictionary<string, EtlTipcTaxEntity> latestTaxLookup)
+        {
+            var key = BuildLookupKey(uploadRow.MainNumber, uploadRow.BlNo);
+            SeaOrderOriginalEntity order;
+            latestOrderLookup.TryGetValue(key, out order);
+
+            var clearanceRows = clearanceLookup[key].ToList();
+            if (clearanceRows.Count == 0)
+            {
+                yield return CreateJoinedRow(uploadRow, null, order, null);
+                yield break;
+            }
+
+            foreach (var clearance in clearanceRows)
+            {
+                EtlTipcTaxEntity tax = null;
+                latestTaxLookup.TryGetValue(BuildLookupKey(clearance.MainNumber, clearance.BagNumber), out tax);
+                yield return CreateJoinedRow(uploadRow, clearance, order, tax);
+            }
+        }
+
+        /// <summary>
+        /// 將單筆 upload、清關、原單、稅基資料組成後續流程使用的 joined row。
+        /// </summary>
+        private static SeaTaxUploadJoinedRow CreateJoinedRow(
+            SeaTaxUploadJoinedRow uploadRow,
+            ClearanceInfoEntity clearance,
+            SeaOrderOriginalEntity order,
+            EtlTipcTaxEntity tax)
+        {
+            return new SeaTaxUploadJoinedRow
+            {
+                BlNo = uploadRow.BlNo,
+                ClearanceNumber = uploadRow.ClearanceNumber,
+                ClearanceType = uploadRow.ClearanceType,
+                Tax = uploadRow.Tax,
+                TaxNumber = uploadRow.TaxNumber,
+                MainNumber = uploadRow.MainNumber,
+                SignInTime = clearance?.SignInTime,
+                SignOutTime = clearance?.SignOutTime,
+                TaxBase = NormalizeText(tax?.TaxBase),
+                CodFee = null,
+                IncludeTax = string.Empty,
+                Company = string.Empty,
+                IsCainiaoP = null,
+                TaxPayer = uploadRow.TaxPayer,
+                TaxRecId = uploadRow.TaxRecId,
+                DespatchName = NormalizeText(order?.DespatchName),
+                TransTaxPayment = NormalizeText(order?.TransTaxPayment),
+                Importer = NormalizeText(order?.Importer),
+                ImporterPhone = NormalizeText(order?.ImporterPhone),
+                ImporterAddr = NormalizeText(order?.ImporterAddr),
+                ImporterId = NormalizeText(order?.ImporterId),
+                JetfSerial = NormalizeText(order?.JetfSerial),
+                Cod = order?.CC,
+                Memo = NormalizeText(order?.Memo),
+                Arrival = NormalizeText(order?.Arrival)
+            };
+        }
+
+        /// <summary>
+        /// 依主號與提單抓取清關資料，保留同 key 多筆清關資料以維持原本 left join 行為。
+        /// </summary>
+        private static ILookup<string, ClearanceInfoEntity> GetClearanceInfoLookup(
+            DataCenterDbContext dataCenterDb,
+            List<UploadKey> uploadKeys)
+        {
+            var normalizedKeys = NormalizeUploadKeys(uploadKeys);
+            if (normalizedKeys.Count == 0)
+            {
+                return Enumerable.Empty<ClearanceInfoEntity>().ToLookup(row => string.Empty);
+            }
+
+            var sql = @"
+select
+    b.ROW_ID as RowId,
+    b.MAIN_NUMBER as MainNumber,
+    b.BAG_NUMBER as BagNumber,
+    b.SIGN_IN_TIME as SignInTime,
+    b.SIGN_OUT_TIME as SignOutTime
+from dbo.CLEARANCE_INFO b
+inner join #UploadKeys k
+    on b.MAIN_NUMBER = k.MainNumber
+    and b.BAG_NUMBER = k.BagNumber";
+
+            return QueryWithTempUploadKeys<ClearanceInfoEntity>(dataCenterDb, normalizedKeys, sql)
+                .ToLookup(row => BuildLookupKey(row.MainNumber, row.BagNumber));
+        }
+
+        /// <summary>
+        /// 依主號與提單抓取最新的 TIPC 稅基資料。
+        /// </summary>
+        private static Dictionary<string, EtlTipcTaxEntity> GetLatestEtlTipcTaxLookup(
+            DataCenterDbContext dataCenterDb,
+            List<UploadKey> uploadKeys)
+        {
+            var normalizedKeys = NormalizeUploadKeys(uploadKeys);
+            if (normalizedKeys.Count == 0)
+            {
+                return new Dictionary<string, EtlTipcTaxEntity>();
+            }
+
+            var sql = @"
+with LatestTax as
+(
+    select
+        t.ROW_ID as RowId,
+        t.MAIN_NUMBER as MainNumber,
+        t.BAG_NUMBER as BagNumber,
+        t.TAX_BASE as TaxBase,
+        row_number() over (
+            partition by t.MAIN_NUMBER, t.BAG_NUMBER
+            order by t.ROW_ID desc) as RowNo
+    from dbo.ETL_TIPC_TAX t
+    inner join #UploadKeys k
+        on t.MAIN_NUMBER = k.MainNumber
+        and t.BAG_NUMBER = k.BagNumber
+)
+select RowId, MainNumber, BagNumber, TaxBase
+from LatestTax
+where RowNo = 1";
+
+            return QueryWithTempUploadKeys<EtlTipcTaxEntity>(dataCenterDb, normalizedKeys, sql)
+                .ToDictionary(
+                    row => BuildLookupKey(row.MainNumber, row.BagNumber),
+                    row => row);
         }
 
         /// <summary>
@@ -562,50 +655,157 @@ where a.UPLOAD_TIME = @UPLOAD_TIME and a.UPLOAD_OPE = @UPLOAD_OPE
             DataCenterDbContext dataCenterDb,
             List<UploadKey> uploadKeys)
         {
-            var normalizedKeys = (uploadKeys ?? new List<UploadKey>())
-                .Select(row => new
-                {
-                    MainNumber = NormalizeText(row.MainNumber),
-                    BlNo = NormalizeText(row.BlNo)
-                })
-                .Where(row => !string.IsNullOrWhiteSpace(row.MainNumber) && !string.IsNullOrWhiteSpace(row.BlNo))
-                .Distinct()
-                .ToList();
-
+            var normalizedKeys = NormalizeUploadKeys(uploadKeys);
             if (normalizedKeys.Count == 0)
             {
                 return new List<SeaOrderOriginalEntity>();
             }
 
-            var mainNumbers = normalizedKeys.Select(row => row.MainNumber).Distinct().ToList();
-            var bagNumbers = normalizedKeys.Select(row => row.BlNo).Distinct().ToList();
+            var sql = @"
+with LatestOrder as
+(
+    select
+        o.ROW_ID as RowId,
+        o.MAINNUMBER as MainNumber,
+        o.BL_NO as BlNo,
+        o.DESPATCH_NAME as DespatchName,
+        o.TRANS_TAXPAYMENT as TransTaxPayment,
+        o.IMPORTER as Importer,
+        o.IM_PHONENO as ImporterPhone,
+        o.IM_ADD as ImporterAddress,
+        o.IMPORTER_ID as ImporterId,
+        o.JETF_SERIAL as JetfSerial,
+        o.CC as Cc,
+        o.MEMO as Memo,
+        o.ARRIVAL as Arrival,
+        o.MODIFTYDATE as ModifyDate,
+        row_number() over (
+            partition by o.MAINNUMBER, o.BL_NO
+            order by isnull(o.MODIFTYDATE, '19000101') desc, o.ROW_ID desc) as RowNo
+    from dbo.SEA_ORDER_ORIGINAL o
+    inner join #UploadKeys k
+        on o.MAINNUMBER = k.MainNumber
+        and o.BL_NO = k.BagNumber
+    where o.GW > 0
+)
+select
+    RowId,
+    MainNumber,
+    BlNo,
+    DespatchName,
+    TransTaxPayment,
+    Importer,
+    ImporterPhone,
+    ImporterAddress,
+    ImporterId,
+    JetfSerial,
+    Cc,
+    Memo,
+    Arrival,
+    ModifyDate
+from LatestOrder
+where RowNo = 1";
 
-            return (from row in dataCenterDb.SeaOrderOriginals
-                .AsNoTracking()
-                .Where(row => row.Gw.HasValue && row.Gw.Value > 0 && mainNumbers.Contains(row.MainNumber) && bagNumbers.Contains(row.BlNo))
-                .ToList()
-                    join key in normalizedKeys
-                        on new
-                        {
-                            MainNumber = NormalizeText(row.MainNumber),
-                            BlNo = NormalizeText(row.BlNo)
-                        }
-                        equals new
-                        {
-                            key.MainNumber,
-                            key.BlNo
-                        }
-                    select row)
-                .GroupBy(row => new
-                {
-                    MainNumber = NormalizeText(row.MainNumber),
-                    BlNo = NormalizeText(row.BlNo)
-                })
-                .Select(group => group
-                    .OrderByDescending(row => row.ModifyDate ?? DateTime.MinValue)
-                    .ThenByDescending(row => row.Id)
-                    .First())
+            return QueryWithTempUploadKeys<SeaOrderOriginalEntity>(dataCenterDb, normalizedKeys, sql);
+        }
+
+        /// <summary>
+        /// 將查詢 key 標準化並去除重複，供分段查詢與 dictionary 組回資料使用。
+        /// </summary>
+        private static List<UploadKey> NormalizeUploadKeys(IEnumerable<UploadKey> uploadKeys)
+        {
+            return (uploadKeys ?? Enumerable.Empty<UploadKey>())
+                .Select(row => new UploadKey(row.MainNumber, row.BlNo))
+                .Where(row => !string.IsNullOrWhiteSpace(row.MainNumber) && !string.IsNullOrWhiteSpace(row.BlNo))
+                .GroupBy(row => BuildLookupKey(row.MainNumber, row.BlNo))
+                .Select(group => group.First())
                 .ToList();
+        }
+
+        /// <summary>
+        /// 用暫存表承接大量主號/提單 key，再以 SQL join 查詢，避免產生大量 IN 條件。
+        /// </summary>
+        private static List<T> QueryWithTempUploadKeys<T>(
+            DataCenterDbContext dataCenterDb,
+            IEnumerable<UploadKey> uploadKeys,
+            string sql)
+        {
+            var keys = NormalizeUploadKeys(uploadKeys);
+            if (keys.Count == 0)
+            {
+                return new List<T>();
+            }
+
+            var connection = (SqlConnection)dataCenterDb.Database.Connection;
+            var shouldClose = connection.State == ConnectionState.Closed;
+            var transaction = dataCenterDb.Database.CurrentTransaction?.UnderlyingTransaction as SqlTransaction;
+
+            if (shouldClose)
+            {
+                connection.Open();
+            }
+
+            try
+            {
+                using (var command = new SqlCommand(@"
+create table #UploadKeys
+(
+    MainNumber nvarchar(100) not null,
+    BagNumber nvarchar(100) not null
+)", connection, transaction))
+                {
+                    command.ExecuteNonQuery();
+                }
+
+                using (var bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction))
+                {
+                    bulkCopy.DestinationTableName = "#UploadKeys";
+                    bulkCopy.BatchSize = 5000;
+                    bulkCopy.BulkCopyTimeout = CommandTimeoutSeconds;
+                    bulkCopy.ColumnMappings.Add("MainNumber", "MainNumber");
+                    bulkCopy.ColumnMappings.Add("BagNumber", "BagNumber");
+                    bulkCopy.WriteToServer(CreateUploadKeyTable(keys));
+                }
+
+                return dataCenterDb.Database.SqlQuery<T>(sql).ToList();
+            }
+            finally
+            {
+                using (var command = new SqlCommand("if object_id('tempdb..#UploadKeys') is not null drop table #UploadKeys", connection, transaction))
+                {
+                    command.ExecuteNonQuery();
+                }
+
+                if (shouldClose)
+                {
+                    connection.Close();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 建立 SqlBulkCopy 寫入暫存表用的 key table。
+        /// </summary>
+        private static DataTable CreateUploadKeyTable(IEnumerable<UploadKey> uploadKeys)
+        {
+            var table = new DataTable();
+            table.Columns.Add("MainNumber", typeof(string));
+            table.Columns.Add("BagNumber", typeof(string));
+
+            foreach (var key in uploadKeys)
+            {
+                table.Rows.Add(key.MainNumber, key.BlNo);
+            }
+
+            return table;
+        }
+
+        /// <summary>
+        /// 產生主號與提單的 dictionary key。
+        /// </summary>
+        private static string BuildLookupKey(string mainNumber, string blNo)
+        {
+            return string.Concat(NormalizeText(mainNumber), "\t", NormalizeText(blNo));
         }
 
         /// <summary>
