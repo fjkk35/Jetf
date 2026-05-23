@@ -15,6 +15,7 @@ using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using Z.EntityFramework.Plus;
 
 namespace Service.Services.SeaTaxUpload
 {
@@ -273,15 +274,9 @@ and not exists (
                 dataCenterDb,
                 modifyRows.Select(row => new UploadKey(row.MainNumber, row.BagNumber)).ToList());
 
-            var existingRows = jetfDb.FeeMasterModifies
-                .AsNoTracking()
+            jetfDb.FeeMasterModifies
                 .Where(row => row.ModifyDataDate == dataDate && row.DataType == dataType)
-                .ToList();
-
-            if (existingRows.Count > 0)
-            {
-                jetfDb.BulkDelete(existingRows);
-            }
+                .Delete();
 
             var snapshotRows = (
                 from row in modifyRows
@@ -1093,17 +1088,14 @@ and not exists (
             if (existingRows.Count > 0)
             {
                 var existingIds = existingRows.Select(row => row.Id).ToList();
-                var existingDetailRows = jetfDb.FeeMasterDetails
-                    .Where(row => existingIds.Contains(row.FeeMasterId))
-                    .ToList();
-
                 // 先刪 detail 再刪 master，避免留下舊關聯資料。
-                if (existingDetailRows.Count > 0)
-                {
-                    jetfDb.BulkDelete(existingDetailRows);
-                }
+                jetfDb.FeeMasterDetails
+                    .Where(row => existingIds.Contains(row.FeeMasterId))
+                    .Delete();
 
-                jetfDb.BulkDelete(existingRows);
+                jetfDb.FeeMasterTests
+                    .Where(row => row.DataDate == dataDate && row.Source == source && row.SourceType == SeaSourceType)
+                    .Delete();
             }
 
             // step2: 寫入新的主檔，取得主檔 Id 後，再把對應明細一併寫入。

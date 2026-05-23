@@ -116,35 +116,6 @@ namespace Service.Data
             context.SaveChanges();
         }
 
-        public static void BulkDelete<TEntity>(this DbContext context, IEnumerable<TEntity> entities)
-            where TEntity : class
-        {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
-            var rows = (entities ?? Enumerable.Empty<TEntity>()).ToList();
-            if (rows.Count == 0)
-            {
-                return;
-            }
-
-            var set = context.Set<TEntity>();
-            foreach (var row in rows)
-            {
-                var entry = context.Entry(row);
-                if (entry.State == EntityState.Detached)
-                {
-                    set.Attach(row);
-                }
-
-                set.Remove(row);
-            }
-
-            context.SaveChanges();
-        }
-
         public static List<TEntity> WhereBulkContains<TEntity, TContains>(
             this IQueryable<TEntity> source,
             DbContext context,

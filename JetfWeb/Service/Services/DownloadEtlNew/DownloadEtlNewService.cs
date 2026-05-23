@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Data.Entity;
 using System.Globalization;
 using System.Linq;
+using Z.EntityFramework.Plus;
 
 namespace Service.Services.DownloadEtlNew
 {
@@ -873,14 +874,9 @@ namespace Service.Services.DownloadEtlNew
             var existingMasterIds = updatedRows.Select(x => x.Id).ToList();
             if (existingMasterIds.Count > 0)
             {
-                var existingDetails = JetfDb.FeeMasterDetails
+                JetfDb.FeeMasterDetails
                     .Where(x => existingMasterIds.Contains(x.FeeMasterId))
-                    .ToList();
-
-                if (existingDetails.Count > 0)
-                {
-                    JetfDb.BulkDelete(existingDetails);
-                }
+                    .Delete();
             }
 
             // step2: 依本次主檔 Id 建立所有明細 entity。
