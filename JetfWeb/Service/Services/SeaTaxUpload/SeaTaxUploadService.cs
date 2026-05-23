@@ -54,7 +54,7 @@ namespace Service.Services.SeaTaxUpload
             Logger.Debug($"step1 結束: 讀取海運稅金 Excel，筆數={uploadRows.Count}");
 
             var source = taxType.ToString();
-            var uploadTime = DateTime.Now;
+            var uploadTime = NormalizeUploadBatchTime(DateTime.Now);
             List<SeaTaxModifyRow> modifyRows;
 
             using (var transaction = JetfDb.Database.BeginTransaction())
@@ -151,6 +151,11 @@ namespace Service.Services.SeaTaxUpload
                 status = Status.error,
                 msg = message
             };
+        }
+
+        private static DateTime NormalizeUploadBatchTime(DateTime value)
+        {
+            return value.AddTicks(-(value.Ticks % TimeSpan.TicksPerSecond));
         }
 
         /// <summary>
@@ -393,8 +398,7 @@ and not exists (
                 // 同一主號/提單可能有多筆稅單，主表保留最新一筆，其餘稅額併入 Tax2，
                 // 但 detail 仍需完整保留每一筆資料。
                 var orderedRows = group.Rows
-                    .OrderByDescending(row => row.SignOutTime ?? DateTime.MinValue)
-                    .ThenByDescending(row => row.SignInTime ?? DateTime.MinValue)
+                    .OrderBy(row => row.JetfSerial)
                     .ToList();
 
                 if (orderedRows.Count == 0)
@@ -893,9 +897,21 @@ and not exists (
                 return CreateCainiaoPDetailRows(sourceRows.Select(CreateFeeMasterDetailSourceRow));
             }
 
-            return sourceRows
-                .Select(row => CreateRegularDetailRow(row, customerSpecialPhones))
-                .ToList();
+            var feeAssigned = false;
+            var result = new List<FeeMasterDetailRow>();
+            foreach (var row in sourceRows)
+            {
+                var taxAmount = ParseNullableInt(row.Tax) ?? 0;
+                var includeFee = taxAmount > 0 && !feeAssigned;
+                result.Add(CreateRegularDetailRow(row, customerSpecialPhones, includeFee));
+
+                if (taxAmount > 0)
+                {
+                    feeAssigned = true;
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -903,11 +919,12 @@ and not exists (
         /// </summary>
         private FeeMasterDetailRow CreateRegularDetailRow(
             SeaTaxUploadJoinedRow row,
-            IEnumerable<string> customerSpecialPhones)
+            IEnumerable<string> customerSpecialPhones,
+            bool includeFee)
         {
             var taxAmount = ParseNullableInt(row.Tax) ?? 0;
             var codAmount = ParseNullableInt(row.Cod) ?? 0;
-            var feeAmount = ParseNullableInt(row.CodFee) ?? 0;
+            var feeAmount = includeFee ? ParseNullableInt(row.CodFee) ?? 0 : 0;
             var detailFee = feeAmount;
             var taxCalculationInput = CreateTaxCalculationInput(taxAmount, 0, codAmount, feeAmount);
             var includeTax = NormalizeText(row.IncludeTax);
@@ -935,7 +952,7 @@ and not exists (
                 taxData = _taxService.GetTaxN(taxCalculationInput);
             }
 
-            return CreateFeeMasterDetailRow(CreateFeeMasterDetailSourceRow(row), detailFee, taxData.ToDlvCod);
+            return CreateFeeMasterDetailRow(CreateFeeMasterDetailSourceRow(row), detailFee, taxData.ToDlvCod, taxData.TransCod);
         }
 
         /// <summary>
@@ -974,7 +991,7 @@ and not exists (
                     feeAssigned = true;
                 }
 
-                result.Add(CreateFeeMasterDetailRow(row, detailFee, codAmount + transTax + detailFee));
+                result.Add(CreateFeeMasterDetailRow(row, detailFee, codAmount + transTax + detailFee, transTax));
             }
 
             return result;
@@ -986,7 +1003,8 @@ and not exists (
         private static FeeMasterDetailRow CreateFeeMasterDetailRow(
             FeeMasterDetailSourceRow row,
             int feeAmount,
-            int toDlvCod)
+            int toDlvCod,
+            int transCod = 0)
         {
             return new FeeMasterDetailRow
             {
@@ -1006,7 +1024,8 @@ and not exists (
                 Recipient = row.Recipient,
                 RecPhone = row.RecPhone,
                 RecAddress = row.RecAddress,
-                ToDlvCod = toDlvCod.ToString(CultureInfo.InvariantCulture)
+                ToDlvCod = toDlvCod.ToString(CultureInfo.InvariantCulture),
+                TransCod = transCod.ToString(CultureInfo.InvariantCulture)
             };
         }
 
@@ -1197,7 +1216,8 @@ and not exists (
                 Recipient = NormalizeText(row.Recipient),
                 RecPhone = NormalizeText(row.RecPhone),
                 RecAddress = NormalizeText(row.RecAddress),
-                ToDlvCod = NormalizeText(row.ToDlvCod)
+                ToDlvCod = NormalizeText(row.ToDlvCod),
+                TransCod = ParseNullableInt(row.TransCod)
             };
         }
 

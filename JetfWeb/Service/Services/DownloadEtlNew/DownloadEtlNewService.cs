@@ -1264,7 +1264,7 @@ namespace Service.Services.DownloadEtlNew
                 taxData = CalculateTaxN(amounts);
             }
 
-            return CreateFeeMasterDetailRow(row, detailFee, taxData.ToDlvCod);
+            return CreateFeeMasterDetailRow(row, detailFee, taxData.ToDlvCod, taxData.TransCod);
         }
 
         /// <summary>
@@ -1275,6 +1275,11 @@ namespace Service.Services.DownloadEtlNew
         /// <param name="toDlvCod">應向物流代收金額。</param>
         /// <returns>FEE_MASTER_DETAIL 明細資料。</returns>
         private static FeeMasterDetailRow CreateFeeMasterDetailRow(CombinedRow row, int feeAmount, int toDlvCod)
+        {
+            return CreateFeeMasterDetailRow(row, feeAmount, toDlvCod, 0);
+        }
+
+        private static FeeMasterDetailRow CreateFeeMasterDetailRow(CombinedRow row, int feeAmount, int toDlvCod, int transCod)
         {
             return new FeeMasterDetailRow
             {
@@ -1294,7 +1299,8 @@ namespace Service.Services.DownloadEtlNew
                 Recipient = row.Recipient,
                 RecPhone = ToNarrowPhone(row.RecPhone),
                 RecAddress = row.RecAddress,
-                ToDlvCod = toDlvCod.ToString(CultureInfo.InvariantCulture)
+                ToDlvCod = toDlvCod.ToString(CultureInfo.InvariantCulture),
+                TransCod = transCod.ToString(CultureInfo.InvariantCulture)
             };
         }
 
@@ -1325,7 +1331,8 @@ namespace Service.Services.DownloadEtlNew
                 Recipient = NormalizeText(row.Recipient),
                 RecPhone = NormalizeText(row.RecPhone),
                 RecAddress = NormalizeText(row.RecAddress),
-                ToDlvCod = NormalizeText(row.ToDlvCod)
+                ToDlvCod = NormalizeText(row.ToDlvCod),
+                TransCod = ToNullableInt(row.TransCod)
             };
         }
 

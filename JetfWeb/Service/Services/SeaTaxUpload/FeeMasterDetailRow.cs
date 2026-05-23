@@ -89,6 +89,11 @@ namespace Service.Services.SeaTaxUpload
         /// 應向物流代收金額。
         /// </summary>
         public string ToDlvCod { get; set; }
+
+        /// <summary>
+        /// 轉由派件公司代收的稅額。
+        /// </summary>
+        public string TransCod { get; set; }
     }
 
     /// <summary>

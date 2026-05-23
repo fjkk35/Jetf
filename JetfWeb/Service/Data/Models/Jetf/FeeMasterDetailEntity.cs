@@ -124,5 +124,11 @@ namespace Service.Data
         /// </summary>
         [Column("TO_DLV_COD")]
         public string ToDlvCod { get; set; }
+
+        /// <summary>
+        /// 轉由派件公司代收的稅額。
+        /// </summary>
+        [Column("TRANS_COD")]
+        public int? TransCod { get; set; }
     }
 }

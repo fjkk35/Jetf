@@ -1,4 +1,4 @@
-using Service.EnumTax;
+﻿using Service.EnumTax;
 using Service.Models;
 using Service.Services;
 using Service.Services.SeaTaxUpload;
@@ -145,7 +145,7 @@ namespace JETFTAX.Controllers
             }
 
             var rule = _seaTaxValidationRules[taxType];
-            var containsKeyword = rule.FileNameKeywords.Any(keyword => fileName.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0);
+            var containsKeyword = rule.FileNameKeywords.Any(keyword => fileName.IndexOf(keyword) >= 0);
             if (!containsKeyword)
             {
                 response.status = Status.error;
