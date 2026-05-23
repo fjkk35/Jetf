@@ -14,6 +14,8 @@ namespace Service.Services.DownloadEtlNew
     public class DownloadEtlNewService : _BaseService
     {
         private const string AirSourceType = "3";
+        private const string TactSource = "tact";
+        private const string FtzSource = "ftz";
         private const int BatchSize = 500;
         private const int CommandTimeoutSeconds = 600;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -41,6 +43,8 @@ namespace Service.Services.DownloadEtlNew
         {
             var responseModel = new ResponseModel();
 
+            // step1: 先將畫面輸入轉成實際查詢區間。
+            // 時間格式錯誤時維持既有回傳內容，避免前端判斷行為被改變。
             if (!TryBuildDateRange(date, timeBetween, sTime, eTime, out var startDate, out var endDate, out var dataDate, out var errorMessage))
             {
                 responseModel.status = Status.error;
@@ -48,6 +52,7 @@ namespace Service.Services.DownloadEtlNew
                 return responseModel;
             }
 
+            // step2: 保留舊流程的時間檢查結果與錯誤訊息。
             if (endDate <= startDate)
             {
                 responseModel.status = Status.error;
@@ -57,9 +62,10 @@ namespace Service.Services.DownloadEtlNew
 
             try
             {
-                JetfDb.Database.CommandTimeout = CommandTimeoutSeconds;
-                DataCenterDb.Database.CommandTimeout = CommandTimeoutSeconds;
+                // step3: 本流程會跨資料庫查詢大量清關、稅單與原始單資料，先拉長 timeout。
+                ConfigureCommandTimeout();
 
+                // step4: 此段為既有流程保留但目前註解停用；不主動恢復，避免改變目前上線行為。
                 // 先同步更新菜鳥稅金調整結果，確保後續組出的代收資料與既有流程一致。
                 //responseModel = UpdateCainiaoTaxEdit();
                 //if (responseModel.status != Status.success)
@@ -67,18 +73,30 @@ namespace Service.Services.DownloadEtlNew
                 //    return responseModel;
                 //}
 
-                // 再依清關、稅單、原始單資料組出本次要寫回的 fee master 草稿。
+                // step5: 依清關、稅單、原始單與客戶設定組出主檔與明細草稿。
                 var feeMasterDrafts = BuildFeeMasterDrafts(startDate, endDate);
+
+                // step6: 將草稿寫回 FEE_MASTER_TEST，並同步重建 FEE_MASTER_DETAIL 明細。
                 SaveFeeMasters(feeMasterDrafts, dataDate);
                 responseModel.status = Status.success;
             }
             catch (Exception ex)
             {
+                // step7: 維持既有錯誤處理方式，直接回傳例外訊息給前端。
                 responseModel.status = Status.error;
                 responseModel.msg = ex.Message;
             }
 
             return responseModel;
+        }
+
+        /// <summary>
+        /// 統一設定這次上傳流程會用到的資料庫 CommandTimeout。
+        /// </summary>
+        private void ConfigureCommandTimeout()
+        {
+            JetfDb.Database.CommandTimeout = CommandTimeoutSeconds;
+            DataCenterDb.Database.CommandTimeout = CommandTimeoutSeconds;
         }
 
         /// <summary>
@@ -110,7 +128,7 @@ namespace Service.Services.DownloadEtlNew
                 var feeMasters = JetfDb.FeeMasterTests
                     .AsNoTracking()
                     .Where(x =>
-                        (x.Source == "tact" || x.Source == "ftz") &&
+                        (x.Source == TactSource || x.Source == FtzSource) &&
                         x.SourceType == AirSourceType &&
                         x.OutDateTime.HasValue &&
                         x.OutDateTime.Value >= startDate &&
@@ -223,11 +241,14 @@ namespace Service.Services.DownloadEtlNew
         /// <returns>Fee master 草稿清單。</returns>
         private List<FeeMasterDraft> BuildFeeMasterDrafts(DateTime startDate, DateTime endDate)
         {
+            // step1: 先把 tact/ftz 來源整理成同一種 CombinedRow，後續計算才能共用。
             var sourceRows = GetCombinedRows(startDate, endDate);
+
+            // step2: 特殊客戶電話會影響 D 類稅金判斷，先一次載入避免每筆查詢 DB。
             var specialPhones = GetSpecialPhoneSet();
             var drafts = new List<FeeMasterDraft>();
 
-            // 舊邏輯以 trackingno 分組，最新出倉的一筆作為主資料，其餘相同 tracking 的稅額累加到 tax2。
+            // step3: 舊邏輯以 trackingno 分組，最新出倉的一筆作為主資料，其餘相同 tracking 的稅額累加到 tax2。
             foreach (var group in sourceRows.GroupBy(x => x.TrackingNo ?? string.Empty))
             {
                 var orderedRows = group
@@ -240,44 +261,57 @@ namespace Service.Services.DownloadEtlNew
                 }
 
                 var latestRow = orderedRows[0];
-                var draft = new FeeMasterDraft
-                {
-                    Source = latestRow.DataType,
-                    Type = latestRow.ClearanceType,
-                    Customer = latestRow.DespatchNo,
-                    MainNumber = latestRow.MainNumber,
-                    TrackingNo = latestRow.TrackingNo,
-                    ClearanceNumber = latestRow.ClearanceNumber,
-                    BagNumber = latestRow.BagNo,
-                    TaxNumber = latestRow.TaxNumber,
-                    TaxPayer = latestRow.TaxPayer,
-                    TaxRecId = latestRow.TaxRecId,
-                    DlvInv = latestRow.DeliveryNo,
-                    InDate = latestRow.SignInTime?.ToString("yyyyMMdd"),
-                    InDateTime = latestRow.SignInTime,
-                    OutDateTime = latestRow.SignOutTime,
-                    TaxBase = latestRow.TaxBase,
-                    Tax1 = ToInt(latestRow.TaxAmount),
-                    Tax2 = orderedRows.Skip(1).Sum(x => ToInt(x.TaxAmount)),
-                    Cod = ToInt(latestRow.Cc),
-                    Fee = latestRow.CodFee ?? 0,
-                    IncludeTax = latestRow.IncludeTax,
-                    Recipient = latestRow.Recipient,
-                    RecPhone = ToNarrowPhone(latestRow.RecPhone),
-                    RecAddress = latestRow.RecAddress,
-                    RecId = latestRow.RecId,
-                    DlvCom = latestRow.TransTaxPayment,
-                    Arrival = latestRow.Ecm,
-                    Combine = orderedRows.Count > 1 ? "Y" : string.Empty
-                };
+                var draft = CreateFeeMasterDraft(latestRow, orderedRows);
 
-                // 套用舊系統稅金邏輯，計算 customer_cod、trans_cod、to_dlv_cod 等欄位。
+                // step4: 套用舊系統稅金邏輯，計算 customer_cod、trans_cod、to_dlv_cod 等欄位。
                 ApplyTaxRule(draft, latestRow, specialPhones);
+
+                // step5: 主檔只保留彙總金額，明細仍要保留同 tracking 下每一張稅單。
                 draft.DetailRows = CreateFeeMasterDetailRows(orderedRows, specialPhones);
                 drafts.Add(draft);
             }
 
             return drafts;
+        }
+
+        /// <summary>
+        /// 將同一 tracking 的來源資料轉成 FEE_MASTER_TEST 草稿。
+        /// </summary>
+        /// <param name="latestRow">同一 tracking 最新出倉的來源資料。</param>
+        /// <param name="orderedRows">同一 tracking 依出倉時間排序後的來源資料。</param>
+        /// <returns>主檔草稿。</returns>
+        private static FeeMasterDraft CreateFeeMasterDraft(CombinedRow latestRow, List<CombinedRow> orderedRows)
+        {
+            return new FeeMasterDraft
+            {
+                Source = latestRow.DataType,
+                Type = latestRow.ClearanceType,
+                Customer = latestRow.DespatchNo,
+                MainNumber = latestRow.MainNumber,
+                TrackingNo = latestRow.TrackingNo,
+                ClearanceNumber = latestRow.ClearanceNumber,
+                BagNumber = latestRow.BagNo,
+                TaxNumber = latestRow.TaxNumber,
+                TaxPayer = latestRow.TaxPayer,
+                TaxRecId = latestRow.TaxRecId,
+                DlvInv = latestRow.DeliveryNo,
+                InDate = latestRow.SignInTime?.ToString("yyyyMMdd"),
+                InDateTime = latestRow.SignInTime,
+                OutDateTime = latestRow.SignOutTime,
+                TaxBase = latestRow.TaxBase,
+                Tax1 = ToInt(latestRow.TaxAmount),
+                Tax2 = orderedRows.Skip(1).Sum(x => ToInt(x.TaxAmount)),
+                Cod = ToInt(latestRow.Cc),
+                Fee = latestRow.CodFee ?? 0,
+                IncludeTax = latestRow.IncludeTax,
+                Recipient = latestRow.Recipient,
+                RecPhone = ToNarrowPhone(latestRow.RecPhone),
+                RecAddress = latestRow.RecAddress,
+                RecId = latestRow.RecId,
+                DlvCom = latestRow.TransTaxPayment,
+                Arrival = latestRow.Ecm,
+                Combine = orderedRows.Count > 1 ? "Y" : string.Empty
+            };
         }
 
         /// <summary>
@@ -289,8 +323,8 @@ namespace Service.Services.DownloadEtlNew
         private List<CombinedRow> GetCombinedRows(DateTime startDate, DateTime endDate)
         {
             var rows = new List<CombinedRow>();
-            rows.AddRange(GetCombinedRowsBySource("tact", startDate, endDate));
-            rows.AddRange(GetCombinedRowsBySource("ftz", startDate, endDate));
+            rows.AddRange(GetCombinedRowsBySource(TactSource, startDate, endDate));
+            rows.AddRange(GetCombinedRowsBySource(FtzSource, startDate, endDate));
             return rows;
         }
 
@@ -336,7 +370,7 @@ namespace Service.Services.DownloadEtlNew
 
             // step 3: 依來源分開查詢稅單資料，再轉成 dictionary，避免在 SQL 端做過大的 join。
             LogStep("step 3", "開始", "取得稅單資料並建立 taxLookup");
-            var taxes = dataType == "tact"
+            var taxes = dataType == TactSource
                 ? GetTactTaxes(mainNumbers, candidateBagNumbers)
                 : GetFtzTaxes(mainNumbers, candidateBagNumbers);
 
@@ -359,10 +393,10 @@ namespace Service.Services.DownloadEtlNew
                 .ToDictionary(x => x.Key, x => x.OrderBy(y => y.TrackingNo).ThenBy(y => y.Id).ToList());
             LogStep("step 4", "結束", $"取得 OriginalList 資料並建立對照，原始單筆數={originals.Count}，BagNo 對照筆數={originalByBag.Count}，TrackingUb 對照筆數={originalByTrackingUb.Count}");
 
-            // step 5: 建立客戶主檔 dictionary。
-            LogStep("step 5", "開始", "建立客戶主檔對照資料");
-            var customerLookup = BuildCustomerLookup(originals);
-            LogStep("step 5", "結束", $"建立客戶主檔對照資料，筆數={customerLookup.Count}");
+            // step 5: 批次查出可能會用到的客戶主檔，後續用 join 對應原始單。
+            LogStep("step 5", "開始", "查詢客戶主檔資料");
+            var customerMasters = LoadCustomerMasters(originals);
+            LogStep("step 5", "結束", $"查詢客戶主檔資料，筆數={customerMasters.Count}");
 
             // step 6: 逐筆把清關、稅單、原始單組成完整資料，最後依 TAX_NUMBER 去重。
             LogStep("step 6", "開始", "組合 CombinedRow 並依 TAX_NUMBER 去重");
@@ -380,7 +414,7 @@ namespace Service.Services.DownloadEtlNew
                     }
 
                     var original = FindBestOriginal(originalByBag, originalByTrackingUb, clearance.MainNumber, tax.BagNumber);
-                    var customer = FindCustomer(customerLookup, original?.DespatchNo, original?.TransTaxPayment);
+                    var customer = FindCustomerMaster(original, customerMasters);
 
                     // 依舊邏輯把來源資料攤平成 fee master 前置資料，缺值時保留 fallback 欄位。
                     result.Add(new CombinedRow
@@ -560,7 +594,7 @@ namespace Service.Services.DownloadEtlNew
             Logger.Debug("step 4-1 開始: 使用 join 取得 OriginalList 資料");
 
             var bagJoinRows = new List<OriginalListLookupRow>();
-            if (dataType == "tact")
+            if (dataType == TactSource)
             {
                 bagJoinRows = ProjectOriginalListQuery(
                     from clearance in clearanceQuery
@@ -637,11 +671,11 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 建立客戶主檔查詢 dictionary。
+        /// 批次查出 UploadEtl 可能會用到的空運客戶主檔。
         /// </summary>
         /// <param name="originals">原始單資料。</param>
-        /// <returns>客戶代號與派件公司對照表。</returns>
-        private Dictionary<string, CustomerMasterEntity> BuildCustomerLookup(IEnumerable<OriginalListLookupRow> originals)
+        /// <returns>客戶主檔清單。</returns>
+        private List<CustomerMasterEntity> LoadCustomerMasters(IEnumerable<OriginalListLookupRow> originals)
         {
             var customerCodes = originals
                 .Select(x => PadCustomerCode(x.DespatchNo))
@@ -655,10 +689,10 @@ namespace Service.Services.DownloadEtlNew
                 .Distinct()
                 .ToList();
 
-            var lookup = new Dictionary<string, CustomerMasterEntity>();
+            var customerMasters = new List<CustomerMasterEntity>();
             if (!customerCodes.Any() || !transNos.Any())
             {
-                return lookup;
+                return customerMasters;
             }
 
             foreach (var customerBatch in Batch(customerCodes, BatchSize))
@@ -671,14 +705,15 @@ namespace Service.Services.DownloadEtlNew
                         .Where(x => x.TranType == "空運" && customerBatch.Contains(x.CustId) && transBatch.Contains(x.TransNo))
                         .ToList();
 
-                    foreach (var item in items)
-                    {
-                        lookup[BuildCompositeKey(item.CustId, item.TransNo)] = item;
-                    }
+                    customerMasters.AddRange(items);
                 }
             }
 
-            return lookup;
+            // 若主檔存在重複客戶代號與派件公司，保留原本 dictionary 覆蓋後的最後一筆行為。
+            return customerMasters
+                .GroupBy(x => new { CustId = NormalizeText(x.CustId), TransNo = NormalizeText(x.TransNo) })
+                .Select(x => x.Last())
+                .ToList();
         }
 
         /// <summary>
@@ -762,17 +797,19 @@ namespace Service.Services.DownloadEtlNew
                 return;
             }
 
+            // 主檔與明細必須在同一個交易內完成，避免主檔已更新但明細仍停留在舊資料。
             using (var transaction = JetfDb.Database.BeginTransaction())
             {
                 try
                 {
-                    // 先把現有資料載入成 lookup，後續可直接判斷新增或更新。
+                    // step1: 先把現有資料載入成 lookup，後續可直接判斷新增或更新。
                     var existingRows = LoadExistingFeeMasters(drafts);
                     var existingLookup = existingRows.ToDictionary(x => BuildCompositeKey(x.MainNumber, x.TrackingNo));
                     var updateTime = DateTime.Now;
                     var insertedRows = new List<FeeMasterTestEntity>();
                     var updatedRows = new List<FeeMasterTestEntity>();
 
+                    // step2: 依 main_number + trackingno 判斷是新增或更新，維持既有 upsert 規則。
                     foreach (var draft in drafts)
                     {
                         var key = BuildCompositeKey(draft.MainNumber, draft.TrackingNo);
@@ -788,22 +825,23 @@ namespace Service.Services.DownloadEtlNew
 
                     if (insertedRows.Count > 0)
                     {
-                        // step1: 新增主檔並回填 Id，供後續明細關聯使用。
+                        // step3: 新增主檔並回填 Id，供後續明細關聯使用。
                         JetfDb.BulkInsert(insertedRows, operation => operation.AutoMapOutputDirection = true);
                     }
 
                     if (updatedRows.Count > 0)
                     {
-                        // step2: 更新既有主檔資料。
+                        // step4: 更新既有主檔資料。BulkUpdate 使用 LoadExistingFeeMasters 載入的既有 Id。
                         JetfDb.BulkUpdate(updatedRows);
                     }
 
-                    // step3: 主檔 Id 確定後，重建本次對應的明細資料。
+                    // step5: 主檔 Id 確定後，重建本次對應的明細資料。
                     SaveFeeMasterDetails(drafts, insertedRows, updatedRows);
                     transaction.Commit();
                 }
                 catch
                 {
+                    // 任一段 DB 寫入失敗都回滾，並將原例外往外拋給 UploadEtl 統一轉成 ResponseModel。
                     transaction.Rollback();
                     throw;
                 }
@@ -923,21 +961,25 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 依客戶代號與物流代碼查找客戶主檔。
+        /// 以原始單上的客戶代號與物流代碼查找客戶主檔。
         /// </summary>
-        /// <param name="lookup">客戶主檔對照表。</param>
-        /// <param name="customerCode">客戶代號。</param>
-        /// <param name="transNo">物流代碼。</param>
+        /// <param name="original">原始單資料。</param>
+        /// <param name="customerMasters">候選客戶主檔清單。</param>
         /// <returns>符合條件的客戶主檔。</returns>
-        private static CustomerMasterEntity FindCustomer(Dictionary<string, CustomerMasterEntity> lookup, string customerCode, string transNo)
+        private static CustomerMasterEntity FindCustomerMaster(OriginalListLookupRow original, IEnumerable<CustomerMasterEntity> customerMasters)
         {
-            if (lookup == null)
+            if (original == null || customerMasters == null)
             {
                 return null;
             }
 
-            lookup.TryGetValue(BuildCompositeKey(PadCustomerCode(customerCode), transNo), out var customer);
-            return customer;
+            var customerCode = PadCustomerCode(original.DespatchNo);
+            var transNo = NormalizeText(original.TransTaxPayment);
+
+            // 每次只會用一筆原始單找對應客戶，直接用條件查詢比 join 更直覺。
+            return customerMasters
+                .Where(x => NormalizeText(x.CustId) == customerCode && NormalizeText(x.TransNo) == transNo)
+                .FirstOrDefault();
         }
 
         /// <summary>
@@ -1156,6 +1198,8 @@ namespace Service.Services.DownloadEtlNew
                 return new List<FeeMasterDetailRow>();
             }
 
+            // 菜鳥 P 的稅額分攤規則海空運一致，因此共用 SeaTaxUploadService 的計算。
+            // 這裡只做空運 CombinedRow -> 共用來源 row 的欄位對應，不改變任何金額規則。
             if (rows[0].IsCainiaoP)
             {
                 return SeaTaxUploadService.CreateCainiaoPDetailRows(
@@ -1180,6 +1224,7 @@ namespace Service.Services.DownloadEtlNew
                     }));
             }
 
+            // 非菜鳥 P 的一般稅金判斷海運與空運不同，保留空運自己的規則以避免隱性改動。
             return rows.Select(row => CreateRegularDetailRow(row, specialPhones)).ToList();
         }
 
@@ -1199,6 +1244,7 @@ namespace Service.Services.DownloadEtlNew
             var includeTax = NormalizeText(row.IncludeTax);
             TaxCalculationResult taxData;
 
+            // 以下判斷順序需與主檔 ApplyTaxRule 的既有邏輯一致，避免主檔與明細金額不一致。
             if (includeTax == "Y")
             {
                 taxData = CalculateTaxY(amounts);
@@ -1293,6 +1339,9 @@ namespace Service.Services.DownloadEtlNew
         private static bool IsSpecialEtlCustomer(string company, string phone, HashSet<string> specialPhones)
         {
             var normalizedPhone = NormalizeSpecialPhone(phone);
+
+            // NOTE: 這裡保留舊系統判斷式，不直接修正。
+            // company 同時等於三個不同名稱的條件理論上不會成立，後續若要調整需先確認既有報表與帳務結果。
             return !string.IsNullOrWhiteSpace(normalizedPhone)
                 && specialPhones.Contains(normalizedPhone)
                 && company == "新竹物流"
@@ -1300,11 +1349,11 @@ namespace Service.Services.DownloadEtlNew
                 && company == "捷豐";
         }
 
-            /// <summary>
-            /// 計算菜鳥 P 客戶的代收金額。
-            /// </summary>
-            /// <param name="amounts">本次應計金額。</param>
-            /// <returns>計算結果。</returns>
+        /// <summary>
+        /// 計算菜鳥 P 客戶的代收金額。
+        /// </summary>
+        /// <param name="amounts">本次應計金額。</param>
+        /// <returns>計算結果。</returns>
         private static TaxCalculationResult CalculateTaxP(TaxAmountSet amounts)
         {
             if (amounts.Tax1 + amounts.Tax2 > 1000)
