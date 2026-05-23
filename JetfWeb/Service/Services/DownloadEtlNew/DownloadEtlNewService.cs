@@ -253,7 +253,7 @@ namespace Service.Services.DownloadEtlNew
             foreach (var group in sourceRows.GroupBy(x => x.TrackingNo ?? string.Empty))
             {
                 var orderedRows = group
-                    .OrderByDescending(x => x.SignOutTime ?? DateTime.MinValue)
+                    .OrderBy(x => x.DeliveryNo)
                     .ToList();
 
                 if (!orderedRows.Any())
@@ -821,7 +821,7 @@ namespace Service.Services.DownloadEtlNew
                             continue;
                         }
 
-                        insertedRows.Add(CreateFeeMasterEntity(draft, dataDate));
+                        insertedRows.Add(CreateFeeMasterEntity(draft, dataDate, updateTime));
                     }
 
                     if (insertedRows.Count > 0)
@@ -874,9 +874,9 @@ namespace Service.Services.DownloadEtlNew
             var existingMasterIds = updatedRows.Select(x => x.Id).ToList();
             if (existingMasterIds.Count > 0)
             {
-                JetfDb.FeeMasterDetails
-                    .Where(x => existingMasterIds.Contains(x.FeeMasterId))
-                    .Delete();
+                JetfDb.DeleteByColumnValues<FeeMasterDetailEntity, int>(
+                    existingMasterIds,
+                    x => x.FeeMasterId);
             }
 
             // step2: 依本次主檔 Id 建立所有明細 entity。
@@ -905,41 +905,23 @@ namespace Service.Services.DownloadEtlNew
         /// <returns>既有 fee master 清單。</returns>
         private List<FeeMasterTestEntity> LoadExistingFeeMasters(IEnumerable<FeeMasterDraft> drafts)
         {
-            var mainNumbers = drafts
-                .Select(x => x.MainNumber)
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Distinct()
+            var lookupKeys = (drafts ?? Enumerable.Empty<FeeMasterDraft>())
+                .Where(x => !string.IsNullOrWhiteSpace(x.MainNumber) && !string.IsNullOrWhiteSpace(x.TrackingNo))
                 .ToList();
 
-            var trackingNos = drafts
-                .Select(x => x.TrackingNo)
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Distinct()
-                .ToList();
-
-            var keys = new HashSet<string>(drafts.Select(x => BuildCompositeKey(x.MainNumber, x.TrackingNo)));
-            var rows = new List<FeeMasterTestEntity>();
-
-            if (!mainNumbers.Any() || !trackingNos.Any())
+            if (lookupKeys.Count == 0)
             {
-                return rows;
+                return new List<FeeMasterTestEntity>();
             }
 
-            foreach (var trackingBatch in Batch(trackingNos, BatchSize))
-            {
-                var items = JetfDb.FeeMasterTests
-                    .AsNoTracking()
-                    .Where(x =>
-                        x.SourceType == AirSourceType.ToString() &&
-                        mainNumbers.Contains(x.MainNumber) &&
-                        trackingBatch.Contains(x.TrackingNo))
-                    .ToList();
-                var matchedItems = items.Where(x => keys.Contains(BuildCompositeKey(x.MainNumber, x.TrackingNo))).ToList();
-
-                rows.AddRange(matchedItems);
-            }
-
-            return rows;
+            return JetfDb.FeeMasterTests
+                .AsNoTracking()
+                .Where(x => x.SourceType == AirSourceType)
+                .WhereBulkContains(
+                    JetfDb,
+                    lookupKeys,
+                    row => new { row.MainNumber, row.TrackingNo },
+                    key => new { key.MainNumber, key.TrackingNo });
         }
 
         /// <summary>
@@ -1034,7 +1016,7 @@ namespace Service.Services.DownloadEtlNew
         /// <param name="draft">待寫入草稿。</param>
         /// <param name="dataDate">資料日期。</param>
         /// <returns>新的 fee master entity。</returns>
-        private static FeeMasterTestEntity CreateFeeMasterEntity(FeeMasterDraft draft, string dataDate)
+        private static FeeMasterTestEntity CreateFeeMasterEntity(FeeMasterDraft draft, string dataDate, DateTime createTime)
         {
             return new FeeMasterTestEntity
             {
@@ -1048,8 +1030,8 @@ namespace Service.Services.DownloadEtlNew
                 ClearanceNumber = NormalizeText(draft.ClearanceNumber),
                 BagNumber = NormalizeText(draft.BagNumber),
                 TaxNumber = NormalizeText(draft.TaxNumber),
-                TaxPayer = NormalizeText(draft.TaxPayer),
-                TaxRecId = NormalizeText(draft.TaxRecId),
+                TaxPayer = null,
+                TaxRecId = null,
                 DlvInv = NormalizeText(draft.DlvInv),
                 InDate = NormalizeText(draft.InDate),
                 InDateTime = draft.InDateTime,
@@ -1069,7 +1051,9 @@ namespace Service.Services.DownloadEtlNew
                 DlvCom = NormalizeText(draft.DlvCom),
                 Arrival = NormalizeText(draft.Arrival),
                 CustomerCod = draft.CustomerCod,
-                TransCod = draft.TransCod
+                TransCod = draft.TransCod,
+                ModiftyDate = createTime,
+                Download = "1"
             };
         }
 
@@ -1108,12 +1092,13 @@ namespace Service.Services.DownloadEtlNew
             entity.Cod = draft.Cod;
             entity.ToDlvCod = draft.ToDlvCod.ToString(CultureInfo.InvariantCulture);
             entity.DlvInv = NormalizeText(draft.DlvInv);
-            entity.TaxPayer = NormalizeText(draft.TaxPayer);
-            entity.TaxRecId = NormalizeText(draft.TaxRecId);
+            entity.TaxPayer = null;
+            entity.TaxRecId = null;
             entity.Arrival = NormalizeText(draft.Arrival);
             entity.CustomerCod = draft.CustomerCod;
             entity.TransCod = draft.TransCod;
             entity.UpdateDate = updateTime;
+            entity.Download = "1";
             entity.RecordFeeMaster = "0";
         }
 
@@ -1245,7 +1230,11 @@ namespace Service.Services.DownloadEtlNew
             {
                 taxData = CalculateTaxY(amounts);
             }
-            else if (includeTax == "D" || IsSpecialEtlCustomer(row.Company, ToNarrowPhone(row.RecPhone).Trim(), specialPhones))
+            else if (includeTax == "D")
+            {
+                taxData = CalculateTaxD(amounts);
+            }
+            else if (IsSpecialEtlCustomer(row.Company, ToNarrowPhone(row.RecPhone).Trim(), specialPhones))
             {
                 taxData = CalculateTaxD(amounts);
                 detailFee = 0;
@@ -1260,7 +1249,7 @@ namespace Service.Services.DownloadEtlNew
                 taxData = CalculateTaxN(amounts);
             }
 
-            return CreateFeeMasterDetailRow(row, detailFee, taxData.ToDlvCod, taxData.TransCod);
+            return CreateFeeMasterDetailRow(row, detailFee, taxData.ToDlvCod, taxData.TransCod, taxData.CustomerCod);
         }
 
         /// <summary>
@@ -1272,10 +1261,10 @@ namespace Service.Services.DownloadEtlNew
         /// <returns>FEE_MASTER_DETAIL 明細資料。</returns>
         private static FeeMasterDetailRow CreateFeeMasterDetailRow(CombinedRow row, int feeAmount, int toDlvCod)
         {
-            return CreateFeeMasterDetailRow(row, feeAmount, toDlvCod, 0);
+            return CreateFeeMasterDetailRow(row, feeAmount, toDlvCod, 0, 0);
         }
 
-        private static FeeMasterDetailRow CreateFeeMasterDetailRow(CombinedRow row, int feeAmount, int toDlvCod, int transCod)
+        private static FeeMasterDetailRow CreateFeeMasterDetailRow(CombinedRow row, int feeAmount, int toDlvCod, int transCod, int customerCod)
         {
             return new FeeMasterDetailRow
             {
@@ -1296,7 +1285,8 @@ namespace Service.Services.DownloadEtlNew
                 RecPhone = ToNarrowPhone(row.RecPhone),
                 RecAddress = row.RecAddress,
                 ToDlvCod = toDlvCod.ToString(CultureInfo.InvariantCulture),
-                TransCod = transCod.ToString(CultureInfo.InvariantCulture)
+                TransCod = transCod.ToString(CultureInfo.InvariantCulture),
+                CustomerCod = customerCod.ToString(CultureInfo.InvariantCulture)
             };
         }
 
@@ -1316,8 +1306,8 @@ namespace Service.Services.DownloadEtlNew
                 ClearanceNumber = NormalizeText(row.ClearanceNumber),
                 BagNumber = NormalizeText(row.BagNumber),
                 TaxNumber = NormalizeText(row.TaxNumber),
-                TaxPayer = NormalizeText(row.TaxPayer),
-                TaxRecId = NormalizeText(row.TaxRecId),
+                TaxPayer = null,
+                TaxRecId = null,
                 DlvInv = NormalizeText(row.DlvInv),
                 TaxBase = ToNullableInt(row.TaxBase),
                 Tax = ToNullableInt(row.Tax),
@@ -1328,7 +1318,8 @@ namespace Service.Services.DownloadEtlNew
                 RecPhone = NormalizeText(row.RecPhone),
                 RecAddress = NormalizeText(row.RecAddress),
                 ToDlvCod = NormalizeText(row.ToDlvCod),
-                TransCod = ToNullableInt(row.TransCod)
+                TransCod = ToNullableInt(row.TransCod),
+                CustomerCod = ToNullableInt(row.CustomerCod)
             };
         }
 

@@ -1,4 +1,4 @@
-namespace Service.Services.SeaTaxUpload
+﻿namespace Service.Services.SeaTaxUpload
 {
     /// <summary>
     /// 寫入 FEE_MASTER_DETAIL 的明細資料。
@@ -94,6 +94,11 @@ namespace Service.Services.SeaTaxUpload
         /// 轉由派件公司代收的稅額。
         /// </summary>
         public string TransCod { get; set; }
+
+        /// <summary>
+        /// 客戶稅額
+        /// </summary>
+        public string CustomerCod { get; set; }
     }
 
     /// <summary>

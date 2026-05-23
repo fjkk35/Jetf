@@ -947,7 +947,7 @@ and not exists (
                 taxData = _taxService.GetTaxN(taxCalculationInput);
             }
 
-            return CreateFeeMasterDetailRow(CreateFeeMasterDetailSourceRow(row), detailFee, taxData.ToDlvCod, taxData.TransCod);
+            return CreateFeeMasterDetailRow(CreateFeeMasterDetailSourceRow(row), detailFee, taxData.ToDlvCod, taxData.TransCod, taxData.CustomerCod);
         }
 
         /// <summary>
@@ -986,7 +986,7 @@ and not exists (
                     feeAssigned = true;
                 }
 
-                result.Add(CreateFeeMasterDetailRow(row, detailFee, codAmount + transTax + detailFee, transTax));
+                result.Add(CreateFeeMasterDetailRow(row, detailFee, codAmount + transTax + detailFee, transTax, customerTax));
             }
 
             return result;
@@ -999,7 +999,8 @@ and not exists (
             FeeMasterDetailSourceRow row,
             int feeAmount,
             int toDlvCod,
-            int transCod = 0)
+            int transCod = 0,
+            int customerCod = 0)
         {
             return new FeeMasterDetailRow
             {
@@ -1020,7 +1021,8 @@ and not exists (
                 RecPhone = row.RecPhone,
                 RecAddress = row.RecAddress,
                 ToDlvCod = toDlvCod.ToString(CultureInfo.InvariantCulture),
-                TransCod = transCod.ToString(CultureInfo.InvariantCulture)
+                TransCod = transCod.ToString(CultureInfo.InvariantCulture),
+                CustomerCod = customerCod.ToString(CultureInfo.InvariantCulture)
             };
         }
 
@@ -1089,9 +1091,9 @@ and not exists (
             {
                 var existingIds = existingRows.Select(row => row.Id).ToList();
                 // 先刪 detail 再刪 master，避免留下舊關聯資料。
-                jetfDb.FeeMasterDetails
-                    .Where(row => existingIds.Contains(row.FeeMasterId))
-                    .Delete();
+                jetfDb.DeleteByColumnValues<FeeMasterDetailEntity, int>(
+                    existingIds,
+                    row => row.FeeMasterId);
 
                 jetfDb.FeeMasterTests
                     .Where(row => row.DataDate == dataDate && row.Source == source && row.SourceType == SeaSourceType)
@@ -1210,7 +1212,8 @@ and not exists (
                 RecPhone = NormalizeText(row.RecPhone),
                 RecAddress = NormalizeText(row.RecAddress),
                 ToDlvCod = NormalizeText(row.ToDlvCod),
-                TransCod = ParseNullableInt(row.TransCod)
+                TransCod = ParseNullableInt(row.TransCod),
+                CustomerCod = ParseNullableInt(row.CustomerCod)
             };
         }
 

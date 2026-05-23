@@ -130,5 +130,11 @@ namespace Service.Data
         /// </summary>
         [Column("TRANS_COD")]
         public int? TransCod { get; set; }
+
+        /// <summary>
+        /// 客戶吸收稅額。
+        /// </summary>
+        [Column("CUSTOMER_COD")]
+        public int? CustomerCod { get; set; }
     }
 }
