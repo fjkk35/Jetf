@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.Entity;
+using System.Data.Entity.Core.Objects;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
+using Z.EntityFramework.Plus;
 
 namespace Service.Data
 {
@@ -142,6 +145,106 @@ namespace Service.Data
             context.SaveChanges();
         }
 
+        public static List<TEntity> WhereBulkContains<TEntity, TContains>(
+            this IQueryable<TEntity> source,
+            DbContext context,
+            IEnumerable<TContains> containsItems,
+            Expression<Func<TEntity, object>> entityKeyExpression,
+            Expression<Func<TContains, object>> containsKeyExpression,
+            Action<BulkContainsOptions> optionsAction = null)
+            where TEntity : class
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (entityKeyExpression == null)
+            {
+                throw new ArgumentNullException(nameof(entityKeyExpression));
+            }
+
+            if (containsKeyExpression == null)
+            {
+                throw new ArgumentNullException(nameof(containsKeyExpression));
+            }
+
+            var rows = (containsItems ?? Enumerable.Empty<TContains>()).ToList();
+            if (rows.Count == 0)
+            {
+                return new List<TEntity>();
+            }
+
+            var options = new BulkContainsOptions();
+            optionsAction?.Invoke(options);
+
+            var maps = CreateBulkContainsKeyMaps(entityKeyExpression, containsKeyExpression);
+            var table = CreateBulkContainsTable(rows, maps);
+            if (table.Rows.Count == 0)
+            {
+                return new List<TEntity>();
+            }
+
+            var objectQuery = source.GetObjectQuery();
+            if (objectQuery == null)
+            {
+                throw new InvalidOperationException("WhereBulkContains only supports Entity Framework queries.");
+            }
+
+            var tempTableName = "#BulkContains_" + Guid.NewGuid().ToString("N");
+            var connection = (SqlConnection)context.Database.Connection;
+            var shouldClose = connection.State == ConnectionState.Closed;
+            var transaction = context.Database.CurrentTransaction?.UnderlyingTransaction as SqlTransaction;
+
+            if (shouldClose)
+            {
+                connection.Open();
+            }
+
+            try
+            {
+                using (var command = new SqlCommand(CreateBulkContainsTempTableSql(tempTableName, maps), connection, transaction))
+                {
+                    command.ExecuteNonQuery();
+                }
+
+                using (var bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction))
+                {
+                    bulkCopy.DestinationTableName = tempTableName;
+                    bulkCopy.BatchSize = options.BatchSize;
+                    bulkCopy.BulkCopyTimeout = context.Database.CommandTimeout ?? options.TimeoutSeconds;
+
+                    foreach (var map in maps)
+                    {
+                        bulkCopy.ColumnMappings.Add(map.TempColumnName, map.TempColumnName);
+                    }
+
+                    bulkCopy.WriteToServer(table);
+                }
+
+                var sql = CreateBulkContainsQuerySql(objectQuery, tempTableName, maps, GetSelectablePropertyMaps(typeof(TEntity)));
+                var parameters = CreateSqlParameters(objectQuery).ToArray();
+                return context.Database.SqlQuery<TEntity>(sql, parameters).ToList();
+            }
+            finally
+            {
+                using (var command = new SqlCommand(CreateDropTempTableSql(tempTableName), connection, transaction))
+                {
+                    command.ExecuteNonQuery();
+                }
+
+                if (shouldClose)
+                {
+                    connection.Close();
+                }
+            }
+        }
+
         private static DataTable CreateDataTable<TEntity>(IEnumerable<TEntity> rows, List<PropertyMap> maps)
             where TEntity : class
         {
@@ -164,6 +267,246 @@ namespace Service.Data
             return table;
         }
 
+        private static DataTable CreateBulkContainsTable<TContains>(
+            IEnumerable<TContains> rows,
+            List<BulkContainsKeyMap<TContains>> maps)
+        {
+            var table = new DataTable();
+            foreach (var map in maps)
+            {
+                table.Columns.Add(map.TempColumnName, map.DataColumnType);
+            }
+
+            var signatures = new HashSet<string>();
+            foreach (var row in rows)
+            {
+                var values = maps.Select(map => map.ValueAccessor(row)).ToArray();
+                var signature = string.Join(
+                    "\u001f",
+                    values.Select(value => value == null ? "\u0000" : Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture)));
+
+                if (!signatures.Add(signature))
+                {
+                    continue;
+                }
+
+                table.Rows.Add(values.Select(value => value ?? DBNull.Value).ToArray());
+            }
+
+            return table;
+        }
+
+        private static List<BulkContainsKeyMap<TContains>> CreateBulkContainsKeyMaps<TEntity, TContains>(
+            Expression<Func<TEntity, object>> entityKeyExpression,
+            Expression<Func<TContains, object>> containsKeyExpression)
+        {
+            var entityExpressions = GetKeyExpressions(entityKeyExpression.Body);
+            var containsExpressions = GetKeyExpressions(containsKeyExpression.Body);
+
+            if (entityExpressions.Count != containsExpressions.Count)
+            {
+                throw new ArgumentException("Entity key and contains key must have the same number of fields.");
+            }
+
+            var maps = new List<BulkContainsKeyMap<TContains>>();
+            for (var index = 0; index < entityExpressions.Count; index++)
+            {
+                var entityMember = GetMemberExpression(entityExpressions[index]);
+                var entityProperty = entityMember.Member as PropertyInfo;
+                if (entityProperty == null)
+                {
+                    throw new ArgumentException("Entity key fields must be public properties.");
+                }
+
+                var containsExpression = containsExpressions[index];
+                var accessor = Expression.Lambda<Func<TContains, object>>(
+                    Expression.Convert(containsExpression, typeof(object)),
+                    containsKeyExpression.Parameters[0]).Compile();
+                var keyType = Nullable.GetUnderlyingType(containsExpression.Type) ?? containsExpression.Type;
+
+                maps.Add(new BulkContainsKeyMap<TContains>
+                {
+                    EntityColumnName = entityProperty.GetCustomAttribute<ColumnAttribute>()?.Name ?? entityProperty.Name,
+                    TempColumnName = "Key" + index,
+                    SqlColumnType = GetSqlColumnType(keyType),
+                    DataColumnType = GetDataColumnType(keyType),
+                    ValueAccessor = accessor
+                });
+            }
+
+            return maps;
+        }
+
+        private static List<Expression> GetKeyExpressions(Expression expression)
+        {
+            expression = RemoveConvert(expression);
+
+            var newExpression = expression as NewExpression;
+            if (newExpression != null)
+            {
+                return newExpression.Arguments.Select(RemoveConvert).ToList();
+            }
+
+            var memberInit = expression as MemberInitExpression;
+            if (memberInit != null)
+            {
+                return memberInit.Bindings
+                    .OfType<MemberAssignment>()
+                    .Select(binding => RemoveConvert(binding.Expression))
+                    .ToList();
+            }
+
+            return new List<Expression> { expression };
+        }
+
+        private static MemberExpression GetMemberExpression(Expression expression)
+        {
+            var memberExpression = RemoveConvert(expression) as MemberExpression;
+            if (memberExpression == null)
+            {
+                throw new ArgumentException("Key expressions must be simple member access expressions.");
+            }
+
+            return memberExpression;
+        }
+
+        private static Expression RemoveConvert(Expression expression)
+        {
+            while (expression.NodeType == ExpressionType.Convert || expression.NodeType == ExpressionType.ConvertChecked)
+            {
+                expression = ((UnaryExpression)expression).Operand;
+            }
+
+            return expression;
+        }
+
+        private static string CreateBulkContainsTempTableSql<TContains>(
+            string tempTableName,
+            IEnumerable<BulkContainsKeyMap<TContains>> maps)
+        {
+            var columns = maps
+                .Select(map => $"{QuoteIdentifier(map.TempColumnName)} {map.SqlColumnType} null");
+
+            return $"create table {QuoteIdentifier(tempTableName)} ({string.Join(", ", columns)})";
+        }
+
+        private static string CreateBulkContainsQuerySql<TEntity, TContains>(
+            ObjectQuery<TEntity> objectQuery,
+            string tempTableName,
+            IEnumerable<BulkContainsKeyMap<TContains>> maps,
+            IEnumerable<PropertyMap> selectMaps)
+        {
+            var sourceSql = objectQuery.ToTraceString();
+            var selectColumns = selectMaps.Select(map =>
+                $"[BulkSource].{QuoteIdentifier(map.ColumnName)} as {QuoteIdentifier(map.Property.Name)}");
+            var joinConditions = maps.Select(map =>
+                $"(([BulkSource].{QuoteIdentifier(map.EntityColumnName)} = [BulkKeys].{QuoteIdentifier(map.TempColumnName)}) or ([BulkSource].{QuoteIdentifier(map.EntityColumnName)} is null and [BulkKeys].{QuoteIdentifier(map.TempColumnName)} is null))");
+
+            return $@"
+select {string.Join(", ", selectColumns)}
+from (
+{sourceSql}
+) as [BulkSource]
+inner join {QuoteIdentifier(tempTableName)} as [BulkKeys]
+    on {string.Join(" and ", joinConditions)}";
+        }
+
+        private static IEnumerable<SqlParameter> CreateSqlParameters<TEntity>(ObjectQuery<TEntity> objectQuery)
+        {
+            foreach (var parameter in objectQuery.Parameters)
+            {
+                yield return new SqlParameter("@" + parameter.Name, parameter.Value ?? DBNull.Value);
+            }
+        }
+
+        private static string CreateDropTempTableSql(string tempTableName)
+        {
+            return $"if object_id('tempdb..{tempTableName}') is not null drop table {QuoteIdentifier(tempTableName)}";
+        }
+
+        private static string QuoteIdentifier(string identifier)
+        {
+            return "[" + identifier.Replace("]", "]]") + "]";
+        }
+
+        private static Type GetDataColumnType(Type type)
+        {
+            var actualType = Nullable.GetUnderlyingType(type) ?? type;
+            return actualType.IsEnum ? Enum.GetUnderlyingType(actualType) : actualType;
+        }
+
+        private static string GetSqlColumnType(Type type)
+        {
+            var actualType = GetDataColumnType(type);
+
+            if (actualType == typeof(string))
+            {
+                return "nvarchar(4000)";
+            }
+
+            if (actualType == typeof(int))
+            {
+                return "int";
+            }
+
+            if (actualType == typeof(long))
+            {
+                return "bigint";
+            }
+
+            if (actualType == typeof(short))
+            {
+                return "smallint";
+            }
+
+            if (actualType == typeof(byte))
+            {
+                return "tinyint";
+            }
+
+            if (actualType == typeof(bool))
+            {
+                return "bit";
+            }
+
+            if (actualType == typeof(DateTime))
+            {
+                return "datetime2";
+            }
+
+            if (actualType == typeof(DateTimeOffset))
+            {
+                return "datetimeoffset";
+            }
+
+            if (actualType == typeof(Guid))
+            {
+                return "uniqueidentifier";
+            }
+
+            if (actualType == typeof(decimal))
+            {
+                return "decimal(38, 10)";
+            }
+
+            if (actualType == typeof(double))
+            {
+                return "float";
+            }
+
+            if (actualType == typeof(float))
+            {
+                return "real";
+            }
+
+            if (actualType == typeof(byte[]))
+            {
+                return "varbinary(max)";
+            }
+
+            return "nvarchar(4000)";
+        }
+
         private static List<PropertyMap> GetInsertPropertyMaps(Type entityType)
         {
             return entityType
@@ -171,6 +514,21 @@ namespace Service.Data
                 .Where(property => property.CanRead)
                 .Where(property => property.GetCustomAttribute<NotMappedAttribute>() == null)
                 .Where(property => !IsIdentityColumn(property))
+                .Where(property => IsSimpleType(property.PropertyType))
+                .Select(property => new PropertyMap
+                {
+                    Property = property,
+                    ColumnName = property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name
+                })
+                .ToList();
+        }
+
+        private static List<PropertyMap> GetSelectablePropertyMaps(Type entityType)
+        {
+            return entityType
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Where(property => property.CanRead)
+                .Where(property => property.GetCustomAttribute<NotMappedAttribute>() == null)
                 .Where(property => IsSimpleType(property.PropertyType))
                 .Select(property => new PropertyMap
                 {
@@ -212,12 +570,32 @@ namespace Service.Data
 
             public string ColumnName { get; set; }
         }
+
+        private sealed class BulkContainsKeyMap<TContains>
+        {
+            public string EntityColumnName { get; set; }
+
+            public string TempColumnName { get; set; }
+
+            public string SqlColumnType { get; set; }
+
+            public Type DataColumnType { get; set; }
+
+            public Func<TContains, object> ValueAccessor { get; set; }
+        }
     }
 
     public sealed class BulkOperationOptions
     {
         public bool AutoMapOutputDirection { get; set; }
 
+        public int BatchSize { get; set; } = 5000;
+
+        public int TimeoutSeconds { get; set; } = 600;
+    }
+
+    public sealed class BulkContainsOptions
+    {
         public int BatchSize { get; set; } = 5000;
 
         public int TimeoutSeconds { get; set; } = 600;

@@ -228,7 +228,7 @@ and not exists (
                     new SqlParameter("@SDate", startDate),
                     new SqlParameter("@EDate", endDate),
                     new SqlParameter("@UPLOAD_TIME", uploadTime),
-                    new SqlParameter("@UPLOAD_OPE", userId))
+                    new SqlParameter("@UPLOAD_OPE", NormalizeText(userId)))
                 .ToList()
                 .Select(item => new SeaTaxModifyRow
                 {
@@ -469,9 +469,10 @@ and not exists (
             DateTime uploadTime,
             string userId)
         {
+            var normalizedUserId = NormalizeText(userId);
             var uploadRows = jetfDb.SeaTaxUploads
                 .AsNoTracking()
-                .Where(row => row.UploadTime == uploadTime && row.UploadOpe == userId)
+                .Where(row => row.UploadTime == uploadTime && row.UploadOpe == normalizedUserId)
                 .ToList()
                 .Select(NormalizeSeaTaxUpload)
                 .ToList();
@@ -593,19 +594,13 @@ and not exists (
                 return Enumerable.Empty<ClearanceInfoEntity>().ToLookup(row => string.Empty);
             }
 
-            var sql = @"
-select
-    b.ROW_ID as RowId,
-    b.MAIN_NUMBER as MainNumber,
-    b.BAG_NUMBER as BagNumber,
-    b.SIGN_IN_TIME as SignInTime,
-    b.SIGN_OUT_TIME as SignOutTime
-from dbo.CLEARANCE_INFO b
-inner join #UploadKeys k
-    on b.MAIN_NUMBER = k.MainNumber
-    and b.BAG_NUMBER = k.BagNumber";
-
-            return QueryWithTempUploadKeys<ClearanceInfoEntity>(dataCenterDb, normalizedKeys, sql)
+            return dataCenterDb.ClearanceInfos
+                .AsNoTracking()
+                .WhereBulkContains(
+                    dataCenterDb,
+                    normalizedKeys,
+                    row => new { row.MainNumber, row.BagNumber },
+                    key => new { key.MainNumber, BagNumber = key.BlNo })
                 .ToLookup(row => BuildLookupKey(row.MainNumber, row.BagNumber));
         }
 
@@ -622,27 +617,15 @@ inner join #UploadKeys k
                 return new Dictionary<string, EtlTipcTaxEntity>();
             }
 
-            var sql = @"
-with LatestTax as
-(
-    select
-        t.ROW_ID as RowId,
-        t.MAIN_NUMBER as MainNumber,
-        t.BAG_NUMBER as BagNumber,
-        t.TAX_BASE as TaxBase,
-        row_number() over (
-            partition by t.MAIN_NUMBER, t.BAG_NUMBER
-            order by t.ROW_ID desc) as RowNo
-    from dbo.ETL_TIPC_TAX t
-    inner join #UploadKeys k
-        on t.MAIN_NUMBER = k.MainNumber
-        and t.BAG_NUMBER = k.BagNumber
-)
-select RowId, MainNumber, BagNumber, TaxBase
-from LatestTax
-where RowNo = 1";
-
-            return QueryWithTempUploadKeys<EtlTipcTaxEntity>(dataCenterDb, normalizedKeys, sql)
+            return dataCenterDb.EtlTipcTaxes
+                .AsNoTracking()
+                .WhereBulkContains(
+                    dataCenterDb,
+                    normalizedKeys,
+                    row => new { row.MainNumber, row.BagNumber },
+                    key => new { key.MainNumber, BagNumber = key.BlNo })
+                .GroupBy(row => BuildLookupKey(row.MainNumber, row.BagNumber))
+                .Select(group => group.OrderByDescending(row => row.RowId).First())
                 .ToDictionary(
                     row => BuildLookupKey(row.MainNumber, row.BagNumber),
                     row => row);
@@ -661,52 +644,20 @@ where RowNo = 1";
                 return new List<SeaOrderOriginalEntity>();
             }
 
-            var sql = @"
-with LatestOrder as
-(
-    select
-        o.ROW_ID as RowId,
-        o.MAINNUMBER as MainNumber,
-        o.BL_NO as BlNo,
-        o.DESPATCH_NAME as DespatchName,
-        o.TRANS_TAXPAYMENT as TransTaxPayment,
-        o.IMPORTER as Importer,
-        o.IM_PHONENO as ImporterPhone,
-        o.IM_ADD as ImporterAddress,
-        o.IMPORTER_ID as ImporterId,
-        o.JETF_SERIAL as JetfSerial,
-        o.CC as Cc,
-        o.MEMO as Memo,
-        o.ARRIVAL as Arrival,
-        o.MODIFTYDATE as ModifyDate,
-        row_number() over (
-            partition by o.MAINNUMBER, o.BL_NO
-            order by isnull(o.MODIFTYDATE, '19000101') desc, o.ROW_ID desc) as RowNo
-    from dbo.SEA_ORDER_ORIGINAL o
-    inner join #UploadKeys k
-        on o.MAINNUMBER = k.MainNumber
-        and o.BL_NO = k.BagNumber
-    where o.GW > 0
-)
-select
-    RowId,
-    MainNumber,
-    BlNo,
-    DespatchName,
-    TransTaxPayment,
-    Importer,
-    ImporterPhone,
-    ImporterAddress,
-    ImporterId,
-    JetfSerial,
-    Cc,
-    Memo,
-    Arrival,
-    ModifyDate
-from LatestOrder
-where RowNo = 1";
-
-            return QueryWithTempUploadKeys<SeaOrderOriginalEntity>(dataCenterDb, normalizedKeys, sql);
+            return dataCenterDb.SeaOrderOriginals
+                .AsNoTracking()
+                .Where(row => row.Gw > 0)
+                .WhereBulkContains(
+                    dataCenterDb,
+                    normalizedKeys,
+                    row => new { row.MainNumber, row.BlNo },
+                    key => new { key.MainNumber, key.BlNo })
+                .GroupBy(row => BuildLookupKey(row.MainNumber, row.BlNo))
+                .Select(group => group
+                    .OrderByDescending(row => row.ModifyDate ?? DateTime.MinValue)
+                    .ThenByDescending(row => row.RowId)
+                    .First())
+                .ToList();
         }
 
         /// <summary>
@@ -720,84 +671,6 @@ where RowNo = 1";
                 .GroupBy(row => BuildLookupKey(row.MainNumber, row.BlNo))
                 .Select(group => group.First())
                 .ToList();
-        }
-
-        /// <summary>
-        /// 用暫存表承接大量主號/提單 key，再以 SQL join 查詢，避免產生大量 IN 條件。
-        /// </summary>
-        private static List<T> QueryWithTempUploadKeys<T>(
-            DataCenterDbContext dataCenterDb,
-            IEnumerable<UploadKey> uploadKeys,
-            string sql)
-        {
-            var keys = NormalizeUploadKeys(uploadKeys);
-            if (keys.Count == 0)
-            {
-                return new List<T>();
-            }
-
-            var connection = (SqlConnection)dataCenterDb.Database.Connection;
-            var shouldClose = connection.State == ConnectionState.Closed;
-            var transaction = dataCenterDb.Database.CurrentTransaction?.UnderlyingTransaction as SqlTransaction;
-
-            if (shouldClose)
-            {
-                connection.Open();
-            }
-
-            try
-            {
-                using (var command = new SqlCommand(@"
-create table #UploadKeys
-(
-    MainNumber nvarchar(100) not null,
-    BagNumber nvarchar(100) not null
-)", connection, transaction))
-                {
-                    command.ExecuteNonQuery();
-                }
-
-                using (var bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction))
-                {
-                    bulkCopy.DestinationTableName = "#UploadKeys";
-                    bulkCopy.BatchSize = 5000;
-                    bulkCopy.BulkCopyTimeout = CommandTimeoutSeconds;
-                    bulkCopy.ColumnMappings.Add("MainNumber", "MainNumber");
-                    bulkCopy.ColumnMappings.Add("BagNumber", "BagNumber");
-                    bulkCopy.WriteToServer(CreateUploadKeyTable(keys));
-                }
-
-                return dataCenterDb.Database.SqlQuery<T>(sql).ToList();
-            }
-            finally
-            {
-                using (var command = new SqlCommand("if object_id('tempdb..#UploadKeys') is not null drop table #UploadKeys", connection, transaction))
-                {
-                    command.ExecuteNonQuery();
-                }
-
-                if (shouldClose)
-                {
-                    connection.Close();
-                }
-            }
-        }
-
-        /// <summary>
-        /// 建立 SqlBulkCopy 寫入暫存表用的 key table。
-        /// </summary>
-        private static DataTable CreateUploadKeyTable(IEnumerable<UploadKey> uploadKeys)
-        {
-            var table = new DataTable();
-            table.Columns.Add("MainNumber", typeof(string));
-            table.Columns.Add("BagNumber", typeof(string));
-
-            foreach (var key in uploadKeys)
-            {
-                table.Rows.Add(key.MainNumber, key.BlNo);
-            }
-
-            return table;
         }
 
         /// <summary>
@@ -1427,6 +1300,7 @@ create table #UploadKeys
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
+
 
         /// <summary>
         /// 將字串安全轉成 nullable int。
