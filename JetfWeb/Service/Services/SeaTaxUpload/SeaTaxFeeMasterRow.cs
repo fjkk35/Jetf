@@ -160,6 +160,6 @@ namespace Service.Services.SeaTaxUpload
         /// <summary>
         /// 同主檔全部筆數的明細資料。
         /// </summary>
-        public List<SeaTaxFeeMasterDetailRow> DetailRows { get; set; } = new List<SeaTaxFeeMasterDetailRow>();
+        public List<FeeMasterDetailRow> DetailRows { get; set; } = new List<FeeMasterDetailRow>();
     }
 }

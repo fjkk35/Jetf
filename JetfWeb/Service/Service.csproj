@@ -239,8 +239,8 @@
     <Compile Include="Data\Models\DataCenter\OriginalListEntity.cs" />
     <Compile Include="Data\Models\DataCenter\SeaOrderOriginalEntity.cs" />
     <Compile Include="Data\Models\DataCenter\SysCustEntity.cs" />
-      <Compile Include="Data\Models\DataCenter\ClearanceInfoEntity.cs" />
-      <Compile Include="Data\Models\DataCenter\ClearanceTaxEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\ClearanceInfoEntity.cs" />
+    <Compile Include="Data\Models\DataCenter\ClearanceTaxEntity.cs" />
     <Compile Include="Data\Models\DataCenter\CesMainOrderEntity.cs" />
     <Compile Include="Data\Models\DataCenter\DespatchFromEntity.cs" />
     <Compile Include="Data\Models\DataCenter\EtlCniPreDeclareOrderEntity.cs" />
@@ -260,7 +260,7 @@
     <Compile Include="Data\Models\DataCenter\SysAirBagEntity.cs" />
     <Compile Include="Data\Models\DataCenter\SysParamEntity.cs" />
     <Compile Include="Data\Models\Jetf\CustomerMasterEntity.cs" />
-    <Compile Include="Data\Models\Jetf\FeeMasterDstailEntity.cs" />
+    <Compile Include="Data\Models\Jetf\FeeMasterDetailEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterTestEntity.cs" />
     <Compile Include="Data\Models\Jetf\AbnormalStateEntity.cs" />
@@ -272,7 +272,7 @@
     <Compile Include="Data\Models\Jetf\AuthorityGroupDetailEntity.cs" />
     <Compile Include="Data\Models\Jetf\CustomsBrokerEntity.cs" />
     <Compile Include="Data\Models\Jetf\CustomsBrokerageEntity.cs" />
-      <Compile Include="Data\Models\Jetf\CustomerSpecialEntity.cs" />
+    <Compile Include="Data\Models\Jetf\CustomerSpecialEntity.cs" />
     <Compile Include="Data\Models\Jetf\ErrorOrderSendDetailEntity.cs" />
     <Compile Include="Data\Models\Jetf\ErrorOrderSendEntity.cs" />
     <Compile Include="Data\Models\Jetf\ErrorOrderSmsMessageEntity.cs" />
@@ -519,7 +519,6 @@
     <Compile Include="Services\DeliveryAssistant\Domain\UploadOrderInfoRow.cs" />
     <Compile Include="Services\DownloadService.cs" />
     <Compile Include="Services\DropDownListService.cs" />
-    
     <Compile Include="Services\EtlClearanceDetails\Domain\CoupangGoodsModel.cs" />
     <Compile Include="Services\EtlCustomerWorkLoadReport\Domain\CustWorkLoadDetailModel.cs" />
     <Compile Include="Services\EtlCustomerWorkLoadReport\Domain\CustWorkLoadDetailsSheetRowModel.cs" />
@@ -737,7 +736,7 @@
     <Compile Include="Services\UnpackingStatistics\UnpackingStatisticsService.cs" />
     <Compile Include="Services\DownloadEtlNew\DownloadEtlNewService.cs" />
     <Compile Include="Services\DownloadSeaNew\DownloadSeaNewService.cs" />
-    <Compile Include="Services\SeaTaxUpload\SeaTaxFeeMasterDetailRow.cs" />
+    <Compile Include="Services\SeaTaxUpload\FeeMasterDetailRow.cs" />
     <Compile Include="Services\SeaTaxUpload\SeaTaxFeeMasterRow.cs" />
     <Compile Include="Services\SeaTaxUpload\SeaTaxModifyRow.cs" />
     <Compile Include="Services\SeaTaxUpload\SeaTaxUploadExcelRow.cs" />

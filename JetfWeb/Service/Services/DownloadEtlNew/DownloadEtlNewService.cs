@@ -2,6 +2,7 @@
 using NLog;
 using Service.Data;
 using Service.Models;
+using Service.Services.SeaTaxUpload;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -249,6 +250,8 @@ namespace Service.Services.DownloadEtlNew
                     ClearanceNumber = latestRow.ClearanceNumber,
                     BagNumber = latestRow.BagNo,
                     TaxNumber = latestRow.TaxNumber,
+                    TaxPayer = latestRow.TaxPayer,
+                    TaxRecId = latestRow.TaxRecId,
                     DlvInv = latestRow.DeliveryNo,
                     InDate = latestRow.SignInTime?.ToString("yyyyMMdd"),
                     InDateTime = latestRow.SignInTime,
@@ -270,6 +273,7 @@ namespace Service.Services.DownloadEtlNew
 
                 // 套用舊系統稅金邏輯，計算 customer_cod、trans_cod、to_dlv_cod 等欄位。
                 ApplyTaxRule(draft, latestRow, specialPhones);
+                draft.DetailRows = CreateFeeMasterDetailRows(orderedRows, specialPhones);
                 drafts.Add(draft);
             }
 
@@ -391,6 +395,8 @@ namespace Service.Services.DownloadEtlNew
                         MainNumber = tax.MainNumber,
                         TaxAmount = tax.TaxAmount,
                         TaxBase = tax.TaxBase,
+                        TaxPayer = tax.TaxPayer,
+                        TaxRecId = tax.TaxRecId,
                         Ecm = original?.Ecm,
                         BagNo = original?.BagNo ?? clearance.BagNumber,
                         DespatchNo = original?.DespatchNo,
@@ -474,7 +480,9 @@ namespace Service.Services.DownloadEtlNew
                     x.BagNumber,
                     x.TaxNumber,
                     x.TaxAmount,
-                    x.TaxBase
+                    x.TaxBase,
+                    x.Taxpayer,
+                    x.TaxpayerId
                 })
                 .ToList()
                 .Select(x => new TaxLookupRow
@@ -483,7 +491,9 @@ namespace Service.Services.DownloadEtlNew
                     BagNumber = x.BagNumber,
                     TaxNumber = x.TaxNumber,
                     TaxAmount = x.TaxAmount.HasValue ? x.TaxAmount.Value.ToString() : string.Empty,
-                    TaxBase = ToNullableInt(x.TaxBase)
+                    TaxBase = ToNullableInt(x.TaxBase),
+                    TaxPayer = x.Taxpayer,
+                    TaxRecId = x.TaxpayerId
                 })
                 .ToList();
 
@@ -514,7 +524,9 @@ namespace Service.Services.DownloadEtlNew
                     x.BagNumber,
                     x.TaxNumber,
                     x.TaxAmount,
-                    x.TaxBase
+                    x.TaxBase,
+                    x.Taxpayer,
+                    x.TaxpayerId
                 })
                 .ToList()
                 .Select(x => new TaxLookupRow
@@ -523,7 +535,9 @@ namespace Service.Services.DownloadEtlNew
                     BagNumber = x.BagNumber,
                     TaxNumber = x.TaxNumber,
                     TaxAmount = x.TaxAmount,
-                    TaxBase = ToNullableInt(x.TaxBase)
+                    TaxBase = ToNullableInt(x.TaxBase),
+                    TaxPayer = x.Taxpayer,
+                    TaxRecId = x.TaxpayerId
                 })
                 .ToList();
 
@@ -774,14 +788,18 @@ namespace Service.Services.DownloadEtlNew
 
                     if (insertedRows.Count > 0)
                     {
-                        JetfDb.BulkInsert(insertedRows);
+                        // step1: 新增主檔並回填 Id，供後續明細關聯使用。
+                        JetfDb.BulkInsert(insertedRows, operation => operation.AutoMapOutputDirection = true);
                     }
 
                     if (updatedRows.Count > 0)
                     {
+                        // step2: 更新既有主檔資料。
                         JetfDb.BulkUpdate(updatedRows);
                     }
 
+                    // step3: 主檔 Id 確定後，重建本次對應的明細資料。
+                    SaveFeeMasterDetails(drafts, insertedRows, updatedRows);
                     transaction.Commit();
                 }
                 catch
@@ -789,6 +807,60 @@ namespace Service.Services.DownloadEtlNew
                     transaction.Rollback();
                     throw;
                 }
+            }
+        }
+
+        /// <summary>
+        /// 依本次 upsert 後的主檔 Id 重建 FEE_MASTER_DETAIL 明細。
+        /// </summary>
+        /// <param name="drafts">本次待寫入的主檔草稿。</param>
+        /// <param name="insertedRows">本次新增後的主檔資料。</param>
+        /// <param name="updatedRows">本次更新後的主檔資料。</param>
+        private void SaveFeeMasterDetails(
+            List<FeeMasterDraft> drafts,
+            List<FeeMasterTestEntity> insertedRows,
+            List<FeeMasterTestEntity> updatedRows)
+        {
+            var masterRows = insertedRows
+                .Concat(updatedRows)
+                .GroupBy(x => BuildCompositeKey(x.MainNumber, x.TrackingNo))
+                .ToDictionary(x => x.Key, x => x.First());
+
+            if (masterRows.Count == 0)
+            {
+                return;
+            }
+
+            // step1: 更新既有主檔時，先刪除舊明細避免同一主檔留下重複資料。
+            var existingMasterIds = updatedRows.Select(x => x.Id).ToList();
+            if (existingMasterIds.Count > 0)
+            {
+                var existingDetails = JetfDb.FeeMasterDetails
+                    .Where(x => existingMasterIds.Contains(x.FeeMasterId))
+                    .ToList();
+
+                if (existingDetails.Count > 0)
+                {
+                    JetfDb.BulkDelete(existingDetails);
+                }
+            }
+
+            // step2: 依本次主檔 Id 建立所有明細 entity。
+            var detailEntities = new List<FeeMasterDetailEntity>();
+            foreach (var draft in drafts)
+            {
+                if (!masterRows.TryGetValue(BuildCompositeKey(draft.MainNumber, draft.TrackingNo), out var master))
+                {
+                    continue;
+                }
+
+                detailEntities.AddRange(draft.DetailRows.Select(row => CreateFeeMasterDetailEntity(row, master.Id)));
+            }
+
+            // step3: 批次寫入新的明細資料。
+            if (detailEntities.Count > 0)
+            {
+                JetfDb.BulkInsert(detailEntities);
             }
         }
 
@@ -938,6 +1010,8 @@ namespace Service.Services.DownloadEtlNew
                 ClearanceNumber = NormalizeText(draft.ClearanceNumber),
                 BagNumber = NormalizeText(draft.BagNumber),
                 TaxNumber = NormalizeText(draft.TaxNumber),
+                TaxPayer = NormalizeText(draft.TaxPayer),
+                TaxRecId = NormalizeText(draft.TaxRecId),
                 DlvInv = NormalizeText(draft.DlvInv),
                 InDate = NormalizeText(draft.InDate),
                 InDateTime = draft.InDateTime,
@@ -996,6 +1070,8 @@ namespace Service.Services.DownloadEtlNew
             entity.Cod = draft.Cod;
             entity.ToDlvCod = draft.ToDlvCod.ToString(CultureInfo.InvariantCulture);
             entity.DlvInv = NormalizeText(draft.DlvInv);
+            entity.TaxPayer = NormalizeText(draft.TaxPayer);
+            entity.TaxRecId = NormalizeText(draft.TaxRecId);
             entity.Arrival = NormalizeText(draft.Arrival);
             entity.CustomerCod = draft.CustomerCod;
             entity.TransCod = draft.TransCod;
@@ -1062,6 +1138,149 @@ namespace Service.Services.DownloadEtlNew
 
             // step 6: 其餘情況走一般 N 類型，稅金與手續費都由物流端代收。
             ApplyTaxData(draft, CalculateTaxN(amounts));
+        }
+
+        /// <summary>
+        /// 建立同一 tracking 下每張稅單的明細資料。
+        /// </summary>
+        /// <param name="detailRows">同一 tracking 的來源資料。</param>
+        /// <param name="specialPhones">特殊客戶電話集合。</param>
+        /// <returns>待寫入 FEE_MASTER_DETAIL 的明細草稿。</returns>
+        private static List<FeeMasterDetailRow> CreateFeeMasterDetailRows(
+            IEnumerable<CombinedRow> detailRows,
+            HashSet<string> specialPhones)
+        {
+            var rows = (detailRows ?? Enumerable.Empty<CombinedRow>()).ToList();
+            if (rows.Count == 0)
+            {
+                return new List<FeeMasterDetailRow>();
+            }
+
+            if (rows[0].IsCainiaoP)
+            {
+                return SeaTaxUploadService.CreateCainiaoPDetailRows(
+                    rows.Select(row => new FeeMasterDetailSourceRow
+                    {
+                        MainNumber = row.MainNumber,
+                        TrackingNo = row.TrackingNo,
+                        ClearanceNumber = row.ClearanceNumber,
+                        BagNumber = row.BagNo,
+                        TaxNumber = row.TaxNumber,
+                        TaxPayer = row.TaxPayer,
+                        TaxRecId = row.TaxRecId,
+                        DlvInv = row.DeliveryNo,
+                        TaxBase = row.TaxBase.HasValue ? row.TaxBase.Value.ToString(CultureInfo.InvariantCulture) : string.Empty,
+                        Tax = row.TaxAmount,
+                        Cod = row.Cc,
+                        Fee = row.CodFee.HasValue ? row.CodFee.Value.ToString(CultureInfo.InvariantCulture) : string.Empty,
+                        Recipient = row.Recipient,
+                        RecPhone = ToNarrowPhone(row.RecPhone),
+                        RecAddress = row.RecAddress,
+                        IsCainiaoP = row.IsCainiaoP
+                    }));
+            }
+
+            return rows.Select(row => CreateRegularDetailRow(row, specialPhones)).ToList();
+        }
+
+        /// <summary>
+        /// 建立空運一般明細資料。
+        /// </summary>
+        /// <param name="row">空運來源資料。</param>
+        /// <param name="specialPhones">特殊客戶電話集合。</param>
+        /// <returns>FEE_MASTER_DETAIL 明細資料。</returns>
+        private static FeeMasterDetailRow CreateRegularDetailRow(CombinedRow row, HashSet<string> specialPhones)
+        {
+            var taxAmount = ToInt(row.TaxAmount);
+            var codAmount = ToInt(row.Cc);
+            var feeAmount = row.CodFee ?? 0;
+            var detailFee = feeAmount;
+            var amounts = new TaxAmountSet { Tax1 = taxAmount, Tax2 = 0, Cod = codAmount, Fee = feeAmount };
+            var includeTax = NormalizeText(row.IncludeTax);
+            TaxCalculationResult taxData;
+
+            if (includeTax == "Y")
+            {
+                taxData = CalculateTaxY(amounts);
+            }
+            else if (includeTax == "D" || IsSpecialEtlCustomer(row.Company, ToNarrowPhone(row.RecPhone).Trim(), specialPhones))
+            {
+                taxData = CalculateTaxD(amounts);
+                detailFee = 0;
+            }
+            else if (includeTax == "C")
+            {
+                taxData = CalculateTaxC(amounts);
+                detailFee = 0;
+            }
+            else
+            {
+                taxData = CalculateTaxN(amounts);
+            }
+
+            return CreateFeeMasterDetailRow(row, detailFee, taxData.ToDlvCod);
+        }
+
+        /// <summary>
+        /// 將空運來源資料與已計算完成的明細金額轉成 detail row。
+        /// </summary>
+        /// <param name="row">空運來源資料。</param>
+        /// <param name="feeAmount">明細手續費。</param>
+        /// <param name="toDlvCod">應向物流代收金額。</param>
+        /// <returns>FEE_MASTER_DETAIL 明細資料。</returns>
+        private static FeeMasterDetailRow CreateFeeMasterDetailRow(CombinedRow row, int feeAmount, int toDlvCod)
+        {
+            return new FeeMasterDetailRow
+            {
+                MainNumber = row.MainNumber,
+                TrackingNo = row.TrackingNo,
+                ClearanceNumber = row.ClearanceNumber,
+                BagNumber = row.BagNo,
+                TaxNumber = row.TaxNumber,
+                TaxPayer = row.TaxPayer,
+                TaxRecId = row.TaxRecId,
+                DlvInv = row.DeliveryNo,
+                TaxBase = row.TaxBase.HasValue ? row.TaxBase.Value.ToString(CultureInfo.InvariantCulture) : string.Empty,
+                Tax = row.TaxAmount,
+                Ccfee = string.Empty,
+                Cod = row.Cc,
+                Fee = feeAmount.ToString(CultureInfo.InvariantCulture),
+                Recipient = row.Recipient,
+                RecPhone = ToNarrowPhone(row.RecPhone),
+                RecAddress = row.RecAddress,
+                ToDlvCod = toDlvCod.ToString(CultureInfo.InvariantCulture)
+            };
+        }
+
+        /// <summary>
+        /// 建立 FEE_MASTER_DETAIL 寫入實體。
+        /// </summary>
+        /// <param name="row">明細草稿。</param>
+        /// <param name="feeMasterId">對應主檔 Id。</param>
+        /// <returns>明細 entity。</returns>
+        private static FeeMasterDetailEntity CreateFeeMasterDetailEntity(FeeMasterDetailRow row, int feeMasterId)
+        {
+            return new FeeMasterDetailEntity
+            {
+                FeeMasterId = feeMasterId,
+                MainNumber = NormalizeText(row.MainNumber),
+                TrackingNo = NormalizeText(row.TrackingNo),
+                ClearanceNumber = NormalizeText(row.ClearanceNumber),
+                BagNumber = NormalizeText(row.BagNumber),
+                TaxNumber = NormalizeText(row.TaxNumber),
+                TaxPayer = NormalizeText(row.TaxPayer),
+                TaxRecId = NormalizeText(row.TaxRecId),
+                DlvInv = NormalizeText(row.DlvInv),
+                TaxBase = ToNullableInt(row.TaxBase),
+                Tax = ToNullableInt(row.Tax),
+                Ccfee = ToNullableInt(row.Ccfee),
+                Cod = ToNullableInt(row.Cod),
+                Fee = ToNullableInt(row.Fee),
+                Recipient = NormalizeText(row.Recipient),
+                RecPhone = NormalizeText(row.RecPhone),
+                RecAddress = NormalizeText(row.RecAddress),
+                ToDlvCod = NormalizeText(row.ToDlvCod)
+            };
         }
 
         /// <summary>
@@ -1375,6 +1594,16 @@ namespace Service.Services.DownloadEtlNew
 
             public string TaxNumber { get; set; }
 
+            /// <summary>
+            /// 納稅義務人。
+            /// </summary>
+            public string TaxPayer { get; set; }
+
+            /// <summary>
+            /// 納稅義務人證號。
+            /// </summary>
+            public string TaxRecId { get; set; }
+
             public string TaxAmount { get; set; }
 
             public int? TaxBase { get; set; }
@@ -1433,6 +1662,16 @@ namespace Service.Services.DownloadEtlNew
 
             public int? TaxBase { get; set; }
 
+            /// <summary>
+            /// 納稅義務人。
+            /// </summary>
+            public string TaxPayer { get; set; }
+
+            /// <summary>
+            /// 納稅義務人證號。
+            /// </summary>
+            public string TaxRecId { get; set; }
+
             public string Ecm { get; set; }
 
             public string BagNo { get; set; }
@@ -1482,6 +1721,16 @@ namespace Service.Services.DownloadEtlNew
 
             public string TaxNumber { get; set; }
 
+            /// <summary>
+            /// 納稅義務人。
+            /// </summary>
+            public string TaxPayer { get; set; }
+
+            /// <summary>
+            /// 納稅義務人證號。
+            /// </summary>
+            public string TaxRecId { get; set; }
+
             public string DlvInv { get; set; }
 
             public string InDate { get; set; }
@@ -1521,6 +1770,11 @@ namespace Service.Services.DownloadEtlNew
             public int CustomerCod { get; set; }
 
             public int TransCod { get; set; }
+
+            /// <summary>
+            /// 對應 FEE_MASTER_DETAIL 的明細資料。
+            /// </summary>
+            public List<FeeMasterDetailRow> DetailRows { get; set; } = new List<FeeMasterDetailRow>();
         }
 
         private sealed class TaxAmountSet

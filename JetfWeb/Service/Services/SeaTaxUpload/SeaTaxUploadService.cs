@@ -805,19 +805,19 @@ where a.UPLOAD_TIME = @UPLOAD_TIME and a.UPLOAD_OPE = @UPLOAD_OPE
         /// 建立同一主單下所有 detail rows。
         /// 這個方法只處理明細資料，不處理主檔資料的組裝與計算。
         /// </summary>
-        private List<SeaTaxFeeMasterDetailRow> CreateFeeMasterDetailRows(
+        private List<FeeMasterDetailRow> CreateFeeMasterDetailRows(
             IEnumerable<SeaTaxUploadJoinedRow> detailRows,
             IEnumerable<string> customerSpecialPhones)
         {
             var sourceRows = (detailRows ?? Enumerable.Empty<SeaTaxUploadJoinedRow>()).ToList();
             if (sourceRows.Count == 0)
             {
-                return new List<SeaTaxFeeMasterDetailRow>();
+                return new List<FeeMasterDetailRow>();
             }
 
             if (sourceRows[0].IsCainiaoP.GetValueOrDefault())
             {
-                return CreateCainiaoPDetailRows(sourceRows);
+                return CreateCainiaoPDetailRows(sourceRows.Select(CreateFeeMasterDetailSourceRow));
             }
 
             return sourceRows
@@ -828,7 +828,7 @@ where a.UPLOAD_TIME = @UPLOAD_TIME and a.UPLOAD_OPE = @UPLOAD_OPE
         /// <summary>
         /// 建立一般明細資料。
         /// </summary>
-        private SeaTaxFeeMasterDetailRow CreateRegularDetailRow(
+        private FeeMasterDetailRow CreateRegularDetailRow(
             SeaTaxUploadJoinedRow row,
             IEnumerable<string> customerSpecialPhones)
         {
@@ -862,7 +862,7 @@ where a.UPLOAD_TIME = @UPLOAD_TIME and a.UPLOAD_OPE = @UPLOAD_OPE
                 taxData = _taxService.GetTaxN(taxCalculationInput);
             }
 
-            return CreateFeeMasterDetailRow(row, detailFee, taxData.ToDlvCod);
+            return CreateFeeMasterDetailRow(CreateFeeMasterDetailSourceRow(row), detailFee, taxData.ToDlvCod);
         }
 
         /// <summary>
@@ -871,11 +871,11 @@ where a.UPLOAD_TIME = @UPLOAD_TIME and a.UPLOAD_OPE = @UPLOAD_OPE
         /// step2 額度扣完後，超出的稅額才轉成派件公司代收稅額。
         /// step3 手續費只放在第一筆真的有代收稅額的明細，避免重複帶入。
         /// </summary>
-        private List<SeaTaxFeeMasterDetailRow> CreateCainiaoPDetailRows(
-            IEnumerable<SeaTaxUploadJoinedRow> detailRows)
+        internal static List<FeeMasterDetailRow> CreateCainiaoPDetailRows(
+            IEnumerable<FeeMasterDetailSourceRow> detailRows)
         {
-            var sourceRows = (detailRows ?? Enumerable.Empty<SeaTaxUploadJoinedRow>()).ToList();
-            var result = new List<SeaTaxFeeMasterDetailRow>();
+            var sourceRows = (detailRows ?? Enumerable.Empty<FeeMasterDetailSourceRow>()).ToList();
+            var result = new List<FeeMasterDetailRow>();
             var remainingCustomerTax = 1000;
             var feeAssigned = false;
 
@@ -883,7 +883,7 @@ where a.UPLOAD_TIME = @UPLOAD_TIME and a.UPLOAD_OPE = @UPLOAD_OPE
             {
                 var taxAmount = ParseNullableInt(row.Tax) ?? 0;
                 var codAmount = ParseNullableInt(row.Cod) ?? 0;
-                var feeAmount = ParseNullableInt(row.CodFee) ?? 0;
+                var feeAmount = ParseNullableInt(row.Fee) ?? 0;
 
                 // step1: 客戶可吸收的 1000 額度先從當前稅額扣除。
                 var customerTax = Math.Min(Math.Max(remainingCustomerTax, 0), taxAmount);
@@ -910,12 +910,39 @@ where a.UPLOAD_TIME = @UPLOAD_TIME and a.UPLOAD_OPE = @UPLOAD_OPE
         /// <summary>
         /// 將單筆 joined row 與已計算完成的明細結果轉成 detail row。
         /// </summary>
-        private static SeaTaxFeeMasterDetailRow CreateFeeMasterDetailRow(
-            SeaTaxUploadJoinedRow row,
+        private static FeeMasterDetailRow CreateFeeMasterDetailRow(
+            FeeMasterDetailSourceRow row,
             int feeAmount,
             int toDlvCod)
         {
-            return new SeaTaxFeeMasterDetailRow
+            return new FeeMasterDetailRow
+            {
+                MainNumber = row.MainNumber,
+                TrackingNo = row.TrackingNo,
+                ClearanceNumber = row.ClearanceNumber,
+                BagNumber = row.BagNumber,
+                TaxNumber = row.TaxNumber,
+                TaxPayer = row.TaxPayer,
+                TaxRecId = row.TaxRecId,
+                DlvInv = row.DlvInv,
+                TaxBase = row.TaxBase,
+                Tax = row.Tax,
+                Ccfee = string.Empty,
+                Cod = row.Cod,
+                Fee = feeAmount.ToString(CultureInfo.InvariantCulture),
+                Recipient = row.Recipient,
+                RecPhone = row.RecPhone,
+                RecAddress = row.RecAddress,
+                ToDlvCod = toDlvCod.ToString(CultureInfo.InvariantCulture)
+            };
+        }
+
+        /// <summary>
+        /// 將海運 joined row 轉成海空運共用明細來源資料。
+        /// </summary>
+        private static FeeMasterDetailSourceRow CreateFeeMasterDetailSourceRow(SeaTaxUploadJoinedRow row)
+        {
+            return new FeeMasterDetailSourceRow
             {
                 MainNumber = row.MainNumber,
                 TrackingNo = row.BlNo,
@@ -927,13 +954,15 @@ where a.UPLOAD_TIME = @UPLOAD_TIME and a.UPLOAD_OPE = @UPLOAD_OPE
                 DlvInv = row.JetfSerial,
                 TaxBase = row.TaxBase,
                 Tax = row.Tax,
-                Ccfee = string.Empty,
                 Cod = ToNullableIntText(row.Cod),
-                Fee = feeAmount.ToString(CultureInfo.InvariantCulture),
+                Fee = row.CodFee.HasValue ? row.CodFee.Value.ToString(CultureInfo.InvariantCulture) : string.Empty,
+                IncludeTax = row.IncludeTax,
+                Company = row.Company,
+                Memo = row.Memo,
                 Recipient = row.Importer,
                 RecPhone = row.ImporterPhone,
                 RecAddress = row.ImporterAddr,
-                ToDlvCod = toDlvCod.ToString(CultureInfo.InvariantCulture)
+                IsCainiaoP = row.IsCainiaoP.GetValueOrDefault()
             };
         }
 
@@ -972,7 +1001,7 @@ where a.UPLOAD_TIME = @UPLOAD_TIME and a.UPLOAD_OPE = @UPLOAD_OPE
             if (existingRows.Count > 0)
             {
                 var existingIds = existingRows.Select(row => row.Id).ToList();
-                var existingDetailRows = jetfDb.FeeMasterDstails
+                var existingDetailRows = jetfDb.FeeMasterDetails
                     .Where(row => existingIds.Contains(row.FeeMasterId))
                     .ToList();
 
@@ -1074,9 +1103,9 @@ where a.UPLOAD_TIME = @UPLOAD_TIME and a.UPLOAD_OPE = @UPLOAD_OPE
         /// <summary>
         /// 建立 FEE_MASTER_DSTAIL 寫入實體。
         /// </summary>
-        private static FeeMasterDstailEntity CreateFeeMasterDstailEntity(SeaTaxFeeMasterDetailRow row, int feeMasterId)
+        private static FeeMasterDetailEntity CreateFeeMasterDstailEntity(FeeMasterDetailRow row, int feeMasterId)
         {
-            return new FeeMasterDstailEntity
+            return new FeeMasterDetailEntity
             {
                 FeeMasterId = feeMasterId,
                 MainNumber = NormalizeText(row.MainNumber),

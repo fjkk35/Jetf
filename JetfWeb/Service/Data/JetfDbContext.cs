@@ -1,4 +1,4 @@
-using System.Data.Entity;
+﻿using System.Data.Entity;
 
 namespace Service.Data
 {
@@ -84,7 +84,7 @@ namespace Service.Data
 
         public DbSet<FeeMasterEntity> FeeMasters { get; set; }
 
-        public DbSet<FeeMasterDstailEntity> FeeMasterDstails { get; set; }
+        public DbSet<FeeMasterDetailEntity> FeeMasterDetails { get; set; }
 
         public DbSet<FeeMasterLogEntity> FeeMasterLogs { get; set; }
 
