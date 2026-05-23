@@ -1148,6 +1148,7 @@ and not exists (
                 Cod = ParseNullableInt(row.Cod),
                 ToDlvCod = NormalizeText(row.ToDlvCod),
                 DlvInv = NormalizeText(row.DlvInv),
+                Download = "1",
                 TaxPayer = NormalizeText(row.TaxPayer),
                 Arrival = NormalizeText(row.Arrival),
                 CustomerCod = ParseNullableInt(row.CustomerCod),
