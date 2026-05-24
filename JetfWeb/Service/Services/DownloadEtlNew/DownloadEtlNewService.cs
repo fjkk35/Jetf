@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Data.Entity;
 using System.Globalization;
 using System.Linq;
-using Z.EntityFramework.Plus;
 
 namespace Service.Services.DownloadEtlNew
 {

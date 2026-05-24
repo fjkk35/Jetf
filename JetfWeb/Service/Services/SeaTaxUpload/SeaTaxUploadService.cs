@@ -15,7 +15,6 @@ using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using Z.EntityFramework.Plus;
 
 namespace Service.Services.SeaTaxUpload
 {
@@ -274,9 +273,8 @@ and not exists (
                 dataCenterDb,
                 modifyRows.Select(row => new UploadKey(row.MainNumber, row.BagNumber)).ToList());
 
-            jetfDb.FeeMasterModifies
-                .Where(row => row.ModifyDataDate == dataDate && row.DataType == dataType)
-                .Delete();
+            jetfDb.DeleteWhere(jetfDb.FeeMasterModifies
+                .Where(row => row.ModifyDataDate == dataDate && row.DataType == dataType));
 
             var snapshotRows = (
                 from row in modifyRows
@@ -1095,9 +1093,8 @@ and not exists (
                     existingIds,
                     row => row.FeeMasterId);
 
-                jetfDb.FeeMasterTests
-                    .Where(row => row.DataDate == dataDate && row.Source == source && row.SourceType == SeaSourceType)
-                    .Delete();
+                jetfDb.DeleteWhere(jetfDb.FeeMasterTests
+                    .Where(row => row.DataDate == dataDate && row.Source == source && row.SourceType == SeaSourceType));
             }
 
             // step2: 寫入新的主檔，取得主檔 Id 後，再把對應明細一併寫入。

@@ -9,7 +9,6 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using Z.EntityFramework.Plus;
 
 namespace Service.Data
 {
@@ -193,6 +192,57 @@ namespace Service.Data
             }
         }
 
+        public static int DeleteWhere<TEntity>(this DbContext context, IQueryable<TEntity> source)
+            where TEntity : class
+        {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            if (!(context.Database.Connection is SqlConnection connection))
+            {
+                throw new NotSupportedException("DeleteWhere only supports SQL Server connections.");
+            }
+
+            var objectQuery = GetObjectQuery(source);
+            if (objectQuery == null)
+            {
+                throw new InvalidOperationException("DeleteWhere only supports Entity Framework queries.");
+            }
+
+            var keyMaps = GetKeyPropertyMaps(typeof(TEntity));
+            var shouldClose = connection.State == ConnectionState.Closed;
+            var transaction = context.Database.CurrentTransaction?.UnderlyingTransaction as SqlTransaction;
+
+            if (shouldClose)
+            {
+                connection.Open();
+            }
+
+            try
+            {
+                using (var command = new SqlCommand(CreateDeleteWhereSql(typeof(TEntity), objectQuery, keyMaps), connection, transaction))
+                {
+                    command.CommandTimeout = context.Database.CommandTimeout ?? 600;
+                    command.Parameters.AddRange(CreateSqlParameters(objectQuery).ToArray());
+                    return command.ExecuteNonQuery();
+                }
+            }
+            finally
+            {
+                if (shouldClose)
+                {
+                    connection.Close();
+                }
+            }
+        }
+
         private static void BulkUpdateWithTempTable<TEntity>(DbContext context, SqlConnection connection, List<TEntity> rows)
             where TEntity : class
         {
@@ -337,7 +387,7 @@ namespace Service.Data
                 return new List<TEntity>();
             }
 
-            var objectQuery = source.GetObjectQuery();
+            var objectQuery = GetObjectQuery(source);
             if (objectQuery == null)
             {
                 throw new InvalidOperationException("WhereBulkContains only supports Entity Framework queries.");
@@ -527,6 +577,45 @@ namespace Service.Data
             return memberExpression;
         }
 
+        private static ObjectQuery<TEntity> GetObjectQuery<TEntity>(IQueryable<TEntity> source)
+            where TEntity : class
+        {
+            var objectQuery = source as ObjectQuery<TEntity>;
+            if (objectQuery != null)
+            {
+                return objectQuery;
+            }
+
+            var internalQuery = GetPrivateFieldValue(source, "_internalQuery");
+            objectQuery = GetPrivateFieldValue(internalQuery, "_objectQuery") as ObjectQuery<TEntity>;
+            if (objectQuery != null)
+            {
+                return objectQuery;
+            }
+
+            internalQuery = GetPrivateFieldValue(source.Provider, "_internalQuery");
+            return GetPrivateFieldValue(internalQuery, "_objectQuery") as ObjectQuery<TEntity>;
+        }
+
+        private static object GetPrivateFieldValue(object source, string fieldName)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            for (var type = source.GetType(); type != null; type = type.BaseType)
+            {
+                var field = type.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+                if (field != null)
+                {
+                    return field.GetValue(source);
+                }
+            }
+
+            return null;
+        }
+
         private static string GetColumnName<TEntity, TValue>(Expression<Func<TEntity, TValue>> columnExpression)
         {
             var memberExpression = GetMemberExpression(columnExpression.Body);
@@ -671,6 +760,27 @@ where exists (
     from {QuoteIdentifier(tempTableName)} as [Source]
     where ([Target].{columnName} = [Source].{sourceColumnName})
         or ([Target].{columnName} is null and [Source].{sourceColumnName} is null)
+)";
+        }
+
+        private static string CreateDeleteWhereSql<TEntity>(
+            Type entityType,
+            ObjectQuery<TEntity> objectQuery,
+            IEnumerable<PropertyMap> keyMaps)
+        {
+            var sourceSql = objectQuery.ToTraceString();
+            var joinConditions = keyMaps.Select(map =>
+                $"[Target].{QuoteIdentifier(map.ColumnName)} = [BulkSource].{QuoteIdentifier(map.ColumnName)}");
+
+            return $@"
+delete [Target]
+from {GetTableName(entityType)} as [Target]
+where exists (
+    select 1
+    from (
+{sourceSql}
+    ) as [BulkSource]
+    where {string.Join(" and ", joinConditions)}
 )";
         }
 
