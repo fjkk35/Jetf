@@ -494,6 +494,7 @@
     <Compile Include="Services\CptStatusReport\CptStatusReportService.cs" />
     <Compile Include="Services\CptTradeVan\CptPortalApi.cs" />
     <Compile Include="Services\CptTradeVan\CptTradeVanService.cs" />
+    <Compile Include="Services\Customer\Domain\CustomerQueryModels.cs" />
     <Compile Include="Services\CustomerService.cs" />
     <Compile Include="Services\CustomerTaxCalculate\CustomerTaxCalculateService.cs" />
     <Compile Include="Services\CustomerTaxSetting\CustomerTaxSettingService.cs" />

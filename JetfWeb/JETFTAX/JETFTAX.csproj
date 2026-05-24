@@ -816,6 +816,7 @@
     <Content Include="Scripts\ng-controllers\AccsShopee\AccsShopee.js" />
     <Content Include="Scripts\ng-controllers\BatchSearchShenzhenCargo\BatchSearchShenzhenCargo.js" />
     <Content Include="Scripts\ng-controllers\BatchSearchTax\BatchSearchTax.js" />
+    <Content Include="Scripts\ng-controllers\Customer\SearchCustomer.js" />
     <Content Include="Scripts\ng-controllers\CustomerTaxCalculate\CustomerTaxCalculate.js" />
     <Content Include="Scripts\ng-controllers\CustomerTaxSetting\CustomerTaxSetting.js" />
     <Content Include="Scripts\ng-controllers\CustomerTaxStatistics\CustomerTaxStatistics.js" />
@@ -2967,6 +2968,7 @@
   <ItemGroup>
     <None Include="package.json" />
     <None Include="tsconfig.json" />
+    <TypeScriptCompile Include="Scripts\ng-controllers\Customer\SearchCustomer.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaClearance\SeaClearance.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaClearance\SeaClearanceDetail.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ShipmentInboundExceptionRecord\ShipmentInboundExceptionRecord.ts" />

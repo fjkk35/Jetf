@@ -1,13 +1,8 @@
-﻿using JETFTAX.Models;
-using Newtonsoft.Json;
-using Service.EnumTax;
+﻿using Service.EnumTax;
 using Service.Models;
 using Service.Services;
+using Service.Services.Customer.Domain;
 using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Web;
 using System.Web.Mvc;
 using static JETFTAX.Controllers.AccountController;
 
@@ -33,116 +28,101 @@ namespace JETFTAX.Controllers
             return View();
         }
 
-        /// <summary>
-        /// 客戶查詢-客戶資料
-        /// </summary>
-        /// <returns></returns>
-        //[UserAuthorize("1", "2")]
+        [HttpGet]
         [UserAuthorize(Authority.SearchCustomer)]
-        public ActionResult GetCustomer() {
-            DataTable dt = _customerService.GetCustomer_Master();
-            //int count = dt.Rows.Count;
-            //JDataTableModel model = new JDataTableModel()
-            //{
-            //    recordsTotal = count,
-            //    recordsFiltered = count,
-            //    data = JsonConvert.SerializeObject(dt)
-
-            //};
-            string data = JsonConvert.SerializeObject(dt);
-            return Json(data,JsonRequestBehavior.AllowGet);
+        public JsonResult GetFormOptions()
+        {
+            try
+            {
+                var result = _customerService.GetFormOptions();
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
+            }
         }
 
-        /// <summary>
-        /// 客戶查詢-客戶資料明細
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        //[UserAuthorize("1", "2")]
+        [HttpGet]
         [UserAuthorize(Authority.SearchCustomer)]
-        public ActionResult DialogCustomer(string id)
+        public JsonResult GetCustomerOptions(string tranType)
         {
-            List<SelectListItem> tranTypeList = new List<SelectListItem>();
-            tranTypeList.Add(new SelectListItem() { Text = "海運", Value = "海運" });
-            tranTypeList.Add(new SelectListItem() { Text = "空運", Value = "空運" });
-
-            //物流公司
-            List<SelectListItem> customerList = new List<SelectListItem>();
-            DataTable dt_CompanyList = _customerService.GetCompanyList();
-            for (int i = 0; i < dt_CompanyList.Rows.Count; i++)
+            try
             {
-                //company = $"{ dt_CompanyList.Rows[i]["COMPANY_NO"].ToString()}-{dt_CompanyList.Rows[i]["COMPANY"].ToString()}";
-                customerList.Add(new SelectListItem() { Text = dt_CompanyList.Rows[i]["COMPANY"].ToString(), Value = dt_CompanyList.Rows[i]["COMPANY_NO"].ToString() });
+                var result = _customerService.GetCustomerOptions(tranType);
+                return Json(result, JsonRequestBehavior.AllowGet);
             }
-
-            //是否包稅
-            List<SelectListItem> includeTaxList = new List<SelectListItem>();
-            includeTaxList.Add(new SelectListItem() { Text = "Y", Value = "Y" });
-            includeTaxList.Add(new SelectListItem() { Text = "N", Value = "N" });
-            includeTaxList.Add(new SelectListItem() { Text = "D", Value = "D" });
-            includeTaxList.Add(new SelectListItem() { Text = "C", Value = "C" });
-
-            CustomerViewModel vm = new CustomerViewModel() {
-              ddlTranTypeList= tranTypeList,
-              ddlCompanyList= customerList,
-              ddlIncludeTaxList=includeTaxList,
-            };
-
-            if (id != "")
+            catch (Exception ex)
             {
-                DataTable dt = _customerService.GetCustomer_Master(id);
-                vm.id = id;
-                vm.tran_type = dt.Rows[0]["TRAN_TYPE"].ToString();
-                vm.cust_id = dt.Rows[0]["CUST_ID"].ToString();
-                vm.customer = dt.Rows[0]["CUSTOMER"].ToString();
-                vm.trans_no = dt.Rows[0]["TRANS_NO"].ToString();
-                vm.trans_name = dt.Rows[0]["TRANS_NAME"].ToString();
-                vm.include_tax = dt.Rows[0]["INCLUDE_TAX"].ToString();
-                vm.include_tax_name = dt.Rows[0]["INCLUDE_TAX_NAME"].ToString();
-                vm.company_no = dt.Rows[0]["COMPANY_NO"].ToString();
-                vm.company = dt.Rows[0]["COMPANY"].ToString();
-                vm.cod_fee = dt.Rows[0]["COD_FEE"].ToString();
-                vm.IsCainiaoP = Convert.ToBoolean(dt.Rows[0]["ISCAINIAOP"]);
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
             }
-                
-
-            return PartialView(vm);
         }
 
-        /// <summary>
-        /// 客戶查詢-客戶資料明細-新增或修改
-        /// </summary>
-        /// <param name="vm"></param>
-        /// <returns></returns>
-        //[UserAuthorize("1", "2")]
+        [HttpPost]
         [UserAuthorize(Authority.SearchCustomer)]
-        public ActionResult EditCustomer(CustomerViewModel vm)
+        public JsonResult QueryCustomers(CustomerQueryRequest request)
         {
-            ResponseModel resopnseModel;
-            CustomerModel model = new CustomerModel() {
-                id=vm.id,
-                tran_type=vm.tran_type,
-                cust_id=vm.cust_id,
-                customer=vm.customer,
-                trans_no=vm.trans_no,
-                trans_name=vm.trans_name,
-                include_tax=vm.include_tax,
-                include_tax_name=vm.include_tax_name,
-                company_no=vm.company_no,
-                company=vm.company,
-                cod_fee=vm.cod_fee,
-                IsCainiaoP = vm.IsCainiaoP
-            };
-
-            if (vm.id == null)
+            try
             {
-                resopnseModel= _customerService.InsertCustomer_Master(model, Session["user_id"].ToString());
+                var result = _customerService.QueryCustomers(request);
+                return Json(result);
             }
-            else {
-                resopnseModel = _customerService.EditCustomer_Master(model, Session["user_id"].ToString());
+            catch (Exception ex)
+            {
+                return Json(new ResponseModel(ex.Message));
             }
-           
-            return Json(resopnseModel, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        [UserAuthorize(Authority.SearchCustomer)]
+        public ActionResult ExportExcel(CustomerQueryRequest request)
+        {
+            try
+            {
+                var fileBytes = _customerService.ExportExcel(request);
+                string fileName = $"客戶查詢_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+            catch (Exception ex)
+            {
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        [HttpGet]
+        [UserAuthorize(Authority.SearchCustomer)]
+        public JsonResult GetCustomerDetail(int id)
+        {
+            try
+            {
+                var result = _customerService.GetCustomerDetail(id);
+                if (result == null)
+                {
+                    return Json(new ResponseModel("查無客戶資料"), JsonRequestBehavior.AllowGet);
+                }
+
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        [HttpPost]
+        [UserAuthorize(Authority.SearchCustomer)]
+        public JsonResult SaveCustomer(CustomerUpsertModel request)
+        {
+            try
+            {
+                string userId = Session["user_id"]?.ToString() ?? "system";
+                var result = _customerService.SaveCustomer(request, userId);
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                return Json(new ResponseModel(ex.Message));
+            }
         }
     }
 }

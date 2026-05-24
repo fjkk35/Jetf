@@ -1,133 +1,325 @@
 ﻿
 @{
-    ViewBag.Title = "SearchCustomer";
+    ViewBag.Title = "客戶查詢";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<span class="headtype">客戶查詢</span>
-<hr />
-<div id="btnInsert" type="button" onclick="showDialogCustomer('')" class="btn btn-primary" style="font-size: 1.2rem;margin-left:0.5rem;"><i class="fas fa-user-plus"></i> 新增客戶</div>
-<div class="col-12 col-md-12 col-sm-12">
-    <table id="customerTable" style="width:100%;">
-        <thead>
-            <tr style="background-color: #FFF;">
-                <th>ID</th>
-                <th>運送類型</th>
-                <th>CUST_ID</th>
-                <th>CUSTOMER</th>
-                <th>TRANS_NO</th>
-                <th>TRANS_NAME</th>
-                <th>是否包稅</th>
-                <th>是否包稅中文</th>
-                <th>物流公司</th>
-                <th>手續費</th>
-                <th>菜鳥尊榮服務</th>
-                <th>修改</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-        <tfoot>
-        </tfoot>
-    </table>
-</div>
+<div ng-controller="SearchCustomerController" class="container-fluid">
+    <span class="headtype">客戶查詢</span>
+    <hr />
 
-<!-- modal placeholder-->
-<div id='myModal' class='modal fade in'>
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <b class="item-close" onclick="$('#myModal').modal('hide');">x</b>
-            <div id='myModalContent'></div>
+    <div class="card bg-light rounded p-4 mb-4 search-customer-query-card" style="border:none">
+        <div class="row mb-3 align-items-center">
+            <div class="form-group row col-lg-4 mb-0">
+                <label class="col-lg-4 col-form-label text-right">運送類型</label>
+                <div class="col-lg-8">
+                    <select class="form-control" ng-model="searchForm.tranType">
+                        <option value="">全部</option>
+                        <option ng-repeat="item in formOptions.tranTypes" value="{{item.Value}}">{{item.Text}}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-4 mb-0">
+                <label class="col-lg-4 col-form-label text-right">客戶</label>
+                <div class="col-lg-8">
+                    <customer-multi-select select-all="customerSelectAll"
+                                           selected-cust-codes="selectedCustCodes"
+                                           display-text="customerDisplayText"
+                                           display-full-text="customerDisplayFullText">
+                    </customer-multi-select>
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-4 mb-0">
+                <label class="col-lg-4 col-form-label text-right">派件公司</label>
+                <div class="col-lg-8">
+                    <input type="text" class="form-control" ng-model="searchForm.transKeyword" placeholder="請輸入派件公司或編號" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+            <div class="form-group row col-lg-4 mb-0">
+                <label class="col-lg-4 col-form-label text-right">是否包稅</label>
+                <div class="col-lg-8">
+                    <select class="form-control" ng-model="searchForm.includeTax">
+                        <option value="">全部</option>
+                        <option ng-repeat="item in formOptions.includeTaxes" value="{{item.Value}}">{{item.Text}}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-4 mb-0">
+                <label class="col-lg-4 col-form-label text-right">物流公司</label>
+                <div class="col-lg-8">
+                    <select class="form-control" ng-model="searchForm.companyNo">
+                        <option value="">全部</option>
+                        <option ng-repeat="item in formOptions.companies" value="{{item.Value}}">{{item.Text}}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-4 mb-0">
+                <label class="col-lg-4 col-form-label text-right">菜鳥尊榮服務</label>
+                <div class="col-lg-8">
+                    <select class="form-control" ng-model="searchForm.isCainiaoP">
+                        <option value="">全部</option>
+                        <option value="true">是</option>
+                        <option value="false">否</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12 text-right">
+                <button type="button" class="btn btn-primary" ng-click="search()" ng-disabled="loading">
+                    <i class="fa fa-search"></i> 查詢
+                </button>
+                <button type="button" class="btn btn-secondary ml-2" ng-click="clearSearch()" ng-disabled="loading">
+                    <i class="fa fa-eraser"></i> 清除
+                </button>
+                <button type="button" class="btn btn-success ml-2" ng-click="exportExcel()" ng-disabled="loading || exporting">
+                    <i class="fa" ng-class="{'fa-spinner fa-spin': exporting, 'fa-download': !exporting}"></i>
+                    {{exporting ? '匯出中...' : '下載Excel'}}
+                </button>
+                <button type="button" class="btn btn-info ml-2" ng-click="openCreateModal()" ng-disabled="loading || exporting">
+                    <i class="fa fa-plus"></i> 新增客戶
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div ng-show="loading" class="text-center search-customer-loading">
+        <i class="fa fa-spinner fa-spin fa-3x"></i>
+        <p>載入中...</p>
+    </div>
+
+    <div ng-show="isSearched && !loading">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="row mb-2">
+                        <div class="col-lg-6">
+                            <div class="form-inline">
+                                <label class="mr-2">每頁顯示</label>
+                                <select class="form-control" ng-model="pageSize" ng-change="changePageSize()">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <label class="ml-2">筆</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 text-right">
+                            <span>{{recordsInfo}}</span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-3">
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>序號</th>
+                                    <th>ID</th>
+                                    <th>運送類型</th>
+                                    <th>客戶編號</th>
+                                    <th>客戶</th>
+                                    <th>派件公司編號</th>
+                                    <th>派件公司</th>
+                                    <th>是否包稅</th>
+                                    <th>是否包稅中文</th>
+                                    <th>物流公司</th>
+                                    <th>手續費</th>
+                                    <th>菜鳥尊榮服務</th>
+                                    <th>修改</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-if="rows.length === 0">
+                                    <td colspan="13" class="text-center">查無資料</td>
+                                </tr>
+                                <tr ng-repeat="row in rows track by row.Id">
+                                    <td>{{(currentPage - 1) * pageSize + $index + 1}}</td>
+                                    <td>{{row.Id}}</td>
+                                    <td>{{row.TranType}}</td>
+                                    <td>{{row.CustId}}</td>
+                                    <td>{{row.Customer}}</td>
+                                    <td>{{row.TransNo}}</td>
+                                    <td>{{row.TransName}}</td>
+                                    <td>{{row.IncludeTax}}</td>
+                                    <td>{{row.IncludeTaxName}}</td>
+                                    <td>{{row.Company}}</td>
+                                    <td>{{row.CodFee}}</td>
+                                    <td>{{row.IsCainiaoPText}}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-warning btn-sm" ng-click="openEditModal(row.Id)">修改</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-center mt-3" ng-show="totalPages > 1">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination">
+                                <li class="page-item" ng-class="{disabled: currentPage === 1}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="goToPage(1)">第一頁</a>
+                                </li>
+                                <li class="page-item" ng-class="{disabled: currentPage === 1}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="previousPage()">上一頁</a>
+                                </li>
+                                <li class="page-item" ng-repeat="page in getPageNumbers()" ng-class="{active: page === currentPage}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="goToPage(page)">{{page}}</a>
+                                </li>
+                                <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="nextPage()">下一頁</a>
+                                </li>
+                                <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
+                                    <a class="page-link" href="javascript:void(0)" ng-click="goToPage(totalPages)">最後一頁</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="customerModal" tabindex="-1" role="dialog" aria-labelledby="customerModalLabel">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="customerModalLabel">{{modal.mode === 'create' ? '新增客戶' : '修改客戶'}}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form novalidate>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">運送類型 <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <select class="form-control"
+                                        ng-model="modal.form.TranType"
+                                        ng-options="item.Value as item.Text for item in formOptions.tranTypes"
+                                        ng-change="onModalTranTypeChange()">
+                                    <option value="">請選擇</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">客戶 <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <select class="form-control"
+                                        ng-model="modal.form.CustId"
+                                        ng-options="item.Value as (item.Value + ' - ' + item.Text) for item in modal.customerOptions"
+                                        ng-change="onModalCustomerChange()"
+                                        ng-disabled="!modal.form.TranType">
+                                    <option value="">請選擇</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row" ng-if="modal.form.TranType === '空運'">
+                            <label class="col-sm-3 col-form-label">派件公司編號 <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="modal.form.TransNo" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">派件公司 <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="modal.form.TransName" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">菜鳥尊榮服務</label>
+                            <div class="col-sm-9 search-customer-checkbox-wrapper">
+                                <label class="search-customer-checkbox-label">
+                                    <input type="checkbox" ng-model="modal.form.IsCainiaoP" />
+                                    <span>是</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">是否包稅 <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <select class="form-control"
+                                        ng-model="modal.form.IncludeTax"
+                                        ng-options="item.Value as item.Text for item in formOptions.includeTaxes">
+                                    <option value="">請選擇</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">是否包稅中文</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="modal.form.IncludeTaxName" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">物流公司 <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <select class="form-control"
+                                        ng-model="modal.form.CompanyNo"
+                                        ng-options="item.Value as item.Text for item in formOptions.companies"
+                                        ng-change="onModalCompanyChange()">
+                                    <option value="">請選擇</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">手續費 <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" ng-model="modal.form.CodFee" />
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveCustomer()" ng-disabled="modal.saving">
+                        <i class="fa fa-spinner fa-spin" ng-show="modal.saving"></i>
+                        {{modal.saving ? '儲存中...' : '確定'}}
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<script>
-    $('#collapseUpload').addClass("show");
-    $('#SearchCustomer').addClass("active");
-
-    $(function () {
-        getCustomerList();
-    });
-
-    function getCustomerList() {
-        $.ajax({
-            url: Router.action('Customer', 'GetCustomer'),
-            type: "POST",   //用POST的方式
-            dataType: "json",   //response的資料格式
-            //data: { "data": JSON.stringify(obj) },
-            //async: false,
-            success: function (response) {
-                let data = JSON.parse(response);
-                //console.log(response);
-                //datatable更多Responsive用法請參考
-                //https://datatables.net/extensions/responsive/examples/
-
-                //此設定參考於這篇
-                //datatable套件參考網址
-                //https://datatables.net/extensions/responsive/examples/child-rows/right-column.html
-                $('#customerTable').DataTable({
-                    paging: false,
-                    language: {
-                        "url": "../Scripts/DataTables/Chinese-traditional.json",
-                    },
-                    destroy: true,  //Cannot reinitialise DataTable,解决重新載入問題
-                    data: data,
-                    responsive: {
-                        details: {
-                            type: 'column',
-                            target: -1
-                        }
-                    },
-                    columns: [
-                          { "data": "ID" },
-                          { "data": "TRAN_TYPE" },
-                          { "data": "CUST_ID" },
-                          { "data": "CUSTOMER" },
-                          { "data": "TRANS_NO" },
-                          { "data": "TRANS_NAME" },
-                          { "data": "INCLUDE_TAX" },
-                          { "data": "INCLUDE_TAX_NAME" },
-                          { "data": "COMPANY" },
-                          { "data": "COD_FEE" },
-                          { "data": "ISCAINIAOP" },
-                          {
-                              //參考https://dotblogs.com.tw/shadow/2018/04/03/065712
-                              "data": "ID",//資料行繫結屬性
-                              orderable: false, // 禁用排序
-                              render: function (data, type, row, meta) {
-                                  //row指的是資料列物件 data變數相等於row.sysid
-                                  return "<input type='button' value='修改' onclick=showDialogCustomer('" + data + "') />";
-                              }
-                          },
-                          { "defaultContent": "" }
-                    ],
-                    columnDefs: [{
-                        className: 'control',
-                        orderable: false,
-                        targets: -1
-                    },
-                    {
-                        visible: false,
-                        searchable: false
-                    }
-                    ]
-                });
-                new $.fn.dataTable.FixedHeader($('#customerTable').DataTable());
-            }
-        });
+<style>
+    .search-customer-loading {
+        padding: 30px 0;
     }
 
-    function showDialogCustomer(id) {
-        $('#myModalContent').load(Router.action('Customer', 'DialogCustomer') + "?id="+id+"", function () {
-            $('#myModal').modal({
-                /*backdrop: 'static',*/
-                keyboard: true
-            }, 'show');
-        });
-        return false;
+    .search-customer-query-card {
+        margin-bottom: 20px;
     }
 
+    .search-customer-checkbox-wrapper {
+        display: flex;
+        align-items: center;
+        min-height: 34px;
+    }
 
+    .search-customer-checkbox-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 0;
+        font-weight: normal;
+    }
 
-</script>
+    .search-customer-checkbox-label input {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+    }
+
+    #customerModal .col-form-label {
+        text-align: right;
+    }
+</style>
