@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using Autofac.Core.Lifetime;
 using Autofac.Extensions.DependencyInjection;
 using Autofac.Integration.Mvc;
 using Hangfire;
@@ -76,8 +77,16 @@ namespace JETFTAX
 
         private void RegisterAllServices(ContainerBuilder builder)
         {
-            builder.RegisterType<JetfDbContext>().AsSelf().InstancePerRequest();
-            builder.RegisterType<DataCenterDbContext>().AsSelf().InstancePerRequest();
+            var requestScopeTag = MatchingScopeLifetimeTags.RequestLifetimeScopeTag;
+            var backgroundJobScopeTag = AutofacJobActivator.LifetimeScopeTag;
+
+            builder.RegisterType<JetfDbContext>()
+                   .AsSelf()
+                   .InstancePerMatchingLifetimeScope(requestScopeTag, backgroundJobScopeTag);
+
+            builder.RegisterType<DataCenterDbContext>()
+                   .AsSelf()
+                   .InstancePerMatchingLifetimeScope(requestScopeTag, backgroundJobScopeTag);
 
             // 取得當前應用程式域的所有組件
             var serviceAssembly = AppDomain.CurrentDomain.GetAssemblies()

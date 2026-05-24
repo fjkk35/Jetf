@@ -38,70 +38,59 @@ namespace JETFTAX.App_Start
 
         private void ConfigureHangfireJobs()
         {
-            // 使用 Autofac 解析 TaxJobService
-            var taxJobService = DependencyResolver.Current.GetService<TaxJobService>();
-            var cainiaoCheckJobService = DependencyResolver.Current.GetService<CainiaoCheckJobService>();
-            var componentJobService = DependencyResolver.Current.GetService<ComponentJobService>();
-            var incomeJobService = DependencyResolver.Current.GetService<IncomeJobService>();
-            var cainiaoNeedJobService = DependencyResolver.Current.GetService<CainiaoNeedJobService>();
-            var tactWebClientJobService = DependencyResolver.Current.GetService<TactWebClientJobService>();
-            var ftzWebClientJobService = DependencyResolver.Current.GetService<FtzWebClientJobService>();
-            var sjlJobService = DependencyResolver.Current.GetService<SjlJobService>();
-            var shipmentInboundProcessStageTransferJobService = DependencyResolver.Current.GetService<ShipmentInboundProcessStageTransferJobService>();
-            
             var timeZoneOptions = new RecurringJobOptions
             {
                 TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Taipei Standard Time"),
                 MisfireHandling = MisfireHandlingMode.Strict
             };
 
-            RecurringJob.AddOrUpdate("捷利海運稅金",
-                  () => taxJobService.RunSeaTaxJobAsync(), Cron.Daily(22, 00), timeZoneOptions);
+            RecurringJob.AddOrUpdate<TaxJobService>("捷利海運稅金",
+                  service => service.RunSeaTaxJobAsync(), Cron.Daily(22, 00), timeZoneOptions);
 
-            RecurringJob.AddOrUpdate("捷利空運稅金",
-                 () => taxJobService.RunEtlTaxJobAsync(), Cron.Daily(22, 05), timeZoneOptions);
+            RecurringJob.AddOrUpdate<TaxJobService>("捷利空運稅金",
+                 service => service.RunEtlTaxJobAsync(), Cron.Daily(22, 05), timeZoneOptions);
 
-            RecurringJob.AddOrUpdate("菜鳥資料檢查",
-                    () => cainiaoCheckJobService.RunCainiaoCheckJobAsync(),
+            RecurringJob.AddOrUpdate<CainiaoCheckJobService>("菜鳥資料檢查",
+                    service => service.RunCainiaoCheckJobAsync(),
                     "*/10 8-18 * * *", // 每 10 分鐘執行一次 (08:00 ~ 18:50)
                     timeZoneOptions);
 
-            RecurringJob.AddOrUpdate("菜鳥需預委任發送訊息",
-                () => cainiaoNeedJobService.RunCainiaoNeedJob(),
+            RecurringJob.AddOrUpdate<CainiaoNeedJobService>("菜鳥需預委任發送訊息",
+                service => service.RunCainiaoNeedJob(),
                 "50 8,11,14,16 * * *",
                 timeZoneOptions);
 
-            RecurringJob.AddOrUpdate("酷彭發送訊息",
-                  () => componentJobService.RunComponentJobAsync(),
+            RecurringJob.AddOrUpdate<ComponentJobService>("酷彭發送訊息",
+                  service => service.RunComponentJobAsync(),
                  "*/10 * * * *",
                   timeZoneOptions);
 
-            RecurringJob.AddOrUpdate("營收轉檔",
-                  () => incomeJobService.InsertIncomeReport(), Cron.Daily(08, 30),
+            RecurringJob.AddOrUpdate<IncomeJobService>("營收轉檔",
+                  service => service.InsertIncomeReport(), Cron.Daily(08, 30),
                     timeZoneOptions);
 
-            RecurringJob.AddOrUpdate("營收報表",
-                () => incomeJobService.RunIncomeJobAsync(),
+            RecurringJob.AddOrUpdate<IncomeJobService>("營收報表",
+                service => service.RunIncomeJobAsync(),
                 "*/10 09-22 * * *", // 每 10 分鐘執行一次 (09:00 ~ 22:00)
                 timeZoneOptions);
 
-            RecurringJob.AddOrUpdate("華儲查詢",
-                () => tactWebClientJobService.RunTactWebClientJobAsync(),
+            RecurringJob.AddOrUpdate<TactWebClientJobService>("華儲查詢",
+                service => service.RunTactWebClientJobAsync(),
                  "*/20 * * * *", // 每 20 分鐘執行一次
                 timeZoneOptions);
 
-            RecurringJob.AddOrUpdate("遠雄查詢",
-                () => ftzWebClientJobService.RunFtzWebClientJobAsync(),
+            RecurringJob.AddOrUpdate<FtzWebClientJobService>("遠雄查詢",
+                service => service.RunFtzWebClientJobAsync(),
                  "*/20 * * * *", // 每 20 分鐘執行一次
                 timeZoneOptions);
 
-            RecurringJob.AddOrUpdate("金祥富稅金資料傳送",
-                () => sjlJobService.RunJhfTaxJobAsync(),
+            RecurringJob.AddOrUpdate<SjlJobService>("金祥富稅金資料傳送",
+                service => service.RunJhfTaxJobAsync(),
                 Cron.Daily(22, 10),
                 timeZoneOptions);
 
-            RecurringJob.AddOrUpdate("預先登記處理轉檔",
-                () => shipmentInboundProcessStageTransferJobService.RunShipmentInboundProcessStageTransferJobAsync(),
+            RecurringJob.AddOrUpdate<ShipmentInboundProcessStageTransferJobService>("預先登記處理轉檔",
+                service => service.RunShipmentInboundProcessStageTransferJobAsync(),
                 "*/10 8-19 * * *",
                 timeZoneOptions);
         }
