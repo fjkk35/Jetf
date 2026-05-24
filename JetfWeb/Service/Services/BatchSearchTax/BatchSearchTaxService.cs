@@ -1,15 +1,14 @@
-﻿using Dapper;
-using NPOI.SS.UserModel;
+﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using Service.Data;
 using Service.Extensions;
 using Service.Models;
 using Service.Services.BatchSearchTax.Domain;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Data.Entity;
+using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Service.Services.BatchSearchTax
 {
@@ -47,37 +46,54 @@ namespace Service.Services.BatchSearchTax
                     return new ResponseModel("請輸入有效的物流貨號");
                 }
 
-                // 查詢資料
-                string sql = @"
-                    SELECT 
-                        SOURCE_TYPE,
-                        DLV_INV as Dlv_Inv,
-                        a.CUSTOMER as Cust_Code,
-                        BAG_NUMBER as Bag_Number,
-                        TRACKINGNO as TrackingNo,
-                        MAIN_NUMBER as Main_Number,
-                        CLEARANCE_NUMBER as Clearance_Number,
-                        TAX_NUMBER as Tax_Number,
-                        TAX_BASE as Tax_Base,
-                        TAX1,
-                        TAX2,
-                        CCFEE as Ccfee,
-                        COD as Cod,
-                        FEE as Fee,
-                        TRANS_COD as Trans_Cod,
-                        CUSTOMER_COD as Customer_Cod,
-                        a.INCLUDE_TAX as Include_Tax,
-                        DLV_COM as Dlv_Com,
-                        TO_DLV_COD as To_Dlv_Cod,
-                        isnull(b.TRANS_NAME,DLV_COM) as Trans_Name,
-                        b.CUSTOMER as Customer
-                    FROM jetf.dbo.FEE_MASTER a
-                    LEFT JOIN [jetf].[dbo].[customer_master] b ON a.CUSTOMER = b.CUST_ID AND a.DLV_COM = b.TRANS_NO
-                    WHERE DLV_INV IN @DlvInvList AND Download='1'";
+                // 使用 temp table 批量比對物流貨號，避免大量 IN 參數造成 SQL 解析與執行變慢。
+                var feeMasters = JetfDb.FeeMasters
+                    .AsNoTracking()
+                    .Where(x => x.Download == "1")
+                    .WhereBulkContains(
+                        JetfDb,
+                        dlvInvList,
+                        row => row.DlvInv,
+                        key => key);
 
-                var result = conn.Query<FeeMasterModel>(sql, new { DlvInvList = dlvInvList }).ToList();
+                // customer_master 不併入主查詢，改用 FEE_MASTER 查出的客戶與派件代碼另批查回填。
+                var customerMasters = GetCustomerMasters(feeMasters);
 
-                var customers = GetCustomers();
+                // 將 EF entity 轉成前端與匯出共用的查詢結果模型。
+                var result = feeMasters.Select(item =>
+                {
+                    customerMasters.TryGetValue(BuildCompositeKey(item.Customer, item.DlvCom), out var customerMaster);
+
+                    return new FeeMasterModel
+                    {
+                        Source_Type = item.SourceType,
+                        Dlv_Inv = item.DlvInv,
+                        Cust_Code = item.Customer,
+                        Bag_Number = item.BagNumber,
+                        TrackingNo = item.TrackingNo,
+                        Main_Number = item.MainNumber,
+                        Clearance_Number = item.ClearanceNumber,
+                        Tax_Number = item.TaxNumber,
+                        Tax_Base = ToDecimal(item.TaxBase),
+                        Tax1 = ToDecimal(item.Tax1),
+                        Tax2 = ToDecimal(item.Tax2),
+                        Ccfee = ToDecimal(item.Ccfee),
+                        Cod = ToDecimal(item.Cod),
+                        Fee = ToDecimal(item.Fee),
+                        Trans_Cod = ToDecimal(item.TransCod),
+                        Customer_Cod = ToDecimal(item.CustomerCod),
+                        Include_Tax = item.IncludeTax,
+                        Dlv_Com = item.DlvCom,
+                        To_Dlv_Cod = ToDecimal(item.ToDlvCod),
+                        Trans_Name = customerMaster?.TransName ?? item.DlvCom,
+                        Customer = customerMaster?.Customer
+                    };
+                }).ToList();
+
+                // customer_master 找不到客戶名稱時，再用 DATA_CENTER.SYS_CUST 補客戶名稱。
+                var customers = GetCustomers(result
+                    .Where(r => string.IsNullOrEmpty(r.Customer))
+                    .Select(r => r.Cust_Code));
 
                 //客戶
                 foreach (var item in result.Where(r => string.IsNullOrEmpty(r.Customer)))
@@ -184,15 +200,93 @@ namespace Service.Services.BatchSearchTax
             return workbook;
         }
 
-        private Dictionary<string, string> GetCustomers()
+        /// <summary>
+        /// 依 FEE_MASTER 中的客戶代號與派件物流代號，批量查出 customer_master 對照資料。
+        /// </summary>
+        /// <param name="feeMasters">本次物流貨號查出的費用主檔資料。</param>
+        /// <returns>以「客戶代號|派件物流代號」為 key 的 customer_master 對照表。</returns>
+        private Dictionary<string, CustomerMasterEntity> GetCustomerMasters(IEnumerable<FeeMasterEntity> feeMasters)
         {
-            var sql = @"select CUST_CODE, CUST_NAME from DATA_CENTER.dbo.SYS_CUST";
-            var rows = conn.Query(sql); // IEnumerable<dynamic>
+            // customer_master 筆數不多，這裡只用本次出現的 CustId 一次撈回，再用 TransNo 在記憶體中對應。
+            var custIds = (feeMasters ?? Enumerable.Empty<FeeMasterEntity>())
+                .Select(x => x.Customer)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
 
-            return rows.ToDictionary(
-                r => (string)r.CUST_CODE,
-                r => (string)r.CUST_NAME
-            );
+            if (!custIds.Any())
+            {
+                return new Dictionary<string, CustomerMasterEntity>();
+            }
+
+            return JetfDb.CustomerMasters
+                .AsNoTracking()
+                .Where(x => custIds.Contains(x.CustId))
+                .ToList()
+                .GroupBy(x => BuildCompositeKey(x.CustId, x.TransNo))
+                .ToDictionary(group => group.Key, group => group.First());
+        }
+
+        /// <summary>
+        /// 依客戶代號批量查出 DATA_CENTER.SYS_CUST 的客戶名稱，作為 customer_master 找不到時的 fallback。
+        /// </summary>
+        /// <param name="custCodes">需補名稱的客戶代號。</param>
+        /// <returns>以客戶代號為 key 的客戶名稱對照表。</returns>
+        private Dictionary<string, string> GetCustomers(IEnumerable<string> custCodes)
+        {
+            var codes = (custCodes ?? Enumerable.Empty<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+
+            if (!codes.Any())
+            {
+                return new Dictionary<string, string>();
+            }
+
+            // 只查本次缺名稱的客戶代號，不掃整張 SYS_CUST。
+            return DataCenterDb.SysCusts
+                .AsNoTracking()
+                .WhereBulkContains(
+                    DataCenterDb,
+                    codes,
+                    row => row.CustCode,
+                    key => key)
+                .GroupBy(x => x.CustCode)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Select(x => x.CustName).FirstOrDefault() ?? string.Empty);
+        }
+
+        /// <summary>
+        /// 將 FEE_MASTER 的整數金額轉成匯出模型使用的 decimal nullable。
+        /// </summary>
+        private static decimal? ToDecimal(int? value)
+        {
+            return value.HasValue ? value.Value : (decimal?)null;
+        }
+
+        /// <summary>
+        /// 將資料庫中以字串儲存的金額轉成匯出模型使用的 decimal nullable。
+        /// </summary>
+        private static decimal? ToDecimal(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            return decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var number)
+                ? number
+                : (decimal?)null;
+        }
+
+        /// <summary>
+        /// 建立多欄位查詢用的穩定字典 key。
+        /// </summary>
+        private static string BuildCompositeKey(string left, string right)
+        {
+            return string.Format("{0}|{1}", left ?? string.Empty, right ?? string.Empty);
         }
 
     }
