@@ -17,6 +17,8 @@ namespace Service.Data
     /// </summary>
     public static class EntityFrameworkBulkExtensions
     {
+        private const string BulkOrderColumnName = "__BulkOrder";
+
         public static void BulkInsert<TEntity>(
             this DbContext context,
             IEnumerable<TEntity> entities,
@@ -37,17 +39,24 @@ namespace Service.Data
             var options = new BulkOperationOptions();
             optionsAction?.Invoke(options);
 
-            if (options.AutoMapOutputDirection)
+            if (!(context.Database.Connection is SqlConnection connection))
             {
                 context.Set<TEntity>().AddRange(rows);
                 context.SaveChanges();
                 return;
             }
 
-            if (!(context.Database.Connection is SqlConnection connection))
+            if (options.AutoMapOutputDirection)
             {
-                context.Set<TEntity>().AddRange(rows);
-                context.SaveChanges();
+                var identityMap = GetIdentityPropertyMap(typeof(TEntity));
+                if (identityMap == null)
+                {
+                    context.Set<TEntity>().AddRange(rows);
+                    context.SaveChanges();
+                    return;
+                }
+
+                BulkInsertWithIdentityOutput(context, connection, rows, options, identityMap);
                 return;
             }
 
@@ -80,6 +89,80 @@ namespace Service.Data
             }
             finally
             {
+                if (shouldClose)
+                {
+                    connection.Close();
+                }
+            }
+        }
+
+        private static void BulkInsertWithIdentityOutput<TEntity>(
+            DbContext context,
+            SqlConnection connection,
+            List<TEntity> rows,
+            BulkOperationOptions options,
+            PropertyMap identityMap)
+            where TEntity : class
+        {
+            var maps = GetInsertPropertyMaps(typeof(TEntity));
+            if (maps.Count == 0)
+            {
+                context.Set<TEntity>().AddRange(rows);
+                context.SaveChanges();
+                return;
+            }
+
+            var table = CreateOrderedDataTable(rows, maps);
+            var tempTableName = "#BulkInsert_" + Guid.NewGuid().ToString("N");
+            var shouldClose = connection.State == ConnectionState.Closed;
+            var transaction = context.Database.CurrentTransaction?.UnderlyingTransaction as SqlTransaction;
+            var timeout = context.Database.CommandTimeout ?? options.TimeoutSeconds;
+
+            if (shouldClose)
+            {
+                connection.Open();
+            }
+
+            try
+            {
+                using (var command = new SqlCommand(CreateBulkInsertTempTableSql(tempTableName, maps), connection, transaction))
+                {
+                    command.CommandTimeout = timeout;
+                    command.ExecuteNonQuery();
+                }
+
+                using (var bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.Default, transaction))
+                {
+                    bulkCopy.DestinationTableName = tempTableName;
+                    bulkCopy.BatchSize = options.BatchSize;
+                    bulkCopy.BulkCopyTimeout = timeout;
+                    bulkCopy.ColumnMappings.Add(BulkOrderColumnName, BulkOrderColumnName);
+
+                    foreach (var map in maps)
+                    {
+                        bulkCopy.ColumnMappings.Add(map.Property.Name, map.Property.Name);
+                    }
+
+                    bulkCopy.WriteToServer(table);
+                }
+
+                using (var command = new SqlCommand(CreateBulkInsertOutputSql(typeof(TEntity), tempTableName, maps, identityMap), connection, transaction))
+                {
+                    command.CommandTimeout = timeout;
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            var rowIndex = reader.GetInt32(0);
+                            SetPropertyValue(identityMap.Property, rows[rowIndex], reader.GetValue(1));
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                TryDropTempTable(connection, transaction, tempTableName);
+
                 if (shouldClose)
                 {
                     connection.Close();
@@ -461,6 +544,35 @@ namespace Service.Data
             return table;
         }
 
+        private static DataTable CreateOrderedDataTable<TEntity>(IEnumerable<TEntity> rows, List<PropertyMap> maps)
+            where TEntity : class
+        {
+            var table = new DataTable();
+            table.Columns.Add(BulkOrderColumnName, typeof(int));
+
+            foreach (var map in maps)
+            {
+                var propertyType = Nullable.GetUnderlyingType(map.Property.PropertyType) ?? map.Property.PropertyType;
+                table.Columns.Add(map.Property.Name, propertyType);
+            }
+
+            var rowIndex = 0;
+            foreach (var row in rows)
+            {
+                var values = new object[maps.Count + 1];
+                values[0] = rowIndex++;
+
+                for (var index = 0; index < maps.Count; index++)
+                {
+                    values[index + 1] = maps[index].Property.GetValue(row) ?? DBNull.Value;
+                }
+
+                table.Rows.Add(values);
+            }
+
+            return table;
+        }
+
         private static DataTable CreateSingleColumnDataTable<TValue>(IEnumerable<TValue> rows, string columnName)
         {
             var table = new DataTable();
@@ -651,6 +763,50 @@ namespace Service.Data
             return $"create table {QuoteIdentifier(tempTableName)} ({string.Join(", ", columns)})";
         }
 
+        private static string CreateBulkInsertTempTableSql(string tempTableName, IEnumerable<PropertyMap> maps)
+        {
+            var columns = new[] { $"{QuoteIdentifier(BulkOrderColumnName)} int not null" }
+                .Concat(maps.Select(map => $"{QuoteIdentifier(map.Property.Name)} {GetSqlColumnType(map.Property.PropertyType)} null"));
+
+            return $"create table {QuoteIdentifier(tempTableName)} ({string.Join(", ", columns)})";
+        }
+
+        private static string CreateBulkInsertOutputSql(
+            Type entityType,
+            string tempTableName,
+            IEnumerable<PropertyMap> maps,
+            PropertyMap identityMap)
+        {
+            var insertMaps = maps.ToList();
+            var sourceColumns = new[] { QuoteIdentifier(BulkOrderColumnName) }
+                .Concat(insertMaps.Select(map => QuoteIdentifier(map.Property.Name)));
+            var targetColumns = insertMaps.Select(map => QuoteIdentifier(map.ColumnName));
+            var sourceValues = insertMaps.Select(map => $"[Source].{QuoteIdentifier(map.Property.Name)}");
+            var identityColumnName = QuoteIdentifier(identityMap.ColumnName);
+
+            return $@"
+declare @Output table (
+    {QuoteIdentifier(BulkOrderColumnName)} int not null,
+    {identityColumnName} {GetSqlColumnType(identityMap.Property.PropertyType)} not null
+);
+
+merge into {GetTableName(entityType)} as [Target]
+using (
+    select {string.Join(", ", sourceColumns)}
+    from {QuoteIdentifier(tempTableName)}
+) as [Source]
+on 1 = 0
+when not matched then
+    insert ({string.Join(", ", targetColumns)})
+    values ({string.Join(", ", sourceValues)})
+output [Source].{QuoteIdentifier(BulkOrderColumnName)}, inserted.{identityColumnName}
+into @Output;
+
+select {QuoteIdentifier(BulkOrderColumnName)}, {identityColumnName}
+from @Output
+order by {QuoteIdentifier(BulkOrderColumnName)}";
+        }
+
         private static string CreateBulkUpdateSql(
             Type entityType,
             string tempTableName,
@@ -789,6 +945,18 @@ where exists (
             return "[" + identifier.Replace("]", "]]") + "]";
         }
 
+        private static void SetPropertyValue(PropertyInfo property, object row, object value)
+        {
+            if (value == null || value == DBNull.Value)
+            {
+                property.SetValue(row, null);
+                return;
+            }
+
+            var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+            property.SetValue(row, Convert.ChangeType(value, propertyType));
+        }
+
         private static Type GetDataColumnType(Type type)
         {
             var actualType = Nullable.GetUnderlyingType(type) ?? type;
@@ -881,6 +1049,28 @@ where exists (
                     ColumnName = property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name
                 })
                 .ToList();
+        }
+
+        private static PropertyMap GetIdentityPropertyMap(Type entityType)
+        {
+            var property = entityType
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .FirstOrDefault(candidate =>
+                    candidate.CanWrite
+                    && candidate.GetCustomAttribute<NotMappedAttribute>() == null
+                    && IsIdentityColumn(candidate)
+                    && IsSimpleType(candidate.PropertyType));
+
+            if (property == null)
+            {
+                return null;
+            }
+
+            return new PropertyMap
+            {
+                Property = property,
+                ColumnName = property.GetCustomAttribute<ColumnAttribute>()?.Name ?? property.Name
+            };
         }
 
         private static List<PropertyMap> GetKeyPropertyMaps(Type entityType)
