@@ -519,7 +519,7 @@ namespace Service.Services.SearchCargo
 
             var seaRows = DataCenterDb.SeaOrderOriginals
                 .AsNoTracking()
-                .Where(x => phoneCandidates.Contains(x.ImporterPhone) || phoneCandidates.Contains(x.ImporterPhoneShort))
+                .Where(x => phoneCandidates.Contains(x.ImporterPhone))
                 .OrderByDescending(x => x.CreateDate)
                 .ToList();
 
