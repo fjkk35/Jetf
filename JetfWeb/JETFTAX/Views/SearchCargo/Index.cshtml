@@ -28,9 +28,10 @@
                 </div>
                 <div class="form-group button-group">
                     <button class="btn btn-success" ng-click="search()" ng-disabled="loading">
-                        <i class="fas fa-search"></i> 查詢
+                        <i class="fa" ng-class="{'fa-spinner fa-spin': loading, 'fa-search': !loading}"></i>
+                        {{loading ? '查詢中...' : '查詢'}}
                     </button>
-                    <button class="btn btn-secondary" ng-click="clearSearch()">
+                    <button class="btn btn-secondary" ng-click="clearSearch()" ng-disabled="loading">
                         <i class="fas fa-eraser"></i> 清除
                     </button>
                 </div>
@@ -40,7 +41,10 @@
 
         <!-- 載入中 -->
         <div ng-if="loading" class="loading-container">
-            <div class="loader loader-bar" data-rounded data-text="查詢中"></div>
+            <div class="text-center">
+                <i class="fa fa-spinner fa-spin fa-3x"></i>
+                <p>查詢中...</p>
+            </div>
         </div>
 
         <!-- 資料表格 -->

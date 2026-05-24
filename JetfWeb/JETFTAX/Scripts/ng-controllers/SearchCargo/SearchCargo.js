@@ -25,6 +25,10 @@ mainApp.controller('SearchCargoController', function ($scope, $http, $window) {
 
     // 執行查詢
     $scope.search = function () {
+        if ($scope.loading) {
+            return;
+        }
+
         if (!$scope.searchForm.searchValue || $scope.searchForm.searchValue.trim() === '') {
   swal({
     title: "請輸入查詢內容",
