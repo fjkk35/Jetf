@@ -1098,7 +1098,8 @@ and not exists (
             }
 
             // step2: 寫入新的主檔，取得主檔 Id 後，再把對應明細一併寫入。
-            var entities = feeMasterRows.Select(row => CreateFeeMasterEntity(row, dataDate)).ToList();
+            var createTime = DateTime.Now;
+            var entities = feeMasterRows.Select(row => CreateFeeMasterEntity(row, dataDate, createTime)).ToList();
             if (entities.Count > 0)
             {
                 jetfDb.BulkInsert(entities, operation => operation.AutoMapOutputDirection = true);
@@ -1117,7 +1118,7 @@ and not exists (
         /// <summary>
         /// 建立 FEE_MASTER_TEST 寫入實體。
         /// </summary>
-        private static FeeMasterTestEntity CreateFeeMasterEntity(SeaTaxFeeMasterRow row, string dataDate)
+        private static FeeMasterTestEntity CreateFeeMasterEntity(SeaTaxFeeMasterRow row, string dataDate, DateTime createTime)
         {
             return new FeeMasterTestEntity
             {
@@ -1152,6 +1153,7 @@ and not exists (
                 Arrival = NormalizeText(row.Arrival),
                 CustomerCod = ParseNullableInt(row.CustomerCod),
                 TransCod = ParseNullableInt(row.TransCod),
+                ModiftyDate = createTime,
                 TaxRecId = NormalizeText(row.TaxRecId)
             };
         }
