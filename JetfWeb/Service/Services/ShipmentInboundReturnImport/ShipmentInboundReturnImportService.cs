@@ -404,17 +404,21 @@ namespace Service.Services.ShipmentInboundReturnImport
                     continue;
                 }
 
-                var warehouseProcessTypeValue = shipment.WarehouseProcessTypeText.ToEnumValueByDescription<WarehouseProcessType>();
-                if (!warehouseProcessTypeValue.HasValue)
+                if (!string.IsNullOrWhiteSpace(shipment.WarehouseProcessTypeText))
                 {
-                    shipment.UploadStatus = "失敗";
-                    shipment.FailReason = $"貨物狀態 '{shipment.WarehouseProcessTypeText}' 不在有效範圍內";
-                    continue;
+                    var warehouseProcessTypeValue = shipment.WarehouseProcessTypeText.ToEnumValueByDescription<WarehouseProcessType>();
+                    if (!warehouseProcessTypeValue.HasValue)
+                    {
+                        shipment.UploadStatus = "失敗";
+                        shipment.FailReason = $"貨物狀態 '{shipment.WarehouseProcessTypeText}' 不在有效範圍內";
+                        continue;
+                    }
+
+                    shipment.WarehouseProcessType = (byte)warehouseProcessTypeValue.Value;
                 }
 
                 shipment.SourceTypeDisplay = shipment.SourceType;
                 shipment.SourceTypeCode = (byte)sourceTypeValue.Value;
-                shipment.WarehouseProcessType = (byte)warehouseProcessTypeValue.Value;
                 shipment.UploadStatus = "成功";
                 shipment.FailReason = string.Empty;
             }
