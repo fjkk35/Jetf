@@ -594,9 +594,8 @@ namespace Service.Services.DownloadEtlNew
             Logger.Debug("step 4-1 開始: 使用 join 取得 OriginalList 資料");
 
             var bagJoinRows = new List<OriginalListLookupRow>();
-            if (dataType == TactSource)
-            {
-                bagJoinRows = ProjectOriginalListQuery(
+
+            bagJoinRows = ProjectOriginalListQuery(
                     from clearance in clearanceQuery
                     join original in DataCenterDb.OriginalLists.AsNoTracking()
                         on new
@@ -612,7 +611,6 @@ namespace Service.Services.DownloadEtlNew
                     where !string.IsNullOrEmpty(clearance.MainNumber) && !string.IsNullOrEmpty(clearance.BagNumber)
                     select original)
                     .ToList();
-            }
 
             var trackingJoinRows = ProjectOriginalListQuery(
                 from clearance in clearanceQuery
