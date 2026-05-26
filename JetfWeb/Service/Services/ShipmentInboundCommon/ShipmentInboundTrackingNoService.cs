@@ -338,13 +338,13 @@ namespace Service.Services.ShipmentInboundCommon
                         x.JetfSerial,
                         x.MainNumber,
                         x.BlNo,
-                        x.ImporterAddr,
+                        x.ImporterAddress,
                         x.ImporterPhone,
                         x.Importer,
-                        x.CustCode,
+                        x.DespatchName,
                         x.TransName,
                         x.Gw,
-                        x.CC
+                        x.Cc
                     })
                     .ToList();
 
@@ -357,12 +357,12 @@ namespace Service.Services.ShipmentInboundCommon
                             MainNumber = x.MainNumber,
                             OriginalJetfSerial = x.JetfSerial,
                             OriginalTrackingNo = x.BlNo,
-                            ImporterAddr = x.ImporterAddr,
+                            ImporterAddr = x.ImporterAddress,
                             ImporterPhone = x.ImporterPhone,
                             Importer = x.Importer,
-                            CustCode = x.CustCode,
+                            CustCode = x.DespatchName,
                             TransName = x.TransName,
-                            FallbackCod = ParseAmountToInt(x.CC)
+                            FallbackCod = ParseAmountToInt(x.Cc)
                         })
                         .FirstOrDefault())
                     .ToDictionary(x => x.TrackingNo, x => x);
@@ -380,12 +380,12 @@ namespace Service.Services.ShipmentInboundCommon
                         x.MainNumber,
                         x.TrackingNo,
                         x.DeliveryNo,
-                        x.Importer,
-                        x.ImporterPhone,
-                        x.ImporterAddr,
-                        x.CustCode,
-                        x.TransNo,
-                        x.CC
+                        x.Recipient,
+                        x.RecPhone,
+                        x.RecAddress,
+                        x.DespatchNo,
+                        x.ClearanceWarehousing,
+                        x.Cc
                     })
                     .ToList();
 
@@ -397,12 +397,12 @@ namespace Service.Services.ShipmentInboundCommon
                         TrackingNo = x.TrackingNo,
                         OriginalJetfSerial = x.DeliveryNo,
                         OriginalTrackingNo = x.TrackingNo,
-                        Importer = x.Importer,
-                        ImporterPhone = x.ImporterPhone,
-                        ImporterAddr = x.ImporterAddr,
-                        CustCode = x.CustCode,
-                        TransNo = x.TransNo.ToString(),
-                        FallbackCod = ParseAmountToInt(x.CC)
+                        Importer = x.Recipient,
+                        ImporterPhone = x.RecPhone,
+                        ImporterAddr = x.RecAddress,
+                        CustCode = x.DespatchNo,
+                        TransNo = (x.ClearanceWarehousing ?? 0).ToString(),
+                        FallbackCod = ParseAmountToInt(x.Cc)
                     }).FirstOrDefault())
                     .ToDictionary(x => x.TrackingNo, x => x);
             }
@@ -419,12 +419,12 @@ namespace Service.Services.ShipmentInboundCommon
                         x.MainNumber,
                         x.DeliveryNo,
                         x.TrackingNo,
-                        x.Importer,
-                        x.ImporterPhone,
-                        x.ImporterAddr,
-                        x.CustCode,
-                        x.TransNo,
-                        x.CC
+                        x.Recipient,
+                        x.RecPhone,
+                        x.RecAddress,
+                        x.DespatchNo,
+                        x.ClearanceWarehousing,
+                        x.Cc
                     })
                     .ToList();
 
@@ -437,12 +437,12 @@ namespace Service.Services.ShipmentInboundCommon
                         TrackingNo = x.TrackingNo,
                         OriginalJetfSerial = x.DeliveryNo,
                         OriginalTrackingNo = x.TrackingNo,
-                        Importer = x.Importer,
-                        ImporterPhone = x.ImporterPhone,
-                        ImporterAddr = x.ImporterAddr,
-                        CustCode = x.CustCode,
-                        TransNo = x.TransNo.ToString(),
-                        FallbackCod = ParseAmountToInt(x.CC)
+                        Importer = x.Recipient,
+                        ImporterPhone = x.RecPhone,
+                        ImporterAddr = x.RecAddress,
+                        CustCode = x.DespatchNo,
+                        TransNo = (x.ClearanceWarehousing ?? 0).ToString(),
+                        FallbackCod = ParseAmountToInt(x.Cc)
                     }).FirstOrDefault())
                     .ToDictionary(x => x.DeliveryNo, x => x);
             }
@@ -479,6 +479,11 @@ namespace Service.Services.ShipmentInboundCommon
         private int ParseAmountToInt(decimal? amount)
         {
             return amount.HasValue ? decimal.ToInt32(decimal.Truncate(amount.Value)) : 0;
+        }
+
+        private int ParseAmountToInt(double? amount)
+        {
+            return amount.HasValue ? decimal.ToInt32(decimal.Truncate(Convert.ToDecimal(amount.Value))) : 0;
         }
 
         private int CalculateFee(int? tax, int? ccfee, int? freightFee)
