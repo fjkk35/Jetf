@@ -174,17 +174,9 @@ BEGIN
             ON o.BAGNO = u.TrackingNo
         LEFT JOIN [DATA_CENTER].[dbo].[MAINORDERINFO] m WITH (NOLOCK)
             ON m.MAINNUMBER = o.MAINNUMBER
-        OUTER APPLY
-        (
-            SELECT CASE
-                WHEN o.DESPATCHNO IS NULL THEN NULL
-                WHEN LEN(CONVERT(nvarchar(50), o.DESPATCHNO)) >= 5 THEN CONVERT(nvarchar(50), o.DESPATCHNO)
-                ELSE RIGHT(N'00000' + CONVERT(nvarchar(50), o.DESPATCHNO), 5)
-            END AS CUST_CODE
-        ) airCode
         LEFT JOIN #SysCust airCust
             ON airCust.CUST_TYPE = N'AIR'
-           AND airCust.CUST_CODE = airCode.CUST_CODE
+           AND airCust.CUST_CODE = o.DESPATCHNO
         OUTER APPLY
         (
             SELECT TOP (1)
@@ -224,17 +216,9 @@ BEGIN
             ON o.TRACKINGUB = u.TrackingNo
         LEFT JOIN [DATA_CENTER].[dbo].[MAINORDERINFO] m WITH (NOLOCK)
             ON m.MAINNUMBER = o.MAINNUMBER
-        OUTER APPLY
-        (
-            SELECT CASE
-                WHEN o.DESPATCHNO IS NULL THEN NULL
-                WHEN LEN(CONVERT(nvarchar(50), o.DESPATCHNO)) >= 5 THEN CONVERT(nvarchar(50), o.DESPATCHNO)
-                ELSE RIGHT(N'00000' + CONVERT(nvarchar(50), o.DESPATCHNO), 5)
-            END AS CUST_CODE
-        ) airCode
         LEFT JOIN #SysCust airCust
             ON airCust.CUST_TYPE = N'AIR'
-           AND airCust.CUST_CODE = airCode.CUST_CODE
+           AND airCust.CUST_CODE = o.DESPATCHNO
         OUTER APPLY
         (
             SELECT TOP (1)
