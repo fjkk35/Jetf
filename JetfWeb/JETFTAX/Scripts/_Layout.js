@@ -56,7 +56,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'SearchCargo', text: '稅金查詢', url: '~/Cargo/SearchCargo', auth: ['SearchTax'] },
                 { id: 'SearchCargo2', text: '貨況查詢', url: '~/Cargo/SearchCargo2', auth: ['SearchCargo'] },
                 { id: 'SearchCargo', text: '貨況查詢V2', url: '~/SearchCargo/Index', auth: ['SearchCargo'] },
-                { id: 'BatchSearchCargo2', text: '批量貨況查詢明細表', url: '~/Cargo/BatchSearchCargo2', auth: ['BatchSearchCargo'] },
+                { id: 'BatchSearchCargo2', text: '批量貨況查詢明細表', url: '~/BatchSearchCargo2/Index', auth: ['BatchSearchCargo'] },
                 { id: 'BatchSearchShenzhenCargo', text: '批量查詢速派新遞物流貨號', url: '~/BatchSearchShenzhenCargo/Index', auth: ['BatchSearchShenzhenCargo'] },
                 { id: 'BatchSearchTax', text: '批量稅金查詢', url: '~/BatchSearchTax/Index', auth: ['BatchSearchTax'] },
                 { id: 'BatchSearchCargoShopee', text: '蝦皮預約入倉明細表', url: '~/Cargo/BatchSearchCargoShopee', auth: ['BatchSearchCargoShopee'] },

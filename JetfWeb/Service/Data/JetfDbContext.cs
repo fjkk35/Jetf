@@ -94,6 +94,8 @@ namespace Service.Data
 
         public DbSet<CustomerSpecialEntity> CustomerSpecials { get; set; }
 
+        public DbSet<BatchSearchCargo2Entity> BatchSearchCargo2s { get; set; }
+
         public DbSet<SeaTaxUploadEntity> SeaTaxUploads { get; set; }
 
         public DbSet<ErrorOrderSendEntity> ErrorOrderSends { get; set; }

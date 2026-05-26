@@ -471,6 +471,8 @@
     <Compile Include="Services\Authority\Domain\AuthorityDto.cs" />
     <Compile Include="Services\AuthorizationForm\AuthorizationFormService.cs" />
     <Compile Include="Services\BatchEditOrder\BatchEditOrderService.cs" />
+    <Compile Include="Services\BatchSearchCargo2\BatchSearchCargo2Service.cs" />
+    <Compile Include="Services\BatchSearchCargo2\Domain\BatchSearchCargo2Request.cs" />
     <Compile Include="Services\BatchSearchShenzhenCargo\BatchSearchShenzhenCargoService.cs" />
     <Compile Include="Services\BatchSearchShenzhenCargo\Domain\BatchSearchShenzhenCargoRequest.cs" />
     <Compile Include="Services\BatchSearchShenzhenCargo\Domain\ShenzhenCargoModel.cs" />
@@ -770,6 +772,7 @@
     <Compile Include="Services\WorkLoad\WorkLoadService.cs" />
     <Compile Include="Data\DataCenterDbContext.cs" />
     <Compile Include="Data\Models\DataCenter\EtlTipcTaxEntity.cs" />
+    <Compile Include="Data\Models\Jetf\BatchSearchCargo2Entity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterLogEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterModifyEntity.cs" />
