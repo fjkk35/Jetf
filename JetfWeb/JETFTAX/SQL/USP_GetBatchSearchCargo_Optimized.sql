@@ -14,6 +14,7 @@ BEGIN
 
     DROP TABLE IF EXISTS #UploadRows;
     DROP TABLE IF EXISTS #UploadTracking;
+    DROP TABLE IF EXISTS #SysCust;
     DROP TABLE IF EXISTS #CargoData;
     DROP TABLE IF EXISTS #CargoKeys;
 
@@ -34,6 +35,38 @@ BEGIN
     CREATE UNIQUE CLUSTERED INDEX [IX_UploadTracking_TrackingNo]
         ON #UploadTracking ([TrackingNo]);
 
+    SELECT
+        x.CUST_TYPE,
+        x.CUST_CODE,
+        MAX(x.CUST_NAME) AS CUST_NAME
+    INTO #SysCust
+    FROM
+    (
+        SELECT
+            N'AIR' AS CUST_TYPE,
+            c.OLD_CODE AS CUST_CODE,
+            c.CUST_NAME
+        FROM [DATA_CENTER].[dbo].[SYS_CUST] c WITH (NOLOCK)
+        WHERE c.CUST_TYPE = 'AIR'
+
+        UNION ALL
+
+        SELECT
+            N'SEA' AS CUST_TYPE,
+            c.CUST_CODE,
+            c.CUST_NAME
+        FROM [DATA_CENTER].[dbo].[SYS_CUST] c WITH (NOLOCK)
+        WHERE c.CUST_TYPE = 'SEA'
+    ) x
+    WHERE x.CUST_CODE IS NOT NULL
+    GROUP BY
+        x.CUST_TYPE,
+        x.CUST_CODE;
+
+    CREATE UNIQUE CLUSTERED INDEX [IX_SysCust_CustType_CustCode]
+        ON #SysCust ([CUST_TYPE], [CUST_CODE])
+        WITH (IGNORE_DUP_KEY = ON);
+
     ;WITH SourceCargo AS
     (
         SELECT
@@ -42,7 +75,7 @@ BEGIN
             s.ETA,
             ci.I_DATA_TYPE,
             s.DESPATCH_NAME,
-            [jetf].[dbo].[GetCUSTOMER](N'海運', s.DESPATCH_NAME) AS CUSTOMER,
+            seaCust.CUST_NAME AS CUSTOMER,
             s.MAINNUMBER,
             s.BL_NO,
             s.JETF_SERIAL,
@@ -59,6 +92,9 @@ BEGIN
         FROM #UploadTracking u
         INNER JOIN [DATA_CENTER].[dbo].[SEA_ORDER_ORIGINAL] s WITH (NOLOCK)
             ON s.BL_NO = u.TrackingNo
+        LEFT JOIN #SysCust seaCust
+            ON seaCust.CUST_TYPE = N'SEA'
+           AND seaCust.CUST_CODE = s.DESPATCH_NAME
         OUTER APPLY
         (
             SELECT TOP (1)
@@ -79,7 +115,7 @@ BEGIN
             s.ETA,
             ci.I_DATA_TYPE,
             s.DESPATCH_NAME,
-            [jetf].[dbo].[GetCUSTOMER](N'海運', s.DESPATCH_NAME) AS CUSTOMER,
+            seaCust.CUST_NAME AS CUSTOMER,
             s.MAINNUMBER,
             s.BL_NO,
             s.JETF_SERIAL,
@@ -96,6 +132,9 @@ BEGIN
         FROM #UploadTracking u
         INNER JOIN [DATA_CENTER].[dbo].[SEA_ORDER_ORIGINAL] s WITH (NOLOCK)
             ON s.JETF_SERIAL = u.TrackingNo
+        LEFT JOIN #SysCust seaCust
+            ON seaCust.CUST_TYPE = N'SEA'
+           AND seaCust.CUST_CODE = s.DESPATCH_NAME
         OUTER APPLY
         (
             SELECT TOP (1)
@@ -116,7 +155,7 @@ BEGIN
             m.DELIVERYDATE AS ETA,
             ci.I_DATA_TYPE,
             o.DESPATCHNO AS DESPATCH_NAME,
-            [jetf].[dbo].[GetCUSTOMER](N'空運', [jetf].[dbo].[PadLeft]('0', o.DESPATCHNO, 5)) AS CUSTOMER,
+            airCust.CUST_NAME AS CUSTOMER,
             o.MAINNUMBER,
             o.BAGNO AS BL_NO,
             o.TRACKINGUB AS JETF_SERIAL,
@@ -137,6 +176,17 @@ BEGIN
             ON m.MAINNUMBER = o.MAINNUMBER
         OUTER APPLY
         (
+            SELECT CASE
+                WHEN o.DESPATCHNO IS NULL THEN NULL
+                WHEN LEN(CONVERT(nvarchar(50), o.DESPATCHNO)) >= 5 THEN CONVERT(nvarchar(50), o.DESPATCHNO)
+                ELSE RIGHT(N'00000' + CONVERT(nvarchar(50), o.DESPATCHNO), 5)
+            END AS CUST_CODE
+        ) airCode
+        LEFT JOIN #SysCust airCust
+            ON airCust.CUST_TYPE = N'AIR'
+           AND airCust.CUST_CODE = airCode.CUST_CODE
+        OUTER APPLY
+        (
             SELECT TOP (1)
                 c.DATA_TYPE AS I_DATA_TYPE,
                 c.SIGN_IN_TIME AS I_SIGN_IN_TIME,
@@ -155,7 +205,7 @@ BEGIN
             m.DELIVERYDATE AS ETA,
             ci.I_DATA_TYPE,
             o.DESPATCHNO AS DESPATCH_NAME,
-            [jetf].[dbo].[GetCUSTOMER](N'空運', [jetf].[dbo].[PadLeft]('0', o.DESPATCHNO, 5)) AS CUSTOMER,
+            airCust.CUST_NAME AS CUSTOMER,
             o.MAINNUMBER,
             o.BAGNO AS BL_NO,
             o.TRACKINGUB AS JETF_SERIAL,
@@ -174,6 +224,17 @@ BEGIN
             ON o.TRACKINGUB = u.TrackingNo
         LEFT JOIN [DATA_CENTER].[dbo].[MAINORDERINFO] m WITH (NOLOCK)
             ON m.MAINNUMBER = o.MAINNUMBER
+        OUTER APPLY
+        (
+            SELECT CASE
+                WHEN o.DESPATCHNO IS NULL THEN NULL
+                WHEN LEN(CONVERT(nvarchar(50), o.DESPATCHNO)) >= 5 THEN CONVERT(nvarchar(50), o.DESPATCHNO)
+                ELSE RIGHT(N'00000' + CONVERT(nvarchar(50), o.DESPATCHNO), 5)
+            END AS CUST_CODE
+        ) airCode
+        LEFT JOIN #SysCust airCust
+            ON airCust.CUST_TYPE = N'AIR'
+           AND airCust.CUST_CODE = airCode.CUST_CODE
         OUTER APPLY
         (
             SELECT TOP (1)
@@ -312,6 +373,7 @@ BEGIN
 
     DROP TABLE IF EXISTS #CargoKeys;
     DROP TABLE IF EXISTS #CargoData;
+    DROP TABLE IF EXISTS #SysCust;
     DROP TABLE IF EXISTS #UploadTracking;
     DROP TABLE IF EXISTS #UploadRows;
 END;
@@ -334,13 +396,17 @@ GO
 4. [DATA_CENTER].[dbo].[MAINORDERINFO]
    (MAINNUMBER) INCLUDE (DELIVERYDATE)
 
-5. [DATA_CENTER].[dbo].[CLEARANCE_INFO]
+5. [DATA_CENTER].[dbo].[SYS_CUST]
+   (CUST_TYPE, CUST_CODE) INCLUDE (CUST_NAME)
+   (CUST_TYPE, OLD_CODE) INCLUDE (CUST_NAME)
+
+6. [DATA_CENTER].[dbo].[CLEARANCE_INFO]
    (MAIN_NUMBER, BAG_NUMBER) INCLUDE (DATA_TYPE, SIGN_IN_TIME, SIGN_OUT_TIME)
    (MAIN_NUMBER, MERGE_NUMBER) INCLUDE (DATA_TYPE, SIGN_IN_TIME, SIGN_OUT_TIME)
 
-6. [jetf].[dbo].[PdtScanCargoUpload]
+7. [jetf].[dbo].[PdtScanCargoUpload]
    (Data, UploadTime DESC) INCLUDE (TransNo, CarNo, UploadOpe)
 
-7. [DATA_CENTER].[dbo].[CARGO_STATUS]
+8. [DATA_CENTER].[dbo].[CARGO_STATUS]
    (TRANS_SERIAL) INCLUDE (TRANS_MODIFY_TIME, TRANS_STATUS_DESC)
 */
