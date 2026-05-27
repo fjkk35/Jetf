@@ -264,7 +264,11 @@ namespace Service.Services.ShipmentInboundRecord
                 query = query.WhereIf(true, x => x.LocationCode.Contains(request.LocationCode));
             }
 
-            if (byte.TryParse(request.WarehouseProcessType, out var warehouseProcessType))
+            if (request.WarehouseProcessTypeIsEmpty)
+            {
+                query = query.WhereIf(true, x => x.WarehouseProcessType == null);
+            }
+            else if (byte.TryParse(request.WarehouseProcessType, out var warehouseProcessType))
             {
                 query = query.WhereIf(true, x => x.WarehouseProcessType == warehouseProcessType);
             }

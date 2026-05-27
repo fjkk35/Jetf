@@ -167,6 +167,7 @@
         locationCode: '',
         dataType: '',
         warehouseProcessType: '',
+        warehouseProcessTypeIsEmpty: false,
         unknownShipmentOnly: false
     };
 
@@ -242,6 +243,12 @@
         $scope.loadData();
     };
 
+    $scope.onWarehouseProcessTypeIsEmptyChanged = function () {
+        if ($scope.searchForm.warehouseProcessTypeIsEmpty) {
+            $scope.searchForm.warehouseProcessType = '';
+        }
+    };
+
     // 清除查詢條件
     $scope.clearSearch = function () {
         $scope.searchForm = {
@@ -254,6 +261,7 @@
             locationCode: '',
             dataType: '',
             warehouseProcessType: '',
+            warehouseProcessTypeIsEmpty: false,
             unknownShipmentOnly: false
         };
 
@@ -288,6 +296,7 @@
             LocationCode: $scope.searchForm.locationCode,
             DataType: $scope.searchForm.dataType,
             WarehouseProcessType: $scope.searchForm.warehouseProcessType,
+            WarehouseProcessTypeIsEmpty: $scope.searchForm.warehouseProcessTypeIsEmpty,
             IsOrderOriginal: $scope.searchForm.unknownShipmentOnly ? false : null,
             Page: $scope.currentPage,
             PageSize: parseInt($scope.pageSize)
@@ -334,6 +343,7 @@
             LocationCode: $scope.searchForm.locationCode,
             DataType: $scope.searchForm.dataType,
             WarehouseProcessType: $scope.searchForm.warehouseProcessType,
+            WarehouseProcessTypeIsEmpty: $scope.searchForm.warehouseProcessTypeIsEmpty,
             IsOrderOriginal: $scope.searchForm.unknownShipmentOnly ? false : null,
             Page: 1,
             PageSize: 10

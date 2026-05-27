@@ -56,6 +56,11 @@ namespace Service.Services.ShipmentInboundRecord.Domain
         public string WarehouseProcessType { get; set; }
 
         /// <summary>
+        /// 是否只查倉庫狀態沒有值
+        /// </summary>
+        public bool WarehouseProcessTypeIsEmpty { get; set; }
+
+        /// <summary>
         /// 是否原始貨件
         /// </summary>
         public bool? IsOrderOriginal { get; set; }
