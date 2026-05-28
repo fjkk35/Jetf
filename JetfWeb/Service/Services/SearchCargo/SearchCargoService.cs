@@ -730,6 +730,7 @@ namespace Service.Services.SearchCargo
 
                 var model = new FeeMasterModel()
                 {
+                    DataDate = row.DATADATE?.ToString(),
                     IncludeTax = row.INCLUDE_TAX?.ToString(),
                     Tax1 = Int32.TryParse(row.TAX1?.ToString(), out tax1) ? tax1 : 0,
                     Tax2 = Int32.TryParse(row.TAX2?.ToString(), out tax2) ? tax2 : 0,
@@ -1090,6 +1091,7 @@ order by CRTDATETIME desc";
                 .ToList();
 
             ApplyClearanceInfo(list);
+            ApplyFeeMasterInfo(list);
 
             return list
                 .OrderByDescending(row => row.I_SIGN_OUT_TIME ?? row.SOURCE_CREATEDATE)
@@ -1127,13 +1129,13 @@ order by CRTDATETIME desc";
                 ETA = null,
                 GW = FormatNullableNumber(row.BagWeight) ?? FormatNullableNumber(row.Weight),
                 PIECE = row.Pieces?.ToString() ?? string.Empty,
-                F_DataDate = row.CreateDate?.ToString("yyyyMMdd") ?? string.Empty,
-                I_DATA_TYPE = "空運",
+                F_DataDate = string.Empty,
+                I_DATA_TYPE = string.Empty,
                 I_CLEARANCE_TYPE = string.Empty,
                 DESPATCH_NAME = customerCode,
                 CUSTOMER = customerName ?? string.Empty,
                 I_SIGN_IN_TIME = row.SignInTime,
-                I_SIGN_OUT_TIME = row.SignOutTime,
+                I_SIGN_OUT_TIME = null,
                 MAINNUMBER = row.MainNumber,
                 BL_NO = row.BagNo,
                 JETF_SERIAL = row.TrackingNo,
@@ -1185,8 +1187,8 @@ order by CRTDATETIME desc";
                 ETA = row.Eta,
                 GW = FormatNullableNumber(row.Gw),
                 PIECE = row.Piece?.ToString() ?? string.Empty,
-                F_DataDate = row.CreateDate?.ToString("yyyyMMdd") ?? string.Empty,
-                I_DATA_TYPE = "海運",
+                F_DataDate = string.Empty,
+                I_DATA_TYPE = string.Empty,
                 I_CLEARANCE_TYPE = string.Empty,
                 DESPATCH_NAME = row.DespatchName,
                 CUSTOMER = customerName ?? string.Empty,
@@ -1237,6 +1239,24 @@ order by CRTDATETIME desc";
                 item.I_CLEARANCE_TYPE = clearanceInfo.CLEARANCE_TYPE ?? item.I_CLEARANCE_TYPE;
                 item.I_SIGN_IN_TIME = clearanceInfo.SIGN_IN_TIME ?? item.I_SIGN_IN_TIME;
                 item.I_SIGN_OUT_TIME = clearanceInfo.SIGN_OUT_TIME ?? item.I_SIGN_OUT_TIME;
+            }
+        }
+
+        private void ApplyFeeMasterInfo(IEnumerable<CargoQueryRowModel> list)
+        {
+            foreach (var item in list ?? Enumerable.Empty<CargoQueryRowModel>())
+            {
+                var feeMaster = GetFeeMaster(item.DELIVERYNO) ?? GetFeeMaster(item.JETF_SERIAL);
+
+                if (feeMaster == null)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(feeMaster.DataDate))
+                {
+                    item.F_DataDate = feeMaster.DataDate;
+                }
             }
         }
 
@@ -1352,6 +1372,7 @@ order by CRTDATETIME desc";
     /// </summary>
     internal class FeeMasterModel
     {
+        public string DataDate { get; set; }
         public string IncludeTax { get; set; }
         public int Tax1 { get; set; }
         public int Tax2 { get; set; }
