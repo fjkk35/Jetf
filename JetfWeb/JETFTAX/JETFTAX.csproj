@@ -2579,7 +2579,6 @@
     <Content Include="Scripts\vendor\jquery\jquery.min.js" />
     <Content Include="Scripts\vendor\jquery\jquery.slim.js" />
     <Content Include="Scripts\vendor\jquery\jquery.slim.min.js" />
-    <Content Include="SQL\CreateUserAuthorityGroupTable.sql" />
     <Content Include="UploadFIle\1.txt" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>
@@ -2600,6 +2599,7 @@
     <Folder Include="Excel\" />
     <Folder Include="Models\SeaTransRecord\" />
     <Folder Include="Models\WorkDayArea\" />
+    <Folder Include="SQL\" />
     <Folder Include="UploadProcess\" />
     <Folder Include="Views\ArriveUpload\" />
     <Folder Include="Views\DropDownList\" />

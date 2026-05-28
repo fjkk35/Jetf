@@ -484,9 +484,12 @@ namespace Service.Services.ShipmentInboundProcess
             query = query.WhereIf(
                 DateTime.TryParse(request.InboundDateStart, out var startDate),
                 x => x.InboundDate >= startDate);
-            query = query.WhereIf(
-                DateTime.TryParse(request.InboundDateEnd, out var endDate),
-                x => x.InboundDate <= endDate);
+
+                if (DateTime.TryParse(request.InboundDateEnd, out var endDate))
+                {
+                    var inboundDateEnd = endDate.AddDays(1);
+                    query = query.WhereIf(true, x => x.InboundDate < inboundDateEnd);
+                }
 
             if (request.CustCodes?.Any() == true)
             {
