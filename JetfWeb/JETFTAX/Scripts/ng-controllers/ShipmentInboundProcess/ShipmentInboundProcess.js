@@ -811,7 +811,17 @@
         form.target = '_blank';
 
         for (var key in request) {
-            if (request[key] !== null && request[key] !== undefined && request[key] !== '') {
+            if (Array.isArray(request[key])) {
+                request[key].forEach(function (value) {
+                    if (value !== null && value !== undefined && value !== '') {
+                        var input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = value;
+                        form.appendChild(input);
+                    }
+                });
+            } else if (request[key] !== null && request[key] !== undefined && request[key] !== '') {
                 var input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = key;

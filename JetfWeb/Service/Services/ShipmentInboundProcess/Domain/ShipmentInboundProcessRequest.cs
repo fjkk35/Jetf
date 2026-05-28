@@ -1,4 +1,4 @@
-namespace Service.Services.ShipmentInboundProcess.Domain
+﻿namespace Service.Services.ShipmentInboundProcess.Domain
 {
     public class ShipmentInboundProcessRequest
     {
@@ -16,11 +16,6 @@ namespace Service.Services.ShipmentInboundProcess.Domain
         /// 入庫日期(迄)，格式：yyyy-MM-dd
         /// </summary>
         public string InboundDateEnd { get; set; }
-
-        /// <summary>
-        /// 客戶代碼(單一，相容舊版)
-        /// </summary>
-        public string CustCode { get; set; }
 
         /// <summary>
         /// 客戶代碼(多選)
