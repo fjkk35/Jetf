@@ -678,14 +678,14 @@ public sealed class PortalService(
 
             return new AirOrderOriginalDto
             {
-                TrackingNo = airData.TrackingNo,
-                OriginalJetfSerial = airData.OriginalJetfSerial,
-                MainNumber = airData.MainNumber,
-                OriginalTrackingNo = airData.OriginalTrackingNo,
-                Importer = airData.Importer,
-                ImporterPhone = airData.ImporterPhone,
-                ImporterAddr = airData.ImporterAddr,
-                CustCode = airData.CustCode,
+                TrackingNo = airData.TrackingNo ?? string.Empty,
+                OriginalJetfSerial = airData.OriginalJetfSerial ?? string.Empty,
+                MainNumber = airData.MainNumber ?? string.Empty,
+                OriginalTrackingNo = airData.OriginalTrackingNo ?? string.Empty,
+                Importer = airData.Importer ?? string.Empty,
+                ImporterPhone = airData.ImporterPhone ?? string.Empty,
+                ImporterAddr = airData.ImporterAddr ?? string.Empty,
+                CustCode = airData.CustCode ?? string.Empty,
                 TransNo = airData.TransNo?.ToString() ?? string.Empty,
                 Cc = ConvertCcToCod(airData.Cc)
             };
