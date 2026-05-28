@@ -739,7 +739,8 @@ namespace Service.Services.ShipmentInboundProcess
                 "單號",
                 "貨件來源",
                 "退件原因",
-                "處理方式"
+                "處理方式",
+                "備註"
             };
 
             IRow headerRow = sheet.CreateRow(0);
@@ -759,6 +760,7 @@ namespace Service.Services.ShipmentInboundProcess
                 NpoiCell.CreateCell(row, 6, item.SourceTypeName ?? "", dataStyle);
                 NpoiCell.CreateCell(row, 7, item.ReturnReason ?? "", dataStyle);
                 NpoiCell.CreateCell(row, 8, item.ProcessTypeName ?? "", dataStyle);
+                NpoiCell.CreateCell(row, 9, item.Remark ?? "", dataStyle);
             }
 
             sheet.AutoSizeColumns(headers.Length, scale: 1.2, minWidth: 15);

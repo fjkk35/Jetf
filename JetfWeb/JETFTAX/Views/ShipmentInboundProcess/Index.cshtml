@@ -28,6 +28,31 @@
         animation: shipment-process-row-flash 2s ease-in-out;
     }
 
+    .shipment-process-table {
+        table-layout: fixed;
+        min-width: 1640px;
+        width: 100%;
+    }
+
+    .shipment-process-table th,
+    .shipment-process-table td {
+        vertical-align: middle;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .shipment-process-table th {
+        white-space: nowrap;
+    }
+
+    .shipment-process-table .btn {
+        white-space: nowrap;
+    }
+
+    .shipment-process-remark {
+        white-space: pre-wrap;
+    }
+
     @@keyframes shipment-process-row-flash {
         0% {
             background-color: rgba(255, 243, 205, 0.95);
@@ -356,7 +381,21 @@
 
                     <!-- 資料表格 -->
                     <div class="table-responsive mt-3">
-                        <table class="table table-bordered table-striped table-hover">
+                        <table class="table table-bordered table-striped table-hover shipment-process-table">
+                            <colgroup>
+                                <col style="width: 60px;" />
+                                <col style="width: 140px;" />
+                                <col style="width: 90px;" />
+                                <col style="width: 170px;" />
+                                <col style="width: 90px;" />
+                                <col style="width: 140px;" />
+                                <col style="width: 100px;" />
+                                <col style="width: 230px;" />
+                                <col style="width: 120px;" />
+                                <col style="width: 120px;" />
+                                <col style="width: 150px;" />
+                                <col style="width: 230px;" />
+                            </colgroup>
                             <thead class="thead-dark">
                                 <tr>
                                     <th>序號</th>
@@ -369,12 +408,13 @@
                                     <th>退件原因</th>
                                     <th>開始處理時間</th>
                                     <th>開始處理人員</th>
-                                    <th style="width: 200px;">處理方式</th>
+                                    <th>處理方式</th>
+                                    <th>備註</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr ng-if="data.length === 0">
-                                    <td colspan="11" class="text-center">查無資料</td>
+                                    <td colspan="12" class="text-center">查無資料</td>
                                 </tr>
                                 <tr ng-repeat="item in data track by item.Id"
                                     ng-class="{'shipment-process-row-updated': item.RowUpdateHighlight}">
@@ -390,7 +430,7 @@
                                         </a>
                                     </td>
                                     <td>{{item.SourceTypeName}}</td>
-                                    <td style="min-width: 200px;">
+                                    <td>
                                         <div ng-if="!item.editingReturnReason" class="d-flex align-items-center">
                                             <span class="flex-grow-1" style="margin-right: 5px;">{{item.ReturnReason || ''}}</span>
                                             <button class="btn btn-sm btn-primary" 
@@ -430,6 +470,7 @@
                                             {{item.ProcessTypeName || '處理方式'}}
                                         </button>
                                     </td>
+                                    <td class="shipment-process-remark">{{item.Remark || ''}}</td>
                                 </tr>
                             </tbody>
                         </table>
