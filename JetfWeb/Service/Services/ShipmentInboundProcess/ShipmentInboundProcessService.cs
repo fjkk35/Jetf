@@ -63,7 +63,8 @@ namespace Service.Services.ShipmentInboundProcess
                         ProcessStartOpe = x.ProcessStartOpe,
                         Tax = x.Tax,
                         Ccfee = x.Ccfee,
-                        Cod = x.Cod
+                        Cod = x.Cod,
+                        Remark = x.Remark
                     })
                     .ToList();
 
@@ -562,7 +563,8 @@ namespace Service.Services.ShipmentInboundProcess
                 ProcessStartOpe = entity.ProcessStartOpe,
                 Tax = entity.Tax,
                 Ccfee = entity.Ccfee,
-                Cod = entity.Cod
+                Cod = entity.Cod,
+                Remark = entity.Remark
             };
 
             NormalizeExpiredProcessEditDisplay(model);

@@ -334,7 +334,7 @@
             fee: 0,
             carNo: '',
             pickupTime: null,
-            remark: ''
+            remark: item.Remark || ''
         };
 
         // 從 currentItem 載入稅金、報關費、到付款資料

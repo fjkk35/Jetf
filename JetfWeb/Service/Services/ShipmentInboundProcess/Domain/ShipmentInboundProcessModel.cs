@@ -106,5 +106,10 @@ namespace Service.Services.ShipmentInboundProcess.Domain
         /// 到付款
         /// </summary>
         public decimal? Cod { get; set; }
+
+        /// <summary>
+        /// 備註。
+        /// </summary>
+        public string Remark { get; set; }
     }
 }
