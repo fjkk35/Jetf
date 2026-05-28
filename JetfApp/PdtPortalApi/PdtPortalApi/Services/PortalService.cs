@@ -764,7 +764,7 @@ public sealed class PortalService(
             return await _jetfDbContext.ShipmentInbounds
                 .AsNoTracking()
                 .AnyAsync(
-                    entity => entity.TrackingNo == trackingNo && (!entity.OutboundDate.HasValue ||entity.OutboundDate < duplicateThreshold ),
+                    entity => entity.TrackingNo == trackingNo && (!entity.OutboundDate.HasValue || entity.OutboundDate >= duplicateThreshold ),
                     cancellationToken);
         }
         catch (Exception exception)
