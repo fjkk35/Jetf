@@ -219,18 +219,7 @@ namespace Service.Services.ShipmentInboundProcess
                             });
                         }
 
-                        if (!string.Equals(oldRemark ?? string.Empty, request.Remark ?? string.Empty, StringComparison.Ordinal))
-                        {
-                            JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
-                            {
-                                ShipmentInboundId = request.Id,
-                                FieldName = "備註",
-                                OldValue = oldRemark,
-                                NewValue = request.Remark,
-                                EditTime = DateTime.Now,
-                                EditUser = userId
-                            });
-                        }
+                        AddEditHistoryIfOldValueExists(request.Id, "備註", oldRemark, request.Remark, userId);
 
                         JetfDb.SaveChanges();
                         tx.Commit();
@@ -857,18 +846,7 @@ namespace Service.Services.ShipmentInboundProcess
                                     });
                                 }
 
-                                if (!string.Equals(oldRemark ?? string.Empty, row.Remark ?? string.Empty, StringComparison.Ordinal))
-                                {
-                                    JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
-                                    {
-                                        ShipmentInboundId = shipmentInboundId,
-                                        FieldName = "備註",
-                                        OldValue = oldRemark,
-                                        NewValue = row.Remark,
-                                        EditTime = DateTime.Now,
-                                        EditUser = userId
-                                    });
-                                }
+                                AddEditHistoryIfOldValueExists(shipmentInboundId, "備註", oldRemark, row.Remark, userId);
                             }
                         }
 
@@ -1075,21 +1053,27 @@ namespace Service.Services.ShipmentInboundProcess
         /// <param name="returnReason">新的退件原因。</param>
         public void UpdateReturnReason(int id, string returnReason)
         {
+            var userId = GetUserId();
+            var entity = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == id);
+            if (entity == null)
             {
-                var entity = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == id);
-                if (entity == null)
-                {
-                    throw new Exception("查無此資料");
-                }
-
-                if (entity.OutboundDate.HasValue)
-                {
-                    throw new Exception($"出庫日期 {entity.OutboundDate.Value:yyyy/MM/dd}，無法更新資料");
-                }
-
-                entity.ReturnReason = returnReason;
-                JetfDb.SaveChanges();
+                throw new Exception("查無此資料");
             }
+
+            if (entity.OutboundDate.HasValue)
+            {
+                throw new Exception($"出庫日期 {entity.OutboundDate.Value:yyyy/MM/dd}，無法更新資料");
+            }
+
+            var oldReturnReason = entity.ReturnReason;
+            if (string.Equals(oldReturnReason ?? string.Empty, returnReason ?? string.Empty, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            entity.ReturnReason = returnReason;
+            AddEditHistoryIfOldValueExists(id, "退件原因", oldReturnReason, returnReason, userId);
+            JetfDb.SaveChanges();
         }
 
         /// <summary>
@@ -1118,17 +1102,31 @@ namespace Service.Services.ShipmentInboundProcess
             }
 
             entity.Remark = remark;
+            AddEditHistoryIfOldValueExists(id, "備註", oldRemark, remark, userId);
+            JetfDb.SaveChanges();
+        }
+
+        private void AddEditHistoryIfOldValueExists(int shipmentInboundId, string fieldName, string oldValue, string newValue, string userId)
+        {
+            if (string.IsNullOrWhiteSpace(oldValue))
+            {
+                return;
+            }
+
+            if (string.Equals(oldValue ?? string.Empty, newValue ?? string.Empty, StringComparison.Ordinal))
+            {
+                return;
+            }
+
             JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
             {
-                ShipmentInboundId = id,
-                FieldName = "備註",
-                OldValue = oldRemark,
-                NewValue = remark,
+                ShipmentInboundId = shipmentInboundId,
+                FieldName = fieldName,
+                OldValue = oldValue,
+                NewValue = newValue,
                 EditTime = DateTime.Now,
                 EditUser = userId
             });
-
-            JetfDb.SaveChanges();
         }
 
         /// <summary>
@@ -1141,6 +1139,7 @@ namespace Service.Services.ShipmentInboundProcess
         public ResponseModel BatchUploadReturnReason(string filePath)
         {
             var res = new ResponseModel { status = Status.success, msg = "上傳成功" };
+            var userId = GetUserId();
 
             var rows = ReadReturnReasonBatchUploadExcel(filePath);
             if (rows.Count == 0)
@@ -1189,7 +1188,11 @@ namespace Service.Services.ShipmentInboundProcess
                                     continue;
                                 }
 
-                                entities[trackingNo].ReturnReason = row.ReturnReason;
+                                var entity = entities[trackingNo];
+                                var oldReturnReason = entity.ReturnReason;
+
+                                entity.ReturnReason = row.ReturnReason;
+                                AddEditHistoryIfOldValueExists(entity.Id, "退件原因", oldReturnReason, row.ReturnReason, userId);
                                 successCount++;
                             }
 
