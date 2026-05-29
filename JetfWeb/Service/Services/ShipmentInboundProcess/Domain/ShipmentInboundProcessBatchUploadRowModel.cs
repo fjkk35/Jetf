@@ -1,24 +1,29 @@
-namespace Service.Services.ShipmentInboundProcess.Domain
+ï»¿namespace Service.Services.ShipmentInboundProcess.Domain
 {
     public class ShipmentInboundProcessBatchUploadRowModel
     {
         /// <summary>
-        /// ³æ¸¹
+        /// å–®è™Ÿ
         /// </summary>
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// ³B²z¤è¦¡(¤¤¤å)
+        /// è™•ç†æ–¹å¼(ä¸­æ–‡)
         /// </summary>
         public string ProcessTypeText { get; set; }
 
         /// <summary>
-        /// ³Æµù
+        /// é€€ä»¶åŸå› 
+        /// </summary>
+        public string ReturnReason { get; set; }
+
+        /// <summary>
+        /// å‚™è¨»
         /// </summary>
         public string Remark { get; set; }
 
         /// <summary>
-        /// Excel ¦C¸¹
+        /// Excel åˆ—è™Ÿ
         /// </summary>
         public int RowNo { get; set; }
     }

@@ -773,7 +773,7 @@ namespace Service.Services.ShipmentInboundProcess
 
         /// <summary>
         /// 批量上傳(貨件回倉處理)
-        /// Excel 欄位：單號、處理方式(中文)、備註
+        /// Excel 標題：單號、處理方式(中文)、退件原因、備註；退件原因/備註內容可空白
         /// 整批驗證：任一筆驗證失敗則整批失敗，不更新任何資料。
         /// </summary>
         /// <param name="filePath">上傳檔案路徑。</param>
@@ -819,12 +819,22 @@ namespace Service.Services.ShipmentInboundProcess
                             {
                                 var existing = existingData[row.TrackingNo];
                                 var oldProcessType = existing.ProcessType;
+                                var oldReturnReason = existing.ReturnReason;
                                 var oldRemark = existing.Remark;
                                 var shipmentInboundId = existing.Id;
                                 var targetProcessType = (ShipmentInboundProcessType)newProcessType.Value;
 
                                 existing.ProcessType = targetProcessType;
-                                existing.Remark = row.Remark;
+                                if (row.ReturnReason != null)
+                                {
+                                    existing.ReturnReason = row.ReturnReason;
+                                }
+
+                                if (row.Remark != null)
+                                {
+                                    existing.Remark = row.Remark;
+                                }
+
                                 existing.ProcessTime = DateTime.Now;
                                 existing.ProcessOpe = userId;
 
@@ -846,7 +856,15 @@ namespace Service.Services.ShipmentInboundProcess
                                     });
                                 }
 
-                                AddEditHistoryIfOldValueExists(shipmentInboundId, "備註", oldRemark, row.Remark, userId);
+                                if (row.ReturnReason != null)
+                                {
+                                    AddEditHistoryIfOldValueExists(shipmentInboundId, "退件原因", oldReturnReason, row.ReturnReason, userId);
+                                }
+
+                                if (row.Remark != null)
+                                {
+                                    AddEditHistoryIfOldValueExists(shipmentInboundId, "備註", oldRemark, row.Remark, userId);
+                                }
                             }
                         }
 
@@ -1001,7 +1019,9 @@ namespace Service.Services.ShipmentInboundProcess
             bool read = false;
             int trackingNoIndex = -1;
             int processTypeIndex = -1;
+            int returnReasonIndex = -1;
             int remarkIndex = -1;
+            var requiredHeaders = new[] { "單號", "處理方式", "退件原因", "備註" };
 
             for (int i = 0; i <= sheet.LastRowNum; i++)
             {
@@ -1010,26 +1030,45 @@ namespace Service.Services.ShipmentInboundProcess
 
                 if (!read)
                 {
-                    for (int c = 0; c < row.LastCellNum; c++)
+                    var headerIndexes = GetExcelHeaderIndexes(row);
+                    if (!requiredHeaders.Any(headerIndexes.ContainsKey))
                     {
-                        var header = row.GetCellData(c);
-                        if (header == "單號") trackingNoIndex = c;
-                        if (header == "處理方式") processTypeIndex = c;
-                        if (header == "備註") remarkIndex = c;
+                        continue;
                     }
 
-                    if (trackingNoIndex >= 0 && processTypeIndex >= 0 && remarkIndex >= 0)
+                    var missingHeaders = requiredHeaders
+                        .Where(x => !headerIndexes.ContainsKey(x))
+                        .ToList();
+                    if (missingHeaders.Any())
                     {
-                        read = true;
+                        throw new Exception($"Excel 缺少必要欄位：{string.Join("、", missingHeaders)}");
                     }
+
+                    trackingNoIndex = headerIndexes["單號"];
+                    processTypeIndex = headerIndexes["處理方式"];
+                    if (headerIndexes.ContainsKey("退件原因"))
+                    {
+                        returnReasonIndex = headerIndexes["退件原因"];
+                    }
+
+                    if (headerIndexes.ContainsKey("備註"))
+                    {
+                        remarkIndex = headerIndexes["備註"];
+                    }
+
+                    read = true;
                     continue;
                 }
 
                 var trackingNo = row.GetCellData(trackingNoIndex);
                 var processTypeText = row.GetCellData(processTypeIndex);
-                var remark = row.GetCellData(remarkIndex);
+                var returnReason = returnReasonIndex >= 0 ? row.GetCellData(returnReasonIndex) : null;
+                var remark = remarkIndex >= 0 ? row.GetCellData(remarkIndex) : null;
 
-                if (string.IsNullOrWhiteSpace(trackingNo) && string.IsNullOrWhiteSpace(processTypeText) && string.IsNullOrWhiteSpace(remark))
+                if (string.IsNullOrWhiteSpace(trackingNo)
+                    && string.IsNullOrWhiteSpace(processTypeText)
+                    && string.IsNullOrWhiteSpace(returnReason)
+                    && string.IsNullOrWhiteSpace(remark))
                 {
                     continue;
                 }
@@ -1039,11 +1078,30 @@ namespace Service.Services.ShipmentInboundProcess
                     RowNo = i + 1,
                     TrackingNo = trackingNo,
                     ProcessTypeText = processTypeText,
+                    ReturnReason = returnReason,
                     Remark = remark
                 });
             }
 
             return result;
+        }
+
+        private Dictionary<string, int> GetExcelHeaderIndexes(IRow row)
+        {
+            var indexes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+            for (int c = 0; c < row.LastCellNum; c++)
+            {
+                var header = (row.GetCellData(c) ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(header) || indexes.ContainsKey(header))
+                {
+                    continue;
+                }
+
+                indexes.Add(header, c);
+            }
+
+            return indexes;
         }
 
         /// <summary>

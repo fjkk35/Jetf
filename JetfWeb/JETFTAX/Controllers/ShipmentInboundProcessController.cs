@@ -282,7 +282,7 @@ namespace JETFTAX.Controllers
 
         /// <summary>
         /// 批量上傳(Excel)：依單號更新貨件回倉處理
-        /// Excel 欄位：單號、處理方式、備註
+        /// Excel 標題：單號、處理方式、退件原因、備註；退件原因/備註內容可空白
         /// </summary>
         /// <param name="file">上傳的 Excel 檔案。</param>
         /// <returns>批次處理結果。</returns>
