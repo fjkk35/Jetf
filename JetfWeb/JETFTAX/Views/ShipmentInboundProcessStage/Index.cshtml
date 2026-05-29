@@ -179,6 +179,7 @@
                                     <th>序號</th>
                                     <th>單號</th>
                                     <th>退件原因</th>
+                                    <th>備註</th>
                                     <th>重出派件公司</th>
                                     <th>到付款</th>
                                     <th>運費</th>
@@ -194,12 +195,13 @@
                             </thead>
                             <tbody>
                                 <tr ng-if="data.length === 0">
-                                    <td colspan="14" class="text-center">查無資料</td>
+                                    <td colspan="15" class="text-center">查無資料</td>
                                 </tr>
                                 <tr ng-repeat="item in data track by item.Id">
                                     <td>{{(currentPage - 1) * pageSize + $index + 1}}</td>
                                     <td>{{item.TrackingNo}}</td>
                                     <td>{{item.ReturnReason || ''}}</td>
+                                    <td>{{item.Remark || ''}}</td>
                                     <td>{{item.ProcessTransName || ''}}</td>
                                     <td class="text-right">{{(item.Cod || 0) | number:0}}</td>
                                     <td class="text-right">{{(item.FreightFee || 0) | number:0}}</td>
@@ -280,7 +282,7 @@
                     </div>
 
                     <div class="form-group row">
-                        <label class="col-sm-3 col-form-label">處理方式 <span class="text-danger">*</span></label>
+                        <label class="col-sm-3 col-form-label">處理方式</label>
                         <div class="col-sm-9">
                             <select class="form-control"
                                     ng-model="processForm.processType"
@@ -288,6 +290,13 @@
                                 <option value="">請選擇</option>
                                 <option ng-repeat="type in processTypeList" ng-value="type.Value">{{type.Text}}</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group row" ng-if="!processForm.processType">
+                        <label class="col-sm-3 col-form-label">備註</label>
+                        <div class="col-sm-9">
+                            <textarea class="form-control" ng-model="processForm.remark" rows="3"></textarea>
                         </div>
                     </div>
                     <hr />

@@ -98,6 +98,7 @@ namespace Service.Services.ShipmentInboundProcessStage
                         Id = x.Id,
                         TrackingNo = x.TrackingNo,
                         ReturnReason = x.ReturnReason,
+                        Remark = x.Remark,
                         Cod = x.Cod,
                         FreightFee = x.FreightFee,
                         Tax = x.Tax,
@@ -229,7 +230,7 @@ namespace Service.Services.ShipmentInboundProcessStage
             }
         }
 
-        private ShipmentInboundProcessType ValidateAndNormalizeRequest(ShipmentInboundProcessStageSaveRequest request)
+        private ShipmentInboundProcessType? ValidateAndNormalizeRequest(ShipmentInboundProcessStageSaveRequest request)
         {
             request.TrackingNo = request.TrackingNo?.Trim();
             request.ReturnReason = request.ReturnReason?.Trim();
@@ -246,16 +247,40 @@ namespace Service.Services.ShipmentInboundProcessStage
                 throw new Exception("單號為必填欄位");
             }
 
-            if (!Enum.IsDefined(typeof(ShipmentInboundProcessType), request.ProcessType))
+            if (!request.ProcessType.HasValue)
             {
-                throw new Exception("請選擇處理方式");
+                NormalizeFieldsWithoutProcessType(request);
+                return null;
             }
 
-            var processType = (ShipmentInboundProcessType)request.ProcessType;
+            if (!Enum.IsDefined(typeof(ShipmentInboundProcessType), request.ProcessType.Value))
+            {
+                throw new Exception("處理方式不正確");
+            }
+
+            var processType = (ShipmentInboundProcessType)request.ProcessType.Value;
             NormalizeFieldsByProcessType(request, processType);
             ValidateRequiredFields(request, processType);
 
             return processType;
+        }
+
+        private void NormalizeFieldsWithoutProcessType(ShipmentInboundProcessStageSaveRequest request)
+        {
+            request.ProcessTransNo = null;
+            request.ProcessImporter = null;
+            request.ProcessImporterPhone = null;
+            request.ProcessImporterAddr = null;
+            request.StoreCode = null;
+            request.StoreName = null;
+            request.Tax = 0;
+            request.CcFee = 0;
+            request.Cod = 0;
+            request.FreightPayerNo = null;
+            request.FreightFee = 0;
+            request.Fee = 0;
+            request.CarNo = null;
+            request.PickupTime = null;
         }
 
         private void NormalizeFieldsByProcessType(
@@ -376,7 +401,7 @@ namespace Service.Services.ShipmentInboundProcessStage
         private void ApplyRequest(
             ShipmentInboundProcessStageEntity entity,
             ShipmentInboundProcessStageSaveRequest request,
-            ShipmentInboundProcessType processType,
+            ShipmentInboundProcessType? processType,
             string userId,
             bool isNew)
         {
@@ -443,6 +468,7 @@ namespace Service.Services.ShipmentInboundProcessStage
                 Id = entity.Id,
                 TrackingNo = entity.TrackingNo,
                 ReturnReason = entity.ReturnReason,
+                Remark = entity.Remark,
                 Cod = entity.Cod,
                 FreightFee = entity.FreightFee,
                 Tax = entity.Tax,

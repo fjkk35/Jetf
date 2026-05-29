@@ -24,6 +24,8 @@ namespace Service.Services.ShipmentInboundProcessStage.Domain
         /// </summary>
         public string ReturnReason { get; set; }
 
+        public string Remark { get; set; }
+
         /// <summary>
         /// 到付款。
         /// </summary>

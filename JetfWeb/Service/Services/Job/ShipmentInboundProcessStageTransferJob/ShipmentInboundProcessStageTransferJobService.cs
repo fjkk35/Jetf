@@ -84,7 +84,6 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
                 join shipment in db.ShipmentInbounds
                     on stage.TrackingNo equals shipment.TrackingNo
                 where !stage.IsMatch
-                    && stage.ProcessType.HasValue
                     && shipment.OutboundTime == null
                 orderby stage.Id
                 select new PendingStageShipmentPair

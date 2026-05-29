@@ -449,15 +449,6 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
             return;
         }
 
-        if (!$scope.processForm.processType) {
-            swal({
-                title: '提醒',
-                text: '請選擇處理方式',
-                icon: 'warning'
-            });
-            return;
-        }
-
         if ($scope.processForm.processType == 1) {
             if (!$scope.processForm.processTransNo) {
                 swal({ title: '提醒', text: '請選擇重出派件公司', icon: 'warning' });

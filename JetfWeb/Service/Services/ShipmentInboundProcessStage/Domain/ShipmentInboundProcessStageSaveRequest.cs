@@ -23,7 +23,7 @@ namespace Service.Services.ShipmentInboundProcessStage.Domain
         /// <summary>
         /// 處理方式。
         /// </summary>
-        public byte ProcessType { get; set; }
+        public byte? ProcessType { get; set; }
 
         /// <summary>
         /// 重出派件公司。
