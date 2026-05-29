@@ -65,6 +65,37 @@
         white-space: nowrap;
     }
 
+    .shipment-process-tracking-cell {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 100%;
+    }
+
+    .shipment-process-tracking-cell a {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .shipment-process-duplicate-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border-radius: 50%;
+        background: #dc3545;
+        color: #fff;
+        font-size: 0.85rem;
+        font-weight: 700;
+        line-height: 1;
+        flex: 0 0 auto;
+        box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.16);
+    }
+
     .shipment-process-editable-cell {
         display: flex;
         align-items: center;
@@ -490,10 +521,16 @@
                                     <td>{{item.CustName}}</td>
                                     <td>{{item.TransName}}</td>
                                     <td>
-                                        <a href="~/ShipmentInboundRecord/Detail?id={{item.Id}}"
-                                           target="_blank">
-                                            {{item.TrackingNo}}
-                                        </a>
+                                        <span class="shipment-process-tracking-cell">
+                                            <a href="~/ShipmentInboundRecord/Detail?id={{item.Id}}"
+                                               target="_blank"
+                                               title="{{item.TrackingNo}}">
+                                                {{item.TrackingNo}}
+                                            </a>
+                                            <span class="shipment-process-duplicate-badge"  ng-if="item.TrackingNoCount > 1">
+                                                {{item.TrackingNoCount}}
+                                            </span>
+                                        </span>
                                     </td>
                                     <td>{{item.SourceTypeName}}</td>
                                     <td>

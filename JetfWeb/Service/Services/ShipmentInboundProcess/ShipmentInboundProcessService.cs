@@ -68,6 +68,7 @@ namespace Service.Services.ShipmentInboundProcess
                     })
                     .ToList();
 
+                FillTrackingNoCounts(data, query);
                 NormalizeExpiredProcessEditDisplay(data);
                 FillCustomerAndTransNames(data);
 
@@ -574,6 +575,45 @@ namespace Service.Services.ShipmentInboundProcess
             FillCustomerAndTransNames(new List<ShipmentInboundProcessModel> { model });
 
             return model;
+        }
+
+        /// <summary>
+        /// 一次查出目前頁面單號在查詢結果中的重複筆數，避免逐筆查詢。
+        /// </summary>
+        /// <param name="data">目前頁面資料。</param>
+        /// <param name="query">已套用查詢條件的資料來源。</param>
+        private void FillTrackingNoCounts(List<ShipmentInboundProcessModel> data, IQueryable<Data.ShipmentInboundEntity> query)
+        {
+            var trackingNos = data
+                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
+                .Select(x => x.TrackingNo)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (!trackingNos.Any())
+            {
+                return;
+            }
+
+            var counts = query
+                .Where(x => trackingNos.Contains(x.TrackingNo))
+                .GroupBy(x => x.TrackingNo)
+                .Select(x => new
+                {
+                    TrackingNo = x.Key,
+                    Count = x.Count()
+                })
+                .ToList()
+                .ToDictionary(x => x.TrackingNo, x => x.Count, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var item in data)
+            {
+                if (!string.IsNullOrWhiteSpace(item.TrackingNo) &&
+                    counts.TryGetValue(item.TrackingNo, out var count))
+                {
+                    item.TrackingNoCount = count;
+                }
+            }
         }
 
         /// <summary>

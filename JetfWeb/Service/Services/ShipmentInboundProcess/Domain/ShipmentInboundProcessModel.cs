@@ -51,6 +51,11 @@ namespace Service.Services.ShipmentInboundProcess.Domain
         public string TrackingNo { get; set; }
 
         /// <summary>
+        /// 查詢結果中相同單號的筆數。
+        /// </summary>
+        public int? TrackingNoCount { get; set; }
+
+        /// <summary>
         /// 貨件來源
         /// </summary>
         public ShipmentInboundSourceType SourceType { get; set; }
