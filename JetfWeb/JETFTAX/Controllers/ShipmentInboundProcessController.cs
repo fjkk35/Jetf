@@ -81,7 +81,7 @@ namespace JETFTAX.Controllers
 
                 string startDate = DateTime.TryParse(searchRequest.InboundDateStart, out var sd) ? sd.ToString("yyyyMMdd") : "";
                 string endDate = DateTime.TryParse(searchRequest.InboundDateEnd, out var ed) ? ed.ToString("yyyyMMdd") : "";
-                string fileName = $"貨件退件處理_{startDate}_{endDate}.xlsx";
+                string fileName = $"貨件回倉處理_{startDate}_{endDate}.xlsx";
 
                 var handle = Guid.NewGuid().ToString();
                 TempData[handle] = fileBytes;
