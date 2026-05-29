@@ -479,6 +479,14 @@
                                            style="cursor: pointer; text-decoration: underline; font-weight: 600;">
                                             {{item.TrackingNo}}
                                         </a>
+                                        <a ng-if="isCargoReceiptNumber(item.TrackingNo)"
+                                           ng-href="{{getCargoReceiptUrl(item.TrackingNo)}}"
+                                           target="_blank"
+                                           class="btn btn-sm btn-info ml-1 px-1 py-0"
+                                           title="查看簽收單"
+                                           style="line-height: 1.2; min-width: 22px; font-weight: 600;">
+                                            簽
+                                        </a>
                                     </td>
                                     <td class="col-source" ng-show="visibleColumns.sourceType">{{item.SourceTypeName}}</td>
                                     <td class="col-process-type" ng-show="visibleColumns.processType">{{item.ProcessTypeName}}</td>
@@ -502,7 +510,17 @@
                                     <td class="col-seq-no" ng-show="visibleColumns.seqNo">{{item.SeqNo}}</td>
                                     <td class="col-location" ng-show="visibleColumns.locationCode">{{item.LocationCode}}</td>
                                     <td ng-show="visibleColumns.size">{{item.Size}}</td>
-                                    <td class="col-outbound-no" ng-show="visibleColumns.outboundTrackingNo">{{item.OutboundTrackingNo}}</td>
+                                    <td class="col-outbound-no" ng-show="visibleColumns.outboundTrackingNo">
+                                        <span>{{item.ReturnTrackingNo}}</span>
+                                        <a ng-if="isCargoReceiptNumber(item.ReturnTrackingNo)"
+                                           ng-href="{{getCargoReceiptUrl(item.ReturnTrackingNo)}}"
+                                           target="_blank"
+                                           class="btn btn-sm btn-info ml-1 px-1 py-0"
+                                           title="查看簽收單"
+                                           style="line-height: 1.2; min-width: 22px; font-weight: 600;">
+                                            簽
+                                        </a>
+                                    </td>
                                     <td ng-show="visibleColumns.cod">{{item.Cod | number}}</td>
                                     <td ng-show="visibleColumns.freightFee">{{item.FreightFee | number}}</td>
                                     <td ng-show="visibleColumns.tax">{{item.Tax | number}}</td>
