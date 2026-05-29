@@ -806,36 +806,37 @@
 
         var request = $scope.buildSearchRequest(false);
 
-        var form = document.createElement('form');
-        form.method = 'POST';
-        form.action = Router.action('ShipmentInboundProcess', 'ExportExcel');
-        form.target = '_blank';
+        $http.post(Router.action('ShipmentInboundProcess', 'ExportExcel'), request)
+            .then(function (response) {
+                var data = response.data || {};
 
-        for (var key in request) {
-            if (Array.isArray(request[key])) {
-                request[key].forEach(function (value) {
-                    if (value !== null && value !== undefined && value !== '') {
-                        var input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = key;
-                        input.value = value;
-                        form.appendChild(input);
-                    }
-                });
-            } else if (request[key] !== null && request[key] !== undefined && request[key] !== '') {
-                var input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = request[key];
-                form.appendChild(input);
-            }
-        }
+                if (data.Redirect) {
+                    window.location = Router.action('Account', 'Login');
+                    return;
+                }
 
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
+                if (data.msg) {
+                    alert(data.msg);
+                    return;
+                }
 
-        $scope.exporting = false;
+                if (data.fileGuid && data.fileName) {
+                    var downloadUrl = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid + '&fileName=' + encodeURIComponent(data.fileName);
+                    var link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = data.fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            })
+            .catch(function (error) {
+                console.error('下載失敗:', error);
+                alert('下載失敗，請稍後再試');
+            })
+            .finally(function () {
+                $scope.exporting = false;
+            });
     };
 
     // 更新記錄資訊

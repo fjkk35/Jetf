@@ -73,7 +73,7 @@ namespace JETFTAX.Controllers
         /// <returns>Excel 檔案或錯誤訊息。</returns>
         [HttpPost]
         [UserAuthorize(Authority.ShipmentInboundProcess)]
-        public ActionResult ExportExcel(ShipmentInboundProcessRequest searchRequest)
+        public JsonResult ExportExcel(ShipmentInboundProcessRequest searchRequest)
         {
             try
             {
@@ -83,15 +83,14 @@ namespace JETFTAX.Controllers
                 string endDate = DateTime.TryParse(searchRequest.InboundDateEnd, out var ed) ? ed.ToString("yyyyMMdd") : "";
                 string fileName = $"貨件退件處理_{startDate}_{endDate}.xlsx";
 
-                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+                var handle = Guid.NewGuid().ToString();
+                TempData[handle] = fileBytes;
+
+                return Json(new { fileGuid = handle, fileName = fileName, msg = "" }, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
-                return Json(new
-                {
-                    success = false,
-                    message = ex.Message
-                }, JsonRequestBehavior.AllowGet);
+                return Json(new { fileGuid = "", fileName = "", msg = ex.Message }, JsonRequestBehavior.AllowGet);
             }
         }
 
