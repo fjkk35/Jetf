@@ -32,6 +32,11 @@
         table-layout: fixed;
         min-width: 1640px;
         width: 100%;
+        height: auto !important;
+    }
+
+    .shipment-process-table tbody {
+        height: auto !important;
     }
 
     .shipment-process-table th,
@@ -39,6 +44,17 @@
         vertical-align: middle;
         overflow-wrap: anywhere;
         word-break: break-word;
+        line-height: 1.25;
+    }
+
+    .shipment-process-table tbody td {
+        padding: 0.8rem 0.6rem;
+        line-height: 1.5;
+    }
+
+    .shipment-process-table thead th {
+        padding-top: 0.45rem;
+        padding-bottom: 0.45rem;
     }
 
     .shipment-process-table th {
@@ -49,8 +65,56 @@
         white-space: nowrap;
     }
 
-    .shipment-process-remark {
+    .shipment-process-editable-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        height: 100%;
+    }
+
+    .shipment-process-editable-text {
+        flex: 1 1 auto;
+        min-width: 0;
         white-space: pre-wrap;
+    }
+
+    .shipment-process-edit-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        padding: 0;
+        line-height: 1;
+        flex: 0 0 auto;
+        margin-left: auto;
+    }
+
+    .shipment-process-edit-input {
+        flex: 1 1 auto;
+        min-width: 0;
+        height: 28px;
+        padding: 0.2rem 0.45rem;
+    }
+
+    .shipment-process-edit-action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        padding: 0;
+        line-height: 1;
+        flex: 0 0 auto;
+    }
+
+    .shipment-process-edit-group {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        max-width: 100%;
+        width: 100%;
     }
 
     @@keyframes shipment-process-row-flash {
@@ -309,17 +373,18 @@
                         <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\批量上傳退件原因_範例.xlsx&fileName=批量上傳退件原因_範例.xlsx' target='_blank'>下載範例</a>
                     </div>
                     <div ng-show="uploadReturnReasonResult" class="mt-3">
-                        <div class="alert" ng-class="{'alert-success': uploadReturnReasonResult.status === 'success', 'alert-danger': uploadReturnReasonResult.status === 'error'}">
+                        <div class="alert" ng-class="{'alert-success': uploadReturnReasonResult.status === 'success' && (!uploadReturnReasonSummary || uploadReturnReasonSummary.FailureCount === 0), 'alert-warning': uploadReturnReasonResult.status === 'success' && uploadReturnReasonSummary && uploadReturnReasonSummary.FailureCount > 0, 'alert-danger': uploadReturnReasonResult.status === 'error'}">
                             {{uploadReturnReasonResult.msg}}
                         </div>
                     </div>
 
                     <div class="mt-3" ng-if="uploadReturnReasonErrors && uploadReturnReasonErrors.length > 0">
-                        <h5>驗證失敗明細</h5>
+                        <h5>失敗明細</h5>
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
                                 <thead>
                                     <tr>
+                                        <th style="width: 80px;">列號</th>
                                         <th>單號</th>
                                         <th style="width: 140px;">欄位名稱</th>
                                         <th>失敗原因</th>
@@ -327,6 +392,7 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="e in uploadReturnReasonErrors">
+                                        <td>{{e.RowNo}}</td>
                                         <td>{{e.TrackingNo}}</td>
                                         <td>{{e.FieldName}}</td>
                                         <td class="text-danger">{{e.Reason}}</td>
@@ -391,10 +457,10 @@
                                 <col style="width: 140px;" />
                                 <col style="width: 100px;" />
                                 <col style="width: 230px;" />
+                                <col style="width: 230px;" />
                                 <col style="width: 120px;" />
                                 <col style="width: 120px;" />
                                 <col style="width: 150px;" />
-                                <col style="width: 230px;" />
                             </colgroup>
                             <thead class="thead-dark">
                                 <tr>
@@ -406,10 +472,10 @@
                                     <th>單號</th>
                                     <th>貨件來源</th>
                                     <th>退件原因</th>
+                                    <th>備註</th>
                                     <th>開始處理時間</th>
                                     <th>開始處理人員</th>
                                     <th>處理方式</th>
-                                    <th>備註</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -431,33 +497,59 @@
                                     </td>
                                     <td>{{item.SourceTypeName}}</td>
                                     <td>
-                                        <div ng-if="!item.editingReturnReason" class="d-flex align-items-center">
-                                            <span class="flex-grow-1" style="margin-right: 5px;">{{item.ReturnReason || ''}}</span>
-                                            <button class="btn btn-sm btn-primary" 
+                                        <div ng-if="!item.editingReturnReason" class="shipment-process-editable-cell">
+                                            <span class="shipment-process-editable-text">{{item.ReturnReason || ''}}</span>
+                                            <button class="btn btn-sm btn-primary shipment-process-edit-btn"
                                                     ng-click="startEditReturnReason(item)"
                                                     title="編輯退件原因">
                                                 <i class="fa fa-edit"></i>
                                             </button>
                                         </div>
-                                        <div ng-if="item.editingReturnReason" class="input-group input-group-sm">
+                                        <div ng-if="item.editingReturnReason" class="shipment-process-edit-group">
                                             <input type="text" 
-                                                   class="form-control form-control-sm" 
+                                                   class="form-control form-control-sm shipment-process-edit-input"
                                                    ng-model="item.tempReturnReason" 
                                                    ng-keydown="$event.keyCode === 13 && saveReturnReason(item)"
                                                    placeholder="請輸入退件原因" />
-                                            <div class="input-group-append">
-                                                <button class="btn btn-sm btn-success" 
-                                                        ng-click="saveReturnReason(item)" 
-                                                        ng-disabled="item.savingReturnReason"
-                                                        title="儲存">
-                                                    <i class="fa fa-check"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-secondary" 
-                                                        ng-click="cancelEditReturnReason(item)"
-                                                        title="取消">
-                                                    <i class="fa fa-times"></i>
-                                                </button>
-                                            </div>
+                                            <button class="btn btn-sm btn-success shipment-process-edit-action-btn"
+                                                    ng-click="saveReturnReason(item)" 
+                                                    ng-disabled="item.savingReturnReason"
+                                                    title="儲存">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-secondary shipment-process-edit-action-btn"
+                                                    ng-click="cancelEditReturnReason(item)"
+                                                    title="取消">
+                                                <i class="fa fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div ng-if="!item.editingRemark" class="shipment-process-editable-cell">
+                                            <span class="shipment-process-editable-text">{{item.Remark || ''}}</span>
+                                            <button class="btn btn-sm btn-primary shipment-process-edit-btn"
+                                                    ng-click="startEditRemark(item)"
+                                                    title="編輯備註">
+                                                <i class="fa fa-edit"></i>
+                                            </button>
+                                        </div>
+                                        <div ng-if="item.editingRemark" class="shipment-process-edit-group">
+                                            <input type="text"
+                                                   class="form-control form-control-sm shipment-process-edit-input"
+                                                   ng-model="item.tempRemark"
+                                                   ng-keydown="$event.keyCode === 13 && saveRemark(item)"
+                                                   placeholder="請輸入備註" />
+                                            <button class="btn btn-sm btn-success shipment-process-edit-action-btn"
+                                                    ng-click="saveRemark(item)"
+                                                    ng-disabled="item.savingRemark"
+                                                    title="儲存">
+                                                <i class="fa fa-check"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-secondary shipment-process-edit-action-btn"
+                                                    ng-click="cancelEditRemark(item)"
+                                                    title="取消">
+                                                <i class="fa fa-times"></i>
+                                            </button>
                                         </div>
                                     </td>
                                     <td>{{item.ProcessStartTime | customDateTime}}</td>
@@ -470,7 +562,6 @@
                                             {{item.ProcessTypeName || '處理方式'}}
                                         </button>
                                     </td>
-                                    <td class="shipment-process-remark">{{item.Remark || ''}}</td>
                                 </tr>
                             </tbody>
                         </table>

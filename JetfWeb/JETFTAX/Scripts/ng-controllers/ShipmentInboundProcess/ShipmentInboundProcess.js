@@ -16,6 +16,7 @@
 
     $scope.uploadingReturnReason = false;
     $scope.uploadReturnReasonResult = null;
+    $scope.uploadReturnReasonSummary = null;
     $scope.uploadReturnReasonErrors = [];
 
     // 分頁相關
@@ -1048,10 +1049,70 @@
             });
     };
 
+    // 備註編輯相關
+    $scope.startEditRemark = function (item) {
+        item.tempRemark = item.Remark || '';
+        item.editingRemark = true;
+    };
+
+    $scope.cancelEditRemark = function (item) {
+        item.editingRemark = false;
+        item.tempRemark = '';
+    };
+
+    $scope.saveRemark = function (item) {
+        if (item.savingRemark) {
+            return;
+        }
+
+        item.savingRemark = true;
+
+        $http.post(Router.action('ShipmentInboundProcess', 'UpdateRemark'), {
+            id: item.Id,
+            remark: item.tempRemark
+        })
+            .then(function (response) {
+                if (response.data.status === 'success' || !response.data.status) {
+                    if (response.data.ReturnObject) {
+                        $scope.mergeRowData(response.data.ReturnObject);
+                    } else {
+                        item.Remark = item.tempRemark;
+                    }
+
+                    item.editingRemark = false;
+                    swal({
+                        title: "成功",
+                        text: "備註已更新",
+                        icon: "success",
+                        timer: 1500,
+                        buttons: false
+                    });
+                } else {
+                    swal({
+                        title: "失敗",
+                        text: response.data.msg || "更新失敗",
+                        icon: "error"
+                    });
+                }
+            })
+            .catch(function (error) {
+                console.error('更新備註失敗:', error);
+                swal({
+                    title: "錯誤",
+                    text: "更新失敗，請稍後再試",
+                    icon: "error"
+                });
+            })
+            .finally(function () {
+                item.savingRemark = false;
+            });
+    };
+
     // 批量上傳退件原因相關
     $scope.openBatchUploadReturnReasonModal = function () {
         $scope.uploadingReturnReason = false;
         $scope.uploadReturnReasonResult = null;
+        $scope.uploadReturnReasonSummary = null;
         $scope.uploadReturnReasonErrors = [];
 
         var fileInput = document.getElementById('batchUploadReturnReasonFile');
@@ -1089,6 +1150,7 @@
 
         $scope.uploadingReturnReason = true;
         $scope.uploadReturnReasonResult = null;
+        $scope.uploadReturnReasonSummary = null;
         $scope.uploadReturnReasonErrors = [];
 
         $http.post(Router.action('ShipmentInboundProcess', 'BatchUploadReturnReason'), formData, {
@@ -1103,13 +1165,23 @@
                 }
 
                 $scope.uploadReturnReasonResult = response.data || { status: 'error', msg: '上傳失敗' };
-                $scope.uploadReturnReasonErrors = ($scope.uploadReturnReasonResult && $scope.uploadReturnReasonResult.ReturnObject) ? $scope.uploadReturnReasonResult.ReturnObject : [];
+                var resultObject = $scope.uploadReturnReasonResult.ReturnObject || {};
+                var errors = angular.isArray(resultObject) ? resultObject : (resultObject.Errors || []);
+                var failureCount = angular.isNumber(resultObject.FailureCount) ? resultObject.FailureCount : errors.length;
+                var successCount = angular.isNumber(resultObject.SuccessCount) ? resultObject.SuccessCount : 0;
+
+                $scope.uploadReturnReasonErrors = errors;
+                $scope.uploadReturnReasonSummary = {
+                    SuccessCount: successCount,
+                    FailureCount: failureCount
+                };
 
                 if ($scope.uploadReturnReasonResult.status === 'success') {
+                    var hasFailures = failureCount > 0;
                     swal({
-                        title: "成功",
+                        title: hasFailures ? "部分完成" : "成功",
                         text: $scope.uploadReturnReasonResult.msg || "上傳成功",
-                        icon: "success"
+                        icon: hasFailures ? "warning" : "success"
                     });
 
                     if ($scope.isSearched) {

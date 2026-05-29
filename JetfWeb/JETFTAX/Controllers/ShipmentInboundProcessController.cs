@@ -349,6 +349,37 @@ namespace JETFTAX.Controllers
         }
 
         /// <summary>
+        /// 更新備註
+        /// </summary>
+        /// <param name="id">貨件回倉資料 Id。</param>
+        /// <param name="remark">新的備註。</param>
+        /// <returns>更新結果與最新單筆列表資料。</returns>
+        [HttpPost]
+        [UserAuthorize(Authority.ShipmentInboundProcess)]
+        public JsonResult UpdateRemark(int id, string remark)
+        {
+            try
+            {
+                _shipmentInboundProcessService.UpdateRemark(id, remark);
+                var row = _shipmentInboundProcessService.GetRowById(id);
+                MainHubNotifier.BroadcastRowUpdated(row);
+
+                return Json(new ResponseModel
+                {
+                    ReturnObject = row
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new ResponseModel
+                {
+                    status = Status.error,
+                    msg = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
         /// 批量上傳退件原因
         /// Excel 欄位：單號、退件原因
         /// </summary>

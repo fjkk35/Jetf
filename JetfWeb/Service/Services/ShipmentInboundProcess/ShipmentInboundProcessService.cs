@@ -1,4 +1,4 @@
-using NPOI.SS.UserModel;
+﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.EnumTax;
 using Service.Extensions;
@@ -118,6 +118,7 @@ namespace Service.Services.ShipmentInboundProcess
                         var oldCcfee = existing.Ccfee;
                         var oldCod = existing.Cod;
                         var oldFee = existing.Fee;
+                        var oldRemark = existing.Remark;
                         var newProcessType = (ShipmentInboundProcessType)request.ProcessType;
 
                         NormalizeUpdateRequest(request);
@@ -213,6 +214,19 @@ namespace Service.Services.ShipmentInboundProcess
                                 FieldName = "手續費",
                                 OldValue = oldFee?.ToString(),
                                 NewValue = newFee.ToString(),
+                                EditTime = DateTime.Now,
+                                EditUser = userId
+                            });
+                        }
+
+                        if (!string.Equals(oldRemark ?? string.Empty, request.Remark ?? string.Empty, StringComparison.Ordinal))
+                        {
+                            JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                            {
+                                ShipmentInboundId = request.Id,
+                                FieldName = "備註",
+                                OldValue = oldRemark,
+                                NewValue = request.Remark,
                                 EditTime = DateTime.Now,
                                 EditUser = userId
                             });
@@ -816,6 +830,7 @@ namespace Service.Services.ShipmentInboundProcess
                             {
                                 var existing = existingData[row.TrackingNo];
                                 var oldProcessType = existing.ProcessType;
+                                var oldRemark = existing.Remark;
                                 var shipmentInboundId = existing.Id;
                                 var targetProcessType = (ShipmentInboundProcessType)newProcessType.Value;
 
@@ -837,6 +852,19 @@ namespace Service.Services.ShipmentInboundProcess
                                         FieldName = "處理方式",
                                         OldValue = oldValueText,
                                         NewValue = newValueText,
+                                        EditTime = DateTime.Now,
+                                        EditUser = userId
+                                    });
+                                }
+
+                                if (!string.Equals(oldRemark ?? string.Empty, row.Remark ?? string.Empty, StringComparison.Ordinal))
+                                {
+                                    JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+                                    {
+                                        ShipmentInboundId = shipmentInboundId,
+                                        FieldName = "備註",
+                                        OldValue = oldRemark,
+                                        NewValue = row.Remark,
                                         EditTime = DateTime.Now,
                                         EditUser = userId
                                     });
@@ -1065,9 +1093,48 @@ namespace Service.Services.ShipmentInboundProcess
         }
 
         /// <summary>
+        /// 更新備註並寫入編輯歷史。
+        /// </summary>
+        /// <param name="id">貨件回倉資料 Id。</param>
+        /// <param name="remark">新的備註。</param>
+        public void UpdateRemark(int id, string remark)
+        {
+            var userId = GetUserId();
+            var entity = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == id);
+            if (entity == null)
+            {
+                throw new Exception("查無資料");
+            }
+
+            if (entity.OutboundDate.HasValue)
+            {
+                throw new Exception($"已出庫日期 {entity.OutboundDate.Value:yyyy/MM/dd}，無法更新備註");
+            }
+
+            var oldRemark = entity.Remark;
+            if (string.Equals(oldRemark ?? string.Empty, remark ?? string.Empty, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            entity.Remark = remark;
+            JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
+            {
+                ShipmentInboundId = id,
+                FieldName = "備註",
+                OldValue = oldRemark,
+                NewValue = remark,
+                EditTime = DateTime.Now,
+                EditUser = userId
+            });
+
+            JetfDb.SaveChanges();
+        }
+
+        /// <summary>
         /// 批量上傳退件原因
         /// Excel 欄位：單號、退件原因
-        /// 驗證規則：如果有單號找不到，整批上傳失敗，並回傳失敗原因
+        /// 驗證規則：失敗列回傳原因，成功列仍會更新退件原因
         /// </summary>
         /// <param name="filePath">上傳檔案路徑。</param>
         /// <returns>批次處理結果。</returns>
@@ -1083,45 +1150,70 @@ namespace Service.Services.ShipmentInboundProcess
                 return res;
             }
 
-            var validationErrors = ValidateReturnReasonBatchUploadRows(rows);
-            if (validationErrors.Any())
+            var errors = ValidateReturnReasonBatchUploadRows(rows);
+            var invalidRowNos = new HashSet<int>(errors.Select(x => x.RowNo));
+            var validRows = rows
+                .Where(x => !invalidRowNos.Contains(x.RowNo))
+                .ToList();
+            var successCount = 0;
             {
-                res.status = Status.error;
-                res.msg = $"批量上傳失敗，共 {validationErrors.Count} 筆錯誤。";
-                res.ReturnObject = validationErrors;
-                return res;
-            }
-
-            {
-                var trackingNos = rows.Select(x => x.TrackingNo).Distinct().ToList();
+                var trackingNos = validRows
+                    .Select(x => (x.TrackingNo ?? string.Empty).Trim())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
                 var entities = JetfDb.ShipmentInbounds
                     .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
-                    .ToDictionary(x => x.TrackingNo, x => x);
+                    .ToList()
+                    .GroupBy(x => x.TrackingNo, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
 
-                using (var tx = JetfDb.Database.BeginTransaction())
+                if (validRows.Any())
                 {
-                    try
+                    using (var tx = JetfDb.Database.BeginTransaction())
                     {
-                        foreach (var row in rows)
+                        try
                         {
-                            if (entities.ContainsKey(row.TrackingNo))
+                            foreach (var row in validRows)
                             {
-                                entities[row.TrackingNo].ReturnReason = row.ReturnReason;
-                            }
-                        }
+                                var trackingNo = (row.TrackingNo ?? string.Empty).Trim();
+                                if (!entities.ContainsKey(trackingNo))
+                                {
+                                    errors.Add(new ReturnReasonBatchUploadErrorModel
+                                    {
+                                        RowNo = row.RowNo,
+                                        TrackingNo = row.TrackingNo,
+                                        FieldName = "單號",
+                                        Reason = "查無資料或已出庫"
+                                    });
+                                    continue;
+                                }
 
-                        JetfDb.SaveChanges();
-                        tx.Commit();
-                    }
-                    catch
-                    {
-                        tx.Rollback();
-                        throw;
+                                entities[trackingNo].ReturnReason = row.ReturnReason;
+                                successCount++;
+                            }
+
+                            JetfDb.SaveChanges();
+                            tx.Commit();
+                        }
+                        catch
+                        {
+                            tx.Rollback();
+                            throw;
+                        }
                     }
                 }
             }
 
-            res.msg = $"成功更新 {rows.Count} 筆";
+            var failureCount = errors.Select(x => x.RowNo).Distinct().Count();
+            res.status = successCount > 0 ? Status.success : Status.error;
+            res.msg = $"成功 {successCount} 筆，失敗 {failureCount} 筆。";
+            res.ReturnObject = new
+            {
+                SuccessCount = successCount,
+                FailureCount = failureCount,
+                Errors = errors
+            };
             return res;
         }
 
