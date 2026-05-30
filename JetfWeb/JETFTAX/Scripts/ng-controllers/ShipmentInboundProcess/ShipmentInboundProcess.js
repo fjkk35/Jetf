@@ -518,7 +518,13 @@
 
         for (var index = 0; index < $scope.data.length; index++) {
             if ($scope.data[index].Id === rowData.Id) {
+                var trackingNoCount = $scope.data[index].TrackingNoCount;
                 angular.extend($scope.data[index], rowData);
+
+                if (trackingNoCount !== undefined &&
+                    (rowData.TrackingNoCount === null || rowData.TrackingNoCount === undefined)) {
+                    $scope.data[index].TrackingNoCount = trackingNoCount;
+                }
 
                 if (shouldHighlight) {
                     triggerRowHighlight($scope.data[index]);

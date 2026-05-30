@@ -648,7 +648,14 @@
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label">單號</label>
                         <div class="col-sm-9">
-                            <input type="text" class="form-control" ng-model="processForm.trackingNo" readonly />
+                            <div class="d-flex align-items-center">
+                                <input type="text" class="form-control" ng-model="processForm.trackingNo" readonly />
+                                <span class="shipment-process-duplicate-badge ml-2"
+                                      ng-if="currentItem.TrackingNoCount > 1"
+                                      title="查詢結果中相同單號共 {{currentItem.TrackingNoCount}} 筆">
+                                    {{currentItem.TrackingNoCount}}
+                                </span>
+                            </div>
                         </div>
                     </div>
                     
