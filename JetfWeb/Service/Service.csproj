@@ -751,6 +751,7 @@
     <Compile Include="Services\DownloadEtlNew\TaxAmountSet.cs" />
     <Compile Include="Services\DownloadEtlNew\TaxCalculationResult.cs" />
     <Compile Include="Services\DownloadEtlNew\TaxLookupRow.cs" />
+    <Compile Include="Services\DownloadNoIncludeTax\DownloadNoIncludeTaxService.cs" />
     <Compile Include="Services\DownloadSeaNew\DownloadSeaNewService.cs" />
     <Compile Include="Services\SeaTaxUpload\FeeMasterDetailRow.cs" />
     <Compile Include="Services\SeaTaxUpload\SeaTaxFeeMasterRow.cs" />

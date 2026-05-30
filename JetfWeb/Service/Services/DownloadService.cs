@@ -687,41 +687,6 @@ namespace Service.Services
 
 
         /// <summary>
-        /// 3-3空快稅金-回桃園倉庫明細表
-        /// </summary>
-        /// <returns></returns>
-        public DataTableModel NoIncludeTaxReport(string source, string sDate, string eDate, string user_id)
-        {
-            DataTableModel dataTableModel = new DataTableModel();
-            StringBuilder sb = new StringBuilder();
-            //空運
-            if (source == "1")
-            {
-                sb.Append("select DATADATE,SOURCE,TYPE,a.BAG_NUMBER,b.CUSTOMER,a.INCLUDE_TAX,a.TRACKINGNO,COMBINE,TAX1,TAX2,CCFEE,COD,FEE,TO_DLV_COD,b.TRANS_NAME,a.RECIPIENT,a.RECPHONE,IN_DATETIME,OUT_DATETIME,c.DELIVERYNO,c.WEIGHT,c.RECADDRESS from jetf.dbo.FEE_MASTER a ");
-                sb.Append("left join jetf.dbo.customer_master b on [jetf].[dbo].[PadLeft]('0',a.customer,5)=b.CUST_ID and a.dlv_com=b.TRANS_NO and b.TRAN_TYPE='空運' ");
-                sb.Append("left join  DATA_CENTER.dbo.ORIGINALLIST c on a.TRACKINGNO=c.TRACKINGNO ");
-                sb.Append("where DATADATE between @sDate and @eDate and (a.INCLUDE_TAX='N' or a.dlv_com='40' or a.dlv_com='41') and SOURCE_TYPE='3' and b.COMPANY not in ('新瑞宅配','新竹物流','圓通自取') ");
-            }
-
-            DataTable dt = new DataTable();
-            using (SqlDataAdapter da = new SqlDataAdapter(sb.ToString(), conn))
-            {
-                da.SelectCommand.Parameters.Add("@sDate", SqlDbType.NVarChar).Value = sDate;
-                da.SelectCommand.Parameters.Add("@eDate", SqlDbType.NVarChar).Value = eDate;
-                da.Fill(dt);
-            }
-
-            //排序
-            DataView dv = dt.DefaultView;
-            dv.Sort = "SOURCE,CUSTOMER,DATADATE";
-            dt = dv.ToTable();
-
-            dataTableModel.status = Status.success;
-            dataTableModel.dt = dt;
-            return dataTableModel;
-        }
-
-        /// <summary>
         /// 3-4. 稅金總表及明細表
         /// </summary>
         /// <returns></returns>

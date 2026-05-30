@@ -1,0 +1,69 @@
+﻿@{
+    ViewBag.Title = "DownloadNoIncludeTax";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="DownloadNoIncludeTaxController">
+    <span class="headtype">空快稅金-回桃園倉庫明細表</span>
+    <hr />
+
+    <form id="DownloadNoIncludeTaxForm"
+          action="@Url.Action("NoIncludeTaxExcel", "DownloadNoIncludeTax")"
+          method="post"
+          enctype="multipart/form-data"
+          class="containertype">
+        <div class="col-lg-12" style="margin-bottom:0.5rem; display:flex; align-items:center; gap:10px;">
+            <label for="sDate" style="margin:0;">日　　期</label>
+            <input type="text"
+                   id="sDate"
+                   name="sDate"
+                   class="datepicker-input form-control"
+                   style="width:180px;"
+                   ng-model="form.sDate"
+                   uib-datepicker-popup="yyyy-MM-dd"
+                   datepicker-options="dateOptions"
+                   is-open="startDatePopup.opened"
+                   ng-click="openStartDatePopup()"
+                   close-text="關閉"
+                   current-text="今天"
+                   show-button-bar="false"
+                   readonly
+                   placeholder="請選擇開始日期" />
+            <span>~</span>
+            <input type="text"
+                   id="eDate"
+                   name="eDate"
+                   class="datepicker-input form-control"
+                   style="width:180px;"
+                   ng-model="form.eDate"
+                   uib-datepicker-popup="yyyy-MM-dd"
+                   datepicker-options="dateOptions"
+                   is-open="endDatePopup.opened"
+                   ng-click="openEndDatePopup()"
+                   close-text="關閉"
+                   current-text="今天"
+                   show-button-bar="false"
+                   readonly
+                   placeholder="請選擇結束日期" />
+        </div>
+        <div class="col-lg-12" style="margin-bottom:0.5rem;">
+            <label for="source">資料來源</label>
+            <select id="source"
+                    name="source"
+                    class="form-control"
+                    ng-model="form.source">
+                <option value="1">空快稅金-回桃園倉庫明細表</option>
+            </select>
+        </div>
+
+        <button type="button"
+                class="btn btn-primary confirmbtn col-lg-3"
+                style="font-size: 1.2rem;"
+                ng-click="download()"
+                ng-disabled="loading">
+            <i class="fas fa-download"></i> 下載
+        </button>
+
+        <div class="loader loader-bar" ng-class="{'is-active': loading}" data-rounded data-text="檔案下載中"></div>
+    </form>
+</div>
