@@ -107,10 +107,6 @@
         }
     }
 
-    $scope.isCargoReceiptNumber = function (cargoNumber) {
-        return /^[0-9A-Za-z]{10}$/.test((cargoNumber || '').toString().trim());
-    };
-
     $scope.getCargoReceiptUrl = function (cargoNumber) {
         return Router.action('Cargo', 'CargoSignReceipt') +
             '?cargoNumber=' + encodeURIComponent((cargoNumber || '').toString().trim());

@@ -279,6 +279,7 @@
     <Compile Include="Data\Models\Jetf\SeaClearanceDetailEntity.cs" />
     <Compile Include="Data\Models\Jetf\LineGroupEntity.cs" />
     <Compile Include="Data\Models\Jetf\ScanCargoArrivalTimeEntity.cs" />
+    <Compile Include="Data\Models\Jetf\CargoSignReceiptEntity.cs" />
     <Compile Include="Data\Models\Jetf\SeaClearanceAbnormalStateDetailEntity.cs" />
     <Compile Include="Data\Models\Jetf\SeaClearanceAbnormalStateEntity.cs" />
     <Compile Include="Data\Models\Jetf\SeaClearanceAuthorizationFormDetailEntity.cs" />

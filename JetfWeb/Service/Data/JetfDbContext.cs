@@ -108,6 +108,8 @@ namespace Service.Data
 
         public DbSet<ScanCargoArrivalTimeEntity> ScanCargoArrivalTimes { get; set; }
 
+        public DbSet<CargoSignReceiptEntity> CargoSignReceipts { get; set; }
+
         public DbSet<SeaClearanceCustomerEntity> SeaClearanceCustomers { get; set; }
 
         public DbSet<SeaClearanceCustTaxPaymentEntity> SeaClearanceCustTaxPayments { get; set; }

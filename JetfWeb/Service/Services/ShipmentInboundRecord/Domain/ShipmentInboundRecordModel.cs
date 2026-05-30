@@ -48,6 +48,11 @@ namespace Service.Services.ShipmentInboundRecord.Domain
         public string TrackingNo { get; set; }
 
         /// <summary>
+        /// 單號是否有簽收單。
+        /// </summary>
+        public bool HasTrackingNoSignReceipt { get; set; }
+
+        /// <summary>
         /// 是否為原始貨件
         /// </summary>
         public bool IsOrderOriginal { get; set; }
@@ -231,6 +236,11 @@ namespace Service.Services.ShipmentInboundRecord.Domain
         /// 出庫單號
         /// </summary>
         public string OutboundTrackingNo { get; set; }
+
+        /// <summary>
+        /// 重出單號是否有簽收單。
+        /// </summary>
+        public bool HasOutboundTrackingNoSignReceipt { get; set; }
 
         /// <summary>
         /// 總金額

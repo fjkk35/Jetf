@@ -479,7 +479,7 @@
                                            style="cursor: pointer; text-decoration: underline; font-weight: 600;">
                                             {{item.TrackingNo}}
                                         </a>
-                                        <a ng-if="isCargoReceiptNumber(item.TrackingNo)"
+                                        <a ng-if="item.HasTrackingNoSignReceipt"
                                            ng-href="{{getCargoReceiptUrl(item.TrackingNo)}}"
                                            target="_blank"
                                            class="btn btn-sm btn-info ml-1 px-1 py-0"
@@ -511,9 +511,9 @@
                                     <td class="col-location" ng-show="visibleColumns.locationCode">{{item.LocationCode}}</td>
                                     <td ng-show="visibleColumns.size">{{item.Size}}</td>
                                     <td class="col-outbound-no" ng-show="visibleColumns.outboundTrackingNo">
-                                        <span>{{item.ReturnTrackingNo}}</span>
-                                        <a ng-if="isCargoReceiptNumber(item.ReturnTrackingNo)"
-                                           ng-href="{{getCargoReceiptUrl(item.ReturnTrackingNo)}}"
+                                        <span>{{item.OutboundTrackingNo}}</span>
+                                        <a ng-if="item.HasOutboundTrackingNoSignReceipt"
+                                           ng-href="{{getCargoReceiptUrl(item.OutboundTrackingNo)}}"
                                            target="_blank"
                                            class="btn btn-sm btn-info ml-1 px-1 py-0"
                                            title="查看簽收單"

@@ -230,6 +230,7 @@ namespace Service.Services.ShipmentInboundRecord
                     .ToList();
 
                 FillCustomerAndTransNames(data);
+                FillCargoSignReceiptFlags(data);
 
                 return new ShipmentInboundRecordResponse
                 {
@@ -353,6 +354,43 @@ namespace Service.Services.ShipmentInboundRecord
                 {
                     item.TransName = airTransNames[item.TransNo];
                 }
+            }
+        }
+
+        /// <summary>
+        /// 一次查詢目前頁面單號與重出單號是否有簽收單，避免逐筆查詢。
+        /// </summary>
+        private void FillCargoSignReceiptFlags(List<ShipmentInboundRecordModel> data)
+        {
+            var serials = data
+                .SelectMany(x => new[] { x.TrackingNo, x.OutboundTrackingNo })
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (!serials.Any())
+            {
+                return;
+            }
+
+            var receiptSerials = new HashSet<string>(JetfDb.CargoSignReceipts
+                .AsNoTracking()
+                .Where(x => serials.Contains(x.JetfSerial))
+                .Select(x => x.JetfSerial)
+                .Distinct()
+                .ToList()
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim()), StringComparer.OrdinalIgnoreCase);
+
+            foreach (var item in data)
+            {
+                item.HasTrackingNoSignReceipt =
+                    !string.IsNullOrWhiteSpace(item.TrackingNo) &&
+                    receiptSerials.Contains(item.TrackingNo.Trim());
+                item.HasOutboundTrackingNoSignReceipt =
+                    !string.IsNullOrWhiteSpace(item.OutboundTrackingNo) &&
+                    receiptSerials.Contains(item.OutboundTrackingNo.Trim());
             }
         }
 
