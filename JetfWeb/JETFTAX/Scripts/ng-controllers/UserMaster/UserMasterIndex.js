@@ -6,6 +6,10 @@
     $scope.modalTitle = '';
     $scope.isEdit = false;
     $scope.saving = false;
+    $scope.query = {
+        userId: '',
+        authorityGroupId: 'all'
+    };
 
     // 狀態選項
     $scope.statusOptions = [
@@ -16,7 +20,19 @@
     // 載入會員清單
     $scope.loadUsers = function () {
         console.log('開始載入會員清單...');
-        $http.get(Router.action('UserMaster', 'GetUsers'))
+        var params = {};
+
+        if ($scope.query.userId) {
+            params.userId = $scope.query.userId;
+        }
+
+        if ($scope.query.authorityGroupId !== 'all' && $scope.query.authorityGroupId !== null && $scope.query.authorityGroupId !== undefined) {
+            params.authorityGroupId = $scope.query.authorityGroupId;
+        }
+
+        $http.get(Router.action('UserMaster', 'GetUsers'), {
+            params: params
+        })
             .then(function (response) {
                 $scope.users = response.data;
                 console.log('會員清單載入成功:', $scope.users);
@@ -25,6 +41,18 @@
                 console.error('載入會員清單失敗:', error);
                 alert('載入會員清單失敗');
             });
+    };
+
+    $scope.searchUsers = function () {
+        $scope.loadUsers();
+    };
+
+    $scope.resetQuery = function () {
+        $scope.query = {
+            userId: '',
+            authorityGroupId: 'all'
+        };
+        $scope.loadUsers();
     };
 
     // 載入權限群組選項

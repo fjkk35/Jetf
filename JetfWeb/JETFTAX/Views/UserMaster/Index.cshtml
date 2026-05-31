@@ -3,6 +3,22 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+<style>
+    .user-master-user-id {
+        font-size: 1rem;
+        font-family: inherit;
+    }
+
+    .user-master-badge {
+        font-size: 1rem;
+        line-height: 1.4;
+    }
+
+    .user-master-text {
+        font-size: 1rem;
+    }
+</style>
+
 <div ng-controller="UserMasterIndexController" class="container-fluid">
     <div class="row">
         <div class="col-md-12">
@@ -11,6 +27,38 @@
                     <h3 class="m-0 font-weight-bold text-primary">帳號管理</h3>
                 </div>
                 <div class="card-body">
+                    <div class="card border-left-info shadow-sm mb-3">
+                        <div class="card-body py-3">
+                            <div class="form-row align-items-end">
+                                <div class="col-md-4 mb-2">
+                                    <label for="queryUserId">會員ID</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="queryUserId"
+                                           ng-model="query.userId"
+                                           placeholder="請輸入會員ID">
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <label for="queryAuthorityGroupId">權限群組</label>
+                                    <select class="form-control"
+                                            id="queryAuthorityGroupId"
+                                            ng-model="query.authorityGroupId">
+                                        <option value="all">全部</option>
+                                        <option ng-repeat="option in authorityGroupOptions" value="{{option.Id}}">{{option.GroupName}}</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <button type="button" class="btn btn-primary mr-2" ng-click="searchUsers()">
+                                        <i class="fas fa-search"></i> 查詢
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" ng-click="resetQuery()">
+                                        <i class="fas fa-undo"></i> 清除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 操作按鈕 -->
                     <div class="mb-3">
                         <button type="button" class="btn btn-primary" ng-click="showAddModal()">
@@ -34,20 +82,20 @@
                             </thead>
                             <tbody>
                                 <tr ng-repeat="user in users">
-                                    <td><code>{{user.UserId}}</code></td>
+                                    <td><span class="user-master-user-id">{{user.UserId}}</span></td>
                                     <td>{{user.UserName}}</td>
                                     <td class="text-center">
-                                        <span class="badge" ng-class="user.UserStatus === '1' ? 'badge-success' : 'badge-secondary'">
+                                        <span class="badge user-master-badge" ng-class="user.UserStatus === '1' ? 'badge-success' : 'badge-secondary'">
                                             {{user.UserStatusText}}
                                         </span>
                                     </td>
                                     <td>
                                         <span ng-if="user.AuthorityGroups && user.AuthorityGroups.length > 0">
-                                            <span class="badge badge-info mr-1" ng-repeat="group in user.AuthorityGroups">
+                                            <span class="badge badge-info mr-1 user-master-badge" ng-repeat="group in user.AuthorityGroups">
                                                 {{group.GroupName}}
                                             </span>
                                         </span>
-                                        <span ng-if="!user.AuthorityGroups || user.AuthorityGroups.length === 0" class="text-muted">無</span>
+                                        <span ng-if="!user.AuthorityGroups || user.AuthorityGroups.length === 0" class="text-muted user-master-text">無</span>
                                     </td>
                                     <td>{{user.UpdOpe}}</td>
                                     <td>{{user.UpdTime | customDateTime}}</td>

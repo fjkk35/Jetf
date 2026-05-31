@@ -20,8 +20,12 @@ namespace Service.Services.UserMaster
         /// 取得所有會員清單
         /// </summary>
         /// <returns>會員清單</returns>
-        public List<UserMasterDto> GetUsers()
+        public List<UserMasterDto> GetUsers(string userId = null, int? authorityGroupId = null)
         {
+            var normalizedUserId = string.IsNullOrWhiteSpace(userId)
+                ? null
+                : userId.Trim();
+
             var sql = @"
                 SELECT 
                     u.USER_ID as UserId,
@@ -35,6 +39,16 @@ namespace Service.Services.UserMaster
                 LEFT JOIN [dbo].[UserAuthorityGroup] uag ON u.USER_ID = uag.UserId
                 LEFT JOIN [dbo].[AuthorityGroup] ag ON uag.AuthorityGroupId = ag.Id
                 WHERE u.USER_ID<>'admin'
+                    AND (@UserId IS NULL OR u.USER_ID LIKE '%' + @UserId + '%')
+                    AND (
+                        @AuthorityGroupId IS NULL
+                        OR EXISTS (
+                            SELECT 1
+                            FROM [dbo].[UserAuthorityGroup] filterUag
+                            WHERE filterUag.UserId = u.USER_ID
+                            AND filterUag.AuthorityGroupId = @AuthorityGroupId
+                        )
+                        )
                 ORDER BY u.USER_ID";
 
             var userDict = new Dictionary<string, UserMasterDto>();
@@ -55,6 +69,11 @@ namespace Service.Services.UserMaster
                     }
 
                     return userEntry;
+                },
+                new
+                {
+                    UserId = normalizedUserId,
+                    AuthorityGroupId = authorityGroupId
                 },
                 splitOn: "GroupId"
             );

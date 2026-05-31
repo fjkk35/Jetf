@@ -35,11 +35,11 @@ namespace JETFTAX.Controllers
         /// <returns>會員清單 JSON</returns>
         [HttpGet]
         [UserAuthorize(Authority.UserMaster)]
-        public ActionResult GetUsers()
+        public ActionResult GetUsers(string userId = null, int? authorityGroupId = null)
         {
             try
             {
-                var users = _userMasterService.GetUsers();
+                var users = _userMasterService.GetUsers(userId, authorityGroupId);
                 return Json(users, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
