@@ -93,9 +93,9 @@ namespace JETFTAX.Controllers
         {
             public void OnAuthorization(AuthorizationContext filterContext)
             {
-                var loginUser = filterContext.HttpContext.Session["user_id"];
+                var loginUser = UserContextService.GetUserId();
                 //When user has not login yet
-                if (loginUser == null)
+                if (string.IsNullOrEmpty(loginUser))
                 {
                     var redirectUrl = "~/Account/Login";
                     if (!filterContext.HttpContext.Request.IsAjaxRequest())

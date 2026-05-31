@@ -55,7 +55,7 @@ namespace JETFTAX.Controllers
                             fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
-                            resopnseModel = _seaWorkErrorOrderService.Upload(filePath, vm.DataDate, Session["user_id"].ToString());
+                            resopnseModel = _seaWorkErrorOrderService.Upload(filePath, vm.DataDate, UserContextService.GetUserId());
                         }
                     }
                 }

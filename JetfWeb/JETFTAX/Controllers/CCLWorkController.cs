@@ -88,7 +88,7 @@ namespace JETFTAX.Controllers
                     WorkName = "空快清關主號明細表",
                     DownloadTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                     Ip = _globalService.GetIPAddress(),
-                    UserId = Session["user_id"].ToString()
+                    UserId = UserContextService.GetUserId()
                 });
             }
             catch (Exception ex)
@@ -309,7 +309,7 @@ namespace JETFTAX.Controllers
                             fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
-                            resopnseModel = _cclWorkService.UploadFileB6F(filePath, vm.source, Session["user_id"].ToString());
+                            resopnseModel = _cclWorkService.UploadFileB6F(filePath, vm.source, UserContextService.GetUserId());
                         }
                     }
                 }

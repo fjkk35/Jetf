@@ -414,7 +414,7 @@ namespace JETFTAX.Controllers
 
             try
             {
-                resopnseModel = _downloadService.UploadEtl(vm.date, vm.timeBetween, vm.sTime, vm.eTime, Session["user_id"].ToString());
+                resopnseModel = _downloadService.UploadEtl(vm.date, vm.timeBetween, vm.sTime, vm.eTime, UserContextService.GetUserId());
             }
             catch (Exception ex)
             {
@@ -486,7 +486,7 @@ namespace JETFTAX.Controllers
                 if (fileName != "")
                 {
                     //取得資料
-                    dataTableModel = _downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "N", Session["user_id"].ToString());
+                    dataTableModel = _downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "N", UserContextService.GetUserId());
                     msg = dataTableModel.msg;
 
                     if (dataTableModel.status == Status.success)
@@ -525,7 +525,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.DownloadEtlTax)]
         public ActionResult EtlErrorExcel(DownloadEtlViewModel vm)
         {
-            DataTableModel dataTableModel = _downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "", Session["user_id"].ToString());
+            DataTableModel dataTableModel = _downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "", UserContextService.GetUserId());
             DataTable dt = dataTableModel.dt;
             string dataDate = Convert.ToDateTime(vm.date).ToString("yyyyMMdd");
             IWorkbook workbook = GetEtlWorkbook(dt);
@@ -622,7 +622,7 @@ namespace JETFTAX.Controllers
                 if (fileName != "")
                 {
                     //取得資料
-                    dataTableModel = _downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "D", Session["user_id"].ToString());
+                    dataTableModel = _downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "D", UserContextService.GetUserId());
                     if (dataTableModel.status == Status.success)
                     {
                         DataTable dt = dataTableModel.dt;
@@ -678,7 +678,7 @@ namespace JETFTAX.Controllers
                 if (fileName != "")
                 {
                     //取得資料
-                    dataTableModel = _downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "C", Session["user_id"].ToString());
+                    dataTableModel = _downloadService.EtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, "C", UserContextService.GetUserId());
                     if (dataTableModel.status == Status.success)
                     {
                         DataTable dt = dataTableModel.dt;
@@ -824,7 +824,7 @@ namespace JETFTAX.Controllers
                 if (fileName != "")
                 {
                     //取得資料
-                    dataTableModel = _downloadService.IncludeTaxReport(vm.source, sDate, eDate, Session["user_id"].ToString());
+                    dataTableModel = _downloadService.IncludeTaxReport(vm.source, sDate, eDate, UserContextService.GetUserId());
                     if (dataTableModel.status == Status.success)
                     {
                         DataTable dt = dataTableModel.dt;
@@ -1523,7 +1523,7 @@ namespace JETFTAX.Controllers
             try
             {
                 //取得資料
-                dataTableModel = _downloadService.ReceiveReport(sDate, eDate, Session["user_id"].ToString());
+                dataTableModel = _downloadService.ReceiveReport(sDate, eDate, UserContextService.GetUserId());
                 if (dataTableModel.status == Status.success)
                 {
                     int tax1, tax2, ccfee, cod, fee, to_dlv_cod, dlv_cod, diff;
@@ -1668,7 +1668,7 @@ namespace JETFTAX.Controllers
             try
             {
                 //取得資料
-                dataTableModel = _downloadService.TransferReport(dataDate, Session["user_id"].ToString());
+                dataTableModel = _downloadService.TransferReport(dataDate, UserContextService.GetUserId());
                 if (dataTableModel.status == Status.success)
                 {
                     DataTable dt = dataTableModel.dt;
@@ -1821,7 +1821,7 @@ namespace JETFTAX.Controllers
             try
             {
                 //取得資料
-                dataTableModel = _downloadService.NoTransferReport(sDate, eDate, Session["user_id"].ToString());
+                dataTableModel = _downloadService.NoTransferReport(sDate, eDate, UserContextService.GetUserId());
                 if (dataTableModel.status == Status.success)
                 {
                     int tax1, tax2, ccfee, cod, fee, to_dlv_cod, dlv_cod;

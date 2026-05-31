@@ -66,7 +66,7 @@ namespace JETFTAX.Controllers
 
                                 filePaths.Add(filePath);
                             }
-                            resopnseModel = _etlUnpackingZService.Upload(filePaths, Session["user_id"].ToString());
+                            resopnseModel = _etlUnpackingZService.Upload(filePaths, UserContextService.GetUserId());
                         }
                     }
                 }

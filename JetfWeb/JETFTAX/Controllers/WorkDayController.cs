@@ -1,5 +1,6 @@
 ﻿using JETFTAX.Models.WorkDay;
 using Service.EnumTax;
+using Service.Services;
 using Service.Services.WorkDay;
 using System;
 using System.Collections.Generic;
@@ -52,7 +53,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.WorkDay)]
         public ActionResult UpdateType(DateTime date,DateType type) 
         {
-            var resopnseModel = _workDayService.UpdateType(date, type, Session["user_id"].ToString());
+            var resopnseModel = _workDayService.UpdateType(date, type, UserContextService.GetUserId());
 
             return Json(resopnseModel, JsonRequestBehavior.AllowGet);
         }

@@ -51,7 +51,7 @@ namespace JETFTAX.Controllers
         [HttpPost]
         public ActionResult Index(ScanCargoArrivalTimeViewModel vm) 
         {
-            var result = _scanCargoArrivalTimeService.GetData(vm.Trans, vm.DataType, vm.SDate, vm.EDate,Session["user_id"].ToString());
+            var result = _scanCargoArrivalTimeService.GetData(vm.Trans, vm.DataType, vm.SDate, vm.EDate, UserContextService.GetUserId());
 
             string data = JsonConvert.SerializeObject(result);
             return Json(data, JsonRequestBehavior.AllowGet);

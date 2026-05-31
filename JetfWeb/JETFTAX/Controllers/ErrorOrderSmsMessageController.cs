@@ -1,6 +1,7 @@
 ﻿using JETFTAX.Models.ErrorOrderSendCustomer;
 using Service.Models.ErrorOrderSend;
 using Service.Models;
+using Service.Services;
 using Service.Services.ErrorOrderSendCustomer;
 using System;
 using System.Collections.Generic;
@@ -48,7 +49,7 @@ namespace JETFTAX.Controllers
                 return Json(new ResponseModel("簡訊內容沒有輸入：＜分提單號＞"));
             }
 
-            var userId = Session["user_id"].ToString();
+            var userId = UserContextService.GetUserId();
 
             var result = _errorOrderSmsMessageService.Create(model, userId);
 
@@ -70,7 +71,7 @@ namespace JETFTAX.Controllers
                 return Json(new ResponseModel("簡訊內容沒有輸入：＜分提單號＞"));
             }
 
-            var userId = Session["user_id"].ToString();
+            var userId = UserContextService.GetUserId();
 
             var result = _errorOrderSmsMessageService.Update(model, userId);
 

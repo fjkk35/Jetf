@@ -1,6 +1,7 @@
 ﻿using JETFTAX.Models.BatchUploadProcess;
 using Service.EnumTax;
 using Service.Models;
+using Service.Services;
 using Service.Services.BatchUploadProcess;
 using System;
 using System.Collections.Generic;
@@ -63,7 +64,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
                             //寫入資料
-                            resopnseModel = _batchUploadProcessService.BatchUploadProcess(vm.Status,filePath, fileName, Session["user_id"].ToString());
+                            resopnseModel = _batchUploadProcessService.BatchUploadProcess(vm.Status,filePath, fileName, UserContextService.GetUserId());
                         }
                     }
                 }

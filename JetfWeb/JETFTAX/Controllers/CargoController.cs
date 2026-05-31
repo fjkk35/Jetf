@@ -143,7 +143,7 @@ namespace JETFTAX.Controllers
                 Remark = "貨況查詢",
                 Search_Time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 User_Ip = _globalService.GetIPAddress(),
-                User_Id = Session["user_id"].ToString()
+                User_Id = UserContextService.GetUserId()
             });
 
             return PartialView(vm);
@@ -375,7 +375,7 @@ namespace JETFTAX.Controllers
                     Remark = "貨況查詢",
                     Search_Time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                     User_Ip = _globalService.GetIPAddress(),
-                    User_Id = Session["user_id"].ToString()
+                    User_Id = UserContextService.GetUserId()
                 });
             }
 
@@ -437,7 +437,7 @@ namespace JETFTAX.Controllers
                     DataDate = DateTime.Now.ToString("yyyyMMdd"),
                     Dlv_Inv = vm.P_Dlv_Inv,
                     Remark = vm.P_Remark,
-                    User_Id = Session["user_id"].ToString()
+                    User_Id = UserContextService.GetUserId()
                 };
 
                 if (file != null && file.ContentLength > 0)
@@ -471,7 +471,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SearchCargo)]
         public ActionResult DeleteProcess(string id)
         {
-            ResponseModel resopnseModel = _cargoService.DeleteProcess(id, Session["user_id"].ToString());
+            ResponseModel resopnseModel = _cargoService.DeleteProcess(id, UserContextService.GetUserId());
             return Json(resopnseModel, JsonRequestBehavior.AllowGet);
         }
 
@@ -483,7 +483,7 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.SearchCargo)]
         public ActionResult FinishProcess(string dlv_inv)
         {
-            ResponseModel resopnseModel = _cargoService.FinishProcess(dlv_inv, Session["user_id"].ToString());
+            ResponseModel resopnseModel = _cargoService.FinishProcess(dlv_inv, UserContextService.GetUserId());
             return Json(resopnseModel, JsonRequestBehavior.AllowGet);
         }
 
@@ -527,7 +527,7 @@ namespace JETFTAX.Controllers
                     Remark = "稅單查詢",
                     Search_Time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                     User_Ip = _globalService.GetIPAddress(),
-                    User_Id = Session["user_id"].ToString()
+                    User_Id = UserContextService.GetUserId()
                 });
 
                 HttpResponseMessage result = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
@@ -598,7 +598,7 @@ namespace JETFTAX.Controllers
                 Remark = "簽收單查詢",
                 Search_Time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 User_Ip = _globalService.GetIPAddress(),
-                User_Id = Session["user_id"].ToString()
+                User_Id = UserContextService.GetUserId()
             });
 
             return View(vm);
@@ -762,7 +762,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
                             //寫入資料
-                            resopnseModel = _cargoService.BatchSearchCargo2(filePath, fileName, Session["user_id"].ToString());
+                            resopnseModel = _cargoService.BatchSearchCargo2(filePath, fileName, UserContextService.GetUserId());
                         }
                     }
                 }

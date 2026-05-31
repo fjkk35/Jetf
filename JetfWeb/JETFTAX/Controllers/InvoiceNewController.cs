@@ -5,6 +5,7 @@ using System.Web;
 using System.Web.Mvc;
 using Service.Services.InvoiceNew;
 using Service.Models;
+using Service.Services;
 using System.IO;
 using NPOI.SS.UserModel;
 using Service.EnumTax;
@@ -64,7 +65,7 @@ namespace JETFTAX.Controllers
                         file.SaveAs(filePath);
                         
                         // 讀取檔案並直接產生 Excel
-                        resopnseModel = _invoiceNewService.InvoiceWorkNew(filePath, uploadFileName, Session["user_id"].ToString());
+                        resopnseModel = _invoiceNewService.InvoiceWorkNew(filePath, uploadFileName, UserContextService.GetUserId());
 
                         if (resopnseModel.status == Status.success)
                         {

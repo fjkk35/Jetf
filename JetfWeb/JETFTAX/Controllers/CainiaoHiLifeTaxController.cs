@@ -1,6 +1,7 @@
 ﻿using JETFTAX.Models.CainiaoHiLifeTax;
 using Service.EnumTax;
 using Service.Models;
+using Service.Services;
 using Service.Services.CainiaoHiLifeTax;
 using System;
 using System.Collections.Generic;
@@ -87,7 +88,7 @@ namespace JETFTAX.Controllers
                         fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                         filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                         file.SaveAs(filePath);
-                        resopnseModel = _cainiaoHiLifeTaxService.Upload(filePath, Session["user_id"].ToString());
+                        resopnseModel = _cainiaoHiLifeTaxService.Upload(filePath, UserContextService.GetUserId());
                     }
                 }
                 else

@@ -71,7 +71,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
                             //寫入資料
-                            resopnseModel = _invoiceService.InvoiceWork(filePath, fileName, Session["user_id"].ToString());
+                            resopnseModel = _invoiceService.InvoiceWork(filePath, fileName, UserContextService.GetUserId());
                         }
                     }
                 }

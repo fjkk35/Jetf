@@ -1,5 +1,6 @@
 ﻿using Service.EnumTax;
 using Service.Models;
+using Service.Services;
 using Service.Services.SeaTransRecord;
 using Service.Services.SeaUnboxingRecord;
 using System;
@@ -52,7 +53,7 @@ namespace JETFTAX.Controllers
                             fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
-                            resopnseModel = _seaTransRecordService.Upload(filePath, Session["user_id"].ToString());
+                            resopnseModel = _seaTransRecordService.Upload(filePath, UserContextService.GetUserId());
                         }
                     }
                 }

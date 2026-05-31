@@ -120,7 +120,7 @@ namespace JETFTAX.Controllers
                     Process_Type = process_type,
                     DataDate = DateTime.Now.ToString("yyyyMMdd"),
                     Remark = remark,
-                    User_Id = Session["user_id"]?.ToString()
+                    User_Id = UserContextService.GetUserId()
                 };
 
                 if (file != null && file.ContentLength > 0)
@@ -154,7 +154,7 @@ namespace JETFTAX.Controllers
         {
             try
             {
-                var result = _searchCargoService.FinishProcess(dlv_inv, Session["user_id"]?.ToString());
+                var result = _searchCargoService.FinishProcess(dlv_inv, UserContextService.GetUserId());
                 return Json(result);
             }
             catch (Exception ex)
@@ -172,7 +172,7 @@ namespace JETFTAX.Controllers
         {
             try
             {
-                var result = _searchCargoService.DeleteProcess(id, Session["user_id"]?.ToString());
+                var result = _searchCargoService.DeleteProcess(id, UserContextService.GetUserId());
                 return Json(result);
             }
             catch (Exception ex)

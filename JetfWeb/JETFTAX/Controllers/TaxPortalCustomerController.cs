@@ -1,5 +1,6 @@
 ﻿using Service.EnumTax;
 using Service.Models;
+using Service.Services;
 using Service.Services.TaxPortalCustomerService;
 using Service.Services.TaxPortalCustomerService.Domain;
 using System;
@@ -89,7 +90,7 @@ namespace JETFTAX.Controllers
         {
             try
             {
-                string createOpe = Session["user_id"]?.ToString() ?? "system";
+                string createOpe = UserContextService.GetUserId();
                 var result = _taxPortalCustomerService.CreateUser(request, createOpe);
                 return Json(result);
             }
@@ -105,7 +106,7 @@ namespace JETFTAX.Controllers
         {
             try
             {
-                string createOpe = Session["user_id"]?.ToString() ?? "system";
+                string createOpe = UserContextService.GetUserId();
                 var result = _taxPortalCustomerService.UpdateUser(request, createOpe);
                 return Json(result);
             }

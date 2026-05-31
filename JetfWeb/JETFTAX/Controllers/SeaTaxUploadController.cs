@@ -119,7 +119,7 @@ namespace JETFTAX.Controllers
                 var filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                 file.SaveAs(filePath);
 
-                responseModel = _seaTaxUploadService.UploadFile(uploadDate, filePath, taxType.Value, Session["user_id"].ToString());
+                responseModel = _seaTaxUploadService.UploadFile(uploadDate, filePath, taxType.Value, UserContextService.GetUserId());
             }
             catch (Exception ex)
             {

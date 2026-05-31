@@ -1,5 +1,6 @@
 using Service.EnumTax;
 using Service.Models;
+using Service.Services;
 using Service.Services.BatchSearchCargo2;
 using Service.Services.BatchSearchCargo2.Domain;
 using System;
@@ -30,7 +31,7 @@ namespace JETFTAX.Controllers
         {
             try
             {
-                var userId = Convert.ToString(Session["user_id"]);
+                var userId = UserContextService.GetUserId();
                 if (string.IsNullOrWhiteSpace(userId))
                 {
                     return Json(new ResponseModel("登入狀態已失效，請重新登入"));

@@ -69,7 +69,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
                             //寫入資料
-                            resopnseModel = _errorOrderSendService.Upload(filePath, vm.SmsMessageId, Session["user_id"].ToString());
+                            resopnseModel = _errorOrderSendService.Upload(filePath, vm.SmsMessageId, UserContextService.GetUserId());
                         }
                     }
                 }
@@ -103,7 +103,7 @@ namespace JETFTAX.Controllers
                     }, JsonRequestBehavior.AllowGet);
                 }
 
-                var response = _errorOrderSendService.Send(id, Session["user_id"].ToString());
+                var response = _errorOrderSendService.Send(id, UserContextService.GetUserId());
 
                 return Json(response, JsonRequestBehavior.AllowGet);
             }
@@ -145,7 +145,7 @@ namespace JETFTAX.Controllers
                     }, JsonRequestBehavior.AllowGet);
                 }
 
-                var response = _errorOrderSendService.Delete(id, Session["user_id"].ToString());
+                var response = _errorOrderSendService.Delete(id, UserContextService.GetUserId());
 
                 return Json(response, JsonRequestBehavior.AllowGet);
             }

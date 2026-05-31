@@ -37,7 +37,7 @@ namespace JETFTAX.Controllers
 
             try
             {
-                responseModel = _downloadEtlNewService.UploadEtl(vm.date, vm.timeBetween, vm.sTime, vm.eTime, Session["user_id"].ToString());
+                responseModel = _downloadEtlNewService.UploadEtl(vm.date, vm.timeBetween, vm.sTime, vm.eTime, UserContextService.GetUserId());
             }
             catch (Exception ex)
             {

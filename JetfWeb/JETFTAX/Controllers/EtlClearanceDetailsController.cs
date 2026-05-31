@@ -68,7 +68,7 @@ namespace JETFTAX.Controllers
                     WorkName = "空快清關明細表",
                     DownloadTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                     Ip = _globalService.GetIPAddress(),
-                    UserId = Session["user_id"].ToString()
+                    UserId = UserContextService.GetUserId()
                 });
             }
             catch (Exception ex)

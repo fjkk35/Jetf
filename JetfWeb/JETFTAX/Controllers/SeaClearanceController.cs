@@ -242,7 +242,7 @@ namespace JETFTAX.Controllers
         {
             try
             {
-                var userId = Session["user_id"]?.ToString() ?? "system";
+                var userId = UserContextService.GetUserId();
                 var categoryList = categoryIds?.ToList() ?? new List<int>();
                 var result = _seaClearanceService.UpdateDetailApprovalCategories(seaClearanceDetailId, categoryList, userId);
                 return Json(result);

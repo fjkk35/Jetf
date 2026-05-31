@@ -1,6 +1,7 @@
 ﻿using Service.EnumTax;
 using Service.Models;
 using Service.Models.CustomsBroker;
+using Service.Services;
 using Service.Services.CustomsBroker;
 using System;
 using System.Collections.Generic;
@@ -122,8 +123,8 @@ namespace JETFTAX.Controllers
                     return Json(new ResponseModel(string.Join(", ", errors)));
                 }
 
-                // 這裡應該從 Session 或其他方式取得當前使用者ID
-                var userId = Session["user_id"]?.ToString() ?? "system";
+                // 透過共用方法取得當前使用者ID
+                var userId = UserContextService.GetUserId();
                 
                 var result = _customsBrokerService.Update(model, userId);
                 return Json(result);
@@ -145,7 +146,7 @@ namespace JETFTAX.Controllers
         {
             try
             {
-                var userId = Session["user_id"]?.ToString() ?? "system";
+                var userId = UserContextService.GetUserId();
                 var result = _customsBrokerService.Delete(id, userId);
                 return Json(result);
             }
@@ -268,7 +269,7 @@ namespace JETFTAX.Controllers
                     return Json(new ResponseModel(string.Join(", ", errors)));
                 }
 
-                var userId = Session["user_id"]?.ToString() ?? "system";
+                var userId = UserContextService.GetUserId();
                 var result = _customsBrokerService.UpdateContact(model, userId);
                 return Json(result);
             }

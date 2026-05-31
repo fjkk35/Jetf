@@ -684,7 +684,7 @@ namespace JETFTAX.Controllers
                             }
                             else
                             {
-                                resopnseModel = _workLoadService.UploadFile(filePath, Session["user_id"].ToString());
+                                resopnseModel = _workLoadService.UploadFile(filePath, UserContextService.GetUserId());
                             }
                         }
                     }
@@ -746,7 +746,7 @@ namespace JETFTAX.Controllers
                             fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
-                            resopnseModel = _workLoadService.UploadFileEtlBagNo(filePath, Session["user_id"].ToString());
+                            resopnseModel = _workLoadService.UploadFileEtlBagNo(filePath, UserContextService.GetUserId());
                         }
                     }
                 }
@@ -895,7 +895,7 @@ namespace JETFTAX.Controllers
                             fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
-                            resopnseModel = _workLoadService.UploadFileSeaBagNo(filePath, vm.DataDate, Session["user_id"].ToString());
+                            resopnseModel = _workLoadService.UploadFileSeaBagNo(filePath, vm.DataDate, UserContextService.GetUserId());
                         }
                     }
                 }
@@ -958,7 +958,7 @@ namespace JETFTAX.Controllers
                             fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
-                            resopnseModel = _workLoadService.UploadFileSeaManifest(filePath, vm.DataDate, Session["user_id"].ToString());
+                            resopnseModel = _workLoadService.UploadFileSeaManifest(filePath, vm.DataDate, UserContextService.GetUserId());
                         }
                     }
                 }

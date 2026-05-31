@@ -148,7 +148,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
 
-                            resopnseModel = _uploadService.UploadFile(date, filePath, vm.taxType, Session["user_id"].ToString());
+                            resopnseModel = _uploadService.UploadFile(date, filePath, vm.taxType, UserContextService.GetUserId());
                             //記錄LOG
                             //InsertLog_Rec($"海運稅金{vm.taxType}", fileName);
                         }
@@ -219,7 +219,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
 
-                            resopnseModel = _uploadService.UploadFileG(date, filePath, Session["user_id"].ToString());
+                            resopnseModel = _uploadService.UploadFileG(date, filePath, UserContextService.GetUserId());
                             //記錄LOG
                             //InsertLog_Rec($"海運G類{vm.taxType}", fileName);
                         }
@@ -281,7 +281,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
 
-                            resopnseModel = _uploadService.UploadFileReceive(filePath, Session["user_id"].ToString());
+                            resopnseModel = _uploadService.UploadFileReceive(filePath, UserContextService.GetUserId());
                             //記錄LOG
                             //InsertLog_Rec($"海運稅金{vm.taxType}", fileName);
                         }
@@ -343,7 +343,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
 
-                            resopnseModel = _uploadService.UploadFileTransfer(filePath, Session["user_id"].ToString());
+                            resopnseModel = _uploadService.UploadFileTransfer(filePath, UserContextService.GetUserId());
                             //記錄LOG
                             //InsertLog_Rec($"海運稅金{vm.taxType}", fileName);
                         }
@@ -425,7 +425,7 @@ namespace JETFTAX.Controllers
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
                             //寫入資料
-                            resopnseModel = _uploadService.CainiaoTaxEdit(filePath, fileName, source, column, Session["user_id"].ToString());
+                            resopnseModel = _uploadService.CainiaoTaxEdit(filePath, fileName, source, column, UserContextService.GetUserId());
                         }
                     }
                 }

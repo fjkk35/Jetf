@@ -115,7 +115,7 @@ namespace JETFTAX.Controllers
         {
             try
             {
-                string userId = Session["user_id"]?.ToString() ?? "system";
+                string userId = UserContextService.GetUserId();
                 var result = _customerService.SaveCustomer(request, userId);
                 return Json(result);
             }
