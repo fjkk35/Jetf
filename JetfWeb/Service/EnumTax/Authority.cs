@@ -512,5 +512,10 @@ namespace Service.EnumTax
         /// 7-5稅金單客戶查詢
         /// </summary>
         TaxPortalCustomer,
+
+        /// <summary>
+        /// Ezway電子商務通關平台
+        /// </summary>
+        Ezway,
     }
 }

@@ -72,7 +72,8 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'AccsShopee', text: 'ACCS關貿空運查詢', url: '~/AccsShopee/Index' },
                 { id: 'AccsNew', text: 'ACCS關貿空運查詢(新)', url: '~/AccsNew/Index' },
                 { id: 'Ftz', text: 'FTZ空運查詢', url: '~/Ftz/Index' },
-                { id: 'Tact', text: 'TACT空運查詢', url: '~/Tact/Index' }
+                { id: 'Tact', text: 'TACT空運查詢', url: '~/Tact/Index' },
+                { id: 'Ezway', text: 'Ezway電子商務通關平台', url: '~/Ezway/Index', auth: ['Ezway'] }
             ]
         },
         {

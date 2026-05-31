@@ -460,6 +460,15 @@
     <Compile Include="Services\AccsNew\Domain\AccsNewQueryRequest.cs" />
     <Compile Include="Services\AccsNew\Domain\AccsNewQueryResult.cs" />
     <Compile Include="Services\AccsNew\Domain\AccsNewSessionInfo.cs" />
+    <Compile Include="Services\Ezway\EzwayService.cs" />
+    <Compile Include="Services\Ezway\Domain\EzwayCaptchaState.cs" />
+    <Compile Include="Services\Ezway\Domain\EzwayExportRequest.cs" />
+    <Compile Include="Services\Ezway\Domain\EzwayLoginRequest.cs" />
+    <Compile Include="Services\Ezway\Domain\EzwayLoginResult.cs" />
+    <Compile Include="Services\Ezway\Domain\EzwayPageState.cs" />
+    <Compile Include="Services\Ezway\Domain\EzwayQueryRequest.cs" />
+    <Compile Include="Services\Ezway\Domain\EzwayQueryResponse.cs" />
+    <Compile Include="Services\Ezway\Domain\EzwayQueryResult.cs" />
     <Compile Include="Services\AccsShopee\AccsShopeeService.cs" />
     <Compile Include="Services\AccsShopee\Domain\AccsLoginRequest.cs" />
     <Compile Include="Services\AccsShopee\Domain\AccsQueryRequest.cs" />

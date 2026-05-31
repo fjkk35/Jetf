@@ -1,0 +1,654 @@
+﻿@{
+    ViewBag.Title = "Ezway電子商務通關平台";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .ezway-page-header {
+        margin-bottom: 12px;
+    }
+
+    .ezway-page-title {
+        margin: 0;
+        color: #17324d;
+        font-size: 26px;
+        font-weight: 700;
+    }
+
+    .ezway-panel {
+        border: 1px solid #d6e2ee;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(20, 35, 54, 0.05);
+        overflow: hidden;
+        background: #fff;
+    }
+
+    .ezway-panel .panel-heading {
+        border-bottom: 1px solid #dde5ee;
+        background: #f7f9fb;
+        padding: 12px 16px;
+    }
+
+    .ezway-panel .panel-title {
+        color: #193552;
+        font-size: 17px;
+        font-weight: 700;
+    }
+
+    .ezway-panel .panel-body {
+        padding: 16px;
+    }
+
+    .ezway-login-panel .panel-body {
+        padding-top: 18px;
+        padding-bottom: 18px;
+    }
+
+    .ezway-login-shell {
+        max-width: 780px;
+        margin: 0 auto;
+    }
+
+    .ezway-login-panel .form-group {
+        margin-bottom: 14px;
+    }
+
+    .ezway-login-panel .control-label {
+        color: #2d4764;
+        font-weight: 700;
+    }
+
+    .ezway-login-panel .form-control {
+        height: 40px;
+        border-color: #cbd7e4;
+        border-radius: 4px;
+        box-shadow: none;
+        color: #223a55;
+    }
+
+    .ezway-query-panel .panel-body {
+        padding-top: 12px;
+        padding-bottom: 14px;
+    }
+
+    .ezway-query-panel,
+    .ezway-results-panel {
+        border: none;
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .ezway-query-panel .panel-body,
+    .ezway-results-panel .panel-body {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .ezway-query-main {
+        border: none;
+        border-radius: 0;
+        padding: 0;
+        background: transparent;
+    }
+
+    .ezway-mode-box {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 8px 0 10px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid #e5ebf1;
+    }
+
+    .ezway-filter-box {
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        padding: 0;
+        margin-bottom: 12px;
+    }
+
+    .ezway-menu-board {
+        margin-bottom: 12px;
+    }
+
+    .ezway-menu-board .row {
+        margin-left: -6px;
+        margin-right: -6px;
+    }
+
+    .ezway-menu-board [class*="col-"] {
+        padding-left: 6px;
+        padding-right: 6px;
+    }
+
+    .ezway-menu-actions {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        min-height: 60px;
+    }
+
+    .ezway-logout-button {
+        min-width: 100px;
+        background: #4f7db3;
+        border-color: #3f6998;
+        color: #fff;
+        font-weight: 700;
+    }
+
+    .ezway-logout-button:hover,
+    .ezway-logout-button:focus,
+    .ezway-logout-button:active {
+        background: #3f6998;
+        border-color: #335880;
+        color: #fff;
+    }
+
+    .ezway-menu-item {
+        min-height: 60px;
+        border: 1px solid #d7e0e8;
+        border-radius: 4px;
+        padding: 10px 12px;
+        background: #fafbfd;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+        position: relative;
+    }
+
+    .ezway-menu-item:hover {
+        border-color: #9cc7ee;
+        background: #f5faff;
+    }
+
+    .ezway-menu-item.is-active {
+        background: #e3f2fd;
+        border-color: #3b8edb;
+        box-shadow: inset 4px 0 0 #2f80c9;
+    }
+
+    .ezway-menu-item strong {
+        display: block;
+        color: #334155;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    .ezway-menu-item.is-active strong {
+        color: #1f5f99;
+        font-weight: 700;
+    }
+
+    .ezway-menu-route {
+        display: block;
+        color: #60758d;
+        font-size: 12px;
+        font-weight: 500;
+        margin-top: 6px;
+        line-height: 1.4;
+        word-break: break-all;
+    }
+
+    .ezway-menu-item.is-active .ezway-menu-route {
+        color: #356d9f;
+    }
+
+    .ezway-captcha-image {
+        display: inline-block;
+        max-width: 240px;
+        min-height: 52px;
+        padding: 6px;
+        border: 1px solid #cfdae7;
+        border-radius: 4px;
+        background: #fff;
+    }
+
+    .ezway-captcha-image img {
+        max-width: 100%;
+    }
+
+    .ezway-mode-title {
+        color: #244160;
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .ezway-radio-option {
+        margin: 0 18px 0 0 !important;
+        padding: 0;
+        color: #334155;
+        font-size: 16px;
+        font-weight: 500;
+    }
+
+    .ezway-radio-option input {
+        margin-right: 6px;
+    }
+
+    .ezway-radio-option.is-active {
+        color: #1f5f99;
+        font-weight: 700;
+    }
+
+    .ezway-mode-inline {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        flex-wrap: wrap;
+        min-height: 44px;
+    }
+
+    .ezway-filter-box .form-control {
+        border-color: #c9d6e3;
+        border-radius: 4px;
+        color: #334155;
+        box-shadow: none;
+        padding: 10px 12px;
+    }
+
+    .ezway-filter-box .form-control:focus,
+    .ezway-login-panel .form-control:focus {
+        border-color: #7fa8d2;
+        box-shadow: 0 0 0 2px rgba(84, 138, 194, 0.12);
+    }
+
+    .ezway-filter-box .form-control::placeholder,
+    .ezway-login-panel .form-control::placeholder {
+        color: #7b8794;
+    }
+
+    .ezway-support-row {
+        margin: 0 0 12px;
+        padding: 10px 0 0;
+        border-top: 1px solid #e5ebf1;
+    }
+
+    .ezway-support-row .control-label {
+        color: #27415f;
+        font-weight: 700;
+    }
+
+    .ezway-button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding-top: 0;
+        align-items: center;
+    }
+
+    .ezway-button-row .btn {
+        margin: 0;
+        min-width: 118px;
+        height: 38px;
+        border-radius: 4px;
+        font-weight: 700;
+    }
+
+    .ezway-alert {
+        border-radius: 4px;
+        border: 1px solid #f2caca;
+        background: #fff3f3;
+        color: #9b2626;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .ezway-result-table th {
+        white-space: nowrap;
+    }
+
+    .ezway-results-panel .panel-heading {
+        background: transparent;
+        border-bottom: none;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .ezway-result-table thead th {
+        background: #edf4fb;
+        color: #193552;
+        border-color: #d5e1ed;
+        font-weight: 700;
+    }
+
+    .ezway-result-table tbody td {
+        color: #29415f;
+        vertical-align: middle;
+        border-color: #e2eaf3;
+    }
+
+    .ezway-terms-content {
+        max-height: 380px;
+        overflow-y: auto;
+        border: 1px solid #e4e8f0;
+        border-radius: 4px;
+        padding: 16px;
+        background: #fff;
+    }
+
+    @@media (max-width: 991px) {
+        .ezway-mode-box {
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .ezway-button-row .btn {
+            min-width: 0;
+        }
+
+        .ezway-mode-inline {
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .ezway-menu-actions {
+            justify-content: flex-start;
+            margin-top: 12px;
+        }
+    }
+</style>
+
+<div ng-controller="EzwayController" class="container-fluid">
+    <span class="headtype">Ezway 電子商務通關平台</span>
+    <hr />
+
+    <div class="panel panel-primary ezway-panel ezway-login-panel" ng-show="!isLoggedIn">
+        <div class="panel-heading">
+            <h3 class="panel-title">業者登入</h3>
+        </div>
+        <div class="panel-body">
+            <div class="alert alert-danger ezway-alert" ng-show="loginState.errorMessage">{{loginState.errorMessage}}</div>
+
+            <div class="row">
+                <div class="col-md-8 col-md-offset-2">
+                    <div class="ezway-login-shell">
+                        <div class="form-horizontal">
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">統一編號</label>
+                                <div class="col-sm-9">
+                                    <input type="text"
+                                           class="form-control"
+                                           ng-model="loginForm.companyId"
+                                           ng-disabled="loading"
+                                           autocomplete="off"
+                                           placeholder="請輸入統一編號" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">帳號</label>
+                                <div class="col-sm-9">
+                                    <input type="text"
+                                           class="form-control"
+                                           ng-model="loginForm.account"
+                                           ng-disabled="loading"
+                                           autocomplete="off"
+                                           placeholder="請輸入帳號" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">密碼</label>
+                                <div class="col-sm-9">
+                                    <input type="password"
+                                           class="form-control"
+                                           ng-model="loginForm.password"
+                                           ng-disabled="loading"
+                                           autocomplete="new-password"
+                                           placeholder="請輸入密碼" />
+                                </div>
+                            </div>
+                            <div class="form-group" ng-show="loginState.captchaRequired">
+                                <label class="col-sm-3 control-label">驗證碼</label>
+                                <div class="col-sm-9">
+                                    <input type="text"
+                                           class="form-control"
+                                           ng-model="loginForm.captcha"
+                                           ng-disabled="loading"
+                                           autocomplete="off"
+                                           placeholder="請輸入驗證碼" />
+                                </div>
+                            </div>
+                            <div class="form-group" ng-show="loginState.captchaRequired">
+                                <label class="col-sm-3 control-label">驗證碼圖片</label>
+                                <div class="col-sm-9">
+                                    <div class="ezway-captcha-image">
+                                        <img ng-src="{{loginState.captchaImageBase64}}" alt="登入驗證碼" />
+                                    </div>
+                                    <button type="button"
+                                            class="btn btn-default"
+                                            ng-click="refreshLoginCaptcha()"
+                                            ng-disabled="loading"
+                                            style="margin-left:8px;">
+                                        刷新驗證碼
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="col-sm-offset-3 col-sm-9">
+                                    <button type="button"
+                                            class="btn btn-primary"
+                                            ng-click="login()"
+                                            ng-disabled="loading">
+                                        <i class="fa fa-sign-in"></i> 登入
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-info ezway-panel ezway-query-panel" ng-show="isLoggedIn">
+        <div class="panel-body">
+            <div class="alert alert-danger ezway-alert" ng-show="queryState.queryErrorMessage">{{queryState.queryErrorMessage}}</div>
+
+            <div class="ezway-query-main">
+                <div class="ezway-menu-board">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <div class="ezway-menu-item"
+                                 ng-class="{'is-active': queryState.activeQueryApi === 'X4'}"
+                                 ng-click="selectQueryApi('X4')">
+                                <strong>預先委任確認查詢(X4)</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="ezway-menu-item"
+                                 ng-class="{'is-active': queryState.activeQueryApi === 'Simple'}"
+                                 ng-click="selectQueryApi('Simple')">
+                                <strong>預先委任確認查詢(簡易)</strong>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="ezway-menu-actions">
+                                <button type="button"
+                                        class="btn ezway-logout-button"
+                                        ng-click="logout()"
+                                        ng-disabled="loading">
+                                    <i class="fa fa-sign-out"></i> 登出
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="ezway-mode-box">
+                            <div class="ezway-mode-inline">
+                                <label class="control-label ezway-mode-title" style="margin-bottom:0;">查詢方式</label>
+                                <label class="radio-inline ezway-radio-option"
+                                       ng-class="{'is-active': queryState.queryMode === 'Single'}">
+                                    <input type="radio"
+                                           ng-model="queryState.queryMode"
+                                           ng-value="'Single'"
+                                           ng-change="onQueryModeChanged()"
+                                           ng-disabled="loading" />
+                                    查詢
+                                </label>
+                                <label class="radio-inline ezway-radio-option"
+                                       ng-class="{'is-active': queryState.queryMode === 'Batch'}">
+                                    <input type="radio"
+                                           ng-model="queryState.queryMode"
+                                           ng-value="'Batch'"
+                                           ng-change="onQueryModeChanged()"
+                                           ng-disabled="loading" />
+                                    整批查詢
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="ezway-filter-box">
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <div style="font-size:1.3rem">分提單號</div>
+                                    <textarea class="form-control"
+                                              rows="10"
+                                              ng-model="queryState.hawbNo"
+                                              ng-change="onHawbInputChanged()"
+                                              ng-disabled="loading"
+                                              placeholder="請每行輸入一筆資料"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row ezway-support-row" ng-show="queryState.queryCaptchaRequired">
+                            <div class="col-sm-6">
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label class="control-label">查詢驗證碼</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           ng-model="queryState.queryCaptcha"
+                                           ng-disabled="loading"
+                                           autocomplete="off"
+                                           placeholder="請輸入查詢驗證碼" />
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="control-label" style="display:block;">查詢驗證碼圖片</label>
+                                <div class="ezway-captcha-image">
+                                    <img ng-src="{{queryState.queryCaptchaImageBase64}}" alt="查詢驗證碼" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ezway-button-row">
+                            <button type="button"
+                                    class="btn btn-primary"
+                                    ng-show="queryState.queryMode === 'Single'"
+                                    ng-click="query()"
+                                    ng-disabled="loading">
+                                <i class="fa fa-search"></i> 查詢
+                            </button>
+                            <button type="button"
+                                    class="btn btn-primary"
+                                    ng-show="queryState.queryMode === 'Batch'"
+                                    ng-click="batchQuery()"
+                                    ng-disabled="loading">
+                                <i class="fa fa-search"></i> 整批查詢
+                            </button>
+                            <button type="button"
+                                    class="btn btn-default"
+                                    ng-show="queryState.queryCaptchaRequired"
+                                    ng-click="refreshQueryCaptcha()"
+                                    ng-disabled="loading">
+                                刷新驗證碼
+                            </button>
+                            <button type="button"
+                                    class="btn btn-success"
+                                    ng-click="exportExcel()"
+                                    ng-disabled="loading">
+                                <i class="fa fa-file-excel-o"></i> 匯出 Excel
+                            </button>
+                            <button type="button"
+                                    class="btn btn-warning"
+                                    ng-click="clearQueryForm()"
+                                    ng-disabled="loading">
+                                <i class="fa fa-eraser"></i> 清除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-default ezway-panel ezway-results-panel" ng-show="isLoggedIn && queryState.results.length > 0">
+        <div class="panel-heading">
+            <h3 class="panel-title">查詢結果（共 {{queryState.results.length}} 筆）</h3>
+        </div>
+        <div class="panel-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover ezway-result-table">
+                    <thead>
+                        <tr>
+                            <th>預報關日期</th>
+                            <th>報單號碼</th>
+                            <th>主提單號碼</th>
+                            <th>分提單號碼</th>
+                            <th>電話號碼</th>
+                            <th>證件號碼</th>
+                            <th>實名委任日期</th>
+                            <th>認證結果</th>
+                            <th>核准文號</th>
+                            <th>海關回覆結果</th>
+                            <th>海關回覆日期</th>
+                            <th>阻擋原因</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="item in queryState.results track by $index">
+                            <td>{{item.ImportDate}}</td>
+                            <td>{{item.DeclNo}}</td>
+                            <td>{{item.MawbNo}}</td>
+                            <td>{{item.HawbNo}}</td>
+                            <td>{{item.TelNo}}</td>
+                            <td>{{item.IdNo}}</td>
+                            <td>{{getReplyDateTime(item)}}</td>
+                            <td>{{item.IsReply}}</td>
+                            <td>{{item.AuthorizeDocNo}}</td>
+                            <td>{{item.AuthorizeReply}}</td>
+                            <td>{{item.AuthorizeDatm}}</td>
+                            <td>{{item.BlockReason}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="ezwayTermsModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" ng-click="closeTermsModal()" ng-disabled="loading">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title">服務條款確認</h4>
+                </div>
+                <div class="modal-body">
+                    <div id="ezwayTermsContent" class="ezway-terms-content"></div>
+                    <div class="checkbox" style="margin-top:16px;">
+                        <label>
+                            <input type="checkbox" ng-model="loginState.termsAccepted" ng-disabled="loading" />
+                            我已閱讀並同意上述服務條款內容
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" ng-click="closeTermsModal()" ng-disabled="loading">取消</button>
+                    <button type="button"
+                            class="btn btn-primary"
+                            ng-click="confirmTermsAndLogin()"
+                            ng-disabled="loading || !loginState.termsAccepted">
+                        同意並登入
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loader loader-bar" ng-class="{'is-active': loading}" data-rounded data-text="處理中"></div>
+</div>
