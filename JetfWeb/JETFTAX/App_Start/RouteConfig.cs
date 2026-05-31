@@ -13,6 +13,13 @@ namespace JETFTAX
         {
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
 
+            // 提供規格要求的固定入口 /login/sso。
+            routes.MapRoute(
+                name: "LoginSso",
+                url: "login/sso",
+                defaults: new { controller = "Account", action = "SsoLogin" }
+            );
+
             routes.MapRoute(
                 name: "Default",
                 url: "{controller}/{action}/{id}",

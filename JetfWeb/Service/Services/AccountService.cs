@@ -53,6 +53,44 @@ namespace Service.Services
         }
 
         /// <summary>
+        /// 依 USER_ID 取得可登入的啟用使用者，供 SSO 驗證成功後建立登入狀態。
+        /// </summary>
+        public UserMasterModel GetActiveUserById(string user)
+        {
+            UserMasterModel model = new UserMasterModel();
+            try
+            {
+                DataTable dt = new DataTable();
+                // 僅允許 USER_STATUS = 1 的帳號通過 SSO 登入。
+                using (SqlDataAdapter da = new SqlDataAdapter("select * from [jetf].[dbo].[USER_MASTER] where [USER_ID]=@USER_ID and USER_STATUS='1'", conn))
+                {
+                    da.SelectCommand.Parameters.Add("@USER_ID", SqlDbType.NVarChar).Value = user;
+                    da.Fill(dt);
+                }
+
+                if (dt.Rows.Count > 0)
+                {
+                    model.Status = Status.success;
+                    model.Id = dt.Rows[0]["user_id"].ToString().Trim();
+                    model.Name = dt.Rows[0]["user_name"].ToString().Trim();
+                    model.Msg = "登入成功";
+                }
+                else
+                {
+                    model.Status = Status.error;
+                    model.Msg = "使用者不存在或不可登入";
+                }
+            }
+            catch (Exception ex)
+            {
+                model.Status = Status.error;
+                model.Msg = ex.Message;
+            }
+
+            return model;
+        }
+
+        /// <summary>
         /// 取得權限
         /// </summary>
         /// <returns></returns>
