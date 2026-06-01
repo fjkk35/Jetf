@@ -1,5 +1,5 @@
 ﻿@{
-    ViewBag.Title = "Ezway電子商務通關平台-空運";
+    ViewBag.Title = "Ezway電子商務通關平台-海運";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -419,8 +419,8 @@
     }
 </style>
 
-<div ng-controller="EzwayController" class="container-fluid">
-    <span class="headtype">Ezway 電子商務通關平台-空運</span>
+<div ng-controller="EzwaySeaController" class="container-fluid">
+    <span class="headtype">Ezway 電子商務通關平台-海運</span>
     <hr />
 
     <div class="ezway-account-entry-bar" ng-show="!isLoggedIn && loggedInAccounts.length > 0">
@@ -548,14 +548,7 @@
                                 <strong>預先委任確認查詢(簡易)</strong>
                             </div>
                         </div>
-                        <div class="col-md-2" ng-show="activeLoggedInAccount && activeLoggedInAccount.CanUseX4">
-                            <div class="ezway-menu-item"
-                                 ng-class="{'is-active': queryState.activeQueryApi === 'X4'}"
-                                 ng-click="selectQueryApi('X4')">
-                                <strong>預先委任確認查詢(X4)</strong>
-                            </div>
-                        </div>
-                        <div ng-class="activeLoggedInAccount && activeLoggedInAccount.CanUseX4 ? 'col-md-8' : 'col-md-10'">
+                        <div class="col-md-10">
                             <div class="ezway-menu-actions">
                                 <button type="button"
                                         class="btn ezway-return-button"
@@ -602,6 +595,30 @@
                                            ng-disabled="loading" />
                                     整批查詢
                                 </label>
+                            </div>
+                        </div>
+
+                        <div class="row ezway-support-row" ng-show="queryState.brokerOptions.length > 0 || queryState.consolidatorOptions.length > 0">
+                            <div class="col-sm-2" ng-show="queryState.brokerOptions.length > 0">
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label class="control-label">報關業者</label>
+                                    <select class="form-control"
+                                            ng-model="queryState.selectedBrokerValue"
+                                            ng-options="item.Value as item.Label for item in queryState.brokerOptions"
+                                            ng-disabled="loading">
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-sm-2" ng-show="queryState.consolidatorOptions.length > 0">
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label class="control-label">集運商</label>
+                                    <select class="form-control"
+                                            ng-model="queryState.selectedConsolidator"
+                                            ng-options="item.Value as item.Label for item in queryState.consolidatorOptions"
+                                            ng-change="onConsolidatorChanged()"
+                                            ng-disabled="loading">
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -682,33 +699,43 @@
                 <table class="table table-bordered table-striped table-hover ezway-result-table">
                     <thead>
                         <tr>
+                            <th ng-if="hasResultValue('ConsolidatorName')">集運商</th>
+                            <th ng-if="hasResultValue('GroupBrokerUser')">群組報關業者</th>
+                            <th>報關業者</th>
                             <th>預報關日期</th>
                             <th>報單號碼</th>
                             <th>主提單號碼</th>
                             <th>分提單號碼</th>
                             <th>電話號碼</th>
                             <th>證件號碼</th>
+                            <th>推播狀態</th>
                             <th>實名委任日期</th>
                             <th>認證結果</th>
                             <th>核准文號</th>
                             <th>海關回覆結果</th>
                             <th>海關回覆日期</th>
+                            <th>申報金額</th>
                             <th>阻擋原因</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr ng-repeat="item in queryState.results track by $index">
+                            <td ng-if="hasResultValue('ConsolidatorName')">{{item.ConsolidatorName}}</td>
+                            <td ng-if="hasResultValue('GroupBrokerUser')">{{item.GroupBrokerUser}}</td>
+                            <td>{{item.BrokerUser}}</td>
                             <td>{{item.ImportDate}}</td>
                             <td>{{item.DeclNo}}</td>
                             <td>{{item.MawbNo}}</td>
                             <td>{{item.HawbNo}}</td>
                             <td>{{item.TelNo}}</td>
                             <td>{{item.IdNo}}</td>
+                            <td>{{item.NotificationFlag}}</td>
                             <td>{{getReplyDateTime(item)}}</td>
                             <td class="ezway-result-preline">{{item.IsReply}}</td>
                             <td>{{item.AuthorizeDocNo}}</td>
                             <td>{{item.AuthorizeReply}}</td>
                             <td>{{item.AuthorizeDatm}}</td>
+                            <td>{{item.TotCustomsValueAmt}}</td>
                             <td>{{item.BlockReason}}</td>
                         </tr>
                     </tbody>

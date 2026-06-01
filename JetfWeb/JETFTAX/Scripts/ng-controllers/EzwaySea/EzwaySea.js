@@ -1,11 +1,14 @@
 /// <reference path="../../types/global.d.ts" />
-mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $http) {
-        var defaultLoginProfileKey = 'AirExpress';
+mainApp.controller('EzwaySeaController', ['$scope', '$http', function ($scope, $http) {
+        var defaultLoginProfileKey = 'VirtualZone';
         var loginProfiles = [
-            { key: 'AirExpress', label: '空運快遞', companyId: '24951752', account: 'ECC0001' }
+            { key: 'VirtualZone', label: '虛擬關區', companyId: '24951752', account: 'ECC0248' },
+            { key: 'AllOne', label: '全旺', companyId: '24951752', account: 'ECC0197' },
+            { key: 'TPCT', label: 'TPCT', companyId: '82953146', account: 'ECC0091' },
+            { key: 'KaohsiungBranch', label: '捷豐高雄分公司', companyId: '90276915', account: 'ECC0188' }
         ];
-        function isAirAccount(account) {
-            return !!account && account.Account === 'ECC0001';
+        function isSeaAccount(account) {
+            return !!account && account.Account !== 'ECC0001';
         }
         function setLoginError(message) {
             $scope.loginState.errorMessage = message || '';
@@ -15,6 +18,14 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
         }
         function resetResults() {
             $scope.queryState.results = [];
+        }
+        function clearSeaQueryOptions() {
+            $scope.queryState.brokerQueryField = '';
+            $scope.queryState.brokerOptions = [];
+            $scope.queryState.selectedBrokerValue = '';
+            $scope.queryState.consolidatorOptions = [];
+            $scope.queryState.selectedConsolidator = '';
+            $scope.queryState.selectedConsolidatorUserId = '';
         }
         function clearTermsContainer() {
             var container = document.getElementById('ezwayTermsContent');
@@ -40,6 +51,35 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
             $scope.queryState.queryCaptchaImageBase64 = captchaState.CaptchaImageBase64 || '';
             $scope.queryState.queryCaptchaCode = captchaState.CaptchaCode || '';
             $scope.queryState.queryCaptcha = '';
+        }
+        function syncSelectedConsolidatorUserId() {
+            var selectedConsolidator = $scope.queryState.selectedConsolidator || '';
+            var selectedOption = ($scope.queryState.consolidatorOptions || []).filter(function (item) {
+                return !!item && item.Value === selectedConsolidator;
+            })[0];
+            if (!selectedConsolidator) {
+                $scope.queryState.selectedConsolidatorUserId = 'ALL';
+                return;
+            }
+            if (selectedOption && selectedOption.UserId) {
+                $scope.queryState.selectedConsolidatorUserId = selectedOption.UserId;
+                return;
+            }
+            $scope.queryState.selectedConsolidatorUserId = selectedConsolidator === 'null' ? null : 'ALL';
+        }
+        function applySeaQueryOptions(options) {
+            var seaQueryOptions = options || {};
+            $scope.queryState.brokerQueryField = seaQueryOptions.BrokerQueryField || '';
+            $scope.queryState.brokerOptions = seaQueryOptions.BrokerOptions || [];
+            $scope.queryState.selectedBrokerValue = seaQueryOptions.SelectedBrokerValue
+                || (($scope.queryState.brokerOptions[0] && $scope.queryState.brokerOptions[0].Value) || '');
+            $scope.queryState.consolidatorOptions = seaQueryOptions.ConsolidatorOptions || [];
+            $scope.queryState.selectedConsolidator = seaQueryOptions.SelectedConsolidator
+                || (($scope.queryState.consolidatorOptions[0] && $scope.queryState.consolidatorOptions[0].Value) || '');
+            $scope.queryState.selectedConsolidatorUserId = typeof seaQueryOptions.SelectedConsolidatorUserId === 'undefined'
+                ? ''
+                : seaQueryOptions.SelectedConsolidatorUserId;
+            syncSelectedConsolidatorUserId();
         }
         function showTermsModal(html) {
             $scope.loginState.termsAccepted = false;
@@ -78,14 +118,14 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
             $scope.loginForm.account = profile.account;
         }
         function applyCurrentLoggedInAccount(account) {
-            $scope.activeLoggedInAccount = isAirAccount(account) ? account : null;
+            $scope.activeLoggedInAccount = isSeaAccount(account) ? account : null;
             if (!$scope.activeLoggedInAccount || !$scope.activeLoggedInAccount.CanUseX4) {
                 $scope.queryState.activeQueryApi = 'Simple';
             }
         }
         function applyLoggedInAccounts(accounts) {
             $scope.loggedInAccounts = (accounts || []).filter(function (item) {
-                return isAirAccount(item);
+                return isSeaAccount(item);
             });
         }
         function upsertLoggedInAccount(account) {
@@ -103,6 +143,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
             $scope.isLoggedIn = false;
             $scope.loginForm.password = '';
             $scope.loginForm.captcha = '';
+            clearSeaQueryOptions();
             $scope.queryState.hawbNo = '';
             $scope.queryState.queryCaptcha = '';
             $scope.queryState.queryCaptchaRequired = false;
@@ -129,7 +170,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
             document.body.removeChild(link);
         }
         function requestLoginCaptcha(displayError) {
-            return $http.get(Router.action('Ezway', 'RefreshLoginCaptcha'))
+            return $http.get(Router.action('EzwaySea', 'RefreshLoginCaptcha'))
                 .then(function (response) {
                 var data = response.data || {};
                 if (data.msg) {
@@ -157,7 +198,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
             });
         }
         function requestQuerySetting(displayError) {
-            return $http.get(Router.action('Ezway', 'QuerySetting'))
+            return $http.get(Router.action('EzwaySea', 'QuerySetting'))
                 .then(function (response) {
                 var data = response.data || {};
                 if (data.msg) {
@@ -189,6 +230,40 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
                 }
             });
         }
+        function requestSeaQueryOptions(displayError) {
+            return $http.get(Router.action('EzwaySea', 'QueryOptions'))
+                .then(function (response) {
+                var data = response.data || {};
+                if (data.msg) {
+                    setQueryError(data.msg);
+                    if (displayError) {
+                        swal({
+                            title: '查詢條件載入失敗',
+                            text: data.msg,
+                            icon: 'error'
+                        });
+                    }
+                    if (needsReinitialize(data.msg)) {
+                        $scope.isLoggedIn = false;
+                        resetResults();
+                        clearSeaQueryOptions();
+                        $scope.initialize();
+                    }
+                    return;
+                }
+                applySeaQueryOptions(data.ReturnObject);
+                setQueryError('');
+            }, function () {
+                if (displayError) {
+                    setQueryError('取得海運查詢下拉失敗，請稍後再試');
+                    swal({
+                        title: '查詢條件載入失敗',
+                        text: '取得海運查詢下拉失敗，請稍後再試',
+                        icon: 'error'
+                    });
+                }
+            });
+        }
         function buildLoginRequest(termsAccepted) {
             return {
                 CompanyId: $scope.loginForm.companyId,
@@ -203,7 +278,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
             };
         }
         function buildQueryRequest() {
-            return {
+            var request = {
                 Manual: $scope.queryState.queryMode === 'Batch' ? 'N' : 'Y',
                 QueryApiType: $scope.queryState.activeQueryApi,
                 HawbNo: $scope.queryState.hawbNo,
@@ -211,6 +286,14 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
                 QueryCaptchaCode: $scope.queryState.queryCaptchaCode,
                 QueryCaptchaRequired: $scope.queryState.queryCaptchaRequired
             };
+            if ($scope.queryState.selectedBrokerValue) {
+                request[$scope.queryState.brokerQueryField || 'GroupUserId'] = $scope.queryState.selectedBrokerValue;
+            }
+            if ($scope.queryState.selectedConsolidator) {
+                request.Consolidator = $scope.queryState.selectedConsolidator;
+                request.ConsolidatorUserId = $scope.queryState.selectedConsolidatorUserId;
+            }
+            return request;
         }
         function getValidHawbNumbers() {
             return ($scope.queryState.hawbNo || '')
@@ -235,6 +318,12 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
             }
             if ($scope.queryState.queryMode === 'Single' && hawbNumbers.length > 10) {
                 return '查詢超過10筆，請使用整批查詢';
+            }
+            if (($scope.queryState.brokerOptions || []).length > 0 && !$scope.queryState.selectedBrokerValue) {
+                return '請選擇報關業者';
+            }
+            if (($scope.queryState.consolidatorOptions || []).length > 0 && !$scope.queryState.selectedConsolidator) {
+                return '請選擇集運商';
             }
             return '';
         }
@@ -261,6 +350,12 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
         $scope.queryState = {
             activeQueryApi: 'Simple',
             queryMode: 'Single',
+            brokerQueryField: '',
+            brokerOptions: [],
+            selectedBrokerValue: '',
+            consolidatorOptions: [],
+            selectedConsolidator: '',
+            selectedConsolidatorUserId: '',
             hawbNo: '',
             hawbCount: 0,
             queryCaptcha: '',
@@ -275,7 +370,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
             setLoginError('');
             setQueryError('');
             $scope.loading = true;
-            $http.get(Router.action('Ezway', 'Initialize'))
+            $http.get(Router.action('EzwaySea', 'Initialize'))
                 .then(function (response) {
                 var data = response.data || {};
                 if (data.msg) {
@@ -295,9 +390,10 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
                     applyQueryCaptchaState(pageState.QueryCaptchaState);
                     resetResults();
                     setQueryError('');
-                    return;
+                    return requestSeaQueryOptions(false);
                 }
                 applyLoginCaptchaState(pageState.LoginCaptchaState);
+                clearSeaQueryOptions();
                 resetResults();
                 setLoginError('');
             })
@@ -323,7 +419,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
         $scope.activateLoggedInAccount = function (accountSessionKey) {
             $scope.loading = true;
             setLoginError('');
-            return $http.post(Router.action('Ezway', 'ActivateAccount'), {
+            return $http.post(Router.action('EzwaySea', 'ActivateAccount'), {
                 AccountSessionKey: accountSessionKey
             }).then(function (response) {
                 var data = response.data || {};
@@ -346,6 +442,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
                 applyQueryCaptchaState(pageState.QueryCaptchaState);
                 resetResults();
                 setQueryError('');
+                return requestSeaQueryOptions(false);
             }, function () {
                 setLoginError('Ezway 切換帳號失敗，請稍後再試');
                 swal({
@@ -386,7 +483,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
                 return;
             }
             $scope.loading = true;
-            return $http.post(Router.action('Ezway', 'Login'), buildLoginRequest(!!termsAccepted))
+            return $http.post(Router.action('EzwaySea', 'Login'), buildLoginRequest(!!termsAccepted))
                 .then(function (response) {
                 var data = response.data || {};
                 var result = data.ReturnObject || {};
@@ -402,6 +499,9 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
                     applyCurrentLoggedInAccount(result.CurrentAccount);
                     setLoginError('');
                     return requestQuerySetting(false)
+                        .then(function () {
+                        return requestSeaQueryOptions(false);
+                    })
                         .then(function () {
                         hideTermsModal();
                         swal({
@@ -448,7 +548,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
         };
         $scope.logout = function () {
             $scope.loading = true;
-            return $http.post(Router.action('Ezway', 'Logout'), {})
+            return $http.post(Router.action('EzwaySea', 'Logout'), {})
                 .then(function (response) {
                 var data = response.data || {};
                 if (data.msg) {
@@ -502,7 +602,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
                 return;
             }
             $scope.loading = true;
-            return $http.post(Router.action('Ezway', 'Query'), buildQueryRequest())
+            return $http.post(Router.action('EzwaySea', 'Query'), buildQueryRequest())
                 .then(function (response) {
                 var data = response.data || {};
                 if (data.ReturnObject) {
@@ -559,7 +659,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
                 return;
             }
             $scope.loading = true;
-            return $http.post(Router.action('Ezway', 'BatchQuery'), buildQueryRequest())
+            return $http.post(Router.action('EzwaySea', 'BatchQuery'), buildQueryRequest())
                 .then(function (response) {
                 var data = response.data || {};
                 if (data.ReturnObject) {
@@ -616,7 +716,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
                 }
             }
             $scope.loading = true;
-            return $http.post(Router.action('Ezway', 'ExportExcel'), {
+            return $http.post(Router.action('EzwaySea', 'ExportExcel'), {
                 Results: $scope.queryState.results,
                 QueryRequest: buildQueryRequest()
             }).then(function (response) {
@@ -663,6 +763,11 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
             setQueryError('');
             resetResults();
         };
+        $scope.onConsolidatorChanged = function () {
+            syncSelectedConsolidatorUserId();
+            setQueryError('');
+            resetResults();
+        };
         $scope.selectQueryApi = function (queryApiType) {
             if (queryApiType === 'X4' && (!$scope.activeLoggedInAccount || !$scope.activeLoggedInAccount.CanUseX4)) {
                 return;
@@ -684,6 +789,12 @@ mainApp.controller('EzwayController', ['$scope', '$http', function ($scope, $htt
                 return replyDate;
             }
             return replyDate + ' ' + replyTime;
+        };
+        $scope.hasResultValue = function (fieldName) {
+            return ($scope.queryState.results || []).some(function (item) {
+                var value = item && item[fieldName];
+                return typeof value !== 'undefined' && value !== null && String(value).trim() !== '';
+            });
         };
         $scope.initialize();
     }]);

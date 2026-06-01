@@ -15,23 +15,23 @@ using static JETFTAX.Controllers.AccountController;
 namespace JETFTAX.Controllers
 {
     /// <summary>
-    /// Ezway 電子商務通關平台頁面與 AJAX API 控制器。
+    /// Ezway 海運電子商務通關平台頁面與 AJAX API 控制器。
     /// </summary>
-    public class EzwayController : Controller
+    public class EzwaySeaController : Controller
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        private readonly EzwayService _ezwayService;
+        private readonly EzwaySeaService _ezwayService;
 
         /// <summary>
-        /// 建立 EzwayController。
+        /// 建立 EzwaySeaController。
         /// </summary>
-        public EzwayController(EzwayService ezwayService)
+        public EzwaySeaController(EzwaySeaService ezwayService)
         {
             _ezwayService = ezwayService;
         }
 
         /// <summary>
-        /// 顯示 Ezway 主畫面。
+        /// 顯示 Ezway 海運主畫面。
         /// </summary>
         [UserAuthorize(Authority.Ezway)]
         public ActionResult Index()
@@ -221,6 +221,35 @@ namespace JETFTAX.Controllers
             }
         }
 
+        [HttpGet]
+        /// <summary>
+        /// 取得 Ezway 海運簡易查詢所需的下拉選單資料。
+        /// </summary>
+        public async Task<JsonResult> QueryOptions()
+        {
+            try
+            {
+                LogActionRequest("取得海運查詢下拉", new { });
+                var result = await _ezwayService.GetSeaQueryOptionsAsync();
+                var queryOptions = result.ReturnObject as EzwaySeaQueryOptions;
+                LogActionResponse("取得海運查詢下拉", new
+                {
+                    result.IsSuccess,
+                    result.msg,
+                    BrokerQueryField = queryOptions?.BrokerQueryField,
+                    BrokerOptions = queryOptions?.BrokerOptions?.Count ?? 0,
+                    ConsolidatorOptions = queryOptions?.ConsolidatorOptions?.Count ?? 0
+                });
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Ezway 海運控制器取得查詢下拉失敗");
+                LogActionResponse("取得海運查詢下拉", new { Success = false, Message = ex.Message });
+                return Json(new ResponseModel(ex.Message), JsonRequestBehavior.AllowGet);
+            }
+        }
+
         [HttpPost]
         /// <summary>
         /// 執行單筆分提單查詢。
@@ -233,6 +262,10 @@ namespace JETFTAX.Controllers
                 {
                     request?.QueryApiType,
                     request?.Manual,
+                    request?.GroupUserId,
+                    request?.BrokerUserId,
+                    request?.Consolidator,
+                    request?.ConsolidatorUserId,
                     HawbCount = CountHawb(request?.HawbNo),
                     request?.QueryCaptchaRequired
                 });
@@ -268,6 +301,10 @@ namespace JETFTAX.Controllers
                 {
                     request?.QueryApiType,
                     request?.Manual,
+                    request?.GroupUserId,
+                    request?.BrokerUserId,
+                    request?.Consolidator,
+                    request?.ConsolidatorUserId,
                     HawbCount = CountHawb(request?.HawbNo),
                     request?.QueryCaptchaRequired
                 });

@@ -31,6 +31,21 @@ namespace Service.Services.Ezway.Domain
         public string VerifiedType { get; set; }
 
         /// <summary>
+        /// 集運商。
+        /// </summary>
+        public string ConsolidatorName { get; set; }
+
+        /// <summary>
+        /// 群組報關業者。
+        /// </summary>
+        public string GroupBrokerUser { get; set; }
+
+        /// <summary>
+        /// 報關業者。
+        /// </summary>
+        public string BrokerUser { get; set; }
+
+        /// <summary>
         /// 預報關日期。
         /// </summary>
         public string ImportDate { get; set; }
@@ -94,6 +109,16 @@ namespace Service.Services.Ezway.Domain
         /// 電話號碼。
         /// </summary>
         public string TelNo { get; set; }
+
+        /// <summary>
+        /// 推播狀態。
+        /// </summary>
+        public string NotificationFlag { get; set; }
+
+        /// <summary>
+        /// 申報金額。
+        /// </summary>
+        public string TotCustomsValueAmt { get; set; }
 
         /// <summary>
         /// 阻擋原因。

@@ -39,5 +39,15 @@ namespace Service.Services.Ezway.Domain
         /// 是否已同意 Ezway 服務條款。
         /// </summary>
         public bool TermsAccepted { get; set; }
+
+        /// <summary>
+        /// 前端選擇的登入別代碼。
+        /// </summary>
+        public string LoginProfileKey { get; set; }
+
+        /// <summary>
+        /// 前端選擇的登入別名稱。
+        /// </summary>
+        public string LoginProfileLabel { get; set; }
     }
 }

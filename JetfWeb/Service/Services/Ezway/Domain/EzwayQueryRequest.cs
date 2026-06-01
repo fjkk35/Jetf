@@ -53,6 +53,26 @@ namespace Service.Services.Ezway.Domain
         public string AuthorizeStatus { get; set; } = "A";
 
         /// <summary>
+        /// 海運簡易查詢使用的報關業者值，對應一般業者帳號的 groupUserId。
+        /// </summary>
+        public string GroupUserId { get; set; }
+
+        /// <summary>
+        /// 海運簡易查詢使用的報關業者值，對應客服或 TRADEVAN 類帳號的 brokerUserId。
+        /// </summary>
+        public string BrokerUserId { get; set; }
+
+        /// <summary>
+        /// 海運簡易查詢使用的集運商值。
+        /// </summary>
+        public string Consolidator { get; set; }
+
+        /// <summary>
+        /// 海運簡易查詢使用的集運商帳號。
+        /// </summary>
+        public string ConsolidatorUserId { get; set; }
+
+        /// <summary>
         /// 操作人員輸入的查詢驗證碼。
         /// </summary>
         public string QueryCaptcha { get; set; }

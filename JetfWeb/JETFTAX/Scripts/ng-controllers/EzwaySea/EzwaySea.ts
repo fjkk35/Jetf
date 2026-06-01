@@ -22,6 +22,9 @@ interface EzwayLoginResultResponse {
 }
 
 interface EzwayQueryResultResponse {
+    ConsolidatorName?: string;
+    GroupBrokerUser?: string;
+    BrokerUser?: string;
     ImportDate?: string;
     DeclNo?: string;
     MawbNo?: string;
@@ -34,12 +37,34 @@ interface EzwayQueryResultResponse {
     AuthorizeDocNo?: string;
     AuthorizeReply?: string;
     AuthorizeDatm?: string;
+    NotificationFlag?: string;
+    TotCustomsValueAmt?: string;
     BlockReason?: string;
 }
 
 interface EzwayQueryResponse {
     Results?: EzwayQueryResultResponse[];
     QueryCaptchaState?: EzwayCaptchaStateResponse;
+}
+
+interface EzwaySeaBrokerOptionResponse {
+    Value?: string;
+    Label?: string;
+}
+
+interface EzwaySeaConsolidatorOptionResponse {
+    Value?: string;
+    Label?: string;
+    UserId?: string | null;
+}
+
+interface EzwaySeaQueryOptionsResponse {
+    BrokerQueryField?: string;
+    BrokerOptions?: EzwaySeaBrokerOptionResponse[];
+    SelectedBrokerValue?: string;
+    ConsolidatorOptions?: EzwaySeaConsolidatorOptionResponse[];
+    SelectedConsolidator?: string;
+    SelectedConsolidatorUserId?: string | null;
 }
 
 interface EzwayDownloadResponse {
@@ -65,7 +90,7 @@ interface EzwayLoggedInAccountResponse {
     CanUseX4?: boolean;
 }
 
-interface EzwayScope extends ng.IScope {
+interface EzwaySeaScope extends ng.IScope {
     loading: boolean;
     isLoggedIn: boolean;
     activeLoggedInAccount: EzwayLoggedInAccountResponse | null;
@@ -89,6 +114,12 @@ interface EzwayScope extends ng.IScope {
     queryState: {
         activeQueryApi: string;
         queryMode: string;
+        brokerQueryField: string;
+        brokerOptions: EzwaySeaBrokerOptionResponse[];
+        selectedBrokerValue: string;
+        consolidatorOptions: EzwaySeaConsolidatorOptionResponse[];
+        selectedConsolidator: string;
+        selectedConsolidatorUserId: string | null;
         hawbNo: string;
         hawbCount: number;
         queryCaptcha: string;
@@ -114,21 +145,26 @@ interface EzwayScope extends ng.IScope {
     clearQueryForm: () => void;
     onHawbInputChanged: () => void;
     onQueryModeChanged: () => void;
+    onConsolidatorChanged: () => void;
     selectQueryApi: (queryApiType: string) => void;
     getReplyDateTime: (item: EzwayQueryResultResponse) => string;
+    hasResultValue: (fieldName: string) => boolean;
 }
 
-mainApp.controller('EzwayController', ['$scope', '$http', function (
-    $scope: EzwayScope,
+mainApp.controller('EzwaySeaController', ['$scope', '$http', function (
+    $scope: EzwaySeaScope,
     $http: ng.IHttpService
 ) {
-    var defaultLoginProfileKey = 'AirExpress';
+    var defaultLoginProfileKey = 'VirtualZone';
     var loginProfiles: EzwayLoginProfileOption[] = [
-        { key: 'AirExpress', label: '空運快遞', companyId: '24951752', account: 'ECC0001' }
+        { key: 'VirtualZone', label: '虛擬關區', companyId: '24951752', account: 'ECC0248' },
+        { key: 'AllOne', label: '全旺', companyId: '24951752', account: 'ECC0197' },
+        { key: 'TPCT', label: 'TPCT', companyId: '82953146', account: 'ECC0091' },
+        { key: 'KaohsiungBranch', label: '捷豐高雄分公司', companyId: '90276915', account: 'ECC0188' }
     ];
 
-    function isAirAccount(account?: EzwayLoggedInAccountResponse | null): boolean {
-        return !!account && account.Account === 'ECC0001';
+    function isSeaAccount(account?: EzwayLoggedInAccountResponse | null): boolean {
+        return !!account && account.Account !== 'ECC0001';
     }
 
     function setLoginError(message: string): void {
@@ -141,6 +177,15 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
 
     function resetResults(): void {
         $scope.queryState.results = [];
+    }
+
+    function clearSeaQueryOptions(): void {
+        $scope.queryState.brokerQueryField = '';
+        $scope.queryState.brokerOptions = [];
+        $scope.queryState.selectedBrokerValue = '';
+        $scope.queryState.consolidatorOptions = [];
+        $scope.queryState.selectedConsolidator = '';
+        $scope.queryState.selectedConsolidatorUserId = '';
     }
 
     function clearTermsContainer(): void {
@@ -172,6 +217,41 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
         $scope.queryState.queryCaptchaImageBase64 = captchaState.CaptchaImageBase64 || '';
         $scope.queryState.queryCaptchaCode = captchaState.CaptchaCode || '';
         $scope.queryState.queryCaptcha = '';
+    }
+
+    function syncSelectedConsolidatorUserId(): void {
+        var selectedConsolidator = $scope.queryState.selectedConsolidator || '';
+        var selectedOption = ($scope.queryState.consolidatorOptions || []).filter(function (item: EzwaySeaConsolidatorOptionResponse): boolean {
+            return !!item && item.Value === selectedConsolidator;
+        })[0];
+
+        if (!selectedConsolidator) {
+            $scope.queryState.selectedConsolidatorUserId = 'ALL';
+            return;
+        }
+
+        if (selectedOption && selectedOption.UserId) {
+            $scope.queryState.selectedConsolidatorUserId = selectedOption.UserId;
+            return;
+        }
+
+        $scope.queryState.selectedConsolidatorUserId = selectedConsolidator === 'null' ? null : 'ALL';
+    }
+
+    function applySeaQueryOptions(options?: EzwaySeaQueryOptionsResponse | null): void {
+        var seaQueryOptions = options || {};
+        $scope.queryState.brokerQueryField = seaQueryOptions.BrokerQueryField || '';
+        $scope.queryState.brokerOptions = seaQueryOptions.BrokerOptions || [];
+        $scope.queryState.selectedBrokerValue = seaQueryOptions.SelectedBrokerValue
+            || (($scope.queryState.brokerOptions[0] && $scope.queryState.brokerOptions[0].Value) || '');
+        $scope.queryState.consolidatorOptions = seaQueryOptions.ConsolidatorOptions || [];
+        $scope.queryState.selectedConsolidator = seaQueryOptions.SelectedConsolidator
+            || (($scope.queryState.consolidatorOptions[0] && $scope.queryState.consolidatorOptions[0].Value) || '');
+        $scope.queryState.selectedConsolidatorUserId = typeof seaQueryOptions.SelectedConsolidatorUserId === 'undefined'
+            ? ''
+            : seaQueryOptions.SelectedConsolidatorUserId;
+
+        syncSelectedConsolidatorUserId();
     }
 
     function showTermsModal(html: string): void {
@@ -219,7 +299,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
     }
 
     function applyCurrentLoggedInAccount(account?: EzwayLoggedInAccountResponse | null): void {
-        $scope.activeLoggedInAccount = isAirAccount(account) ? account : null;
+        $scope.activeLoggedInAccount = isSeaAccount(account) ? account : null;
 
         if (!$scope.activeLoggedInAccount || !$scope.activeLoggedInAccount.CanUseX4) {
             $scope.queryState.activeQueryApi = 'Simple';
@@ -228,7 +308,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
 
     function applyLoggedInAccounts(accounts?: EzwayLoggedInAccountResponse[] | null): void {
         $scope.loggedInAccounts = (accounts || []).filter(function (item: EzwayLoggedInAccountResponse): boolean {
-            return isAirAccount(item);
+            return isSeaAccount(item);
         });
     }
 
@@ -250,6 +330,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
         $scope.isLoggedIn = false;
         $scope.loginForm.password = '';
         $scope.loginForm.captcha = '';
+        clearSeaQueryOptions();
         $scope.queryState.hawbNo = '';
         $scope.queryState.queryCaptcha = '';
         $scope.queryState.queryCaptchaRequired = false;
@@ -279,7 +360,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
     }
 
     function requestLoginCaptcha(displayError: boolean): ng.IPromise<void> {
-        return $http.get(Router.action('Ezway', 'RefreshLoginCaptcha'))
+        return $http.get(Router.action('EzwaySea', 'RefreshLoginCaptcha'))
             .then(function (response: ng.IHttpResponse<ApiResponse<EzwayCaptchaStateResponse>>) {
                 var data = response.data || {};
                 if (data.msg) {
@@ -309,7 +390,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
     }
 
     function requestQuerySetting(displayError: boolean): ng.IPromise<void> {
-        return $http.get(Router.action('Ezway', 'QuerySetting'))
+        return $http.get(Router.action('EzwaySea', 'QuerySetting'))
             .then(function (response: ng.IHttpResponse<ApiResponse<EzwayCaptchaStateResponse>>) {
                 var data = response.data || {};
                 if (data.msg) {
@@ -345,6 +426,44 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
             });
     }
 
+    function requestSeaQueryOptions(displayError: boolean): ng.IPromise<void> {
+        return $http.get(Router.action('EzwaySea', 'QueryOptions'))
+            .then(function (response: ng.IHttpResponse<ApiResponse<EzwaySeaQueryOptionsResponse>>) {
+                var data = response.data || {};
+                if (data.msg) {
+                    setQueryError(data.msg);
+
+                    if (displayError) {
+                        swal({
+                            title: '查詢條件載入失敗',
+                            text: data.msg,
+                            icon: 'error'
+                        });
+                    }
+
+                    if (needsReinitialize(data.msg)) {
+                        $scope.isLoggedIn = false;
+                        resetResults();
+                        clearSeaQueryOptions();
+                        $scope.initialize();
+                    }
+                    return;
+                }
+
+                applySeaQueryOptions(data.ReturnObject);
+                setQueryError('');
+            }, function (): void {
+                if (displayError) {
+                    setQueryError('取得海運查詢下拉失敗，請稍後再試');
+                    swal({
+                        title: '查詢條件載入失敗',
+                        text: '取得海運查詢下拉失敗，請稍後再試',
+                        icon: 'error'
+                    });
+                }
+            });
+    }
+
     function buildLoginRequest(termsAccepted: boolean): any {
         return {
             CompanyId: $scope.loginForm.companyId,
@@ -360,7 +479,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
     }
 
     function buildQueryRequest(): any {
-        return {
+        var request: any = {
             Manual: $scope.queryState.queryMode === 'Batch' ? 'N' : 'Y',
             QueryApiType: $scope.queryState.activeQueryApi,
             HawbNo: $scope.queryState.hawbNo,
@@ -368,6 +487,17 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
             QueryCaptchaCode: $scope.queryState.queryCaptchaCode,
             QueryCaptchaRequired: $scope.queryState.queryCaptchaRequired
         };
+
+        if ($scope.queryState.selectedBrokerValue) {
+            request[$scope.queryState.brokerQueryField || 'GroupUserId'] = $scope.queryState.selectedBrokerValue;
+        }
+
+        if ($scope.queryState.selectedConsolidator) {
+            request.Consolidator = $scope.queryState.selectedConsolidator;
+            request.ConsolidatorUserId = $scope.queryState.selectedConsolidatorUserId;
+        }
+
+        return request;
     }
 
     function getValidHawbNumbers(): string[] {
@@ -400,6 +530,14 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
             return '查詢超過10筆，請使用整批查詢';
         }
 
+        if (($scope.queryState.brokerOptions || []).length > 0 && !$scope.queryState.selectedBrokerValue) {
+            return '請選擇報關業者';
+        }
+
+        if (($scope.queryState.consolidatorOptions || []).length > 0 && !$scope.queryState.selectedConsolidator) {
+            return '請選擇集運商';
+        }
+
         return '';
     }
 
@@ -426,6 +564,12 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
     $scope.queryState = {
         activeQueryApi: 'Simple',
         queryMode: 'Single',
+        brokerQueryField: '',
+        brokerOptions: [],
+        selectedBrokerValue: '',
+        consolidatorOptions: [],
+        selectedConsolidator: '',
+        selectedConsolidatorUserId: '',
         hawbNo: '',
         hawbCount: 0,
         queryCaptcha: '',
@@ -442,7 +586,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
         setQueryError('');
         $scope.loading = true;
 
-        $http.get(Router.action('Ezway', 'Initialize'))
+        $http.get(Router.action('EzwaySea', 'Initialize'))
             .then(function (response: ng.IHttpResponse<ApiResponse<EzwayPageStateResponse>>) {
                 var data = response.data || {};
                 if (data.msg) {
@@ -464,10 +608,11 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
                     applyQueryCaptchaState(pageState.QueryCaptchaState);
                     resetResults();
                     setQueryError('');
-                    return;
+                    return requestSeaQueryOptions(false);
                 }
 
                 applyLoginCaptchaState(pageState.LoginCaptchaState);
+                clearSeaQueryOptions();
                 resetResults();
                 setLoginError('');
             })
@@ -496,7 +641,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
         $scope.loading = true;
         setLoginError('');
 
-        return $http.post(Router.action('Ezway', 'ActivateAccount'), {
+        return $http.post(Router.action('EzwaySea', 'ActivateAccount'), {
             AccountSessionKey: accountSessionKey
         }).then(function (response: ng.IHttpResponse<ApiResponse<EzwayPageStateResponse>>) {
             var data = response.data || {};
@@ -521,6 +666,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
             applyQueryCaptchaState(pageState.QueryCaptchaState);
             resetResults();
             setQueryError('');
+            return requestSeaQueryOptions(false);
         }, function (): void {
             setLoginError('Ezway 切換帳號失敗，請稍後再試');
             swal({
@@ -570,7 +716,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
 
         $scope.loading = true;
 
-        return $http.post(Router.action('Ezway', 'Login'), buildLoginRequest(!!termsAccepted))
+        return $http.post(Router.action('EzwaySea', 'Login'), buildLoginRequest(!!termsAccepted))
             .then(function (response: ng.IHttpResponse<ApiResponse<EzwayLoginResultResponse>>) {
                 var data = response.data || {};
                 var result = data.ReturnObject || {};
@@ -589,6 +735,9 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
                     setLoginError('');
 
                     return requestQuerySetting(false)
+                        .then(function (): ng.IPromise<void> {
+                            return requestSeaQueryOptions(false);
+                        })
                         .then(function (): void {
                             hideTermsModal();
                             swal({
@@ -642,7 +791,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
     $scope.logout = function (): ng.IPromise<void> | void {
         $scope.loading = true;
 
-        return $http.post(Router.action('Ezway', 'Logout'), {})
+        return $http.post(Router.action('EzwaySea', 'Logout'), {})
             .then(function (response: ng.IHttpResponse<ApiResponse<EzwayPageStateResponse>>) {
                 var data = response.data || {};
                 if (data.msg) {
@@ -704,7 +853,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
 
         $scope.loading = true;
 
-        return $http.post(Router.action('Ezway', 'Query'), buildQueryRequest())
+        return $http.post(Router.action('EzwaySea', 'Query'), buildQueryRequest())
             .then(function (response: ng.IHttpResponse<ApiResponse<EzwayQueryResponse>>) {
                 var data = response.data || {};
                 if (data.ReturnObject) {
@@ -770,7 +919,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
 
         $scope.loading = true;
 
-        return $http.post(Router.action('Ezway', 'BatchQuery'), buildQueryRequest())
+        return $http.post(Router.action('EzwaySea', 'BatchQuery'), buildQueryRequest())
         .then(function (response: ng.IHttpResponse<ApiResponse<EzwayQueryResponse>>) {
             var data = response.data || {};
             if (data.ReturnObject) {
@@ -835,7 +984,7 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
 
         $scope.loading = true;
 
-        return $http.post(Router.action('Ezway', 'ExportExcel'), {
+        return $http.post(Router.action('EzwaySea', 'ExportExcel'), {
             Results: $scope.queryState.results,
             QueryRequest: buildQueryRequest()
         }).then(function (response: ng.IHttpResponse<EzwayDownloadResponse>) {
@@ -887,6 +1036,12 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
         resetResults();
     };
 
+    $scope.onConsolidatorChanged = function (): void {
+        syncSelectedConsolidatorUserId();
+        setQueryError('');
+        resetResults();
+    };
+
     $scope.selectQueryApi = function (queryApiType: string): void {
         if (queryApiType === 'X4' && (!$scope.activeLoggedInAccount || !$scope.activeLoggedInAccount.CanUseX4)) {
             return;
@@ -913,6 +1068,13 @@ mainApp.controller('EzwayController', ['$scope', '$http', function (
         }
 
         return replyDate + ' ' + replyTime;
+    };
+
+    $scope.hasResultValue = function (fieldName: string): boolean {
+        return ($scope.queryState.results || []).some(function (item: EzwayQueryResultResponse): boolean {
+            var value = item && (item as any)[fieldName];
+            return typeof value !== 'undefined' && value !== null && String(value).trim() !== '';
+        });
     };
 
     $scope.initialize();

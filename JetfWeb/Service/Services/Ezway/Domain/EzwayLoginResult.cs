@@ -19,5 +19,10 @@ namespace Service.Services.Ezway.Domain
         /// 待顯示的服務條款 HTML。
         /// </summary>
         public string TermsHtml { get; set; }
+
+        /// <summary>
+        /// 本次登入成功的帳號資訊。
+        /// </summary>
+        public EzwayLoggedInAccount CurrentAccount { get; set; }
     }
 }

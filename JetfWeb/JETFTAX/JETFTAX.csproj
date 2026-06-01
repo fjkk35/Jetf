@@ -274,6 +274,7 @@
     <Compile Include="Controllers\AccsNewController.cs" />
     <Compile Include="Controllers\AccsShopeeController.cs" />
     <Compile Include="Controllers\EzwayController.cs" />
+    <Compile Include="Controllers\EzwaySeaController.cs" />
     <Compile Include="Controllers\ApprovalCategoryController.cs" />
     <Compile Include="Controllers\AuthorityController.cs" />
     <Compile Include="Controllers\AuthorityGroupController.cs" />
@@ -829,6 +830,7 @@
     <Content Include="Scripts\ng-controllers\EtlCustomerWorkLoadReport\EtlCustomerWorkLoadReport.js" />
     <Content Include="Scripts\ng-controllers\EtlErrorWork\EtlErrorWork.js" />
     <Content Include="Scripts\ng-controllers\Ezway\Ezway.js" />
+    <Content Include="Scripts\ng-controllers\EzwaySea\EzwaySea.js" />
     <Content Include="Scripts\ng-controllers\Ftz\Ftz.js" />
     <Content Include="Scripts\ng-controllers\InvoiceNew\InvoiceNew.js" />
     <Content Include="Scripts\ng-controllers\MainTaxSearch\MainTaxSearch.js" />
@@ -2928,6 +2930,7 @@
     <Content Include="Views\AccsNew\Index.cshtml" />
     <Content Include="Views\AccsShopee\Index.cshtml" />
     <Content Include="Views\Ezway\Index.cshtml" />
+    <Content Include="Views\EzwaySea\Index.cshtml" />
     <Content Include="Views\SearchCargo\Index.cshtml" />
     <Content Include="Views\SearchCargo\Detail.cshtml" />
     <Content Include="Views\Ftz\Index.cshtml" />
@@ -2978,6 +2981,7 @@
     <TypeScriptCompile Include="Scripts\ng-controllers\BatchSearchCargo2\BatchSearchCargo2.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\Customer\SearchCustomer.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\Ezway\Ezway.ts" />
+    <TypeScriptCompile Include="Scripts\ng-controllers\EzwaySea\EzwaySea.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaClearance\SeaClearance.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaClearance\SeaClearanceDetail.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ShipmentInboundExceptionRecord\ShipmentInboundExceptionRecord.ts" />
