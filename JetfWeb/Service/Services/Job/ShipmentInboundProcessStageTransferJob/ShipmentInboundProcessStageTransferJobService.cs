@@ -108,11 +108,18 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
             string processOpe)
         {
             // Step 3-1: 將預先登記處理欄位覆寫回正式 ShipmentInbound。
+            shipment.ReturnReason = stage.ReturnReason;
+            shipment.Remark = stage.Remark;
+
+            if (!stage.ProcessType.HasValue)
+            {
+                return;
+            }
+
             shipment.Fee = stage.Fee;
             shipment.Tax = stage.Tax;
             shipment.Ccfee = stage.CcFee;
             shipment.Cod = stage.Cod;
-            shipment.ReturnReason = stage.ReturnReason;
             shipment.ProcessType = stage.ProcessType;
             shipment.ProcessTransNo = stage.ProcessTransNo;
             shipment.ProcessImporter = stage.ProcessImporter;
@@ -124,7 +131,6 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
             shipment.StoreCode = stage.StoreCode;
             shipment.StoreName = stage.StoreName;
             shipment.PickupTime = stage.PickupTime;
-            shipment.Remark = stage.Remark;
             shipment.ProcessOpe = processOpe;
             shipment.ProcessTime = processTime;
         }
@@ -145,11 +151,18 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
             string processOpe)
         {
             AddTransferSourceHistory(db, shipment.Id, editTime, processOpe);
+            AddEditHistoryIfChanged(db, shipment.Id, "退件原因", shipment.ReturnReason, stage.ReturnReason, editTime, processOpe, value => value);
+            AddEditHistoryIfChanged(db, shipment.Id, "備註", shipment.Remark, stage.Remark, editTime, processOpe, value => value);
+
+            if (!stage.ProcessType.HasValue)
+            {
+                return;
+            }
+
             AddEditHistoryIfChanged(db, shipment.Id, "手續費", shipment.Fee, stage.Fee, editTime, processOpe, value => value?.ToString());
             AddEditHistoryIfChanged(db, shipment.Id, "稅金", shipment.Tax, stage.Tax, editTime, processOpe, value => value?.ToString());
             AddEditHistoryIfChanged(db, shipment.Id, "報關費", shipment.Ccfee, stage.CcFee, editTime, processOpe, value => value?.ToString());
             AddEditHistoryIfChanged(db, shipment.Id, "到付款", shipment.Cod, stage.Cod, editTime, processOpe, value => value?.ToString());
-            AddEditHistoryIfChanged(db, shipment.Id, "退件原因", shipment.ReturnReason, stage.ReturnReason, editTime, processOpe, value => value);
             AddEditHistoryIfChanged(db, shipment.Id, "處理方式", shipment.ProcessType, stage.ProcessType, editTime, processOpe, GetProcessTypeText);
             AddEditHistoryIfChanged(db, shipment.Id, "重出派件公司", shipment.ProcessTransNo, stage.ProcessTransNo, editTime, processOpe, GetProcessTransNoText);
             AddEditHistoryIfChanged(db, shipment.Id, "收件人", shipment.ProcessImporter, stage.ProcessImporter, editTime, processOpe, value => value);
@@ -161,7 +174,6 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
             AddEditHistoryIfChanged(db, shipment.Id, "門市店號", shipment.StoreCode, stage.StoreCode, editTime, processOpe, value => value);
             AddEditHistoryIfChanged(db, shipment.Id, "門市名稱", shipment.StoreName, stage.StoreName, editTime, processOpe, value => value);
             AddEditHistoryIfChanged(db, shipment.Id, "預計自取日期", shipment.PickupTime, stage.PickupTime, editTime, processOpe, GetDateText);
-            AddEditHistoryIfChanged(db, shipment.Id, "備註", shipment.Remark, stage.Remark, editTime, processOpe, value => value);
             AddEditHistoryIfChanged(db, shipment.Id, "客服處理人員", shipment.ProcessOpe, processOpe, editTime, processOpe, value => value);
         }
 
