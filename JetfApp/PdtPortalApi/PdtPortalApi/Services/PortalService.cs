@@ -96,8 +96,17 @@ public sealed class PortalService(
             var airOrderExists = await _dataCenterDbContext.OriginalLists
                 .AsNoTracking()
                 .AnyAsync(
-                    entity => entity.TrackingNo == normalizedTrackingNo || entity.DeliveryNo == normalizedTrackingNo,
+                    entity => entity.TrackingNo == normalizedTrackingNo,
                     cancellationToken);
+
+            if (airOrderExists == false)
+            {
+                airOrderExists = await _dataCenterDbContext.OriginalLists
+                .AsNoTracking()
+                .AnyAsync(
+                    entity => entity.DeliveryNo == normalizedTrackingNo,
+                    cancellationToken);
+            }
 
             var hasOriginalData = seaOrderExists || airOrderExists;
             var messages = new List<string>();
@@ -670,6 +679,27 @@ public sealed class PortalService(
                     Cc = entity.CC
                 })
                 .FirstOrDefaultAsync(cancellationToken);
+
+            if (airData is null)
+            {
+                airData = await _dataCenterDbContext.OriginalLists
+                 .AsNoTracking()
+                 .Where(entity => entity.DeliveryNo == trackingNo)
+                 .Select(entity => new
+                 {
+                     TrackingNo = entity.TrackingNo,
+                     OriginalJetfSerial = entity.DeliveryNo,
+                     MainNumber = entity.MainNumber,
+                     OriginalTrackingNo = entity.TrackingNo,
+                     Importer = entity.Importer,
+                     ImporterPhone = entity.ImporterPhone,
+                     ImporterAddr = entity.ImporterAddr,
+                     CustCode = entity.CustCode,
+                     TransNo = entity.TransNo,
+                     Cc = entity.CC
+                 })
+                 .FirstOrDefaultAsync(cancellationToken);
+            }
 
             if (airData is null)
             {
