@@ -691,6 +691,8 @@
     <Compile Include="Services\ShipmentInboundProcess\Domain\ShipmentInboundProcessResponse.cs" />
     <Compile Include="Services\ShipmentInboundProcess\Domain\ShipmentInboundProcessUpdateRequest.cs" />
     <Compile Include="Services\ShipmentInboundProcess\ShipmentInboundProcessService.cs" />
+    <Compile Include="Services\ShipmentInboundProcessStage\Domain\ShipmentInboundProcessStageBatchUploadErrorModel.cs" />
+    <Compile Include="Services\ShipmentInboundProcessStage\Domain\ShipmentInboundProcessStageBatchUploadRowModel.cs" />
     <Compile Include="Services\ShipmentInboundProcessStage\Domain\ShipmentInboundProcessStageDetailModel.cs" />
     <Compile Include="Services\ShipmentInboundProcessStage\Domain\ShipmentInboundProcessStageModel.cs" />
     <Compile Include="Services\ShipmentInboundProcessStage\Domain\ShipmentInboundProcessStageRequest.cs" />

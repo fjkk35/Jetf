@@ -1,8 +1,13 @@
-﻿using Service.Data;
+﻿using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
+using Service.Data;
 using Service.EnumTax;
+using Service.Extensions;
+using Service.Models;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
+using System.IO;
 using System.Linq;
 using Service.Services.ShipmentInboundProcessStage.Domain;
 
@@ -215,6 +220,80 @@ namespace Service.Services.ShipmentInboundProcessStage
         }
 
         /// <summary>
+        /// 批量上傳預先登記退件原因。
+        /// </summary>
+        /// <param name="filePath">上傳檔案路徑。</param>
+        /// <returns>批次處理結果。</returns>
+        public ResponseModel BatchUploadReturnReason(string filePath)
+        {
+            var response = new ResponseModel();
+            var rows = ReadBatchUploadReturnReasonExcel(filePath);
+
+            if (rows.Count == 0)
+            {
+                response.status = Status.error;
+                response.msg = "Excel 無資料";
+                return response;
+            }
+
+            var errors = ValidateBatchUploadReturnReasonRows(rows)
+                .OrderBy(x => x.RowNo)
+                .ThenBy(x => x.FieldName)
+                .ToList();
+            var failureCount = errors
+                .Select(x => x.RowNo)
+                .Distinct()
+                .Count();
+
+            if (failureCount > 0)
+            {
+                response.status = Status.error;
+                response.msg = $"驗證失敗，未寫入任何資料。成功 0 筆，失敗 {failureCount} 筆。";
+                response.ReturnObject = new
+                {
+                    SuccessCount = 0,
+                    FailureCount = failureCount,
+                    Errors = errors
+                };
+
+                return response;
+            }
+
+            var userId = GetUserId();
+            var now = DateTime.Now;
+            var entities = rows.Select(row => new ShipmentInboundProcessStageEntity
+            {
+                TrackingNo = (row.TrackingNo ?? string.Empty).Trim(),
+                ReturnReason = row.ReturnReason,
+                Remark = row.Remark,
+                Tax = 0,
+                CcFee = 0,
+                Cod = 0,
+                FreightFee = 0,
+                Fee = 0,
+                ProcessTime = now,
+                ProcessOpe = userId,
+                CreatedOpe = userId,
+                CreatedTime = now,
+                IsMatch = false,
+                MatchTimie = null
+            }).ToList();
+
+            JetfDb.ShipmentInboundProcessStages.AddRange(entities);
+            JetfDb.SaveChanges();
+
+            response.msg = $"成功 {entities.Count} 筆，失敗 0 筆。";
+            response.ReturnObject = new
+            {
+                SuccessCount = entities.Count,
+                FailureCount = 0,
+                Errors = new List<ShipmentInboundProcessStageBatchUploadErrorModel>()
+            };
+
+            return response;
+        }
+
+        /// <summary>
         /// 依 Id 取得列表單筆資料。
         /// </summary>
         public ShipmentInboundProcessStageModel GetRowById(int id)
@@ -228,6 +307,170 @@ namespace Service.Services.ShipmentInboundProcessStage
 
                 return BuildStageModel(entity);
             }
+        }
+
+        private List<ShipmentInboundProcessStageBatchUploadErrorModel> ValidateBatchUploadReturnReasonRows(
+            List<ShipmentInboundProcessStageBatchUploadRowModel> rows)
+        {
+            var errors = new List<ShipmentInboundProcessStageBatchUploadErrorModel>();
+
+            foreach (var row in rows)
+            {
+                row.TrackingNo = row.TrackingNo?.Trim();
+                row.ReturnReason = row.ReturnReason?.Trim();
+                row.Remark = row.Remark?.Trim();
+
+                if (string.IsNullOrWhiteSpace(row.TrackingNo))
+                {
+                    errors.Add(new ShipmentInboundProcessStageBatchUploadErrorModel
+                    {
+                        RowNo = row.RowNo,
+                        TrackingNo = row.TrackingNo,
+                        FieldName = "單號",
+                        Reason = "單號不可為空"
+                    });
+                }
+            }
+
+            var duplicateTrackingNos = rows
+                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
+                .GroupBy(x => x.TrackingNo, StringComparer.OrdinalIgnoreCase)
+                .Where(x => x.Count() > 1)
+                .SelectMany(x => x)
+                .ToList();
+
+            foreach (var row in duplicateTrackingNos)
+            {
+                errors.Add(new ShipmentInboundProcessStageBatchUploadErrorModel
+                {
+                    RowNo = row.RowNo,
+                    TrackingNo = row.TrackingNo,
+                    FieldName = "單號",
+                    Reason = "Excel 內單號重複"
+                });
+            }
+
+            var trackingNos = rows
+                .Select(x => x.TrackingNo)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (trackingNos.Any())
+            {
+                var existingTrackingNos = JetfDb.ShipmentInboundProcessStages
+                    .AsNoTracking()
+                    .Where(x => trackingNos.Contains(x.TrackingNo) && !x.MatchTimie.HasValue)
+                    .Select(x => x.TrackingNo)
+                    .Distinct()
+                    .ToList();
+                var existingSet = new HashSet<string>(existingTrackingNos, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var row in rows)
+                {
+                    if (string.IsNullOrWhiteSpace(row.TrackingNo))
+                    {
+                        continue;
+                    }
+
+                    if (!existingSet.Contains(row.TrackingNo))
+                    {
+                        continue;
+                    }
+
+                    errors.Add(new ShipmentInboundProcessStageBatchUploadErrorModel
+                    {
+                        RowNo = row.RowNo,
+                        TrackingNo = row.TrackingNo,
+                        FieldName = "單號",
+                        Reason = "此單號已存在且尚未匹配，不能重複新增"
+                    });
+                }
+            }
+
+            return errors;
+        }
+
+        private List<ShipmentInboundProcessStageBatchUploadRowModel> ReadBatchUploadReturnReasonExcel(string filePath)
+        {
+            var result = new List<ShipmentInboundProcessStageBatchUploadRowModel>();
+
+            IWorkbook workBook;
+            using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite))
+            {
+                workBook = new XSSFWorkbook(fs);
+            }
+
+            var sheet = workBook.GetSheetAt(0);
+            if (sheet == null)
+            {
+                return result;
+            }
+
+            var headerFound = false;
+            var trackingNoIndex = -1;
+            var returnReasonIndex = -1;
+            var remarkIndex = -1;
+
+            for (int i = 0; i <= sheet.LastRowNum; i++)
+            {
+                var row = sheet.GetRow(i);
+                if (row == null)
+                {
+                    continue;
+                }
+
+                if (!headerFound)
+                {
+                    for (int columnIndex = 0; columnIndex < row.LastCellNum; columnIndex++)
+                    {
+                        var header = row.GetCellData(columnIndex);
+                        if (header == "單號")
+                        {
+                            trackingNoIndex = columnIndex;
+                        }
+
+                        if (header == "退件原因")
+                        {
+                            returnReasonIndex = columnIndex;
+                        }
+
+                        if (header == "備註")
+                        {
+                            remarkIndex = columnIndex;
+                        }
+                    }
+
+                    headerFound = trackingNoIndex >= 0 && returnReasonIndex >= 0 && remarkIndex >= 0;
+                    continue;
+                }
+
+                var trackingNo = row.GetCellData(trackingNoIndex)?.Trim();
+                var returnReason = row.GetCellData(returnReasonIndex)?.Trim();
+                var remark = row.GetCellData(remarkIndex)?.Trim();
+
+                if (string.IsNullOrWhiteSpace(trackingNo)
+                    && string.IsNullOrWhiteSpace(returnReason)
+                    && string.IsNullOrWhiteSpace(remark))
+                {
+                    continue;
+                }
+
+                result.Add(new ShipmentInboundProcessStageBatchUploadRowModel
+                {
+                    RowNo = i + 1,
+                    TrackingNo = trackingNo,
+                    ReturnReason = returnReason,
+                    Remark = remark
+                });
+            }
+
+            if (!headerFound)
+            {
+                throw new Exception("Excel 欄位需包含：單號、退件原因、備註");
+            }
+
+            return result;
         }
 
         private ShipmentInboundProcessType? ValidateAndNormalizeRequest(ShipmentInboundProcessStageSaveRequest request)

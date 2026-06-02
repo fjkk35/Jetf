@@ -6,6 +6,10 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
     $scope.dialogLoading = false;
     $scope.saving = false;
     $scope.isSearched = false;
+    $scope.uploadingReturnReason = false;
+    $scope.uploadReturnReasonResult = null;
+    $scope.uploadReturnReasonSummary = null;
+    $scope.uploadReturnReasonErrors = [];
     $scope.currentPage = 1;
     $scope.pageSize = "10";
     $scope.totalCount = 0;
@@ -368,6 +372,106 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
         $scope.modalTitle = '新增預先登記處理';
         $scope.processForm = buildEmptyForm();
         $('#processStageModal').modal('show');
+    };
+
+    $scope.openBatchUploadReturnReasonModal = function () {
+        $scope.uploadingReturnReason = false;
+        $scope.uploadReturnReasonResult = null;
+        $scope.uploadReturnReasonSummary = null;
+        $scope.uploadReturnReasonErrors = [];
+
+        var fileInput = document.getElementById('batchUploadReturnReasonFile');
+        if (fileInput) {
+            fileInput.value = '';
+        }
+
+        $('#batchUploadReturnReasonModal').modal('show');
+    };
+
+    $scope.uploadBatchReturnReasonExcel = function () {
+        var fileInput = document.getElementById('batchUploadReturnReasonFile');
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            swal({
+                title: '提醒',
+                text: '請選擇 Excel 檔案',
+                icon: 'warning'
+            });
+            return;
+        }
+
+        var file = fileInput.files[0];
+        var fileExtension = file.name.split('.').pop().toLowerCase();
+        if (fileExtension !== 'xlsx') {
+            swal({
+                title: '錯誤',
+                text: '副檔名需為 xlsx',
+                icon: 'error'
+            });
+            return;
+        }
+
+        var formData = new FormData();
+        formData.append('file', file);
+
+        $scope.uploadingReturnReason = true;
+        $scope.uploadReturnReasonResult = null;
+        $scope.uploadReturnReasonSummary = null;
+        $scope.uploadReturnReasonErrors = [];
+
+        $http.post(Router.action('ShipmentInboundProcessStage', 'BatchUploadReturnReason'), formData, {
+            transformRequest: angular.identity,
+            headers: { 'Content-Type': undefined }
+        })
+            .then(function (response) {
+                if (response.data && response.data.Redirect) {
+                    try { if (fileInput) fileInput.value = ''; } catch (e) { }
+                    window.location = Router.action('Account', 'Login');
+                    return;
+                }
+
+                $scope.uploadReturnReasonResult = response.data || { status: 'error', msg: '上傳失敗' };
+
+                var resultObject = $scope.uploadReturnReasonResult.ReturnObject || {};
+                var errors = angular.isArray(resultObject) ? resultObject : (resultObject.Errors || []);
+                var failureCount = angular.isNumber(resultObject.FailureCount) ? resultObject.FailureCount : 0;
+                var successCount = angular.isNumber(resultObject.SuccessCount) ? resultObject.SuccessCount : 0;
+
+                $scope.uploadReturnReasonErrors = errors;
+                $scope.uploadReturnReasonSummary = {
+                    SuccessCount: successCount,
+                    FailureCount: failureCount
+                };
+
+                if ($scope.uploadReturnReasonResult.status === 'success') {
+                    swal({
+                        title: '成功',
+                        text: $scope.uploadReturnReasonResult.msg || '上傳成功',
+                        icon: 'success'
+                    });
+
+                    if ($scope.isSearched) {
+                        $scope.loadData();
+                    }
+                } else {
+                    swal({
+                        title: '失敗',
+                        text: $scope.uploadReturnReasonResult.msg || '上傳失敗',
+                        icon: 'error'
+                    });
+                }
+            })
+            .catch(function (error) {
+                console.error('批量上傳退件原因失敗:', error);
+                swal({
+                    title: '錯誤',
+                    text: '上傳失敗，請稍後再試',
+                    icon: 'error'
+                });
+            })
+            .finally(function () {
+                $scope.uploadingReturnReason = false;
+                try { if (fileInput) fileInput.value = ''; } catch (e) { }
+            });
     };
 
     $scope.beginProcessEdit = function (item) {

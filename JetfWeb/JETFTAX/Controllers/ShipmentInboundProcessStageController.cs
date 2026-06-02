@@ -4,7 +4,9 @@ using Service.Models;
 using Service.Services.ShipmentInboundProcessStage;
 using Service.Services.ShipmentInboundProcessStage.Domain;
 using System;
+using System.IO;
 using System.Linq;
+using System.Web;
 using System.Web.Mvc;
 using static JETFTAX.Controllers.AccountController;
 
@@ -131,6 +133,44 @@ namespace JETFTAX.Controllers
                     msg = ex.Message
                 });
             }
+        }
+
+        [HttpPost]
+        [UserAuthorize(Authority.ShipmentInboundProcess)]
+        public JsonResult BatchUploadReturnReason(HttpPostedFileBase file)
+        {
+            var responseModel = new ResponseModel();
+
+            try
+            {
+                if (file == null || file.ContentLength == 0)
+                {
+                    responseModel.status = Status.error;
+                    responseModel.msg = "未選擇檔案";
+                    return Json(responseModel);
+                }
+
+                var fileType = Path.GetExtension(file.FileName);
+                if (fileType != ".xlsx")
+                {
+                    responseModel.status = Status.error;
+                    responseModel.msg = "副檔名需為 xlsx";
+                    return Json(responseModel);
+                }
+
+                var fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now:yyyyMMddHHmmss}{Path.GetExtension(file.FileName)}";
+                var filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
+                file.SaveAs(filePath);
+
+                responseModel = _service.BatchUploadReturnReason(filePath);
+            }
+            catch (Exception ex)
+            {
+                responseModel.status = Status.error;
+                responseModel.msg = ex.Message;
+            }
+
+            return Json(responseModel);
         }
     }
 }
