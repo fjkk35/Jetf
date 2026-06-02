@@ -151,7 +151,13 @@ namespace Service.Services.SearchCargo
             //取得製單資料
             //空運
             if (data.ORIGINAL?.ToUpper() == "ETL")
-            { 
+            {
+                detail.ETA = DataCenterDb.MainOrderInfos
+                    .AsNoTracking()
+                    .Where(x => x.MainNumber == detail.Main_Number && x.DeliveryDate.HasValue)
+                    .Select(x => x.DeliveryDate)
+                    .FirstOrDefault();
+
                 var airMakeList = GetAirMakeListData(detail.Main_Number, detail.TrackingNo);
                 if (airMakeList != null && airMakeList.Count > 0)
                 {
