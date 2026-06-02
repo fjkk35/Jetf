@@ -244,24 +244,14 @@ namespace Service.Services.ShipmentInboundProcessStage
                 .Select(x => x.RowNo)
                 .Distinct()
                 .Count();
-
-            if (failureCount > 0)
-            {
-                response.status = Status.error;
-                response.msg = $"驗證失敗，未寫入任何資料。成功 0 筆，失敗 {failureCount} 筆。";
-                response.ReturnObject = new
-                {
-                    SuccessCount = 0,
-                    FailureCount = failureCount,
-                    Errors = errors
-                };
-
-                return response;
-            }
+            var invalidRowNos = new HashSet<int>(errors.Select(x => x.RowNo));
+            var validRows = rows
+                .Where(x => !invalidRowNos.Contains(x.RowNo))
+                .ToList();
 
             var userId = GetUserId();
             var now = DateTime.Now;
-            var entities = rows.Select(row => new ShipmentInboundProcessStageEntity
+            var entities = validRows.Select(row => new ShipmentInboundProcessStageEntity
             {
                 TrackingNo = (row.TrackingNo ?? string.Empty).Trim(),
                 ReturnReason = row.ReturnReason,
@@ -282,12 +272,13 @@ namespace Service.Services.ShipmentInboundProcessStage
             JetfDb.ShipmentInboundProcessStages.AddRange(entities);
             JetfDb.SaveChanges();
 
-            response.msg = $"成功 {entities.Count} 筆，失敗 0 筆。";
+            response.status = entities.Count > 0 ? Status.success : Status.error;
+            response.msg = $"成功 {entities.Count} 筆，失敗 {failureCount} 筆。";
             response.ReturnObject = new
             {
                 SuccessCount = entities.Count,
-                FailureCount = 0,
-                Errors = new List<ShipmentInboundProcessStageBatchUploadErrorModel>()
+                FailureCount = failureCount,
+                Errors = errors
             };
 
             return response;
