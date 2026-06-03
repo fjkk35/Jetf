@@ -1,4 +1,4 @@
-using NPOI.SS.UserModel;
+﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.Extensions;
 using Service.Models;
@@ -121,9 +121,13 @@ namespace Service.Services.ShipmentOutboundBatchImportRevoke
 
             {
                 dataDict = JetfDb.ShipmentInbounds
-                    .AsNoTracking()
-                    .Where(x => trackingNos.Contains(x.TrackingNo) && x.OutboundDate.HasValue)
-                    .ToDictionary(x => x.TrackingNo, x => x);
+                        .AsNoTracking()
+                        .Where(x => trackingNos.Contains(x.TrackingNo) && x.OutboundDate.HasValue)
+                        .GroupBy(x => x.TrackingNo)
+                        .Select(g => g
+                            .OrderByDescending(x => x.OutboundDate)
+                            .FirstOrDefault())
+                        .ToDictionary(x => x.TrackingNo, x => x);
             }
 
             foreach (var revoke in revokeList)
