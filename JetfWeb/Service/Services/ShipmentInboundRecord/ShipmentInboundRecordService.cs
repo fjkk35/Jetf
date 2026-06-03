@@ -93,6 +93,7 @@ namespace Service.Services.ShipmentInboundRecord
                 }
 
                 FillCustomerAndTransNames(new List<ShipmentInboundRecordModel> { data });
+                FillCargoSignReceiptFlags(new List<ShipmentInboundRecordModel> { data });
 
                 var lazyLoadingEnabled = JetfDb.Configuration.LazyLoadingEnabled;
                 var proxyCreationEnabled = JetfDb.Configuration.ProxyCreationEnabled;
@@ -196,6 +197,7 @@ namespace Service.Services.ShipmentInboundRecord
                         TransName = x.TransName,
                         TrackingNo = x.TrackingNo,
                         IsOrderOriginal = x.IsOrderOriginal,
+                        ReturnReason = x.ReturnReason,
                         SourceType = x.SourceType.HasValue ? (ShipmentInboundSourceType)x.SourceType.Value : default(ShipmentInboundSourceType),
                         SeqNo = x.SeqNo,
                         LocationCode = x.LocationCode,
@@ -295,6 +297,11 @@ namespace Service.Services.ShipmentInboundRecord
             if (!string.IsNullOrWhiteSpace(request.TrackingNo))
             {
                 query = query.WhereIf(true, x => x.TrackingNo.Contains(request.TrackingNo));
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.OutboundTrackingNo))
+            {
+                query = query.WhereIf(true, x => x.OutboundTrackingNo.Contains(request.OutboundTrackingNo));
             }
 
             return query;
@@ -852,104 +859,7 @@ namespace Service.Services.ShipmentInboundRecord
         /// </summary>
         public void UpdateAmount(UpdateAmountRequest request)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
-            if (request.Id <= 0)
-            {
-                throw new ArgumentException("Id 不可為空");
-            }
-
-            if (string.IsNullOrWhiteSpace(request.FieldName))
-            {
-                throw new ArgumentException("FieldName 不可為空");
-            }
-
-            var allowedFields = new[] { "Cod", "Tax", "Ccfee" };
-            if (!allowedFields.Contains(request.FieldName))
-            {
-                throw new ArgumentException("不允許修改此欄位");
-            }
-
-            {
-                var entity = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
-                if (entity == null)
-                {
-                    throw new ArgumentException("查無資料");
-                }
-
-                if (entity.OutboundDate.HasValue)
-                {
-                    throw new InvalidOperationException("已有出庫日期，稅金、到付款、報關費不可調整");
-                }
-
-                int? oldValue;
-                switch (request.FieldName)
-                {
-                    case "Cod":
-                        oldValue = entity.Cod;
-                        entity.Cod = request.NewValue;
-                        break;
-                    case "Tax":
-                        oldValue = entity.Tax;
-                        entity.Tax = request.NewValue;
-                        break;
-                    case "Ccfee":
-                        oldValue = entity.Ccfee;
-                        entity.Ccfee = request.NewValue;
-                        break;
-                    default:
-                        throw new ArgumentException("不允許修改此欄位");
-                }
-
-                var hasAmountChanged = oldValue != request.NewValue;
-                var editTime = DateTime.Now;
-                var editUser = GetUserId();
-
-                if (hasAmountChanged)
-                {
-                    JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
-                    {
-                        ShipmentInboundId = request.Id,
-                        FieldName = request.FieldName,
-                        OldValue = oldValue?.ToString(),
-                        NewValue = request.NewValue.ToString(),
-                        EditTime = editTime,
-                        EditUser = editUser
-                    });
-                }
-
-                var hasAnyAmount = (entity.Ccfee ?? 0) > 0
-                    || (entity.FreightFee ?? 0) > 0
-                    || (entity.Tax ?? 0) > 0;
-                var targetFee = hasAnyAmount ? 30 : 0;
-                var shouldUpdateFee = (entity.Fee ?? 0) != targetFee;
-
-                if (shouldUpdateFee)
-                {
-                    var oldFee = entity.Fee;
-                    entity.Fee = targetFee;
-
-                    JetfDb.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
-                    {
-                        ShipmentInboundId = request.Id,
-                        FieldName = "手續費",
-                        OldValue = oldFee?.ToString(),
-                        NewValue = targetFee.ToString(),
-                        EditTime = editTime,
-                        EditUser = editUser
-                    });
-                }
-
-                if (!hasAmountChanged && !shouldUpdateFee)
-                {
-                    return;
-                }
-
-                JetfDb.SaveChanges();
-            }
+            throw new InvalidOperationException("到付款、稅金、報關費修改功能已停用");
         }
 
         /// <summary>

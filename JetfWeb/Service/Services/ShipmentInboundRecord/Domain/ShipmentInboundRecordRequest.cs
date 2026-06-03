@@ -46,6 +46,11 @@ namespace Service.Services.ShipmentInboundRecord.Domain
         public string TrackingNo { get; set; }
 
         /// <summary>
+        /// 重出單號
+        /// </summary>
+        public string OutboundTrackingNo { get; set; }
+
+        /// <summary>
         /// 進口方式(海運/空運)
         /// </summary>
         public string DataType { get; set; }

@@ -3,9 +3,6 @@
     $scope.data = null;
     $scope.loading = true;
     $scope.errorMessage = '';
-    $scope.editFieldNameText = '';
-    $scope.newAmount = 0;
-    $scope.currentFieldName = '';
     $scope.historyData = [];
     $scope.editTrackingNo = '';
     $scope.savingTrackingNo = false;
@@ -152,6 +149,11 @@
         if (!results[2]) return '';
         return decodeURIComponent(results[2].replace(/\+/g, ' '));
     }
+
+    $scope.getCargoReceiptUrl = function (cargoNumber) {
+        return Router.action('Cargo', 'CargoSignReceipt') +
+            '?cargoNumber=' + encodeURIComponent((cargoNumber || '').toString().trim());
+    };
 
     // 載入詳細資料
     $scope.loadDetail = function () {
@@ -329,81 +331,6 @@
             })
             .finally(function () {
                 $scope.savingTrackingNo = false;
-            });
-    };
-
-    // 編輯金額
-    $scope.editAmount = function (fieldName, currentValue) {
-        if ($scope.data && $scope.data.OutboundDate) {
-            swal({
-                title: "錯誤",
-                text: "已有出庫日期，稅金、到付款、報關費不可調整",
-                icon: "error"
-            });
-            return;
-        }
-
-        $scope.currentFieldName = fieldName;
-        $scope.newAmount = currentValue;
-
-        switch (fieldName) {
-            case 'Cod':
-                $scope.editFieldNameText = '到付款';
-                break;
-            case 'Tax':
-                $scope.editFieldNameText = '稅金';
-                break;
-            case 'Ccfee':
-                $scope.editFieldNameText = '報關費';
-                break;
-        }
-
-        $('#editAmountModal').modal('show');
-    };
-
-    // 儲存金額
-    $scope.saveAmount = function () {
-        if (isNaN($scope.newAmount) || $scope.newAmount < 0) {
-            swal({
-                title: "錯誤",
-                text: "請輸入有效的金額",
-                icon: "error"
-            });
-            return;
-        }
-
-        var id = getQueryParam('id');
-        $http.post(Router.action('ShipmentInboundRecord', 'UpdateAmount'), {
-            Id: parseInt(id),
-            FieldName: $scope.currentFieldName,
-            NewValue: $scope.newAmount
-        })
-            .then(function (response) {
-                if (response.data.error) {
-                    swal({
-                        title: "錯誤",
-                        text: "更新失敗：" + response.data.error,
-                        icon: "error"
-                    });
-                    return;
-                }
-
-                swal({
-                    title: "成功",
-                    text: "更新成功",
-                    icon: "success"
-                }).then(function () {
-                    $('#editAmountModal').modal('hide');
-                    $scope.loadDetail();
-                });
-            })
-            .catch(function (error) {
-                console.error('更新失敗:', error);
-                swal({
-                    title: "錯誤",
-                    text: "更新失敗，請稍後再試",
-                    icon: "error"
-                });
             });
     };
 

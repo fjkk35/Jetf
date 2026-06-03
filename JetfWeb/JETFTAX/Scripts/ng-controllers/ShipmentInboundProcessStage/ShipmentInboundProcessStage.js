@@ -5,6 +5,7 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
     $scope.loading = false;
     $scope.dialogLoading = false;
     $scope.saving = false;
+    $scope.enrichingAmount = false;
     $scope.isSearched = false;
     $scope.uploadingReturnReason = false;
     $scope.uploadReturnReasonResult = null;
@@ -37,6 +38,7 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
     $scope.matchTimieStartPopup = { opened: false };
     $scope.matchTimieEndPopup = { opened: false };
     $scope.pickupTimePopup = { opened: false };
+    var enrichAmountRequestId = 0;
     $scope.dateOptions = {
         formatYear: 'yyyy',
         maxDate: new Date(2099, 12, 31),
@@ -115,6 +117,64 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
         return isNaN(date.getTime()) ? null : date;
     }
 
+    function shouldEnrichAmount(processType) {
+        return processType == 1 || processType == 4 || processType == 9;
+    }
+
+    function resetAmountFields() {
+        $scope.processForm.tax = null;
+        $scope.processForm.ccFee = null;
+        $scope.processForm.cod = null;
+    }
+
+    function refreshAmountFields() {
+        var trackingNo = normalizeText($scope.processForm.trackingNo);
+        var requestId = ++enrichAmountRequestId;
+
+        if (!shouldEnrichAmount($scope.processForm.processType) || !trackingNo) {
+            $scope.enrichingAmount = false;
+            resetAmountFields();
+            $scope.calcFee();
+            return;
+        }
+
+        $scope.enrichingAmount = true;
+
+        $http.get(Router.action('ShipmentInboundProcessStage', 'GetAmountDetailByTrackingNo'), {
+            params: { trackingNo: trackingNo }
+        }).then(function (response) {
+            if (requestId !== enrichAmountRequestId) {
+                return;
+            }
+
+            if (response.data.error) {
+                throw new Error(response.data.error);
+            }
+
+            $scope.processForm.tax = response.data.Tax;
+            $scope.processForm.ccFee = response.data.CcFee;
+            $scope.processForm.cod = response.data.Cod;
+            $scope.calcFee();
+        }).catch(function (error) {
+            if (requestId !== enrichAmountRequestId) {
+                return;
+            }
+
+            resetAmountFields();
+            $scope.calcFee();
+
+            swal({
+                title: '查詢失敗',
+                text: (error && error.message) ? error.message : '無法取得金額資訊，請稍後再試',
+                icon: 'error'
+            });
+        }).finally(function () {
+            if (requestId === enrichAmountRequestId) {
+                $scope.enrichingAmount = false;
+            }
+        });
+    }
+
     $scope.processForm = buildEmptyForm();
 
     $scope.init = function () {
@@ -123,8 +183,10 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
         $scope.loadFreightPayerNoList();
 
         $('#processStageModal').on('hidden.bs.modal', function () {
+            enrichAmountRequestId++;
             $scope.currentItem = null;
             $scope.isReadOnlyMode = false;
+            $scope.enrichingAmount = false;
             $scope.processForm = buildEmptyForm();
 
             if (!$scope.$$phase) {
@@ -178,6 +240,13 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
         var freightFee = parseFloat($scope.processForm.freightFee) || 0;
         var tax = parseFloat($scope.processForm.tax) || 0;
         var ccFee = parseFloat($scope.processForm.ccFee) || 0;
+
+        // 只有「開新單號重出 + 7-11」時，才額外以運費支付方判斷是否收 30；其餘情況維持原本有運費/稅金/報關費就收 30 的邏輯。
+        if ($scope.processForm.processType == 1 && $scope.processForm.processTransNo == 3) {
+            $scope.processForm.fee = $scope.processForm.freightPayerNo == 1 ? 30 : 0;
+            return;
+        }
+
         $scope.processForm.fee = (freightFee > 0 || tax > 0 || ccFee > 0) ? 30 : 0;
     };
 
@@ -188,6 +257,8 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
             $scope.processForm.storeCode = '';
             $scope.processForm.storeName = '';
         }
+
+        $scope.calcFee();
     };
 
     $scope.onFreightPayerNoChange = function () {
@@ -212,11 +283,6 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
             $scope.processForm.cod = null;
         }
 
-        if ($scope.processForm.processType == 4) {
-            $scope.processForm.ccFee = null;
-            $scope.processForm.cod = null;
-        }
-
         if ($scope.processForm.processType != 4) {
             $scope.processForm.carNo = '';
             $scope.processForm.pickupTime = null;
@@ -229,6 +295,11 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
         }
 
         $scope.calcFee();
+        refreshAmountFields();
+    };
+
+    $scope.onTrackingNoChanged = function () {
+        refreshAmountFields();
     };
 
     $scope.buildSearchRequest = function () {
@@ -369,6 +440,7 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
     $scope.openCreateModal = function () {
         $scope.currentItem = null;
         $scope.isReadOnlyMode = false;
+        $scope.enrichingAmount = false;
         $scope.modalTitle = '新增預先登記處理';
         $scope.processForm = buildEmptyForm();
         $('#processStageModal').modal('show');

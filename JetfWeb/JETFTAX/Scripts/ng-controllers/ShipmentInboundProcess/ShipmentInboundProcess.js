@@ -247,6 +247,13 @@
         var freightFee = parseFloat($scope.processForm.freightFee) || 0;
         var tax = parseFloat($scope.processForm.tax) || 0;
         var ccfee = parseFloat($scope.processForm.ccfee) || 0;
+
+        // 只有「開新單號重出 + 7-11」時，才額外以運費支付方判斷是否收 30；其餘情況維持原本有運費/稅金/報關費就收 30 的邏輯。
+        if ($scope.processForm.processType == 1 && $scope.processForm.processTransNo == 3) {
+            $scope.processForm.fee = $scope.processForm.freightPayerNo == 1 ? 30 : 0;
+            return;
+        }
+
         $scope.processForm.fee = (freightFee > 0 || tax > 0 || ccfee > 0) ? 30 : 0;
     };
 
@@ -260,6 +267,8 @@
             $scope.processForm.storeCode = '';
             $scope.processForm.storeName = '';
         }
+
+        $scope.calcFee();
     };
 
     // 重出運費支付方變更時的處理

@@ -4,6 +4,8 @@ using Service.Data;
 using Service.EnumTax;
 using Service.Extensions;
 using Service.Models;
+using Service.Services.ShipmentInboundBatchImport.Domain;
+using Service.Services.ShipmentInboundCommon;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -18,9 +20,15 @@ namespace Service.Services.ShipmentInboundProcessStage
     /// </summary>
     public class ShipmentInboundProcessStageService : _BaseService
     {
-        public ShipmentInboundProcessStageService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+        private readonly ShipmentInboundTrackingNoService _trackingNoService;
+
+        public ShipmentInboundProcessStageService(
+            Service.Data.JetfDbContext jetfDbContext,
+            Service.Data.DataCenterDbContext dataCenterDbContext,
+            ShipmentInboundTrackingNoService trackingNoService)
             : base(jetfDbContext, dataCenterDbContext)
         {
+            _trackingNoService = trackingNoService;
         }
 
         private static readonly ShipmentInboundProcessType[] RemarkOnlyProcessTypes =
@@ -164,6 +172,41 @@ namespace Service.Services.ShipmentInboundProcessStage
                     })
                     .FirstOrDefault();
             }
+        }
+
+        /// <summary>
+        /// 依單號補抓稅金、報關費與到付款資料，供預先登記畫面帶入。
+        /// </summary>
+        public ShipmentInboundProcessStageDetailModel GetAmountDetailByTrackingNo(string trackingNo)
+        {
+            var normalizedTrackingNo = trackingNo?.Trim();
+            if (string.IsNullOrWhiteSpace(normalizedTrackingNo))
+            {
+                return new ShipmentInboundProcessStageDetailModel
+                {
+                    Tax = 0,
+                    CcFee = 0,
+                    Cod = 0
+                };
+            }
+
+            var shipmentInboundList = new List<ShipmentInboundModel>
+            {
+                new ShipmentInboundModel
+                {
+                    TrackingNo = normalizedTrackingNo
+                }
+            };
+
+            _trackingNoService.EnrichShipmentData(shipmentInboundList);
+
+            var shipment = shipmentInboundList.First();
+            return new ShipmentInboundProcessStageDetailModel
+            {
+                Tax = shipment.Tax,
+                CcFee = shipment.Ccfee,
+                Cod = shipment.Cod
+            };
         }
 
         /// <summary>
@@ -540,12 +583,6 @@ namespace Service.Services.ShipmentInboundProcessStage
                 request.Cod = 0;
             }
 
-            if (processType == ShipmentInboundProcessType.SelfPickup)
-            {
-                request.CcFee = 0;
-                request.Cod = 0;
-            }
-
             if (processType != ShipmentInboundProcessType.SelfPickup)
             {
                 request.CarNo = null;
@@ -653,7 +690,7 @@ namespace Service.Services.ShipmentInboundProcessStage
             entity.Cod = request.Cod;
             entity.FreightPayerNo = request.FreightPayerNo;
             entity.FreightFee = request.FreightFee;
-            entity.Fee = CalculateFee(request.FreightFee, request.Tax, request.CcFee);
+            entity.Fee = CalculateFee(processType, request.ProcessTransNo, request.FreightPayerNo, request.FreightFee, request.Tax, request.CcFee);
             entity.CarNo = request.CarNo;
             entity.PickupTime = DateTime.TryParse(request.PickupTime, out var pickupTime)
                 ? pickupTime
@@ -686,8 +723,22 @@ namespace Service.Services.ShipmentInboundProcessStage
             return date.Date;
         }
 
-        private int CalculateFee(int? freightFee, int? tax, int? ccFee)
+        private int CalculateFee(
+            ShipmentInboundProcessType? processType,
+            byte? processTransNo,
+            byte? freightPayerNo,
+            int? freightFee,
+            int? tax,
+            int? ccFee)
         {
+            // 僅在「開新單號重出 + 7-11」時，才額外依運費支付方判斷手續費。
+            if (processType == ShipmentInboundProcessType.NewTrackingNo
+                && processTransNo == (byte)ShipmentInboundProcessTransNo.SevenEleven)
+            {
+                return freightPayerNo == (byte)ShipmentInboundFreightPayerNo.Consignee ? 30 : 0;
+            }
+
+            // 其餘情況維持原本只要有運費、稅金或報關費任一金額就收 30 的邏輯。
             return (freightFee ?? 0) > 0
                 || (tax ?? 0) > 0
                 || (ccFee ?? 0) > 0

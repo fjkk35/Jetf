@@ -326,15 +326,26 @@
                         <span>&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body" style="position: relative;">
                     <div class="alert alert-warning" ng-if="isReadOnlyMode">
                         此資料已有匹配日期，僅可查看，不能再進行修改。
                     </div>
-                    <fieldset ng-disabled="isReadOnlyMode">
+                    <div ng-show="enrichingAmount"
+                         style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 10; background: rgba(255, 255, 255, 0.75); display: flex; align-items: center; justify-content: center;">
+                        <div class="text-center">
+                            <i class="fa fa-spinner fa-spin fa-3x"></i>
+                            <p>載入中...</p>
+                        </div>
+                    </div>
+                    <fieldset ng-disabled="isReadOnlyMode || enrichingAmount">
                     <div class="form-group row">
                         <label class="col-sm-3 col-form-label">單號 <span class="text-danger">*</span></label>
                         <div class="col-sm-9">
-                            <input type="text" class="form-control" ng-model="processForm.trackingNo" />
+                            <input type="text"
+                                   class="form-control"
+                                   ng-model="processForm.trackingNo"
+                                   ng-model-options="{ debounce: 500 }"
+                                   ng-change="onTrackingNoChanged()" />
                         </div>
                     </div>
 
@@ -481,6 +492,18 @@
                             </div>
                         </div>
                         <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">報關費</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.ccFee" ng-change="calcFee()" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label">到付款</label>
+                            <div class="col-sm-9">
+                                <input type="number" class="form-control" ng-model="processForm.cod" />
+                            </div>
+                        </div>
+                        <div class="form-group row">
                             <label class="col-sm-3 col-form-label">預計自取日期</label>
                             <div class="col-sm-9">
                                 <input type="text"
@@ -514,7 +537,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">{{isReadOnlyMode ? '關閉' : '取消'}}</button>
-                    <button type="button" class="btn btn-primary" ng-if="!isReadOnlyMode" ng-click="saveProcess()" ng-disabled="saving">
+                    <button type="button" class="btn btn-primary" ng-if="!isReadOnlyMode" ng-click="saveProcess()" ng-disabled="saving || enrichingAmount">
                         <i class="fa fa-spinner fa-spin" ng-show="saving"></i>
                         {{saving ? '儲存中...' : '確定'}}
                     </button>

@@ -125,7 +125,7 @@ namespace Service.Services.ShipmentInboundProcess
                         NormalizeUpdateRequest(request);
                         ValidateUpdateRequest(request, newProcessType);
 
-                        var newFee = CalculateFee(newProcessType, request.FreightFee, request.Tax, request.Ccfee, request.Cod);
+                        var newFee = CalculateFee(newProcessType, request.ProcessTransNo, request.FreightPayerNo, request.FreightFee, request.Tax, request.Ccfee);
 
                         existing.ProcessType = newProcessType;
                         existing.ProcessTransNo = request.ProcessTransNo;
@@ -307,21 +307,31 @@ namespace Service.Services.ShipmentInboundProcess
         }
 
         /// <summary>
-        /// 依處理方式與費用欄位計算代收手續費。
+        /// 計算代收手續費。
         /// </summary>
         /// <param name="processType">處理方式。</param>
-        /// <param name="freightFee">運費。</param>
+        /// <param name="processTransNo">重出派件公司。</param>
+        /// <param name="freightPayerNo">重出運費支付方。</param>
+        /// <param name="freightFee">重出運費。</param>
         /// <param name="tax">稅金。</param>
         /// <param name="ccfee">報關費。</param>
-        /// <param name="cod">到付款。</param>
         /// <returns>代收手續費。</returns>
         private int CalculateFee(
             ShipmentInboundProcessType processType,
+            byte? processTransNo,
+            byte? freightPayerNo,
             int? freightFee,
             int? tax,
-            int? ccfee,
-            int? cod)
+            int? ccfee)
         {
+            // 僅在「開新單號重出 + 7-11」時，才額外依運費支付方判斷手續費。
+            if (processType == ShipmentInboundProcessType.NewTrackingNo
+                && processTransNo == (byte)ShipmentInboundProcessTransNo.SevenEleven)
+            {
+                return freightPayerNo == (byte)ShipmentInboundFreightPayerNo.Consignee ? 30 : 0;
+            }
+
+            // 其餘情況維持原本只要有運費、稅金或報關費任一金額就收 30 的邏輯。
             return (freightFee ?? 0) > 0
                 || (tax ?? 0) > 0
                 || (ccfee ?? 0) > 0

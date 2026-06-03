@@ -130,6 +130,10 @@
         max-width: 300px;
     }
 
+    .col-return-reason {
+        max-width: 220px;
+    }
+
     .col-seq-no {
         max-width: 100px;
     }
@@ -290,6 +294,18 @@
                 </div>
             </div>
 
+            <!-- 重出單號 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="outboundTrackingNoInput" class="col-lg-4 col-form-label text-right">重出單號</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="outboundTrackingNoInput"
+                           class="form-control"
+                           ng-model="searchForm.outboundTrackingNo"
+                           placeholder="請輸入重出單號" />
+                </div>
+            </div>
+
             <!-- 處理方式 -->
             <div class="form-group row col-lg-3 mb-0">
                 <label for="processType" class="col-lg-4 col-form-label text-right">處理方式</label>
@@ -302,7 +318,9 @@
                     </select>
                 </div>
             </div>
+        </div>
 
+        <div class="row mb-3 align-items-center">
             <!-- 儲位 -->
             <div class="form-group row col-lg-3 mb-0">
                 <label for="locationCode" class="col-lg-4 col-form-label text-right">儲位</label>
@@ -314,9 +332,7 @@
                            placeholder="請輸入儲位" />
                 </div>
             </div>
-        </div>
 
-        <div class="row mb-3 align-items-center">
             <!-- 倉庫狀態 -->
             <div class="form-group row col-lg-3 mb-0">
                 <label for="warehouseProcessType" class="col-lg-4 col-form-label text-right">倉庫狀態</label>
@@ -451,6 +467,7 @@
                                     <th class="col-store-name" ng-show="visibleColumns.storeName">門市名稱</th>
                                     <th class="col-freight-payer" ng-show="visibleColumns.freightPayerName">運費支付方</th>
                                     <th class="col-amount" ng-show="visibleColumns.totalAmount">代收款總金額</th>
+                                    <th class="col-return-reason" ng-show="visibleColumns.returnReason">退件原因</th>
                                     <th class="col-remark" ng-show="visibleColumns.remark">備註</th>
                                     <th class="col-seq-no" ng-show="visibleColumns.seqNo">流水號</th>
                                     <th class="col-location" ng-show="visibleColumns.locationCode">儲位</th>
@@ -465,7 +482,7 @@
                             </thead>
                             <tbody>
                                 <tr ng-if="data.length === 0">
-                                    <td colspan="33" class="text-center">查無資料</td>
+                                    <td colspan="34" class="text-center">查無資料</td>
                                 </tr>
                                 <tr ng-repeat="item in data">
                                     <td class="col-seq" ng-show="visibleColumns.seq">{{(currentPage - 1) * pageSize + $index + 1}}</td>
@@ -506,6 +523,7 @@
                                     <td class="col-store-name" ng-show="visibleColumns.storeName">{{item.StoreName}}</td>
                                     <td class="col-freight-payer" ng-show="visibleColumns.freightPayerName">{{item.FreightPayerName}}</td>
                                     <td class="col-amount" ng-show="visibleColumns.totalAmount">{{item.TotalAmount | number}}</td>
+                                    <td class="col-return-reason" ng-show="visibleColumns.returnReason">{{item.ReturnReason}}</td>
                                     <td class="col-remark" ng-show="visibleColumns.remark">{{item.Remark}}</td>
                                     <td class="col-seq-no" ng-show="visibleColumns.seqNo">{{item.SeqNo}}</td>
                                     <td class="col-location" ng-show="visibleColumns.locationCode">{{item.LocationCode}}</td>

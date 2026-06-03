@@ -116,6 +116,23 @@ namespace JETFTAX.Controllers
             }
         }
 
+        [HttpGet]
+        [UserAuthorize(Authority.ShipmentInboundProcess)]
+        public JsonResult GetAmountDetailByTrackingNo(string trackingNo)
+        {
+            try
+            {
+                return Json(_service.GetAmountDetailByTrackingNo(trackingNo), JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    error = ex.Message
+                }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
         [HttpPost]
         [UserAuthorize(Authority.ShipmentInboundProcess)]
         public JsonResult SaveProcess(ShipmentInboundProcessStageSaveRequest request)
