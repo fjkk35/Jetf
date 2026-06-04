@@ -2,6 +2,7 @@
     // 初始化資料
     $scope.data = [];
     $scope.loading = false;
+    $scope.exporting = false;
     $scope.isSearched = false;
 
     // 分頁相關
@@ -11,7 +12,7 @@
     $scope.totalPages = 0;
 
     // 欄位顯示/隱藏設定 (Cookie)
-    var columnSettingCookieKey = 'ShipmentInboundRecord_ColumnVisible_v2';
+    var columnSettingCookieKey = 'ShipmentInboundRecord_ColumnVisible_v3';
 
     $scope.columnOptions = [
         { key: 'seq', title: '序號', locked: false },
@@ -37,6 +38,7 @@
         { key: 'freightPayerName', title: '運費支付方', locked: false },
         { key: 'totalAmount', title: '代收款總金額', locked: false },
         { key: 'returnReason', title: '退件原因', locked: false },
+        { key: 'exceptionReason', title: '異常原因', locked: false },
         { key: 'remark', title: '備註', locked: false },
         { key: 'seqNo', title: '流水號', locked: false },
         { key: 'locationCode', title: '儲位', locked: false },
@@ -341,6 +343,8 @@
             return;
         }
 
+        $scope.exporting = true;
+
         var request = {
             InboundDateStart: formatDate($scope.searchForm.inboundDateStart),
             InboundDateEnd: formatDate($scope.searchForm.inboundDateEnd),
@@ -348,6 +352,7 @@
             CustCodes: $scope.customerSelectAll ? [] : ($scope.selectedCustCodes || []),
             SourceType: $scope.searchForm.sourceType,
             TrackingNo: $scope.searchForm.trackingNo,
+            OutboundTrackingNo: $scope.searchForm.outboundTrackingNo,
             ProcessType: $scope.searchForm.processType,
             LocationCode: $scope.searchForm.locationCode,
             DataType: $scope.searchForm.dataType,
@@ -386,6 +391,9 @@
             .catch(function (error) {
                 console.error('下載失敗:', error);
                 alert('下載失敗，請稍後再試');
+            })
+            .finally(function () {
+                $scope.exporting = false;
             });
     };
 

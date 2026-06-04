@@ -1,6 +1,7 @@
 ﻿using NPOI.SS.Formula.Functions;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using Service.Data;
 using Service.EnumTax;
 using Service.Extensions;
 using Service.Services.ShipmentInboundBatchImport.Domain;
@@ -233,6 +234,7 @@ namespace Service.Services.ShipmentInboundRecord
 
                 FillCustomerAndTransNames(data);
                 FillCargoSignReceiptFlags(data);
+                FillLatestExceptionReasons(data);
 
                 return new ShipmentInboundRecordResponse
                 {
@@ -402,6 +404,65 @@ namespace Service.Services.ShipmentInboundRecord
         }
 
         /// <summary>
+        /// 一次回填查詢結果每筆資料最後一筆異常原因，避免逐筆查詢。
+        /// </summary>
+        private void FillLatestExceptionReasons(List<ShipmentInboundRecordModel> data)
+        {
+            var shipmentInboundIds = data
+                .Select(x => x.Id)
+                .Distinct()
+                .ToList();
+
+            if (!shipmentInboundIds.Any())
+            {
+                return;
+            }
+
+            var latestExceptions = JetfDb.ShipmentInboundExceptions
+                .AsNoTracking()
+                .WhereBulkContains(
+                    JetfDb,
+                    shipmentInboundIds,
+                    row => row.ShipmentInboundId,
+                    key => key);
+
+            var exceptionReasonIds = latestExceptions
+                .Where(x => x.ExceptionReasonId.HasValue)
+                .Select(x => x.ExceptionReasonId.Value)
+                .Distinct()
+                .ToList();
+
+            var exceptionReasonDict = JetfDb.ShipmentInboundExceptionReasons
+                .AsNoTracking()
+                .WhereBulkContains(
+                    JetfDb,
+                    exceptionReasonIds,
+                    row => row.Id,
+                    key => key)
+                .ToDictionary(x => x.Id, x => x.Reason);
+
+            var latestExceptionReasonDict = latestExceptions
+                .GroupBy(x => x.ShipmentInboundId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group
+                        .OrderByDescending(x => x.CreatedTime ?? DateTime.MinValue)
+                        .ThenByDescending(x => x.Id)
+                        .Select(x => x.ExceptionReasonId.HasValue && exceptionReasonDict.ContainsKey(x.ExceptionReasonId.Value)
+                            ? exceptionReasonDict[x.ExceptionReasonId.Value]
+                            : null)
+                        .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? string.Empty);
+
+            foreach (var item in data)
+            {
+                if (latestExceptionReasonDict.TryGetValue(item.Id, out var exceptionReason))
+                {
+                    item.ExceptionReason = exceptionReason;
+                }
+            }
+        }
+
+        /// <summary>
         /// 取得客戶清單
         /// </summary>
         public Dictionary<string,List<SelectListModel>> GetCustList()
@@ -497,8 +558,10 @@ namespace Service.Services.ShipmentInboundRecord
                 CustCodes = request.CustCodes,
                 SourceType = request.SourceType,
                 TrackingNo = request.TrackingNo,
+                OutboundTrackingNo = request.OutboundTrackingNo,
                 DataType = request.DataType,
                 WarehouseProcessType = request.WarehouseProcessType,
+                WarehouseProcessTypeIsEmpty = request.WarehouseProcessTypeIsEmpty,
                 IsOrderOriginal = request.IsOrderOriginal,
                 Page = 1,
                 PageSize = 100000
@@ -541,6 +604,8 @@ namespace Service.Services.ShipmentInboundRecord
                 "門市名稱",
                 "運費支付方",
                 "代收款總金額",
+                "退件原因",
+                "異常原因",
                 "備註",
                 "流水號",
                 "儲位",
@@ -591,6 +656,8 @@ namespace Service.Services.ShipmentInboundRecord
                 NpoiCell.CreateCell(row, c++, item.FreightPayerName, dataStyle);
 
                 NpoiCell.CreateIntCell(row, c++, item.TotalAmount, numberStyle);
+                NpoiCell.CreateCell(row, c++, item.ReturnReason, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.ExceptionReason, dataStyle);
                 NpoiCell.CreateCell(row, c++, item.Remark, dataStyle);
                 NpoiCell.CreateCell(row, c++, item.SeqNo, dataStyle);
                 NpoiCell.CreateCell(row, c++, item.LocationCode, dataStyle);

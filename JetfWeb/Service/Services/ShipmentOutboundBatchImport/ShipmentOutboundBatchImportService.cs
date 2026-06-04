@@ -220,7 +220,7 @@ namespace Service.Services.ShipmentOutboundBatchImport
                         continue;
                     }
                 }
-                else
+                else if (processType != ShipmentInboundProcessType.TransferBySystem)
                 {
                     if (!string.IsNullOrWhiteSpace(shipment.OutboundTrackingNo))
                     {

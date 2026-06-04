@@ -1,22 +1,27 @@
 namespace Service.Services.ShipmentInboundProcess.Domain
 {
     /// <summary>
-    /// °h¥ó­ì¦]§å¶q¤W¶Ç¸ê®Æ¦C¼Ò«¬
+    /// æ‰¹é‡ä¸Šå‚³é€€ä»¶åŸå› è³‡æ–™åˆ—ã€‚
     /// </summary>
     public class ReturnReasonBatchUploadRowModel
     {
         /// <summary>
-        /// ³æ¸¹
+        /// å–®è™Ÿã€‚
         /// </summary>
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// °h¥ó­ì¦]
+        /// é€€ä»¶åŸå› ã€‚
         /// </summary>
         public string ReturnReason { get; set; }
 
         /// <summary>
-        /// Excel ¦C¸¹
+        /// å‚™è¨»ã€‚
+        /// </summary>
+        public string Remark { get; set; }
+
+        /// <summary>
+        /// Excel åˆ—è™Ÿã€‚
         /// </summary>
         public int RowNo { get; set; }
     }

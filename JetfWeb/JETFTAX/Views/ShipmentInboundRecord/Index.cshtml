@@ -134,6 +134,10 @@
         max-width: 220px;
     }
 
+    .col-exception-reason {
+        max-width: 220px;
+    }
+
     .col-seq-no {
         max-width: 100px;
     }
@@ -393,8 +397,9 @@
                 <button type="button"
                         class="btn btn-success ml-2"
                         ng-click="downloadExcel()"
-                        ng-disabled="loading">
-                    <i class="fa fa-download"></i> 下載Excel
+                        ng-disabled="loading || exporting">
+                    <i class="fa" ng-class="{'fa-spinner fa-spin': exporting, 'fa-download': !exporting}"></i>
+                    {{exporting ? '匯出中...' : '下載Excel'}}
                 </button>
                 <button type="button"
                         class="btn btn-info ml-2"
@@ -468,6 +473,7 @@
                                     <th class="col-freight-payer" ng-show="visibleColumns.freightPayerName">運費支付方</th>
                                     <th class="col-amount" ng-show="visibleColumns.totalAmount">代收款總金額</th>
                                     <th class="col-return-reason" ng-show="visibleColumns.returnReason">退件原因</th>
+                                    <th class="col-exception-reason" ng-show="visibleColumns.exceptionReason">異常原因</th>
                                     <th class="col-remark" ng-show="visibleColumns.remark">備註</th>
                                     <th class="col-seq-no" ng-show="visibleColumns.seqNo">流水號</th>
                                     <th class="col-location" ng-show="visibleColumns.locationCode">儲位</th>
@@ -482,7 +488,7 @@
                             </thead>
                             <tbody>
                                 <tr ng-if="data.length === 0">
-                                    <td colspan="34" class="text-center">查無資料</td>
+                                    <td colspan="35" class="text-center">查無資料</td>
                                 </tr>
                                 <tr ng-repeat="item in data">
                                     <td class="col-seq" ng-show="visibleColumns.seq">{{(currentPage - 1) * pageSize + $index + 1}}</td>
@@ -524,6 +530,7 @@
                                     <td class="col-freight-payer" ng-show="visibleColumns.freightPayerName">{{item.FreightPayerName}}</td>
                                     <td class="col-amount" ng-show="visibleColumns.totalAmount">{{item.TotalAmount | number}}</td>
                                     <td class="col-return-reason" ng-show="visibleColumns.returnReason">{{item.ReturnReason}}</td>
+                                    <td class="col-exception-reason" ng-show="visibleColumns.exceptionReason">{{item.ExceptionReason}}</td>
                                     <td class="col-remark" ng-show="visibleColumns.remark">{{item.Remark}}</td>
                                     <td class="col-seq-no" ng-show="visibleColumns.seqNo">{{item.SeqNo}}</td>
                                     <td class="col-location" ng-show="visibleColumns.locationCode">{{item.LocationCode}}</td>

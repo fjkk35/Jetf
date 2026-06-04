@@ -226,11 +226,6 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
             var oldText = formatter(oldValue);
             var newText = formatter(newValue);
 
-            if (string.IsNullOrWhiteSpace(oldText))
-            {
-                return;
-            }
-
             if (string.Equals(oldText, newText, StringComparison.Ordinal))
             {
                 return;

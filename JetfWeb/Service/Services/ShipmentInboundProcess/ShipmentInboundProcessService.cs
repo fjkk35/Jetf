@@ -1216,11 +1216,6 @@ namespace Service.Services.ShipmentInboundProcess
 
         private void AddEditHistoryIfOldValueExists(int shipmentInboundId, string fieldName, string oldValue, string newValue, string userId)
         {
-            if (string.IsNullOrWhiteSpace(oldValue))
-            {
-                return;
-            }
-
             if (string.Equals(oldValue ?? string.Empty, newValue ?? string.Empty, StringComparison.Ordinal))
             {
                 return;
@@ -1238,9 +1233,9 @@ namespace Service.Services.ShipmentInboundProcess
         }
 
         /// <summary>
-        /// 批量上傳退件原因
-        /// Excel 欄位：單號、退件原因
-        /// 驗證規則：失敗列回傳原因，成功列仍會更新退件原因
+        /// 批量上傳退件原因。
+        /// Excel 欄位：單號、退件原因、備註。
+        /// 驗證規則：失敗列回傳原因，成功列仍會更新退件原因與備註。
         /// </summary>
         /// <param name="filePath">上傳檔案路徑。</param>
         /// <returns>批次處理結果。</returns>
@@ -1298,9 +1293,12 @@ namespace Service.Services.ShipmentInboundProcess
 
                                 var entity = entities[trackingNo];
                                 var oldReturnReason = entity.ReturnReason;
+                                var oldRemark = entity.Remark;
 
                                 entity.ReturnReason = row.ReturnReason;
+                                entity.Remark = row.Remark;
                                 AddEditHistoryIfOldValueExists(entity.Id, "退件原因", oldReturnReason, row.ReturnReason, userId);
+                                AddEditHistoryIfOldValueExists(entity.Id, "備註", oldRemark, row.Remark, userId);
                                 successCount++;
                             }
 
@@ -1334,6 +1332,10 @@ namespace Service.Services.ShipmentInboundProcess
 
             foreach (var row in rows)
             {
+                row.TrackingNo = row.TrackingNo?.Trim();
+                row.ReturnReason = row.ReturnReason?.Trim();
+                row.Remark = row.Remark?.Trim();
+
                 if (string.IsNullOrWhiteSpace(row.TrackingNo))
                 {
                     errors.Add(new ReturnReasonBatchUploadErrorModel
@@ -1403,6 +1405,7 @@ namespace Service.Services.ShipmentInboundProcess
             bool read = false;
             int trackingNoIndex = -1;
             int returnReasonIndex = -1;
+            int remarkIndex = -1;
 
             for (int i = 0; i <= sheet.LastRowNum; i++)
             {
@@ -1416,9 +1419,10 @@ namespace Service.Services.ShipmentInboundProcess
                         var header = row.GetCellData(c);
                         if (header == "單號") trackingNoIndex = c;
                         if (header == "退件原因") returnReasonIndex = c;
+                        if (header == "備註") remarkIndex = c;
                     }
 
-                    if (trackingNoIndex >= 0 && returnReasonIndex >= 0)
+                    if (trackingNoIndex >= 0 && returnReasonIndex >= 0 && remarkIndex >= 0)
                     {
                         read = true;
                     }
@@ -1427,8 +1431,11 @@ namespace Service.Services.ShipmentInboundProcess
 
                 var trackingNo = row.GetCellData(trackingNoIndex);
                 var returnReason = row.GetCellData(returnReasonIndex);
+                var remark = row.GetCellData(remarkIndex);
 
-                if (string.IsNullOrWhiteSpace(trackingNo) && string.IsNullOrWhiteSpace(returnReason))
+                if (string.IsNullOrWhiteSpace(trackingNo)
+                    && string.IsNullOrWhiteSpace(returnReason)
+                    && string.IsNullOrWhiteSpace(remark))
                 {
                     continue;
                 }
@@ -1437,8 +1444,14 @@ namespace Service.Services.ShipmentInboundProcess
                 {
                     RowNo = i + 1,
                     TrackingNo = trackingNo,
-                    ReturnReason = returnReason
+                    ReturnReason = returnReason,
+                    Remark = remark
                 });
+            }
+
+            if (!read)
+            {
+                throw new Exception("Excel 欄位需包含：單號、退件原因、備註");
             }
 
             return result;
