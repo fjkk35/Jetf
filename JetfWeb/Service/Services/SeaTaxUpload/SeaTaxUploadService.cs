@@ -569,10 +569,10 @@ and not exists (
                 TransTaxPayment = NormalizeText(order?.TransTaxPayment),
                 Importer = NormalizeText(order?.Importer),
                 ImporterPhone = NormalizeText(order?.ImporterPhone),
-                ImporterAddr = NormalizeText(order?.ImporterAddr),
+                ImporterAddr = NormalizeText(order?.ImporterAddress),
                 ImporterId = NormalizeText(order?.ImporterId),
                 JetfSerial = NormalizeText(order?.JetfSerial),
-                Cod = order?.CC,
+                Cod = order.Cc.HasValue ? (decimal?)Convert.ToDecimal(order.Cc.Value) : null,
                 Memo = NormalizeText(order?.Memo),
                 Arrival = NormalizeText(order?.Arrival)
             };

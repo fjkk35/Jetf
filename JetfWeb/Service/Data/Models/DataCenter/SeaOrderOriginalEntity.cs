@@ -545,44 +545,5 @@ namespace Service.Data
         [Column("MERGE_OVER_FLAG")]
         public string MergeOverFlag { get; set; }
 
-        /// <summary>
-        /// 舊版相容欄位，對應資料主鍵。
-        /// </summary>
-        [NotMapped]
-        public int Id
-        {
-            get { return RowId; }
-            set { RowId = value; }
-        }
-
-        /// <summary>
-        /// 舊版相容欄位，對應客戶代碼。
-        /// </summary>
-        [NotMapped]
-        public string CustCode
-        {
-            get { return DespatchName; }
-            set { DespatchName = value; }
-        }
-
-        /// <summary>
-        /// 舊版相容欄位，對應進口人地址。
-        /// </summary>
-        [NotMapped]
-        public string ImporterAddr
-        {
-            get { return ImporterAddress; }
-            set { ImporterAddress = value; }
-        }
-
-        /// <summary>
-        /// 舊版相容欄位，對應到付款金額。
-        /// </summary>
-        [NotMapped]
-        public decimal? CC
-        {
-            get { return Cc.HasValue ? (decimal?)Convert.ToDecimal(Cc.Value) : null; }
-            set { Cc = value.HasValue ? (double?)value.Value : null; }
-        }
     }
 }
