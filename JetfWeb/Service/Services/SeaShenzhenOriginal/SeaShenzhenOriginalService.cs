@@ -41,6 +41,106 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
+        /// 依條件查詢新遞託運資料。
+        /// </summary>
+        public SeaShenzhenOriginalQueryResponse GetData(SeaShenzhenOriginalQueryRequest request)
+        {
+            request = request ?? new SeaShenzhenOriginalQueryRequest();
+
+            var pageIndex = request.PageIndex > 0 ? request.PageIndex : 1;
+            var pageSize = request.PageSize > 0 ? request.PageSize : 10;
+            pageSize = Math.Min(pageSize, 200);
+
+            var startDate = ParseDateOnly(request.DataDateStart);
+            var endDate = ParseDateOnly(request.DataDateEnd);
+            var trackingNo = NullIfEmpty(request.TrackingNo);
+            var blNo = NullIfEmpty(request.BlNo);
+            var orderNo = NullIfEmpty(request.OrderNo);
+            var jetfSerial = NullIfEmpty(request.JetfSerial);
+            var importer = NullIfEmpty(request.Importer);
+            var importerPhone = NullIfEmpty(request.ImporterPhone);
+
+            var query = JetfDb.SeaShenzhenOriginals.AsNoTracking().AsQueryable();
+
+            if (startDate.HasValue)
+            {
+                query = query.Where(x => x.DataDate >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                var endDateExclusive = endDate.Value.AddDays(1);
+                query = query.Where(x => x.DataDate < endDateExclusive);
+            }
+
+            if (!string.IsNullOrWhiteSpace(trackingNo))
+            {
+                query = query.Where(x => x.TrackingNo.Contains(trackingNo));
+            }
+
+            if (!string.IsNullOrWhiteSpace(blNo))
+            {
+                query = query.Where(x => x.BlNo.Contains(blNo));
+            }
+
+            if (!string.IsNullOrWhiteSpace(orderNo))
+            {
+                query = query.Where(x => x.OrderNo.Contains(orderNo));
+            }
+
+            if (!string.IsNullOrWhiteSpace(jetfSerial))
+            {
+                query = query.Where(x => x.JetfSerial.Contains(jetfSerial));
+            }
+
+            if (!string.IsNullOrWhiteSpace(importer))
+            {
+                query = query.Where(x => x.Importer.Contains(importer));
+            }
+
+            if (!string.IsNullOrWhiteSpace(importerPhone))
+            {
+                query = query.Where(x => x.ImporterPhone.Contains(importerPhone));
+            }
+
+            var totalCount = query.Count();
+            var data = query
+                .OrderByDescending(x => x.DataDate)
+                .ThenByDescending(x => x.Id)
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .ToList()
+                .Select(x => new SeaShenzhenOriginalQueryRow
+                {
+                    Id = x.Id,
+                    DataDateText = x.DataDate.ToString("yyyy-MM-dd"),
+                    TrackingNo = x.TrackingNo,
+                    BlNo = x.BlNo,
+                    OrderNo = x.OrderNo,
+                    JetfSerial = x.JetfSerial,
+                    TransTimeText = x.TransTime.HasValue ? x.TransTime.Value.ToString("yyyy-MM-dd HH:mm:ss") : string.Empty,
+                    TransName = x.TransName,
+                    Importer = x.Importer,
+                    ImporterAddress = x.ImporterAddress,
+                    ImporterPhone = x.ImporterPhone,
+                    ItemName = x.ItemName,
+                    CcText = x.Cc.HasValue ? x.Cc.Value.ToString("0.##") : string.Empty,
+                    QuantityText = x.Quantity.HasValue ? x.Quantity.Value.ToString() : string.Empty,
+                    GwText = x.Gw.HasValue ? x.Gw.Value.ToString("0.##") : string.Empty,
+                    Memo = x.Memo,
+                    Claimant = x.Claimant,
+                    TaxPayment = x.TaxPayment
+                })
+                .ToList();
+
+            return new SeaShenzhenOriginalQueryResponse
+            {
+                TotalCount = totalCount,
+                Data = data
+            };
+        }
+
+        /// <summary>
         /// 上傳新遞託運資料。
         /// </summary>
         public ResponseModel Upload(string filePath, DateTime dataDate)
@@ -480,6 +580,22 @@ namespace Service.Services.SeaShenzhenOriginal
         private string NullIfEmpty(string text)
         {
             return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+        }
+
+        private DateTime? ParseDateOnly(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return null;
+            }
+
+            DateTime dateValue;
+            if (DateTime.TryParse(text, out dateValue))
+            {
+                return dateValue.Date;
+            }
+
+            return null;
         }
 
         private class SaveResult

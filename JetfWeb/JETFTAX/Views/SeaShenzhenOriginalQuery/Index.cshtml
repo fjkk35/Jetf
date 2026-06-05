@@ -1,0 +1,283 @@
+﻿@{
+    ViewBag.Title = "託運資料查詢";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .sea-shenzhen-query-table-container {
+        max-height: 620px;
+        overflow: auto;
+        border: 1px solid #dee2e6;
+    }
+
+        .sea-shenzhen-query-table-container table {
+            min-width: 2200px;
+            margin-bottom: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .sea-shenzhen-query-table-container thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #343a40;
+            color: #fff;
+            white-space: nowrap;
+        }
+
+        .sea-shenzhen-query-table-container td,
+        .sea-shenzhen-query-table-container th {
+            padding: 8px;
+            vertical-align: middle;
+            border: 1px solid #dee2e6;
+            white-space: normal;
+            word-break: break-all;
+        }
+
+        .sea-shenzhen-query-table-container tbody tr:nth-of-type(odd) {
+            background-color: #f7f7f7;
+        }
+
+        .sea-shenzhen-query-table-container tbody tr:hover {
+            background-color: #eef5ff;
+        }
+
+    .sea-shenzhen-query-result {
+        padding: 0 18px 18px;
+        box-sizing: border-box;
+    }
+</style>
+
+<div ng-controller="SeaShenzhenOriginalQueryController">
+    <span class="headtype">託運資料查詢</span>
+    <hr />
+
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <div class="row mb-3 align-items-center">
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="seaShenzhenDataDateStart" class="col-lg-4 col-form-label text-right">日期(起)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="seaShenzhenDataDateStart"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.dataDateStart"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="startDatePopup.opened"
+                           ng-click="openStartDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇開始日期" />
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="seaShenzhenDataDateEnd" class="col-lg-4 col-form-label text-right">日期(迄)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="seaShenzhenDataDateEnd"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.dataDateEnd"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="endDatePopup.opened"
+                           ng-click="openEndDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇結束日期" />
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="seaShenzhenTrackingNo" class="col-lg-4 col-form-label text-right">報關號碼</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="seaShenzhenTrackingNo"
+                           class="form-control"
+                           ng-model="searchForm.trackingNo"
+                           placeholder="請輸入報關號碼" />
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="seaShenzhenBlNo" class="col-lg-4 col-form-label text-right">提單號碼</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="seaShenzhenBlNo"
+                           class="form-control"
+                           ng-model="searchForm.blNo"
+                           placeholder="請輸入提單號碼" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="seaShenzhenOrderNo" class="col-lg-4 col-form-label text-right">訂單編號</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="seaShenzhenOrderNo"
+                           class="form-control"
+                           ng-model="searchForm.orderNo"
+                           placeholder="請輸入訂單編號" />
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="seaShenzhenJetfSerial" class="col-lg-4 col-form-label text-right">託運單號</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="seaShenzhenJetfSerial"
+                           class="form-control"
+                           ng-model="searchForm.jetfSerial"
+                           placeholder="請輸入託運單號" />
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="seaShenzhenImporter" class="col-lg-4 col-form-label text-right">收件人姓名</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="seaShenzhenImporter"
+                           class="form-control"
+                           ng-model="searchForm.importer"
+                           placeholder="請輸入收件人姓名" />
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="seaShenzhenImporterPhone" class="col-lg-4 col-form-label text-right">收件人電話</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="seaShenzhenImporterPhone"
+                           class="form-control"
+                           ng-model="searchForm.importerPhone"
+                           placeholder="請輸入收件人電話" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-12 text-right">
+                <button type="button"
+                        class="btn btn-primary"
+                        ng-click="search()"
+                        ng-disabled="loading">
+                    <i class="fa fa-search"></i> 查詢
+                </button>
+                <button type="button"
+                        class="btn btn-secondary ml-2"
+                        ng-click="clearSearch()"
+                        ng-disabled="loading">
+                    <i class="fa fa-eraser"></i> 清除
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <hr />
+
+    <div ng-show="loading" class="text-center">
+        <i class="fa fa-spinner fa-spin fa-3x"></i>
+        <p>載入中...</p>
+    </div>
+
+    <div class="sea-shenzhen-query-result" ng-show="isSearched && !loading">
+        <div class="row mb-2">
+            <div class="col-lg-6">
+                <div class="form-inline">
+                    <label class="mr-2">每頁顯示</label>
+                    <select class="form-control"
+                            ng-model="pageSize"
+                            ng-change="changePageSize()">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <label class="ml-2">筆</label>
+                </div>
+            </div>
+            <div class="col-lg-6 text-right">
+                <span>{{recordsInfo}}</span>
+            </div>
+        </div>
+
+        <div class="sea-shenzhen-query-table-container mt-3">
+            <table class="table table-bordered table-hover">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>序號</th>
+                        <th>日期</th>
+                        <th>報關號碼</th>
+                        <th>提單號碼</th>
+                        <th>訂單編號</th>
+                        <th>託運單號</th>
+                        <th>廠商交易時間</th>
+                        <th>寄件通路</th>
+                        <th>收件人姓名</th>
+                        <th>收件門市地址</th>
+                        <th>收件人電話</th>
+                        <th>商品名稱</th>
+                        <th>代收金額</th>
+                        <th>數量</th>
+                        <th>重量</th>
+                        <th>備註</th>
+                        <th>認領人</th>
+                        <th>稅金支付方式</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-if="data.length === 0">
+                        <td colspan="18" class="text-center">查無資料</td>
+                    </tr>
+                    <tr ng-repeat="item in data track by item.Id">
+                        <td>{{(currentPage - 1) * parsePageSize() + $index + 1}}</td>
+                        <td>{{item.DataDateText}}</td>
+                        <td>{{item.TrackingNo}}</td>
+                        <td>{{item.BlNo}}</td>
+                        <td>{{item.OrderNo}}</td>
+                        <td>{{item.JetfSerial}}</td>
+                        <td>{{item.TransTimeText}}</td>
+                        <td>{{item.TransName}}</td>
+                        <td>{{item.Importer}}</td>
+                        <td>{{item.ImporterAddress}}</td>
+                        <td>{{item.ImporterPhone}}</td>
+                        <td>{{item.ItemName}}</td>
+                        <td>{{item.CcText}}</td>
+                        <td>{{item.QuantityText}}</td>
+                        <td>{{item.GwText}}</td>
+                        <td>{{item.Memo}}</td>
+                        <td>{{item.Claimant}}</td>
+                        <td>{{item.TaxPayment}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row mt-3" ng-show="totalPages > 1">
+            <div class="col-lg-12">
+                <nav>
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" ng-class="{disabled: currentPage === 1}">
+                            <a class="page-link" href="javascript:void(0)" ng-click="previousPage()">上一頁</a>
+                        </li>
+                        <li class="page-item"
+                            ng-repeat="page in getPages()"
+                            ng-class="{active: page === currentPage}">
+                            <a class="page-link" href="javascript:void(0)" ng-click="changePage(page)">{{page}}</a>
+                        </li>
+                        <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
+                            <a class="page-link" href="javascript:void(0)" ng-click="nextPage()">下一頁</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
