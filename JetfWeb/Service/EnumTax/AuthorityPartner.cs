@@ -15,6 +15,10 @@ namespace Service.EnumTax
         [Sort(10)]
         Tax,
 
+        [Description("新遞")]
+        [Sort(15)]
+        SeaShenzhen,
+
         [Description("查詢")]
         [Sort(20)]
         Search,

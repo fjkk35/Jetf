@@ -52,6 +52,11 @@ mainApp.controller('LayoutController', function ($scope, $http) {
             ]
         },
         {
+            id: 'seaShenzhen', title: '新遞', icon: 'fas fa-fw fa-truck', children: [
+                { id: 'SeaShenzhenOriginal', text: '上傳託運資料', url: '~/SeaShenzhenOriginal/Index', auth: ['SeaShenzhenOriginalUpload'] }
+            ]
+        },
+        {
             id: 'search', title: '查詢', icon: 'fas fa-fw fa-search', partner: 'Search', children: [
                 { id: 'SearchCargo', text: '稅金查詢', url: '~/Cargo/SearchCargo', auth: ['SearchTax'] },
                 { id: 'SearchCargo2', text: '貨況查詢', url: '~/Cargo/SearchCargo2', auth: ['SearchCargo'] },

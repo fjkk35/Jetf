@@ -364,6 +364,7 @@
     <Compile Include="Controllers\ShipmentOutboundBatchImportController.cs" />
     <Compile Include="Controllers\ShipmentOutboundBatchImportRevokeController.cs" />
     <Compile Include="Controllers\SjlBatchImportController.cs" />
+    <Compile Include="Controllers\SeaShenzhenOriginalController.cs" />
     <Compile Include="Controllers\SjlBillingController.cs" />
     <Compile Include="Controllers\StepController.cs" />
     <Compile Include="Controllers\TactController.cs" />
@@ -860,6 +861,7 @@
     <Content Include="Scripts\ng-controllers\ShipmentOutboundBatchImport\ShipmentOutboundBatchImport.js" />
     <Content Include="Scripts\ng-controllers\SjlBatchImport\SjlBatchImport.js" />
     <Content Include="Scripts\ng-controllers\SjlBatchImport\SjlBatchImportSearch.js" />
+    <Content Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginal.js" />
     <Content Include="Scripts\ng-controllers\SjlBilling\SjlBilling.js" />
     <Content Include="Scripts\ng-controllers\Tact\Tact.js" />
     <Content Include="Scripts\ng-controllers\WorkDayArea\WorkDayArea.js" />
@@ -2960,6 +2962,7 @@
     <Content Include="Views\MainTaxSearch\Index.cshtml" />
     <Content Include="Views\SjlBatchImport\Index.cshtml" />
     <Content Include="Views\SjlBatchImport\Search.cshtml" />
+    <Content Include="Views\SeaShenzhenOriginal\Index.cshtml" />
     <Content Include="Views\SjlBilling\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
@@ -2985,6 +2988,7 @@
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaClearance\SeaClearance.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaClearance\SeaClearanceDetail.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ShipmentInboundExceptionRecord\ShipmentInboundExceptionRecord.ts" />
+    <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginal.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SjlBatchImport\SjlBatchImportSearch.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SjlBilling\SjlBilling.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\Download\DownloadEtlNew.ts" />

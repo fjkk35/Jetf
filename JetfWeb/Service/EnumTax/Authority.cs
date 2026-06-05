@@ -504,6 +504,11 @@ namespace Service.EnumTax
         SjlBatchImport,
 
         /// <summary>
+        /// 新遞上傳託運資料
+        /// </summary>
+        SeaShenzhenOriginalUpload,
+
+        /// <summary>
         /// 捷利帳單
         /// </summary>
         SjlBilling,

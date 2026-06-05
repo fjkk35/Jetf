@@ -1,0 +1,98 @@
+﻿@{
+    ViewBag.Title = "上傳託運資料";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="SeaShenzhenOriginalController">
+    <span class="headtype">上傳託運資料</span>
+    <hr />
+
+    <div class="containertype">
+        <div class="card bg-light rounded p-4 mb-4" style="border:none;">
+            <div class="row">
+                <div class="col-lg-12" style="margin-bottom:0.5rem;">
+                    <label>資料日期</label>
+                    <input type="text"
+                           class="form-control"
+                           ng-model="form.dataDate"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           is-open="datePopup.opened"
+                           ng-click="openDatePopup()"
+                           datepicker-options="dateOptions"
+                           show-button-bar="false"
+                           readonly />
+                </div>
+                <div class="col-lg-12" style="margin-bottom:0.5rem;">
+                    <input type="file" id="seaShenzhenOriginalFileInput" accept=".xlsx" class="form-control" />
+                </div>
+                <div class="col-lg-12" style="margin:0.5rem 0;">
+                    <button type="button" class="btn btn-success confirmbtn" ng-click="uploadFile()" ng-disabled="uploading">
+                        <i class="fas fa-upload"></i> {{ uploading ? '上傳中...' : '上傳' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="loader loader-bar" ng-class="{'is-active': uploading}" data-rounded data-text="資料處理中"></div>
+
+        <div class="col-lg-12" style="margin-top:1rem;" ng-if="uploadResult">
+            <div class="alert" ng-class="{'alert-success': uploadResult.success, 'alert-danger': !uploadResult.success}">
+                {{ uploadResult.message }}
+            </div>
+        </div>
+
+        <div class="col-lg-12" style="margin-top:1rem;" ng-if="uploadFailData.length > 0">
+            <h4>上傳失敗明細（共 {{ uploadFailData.length }} 筆）</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Excel列號</th>
+                            <th>失敗欄位</th>
+                            <th>失敗原因</th>
+                            <th>報關號碼</th>
+                            <th>提單號碼</th>
+                            <th>訂單編號</th>
+                            <th>託運單號(條碼號)</th>
+                            <th>廠商交易時間</th>
+                            <th>寄件通路</th>
+                            <th>收件人姓名</th>
+                            <th>收件門市代碼/地址(含配送備註)</th>
+                            <th>收件人手機/電話</th>
+                            <th>商品名稱</th>
+                            <th>代收金額</th>
+                            <th>數量</th>
+                            <th>重量</th>
+                            <th>備註</th>
+                            <th>認領人</th>
+                            <th>稅金支付方式</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="item in uploadFailData" class="table-danger">
+                            <td>{{ item.RowNo }}</td>
+                            <td>{{ item.FailFieldName }}</td>
+                            <td>{{ item.FailReason }}</td>
+                            <td>{{ item.TrackingNo }}</td>
+                            <td>{{ item.BlNo }}</td>
+                            <td>{{ item.OrderNo }}</td>
+                            <td>{{ item.JetfSerial }}</td>
+                            <td>{{ item.TransTimeText }}</td>
+                            <td>{{ item.TransName }}</td>
+                            <td>{{ item.Importer }}</td>
+                            <td>{{ item.ImporterAddress }}</td>
+                            <td>{{ item.ImporterPhone }}</td>
+                            <td>{{ item.ItemName }}</td>
+                            <td>{{ item.CcText }}</td>
+                            <td>{{ item.QuantityText }}</td>
+                            <td>{{ item.GwText }}</td>
+                            <td>{{ item.Memo }}</td>
+                            <td>{{ item.Claimant }}</td>
+                            <td>{{ item.TaxPayment }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
