@@ -100,6 +100,8 @@ namespace Service.Data
 
         public DbSet<SeaShenzhenOriginalEntity> SeaShenzhenOriginals { get; set; }
 
+        public DbSet<ShenzhenFeeMasterEntity> ShenzhenFeeMasters { get; set; }
+
         public DbSet<ErrorOrderSendEntity> ErrorOrderSends { get; set; }
 
         public DbSet<ErrorOrderSendDetailEntity> ErrorOrderSendDetails { get; set; }

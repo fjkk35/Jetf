@@ -1,0 +1,206 @@
+﻿@{
+    ViewBag.Title = "稅金轉檔";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .sea-shenzhen-fee-transfer-page {
+        padding: 0 18px 18px;
+        box-sizing: border-box;
+    }
+
+    .sea-shenzhen-fee-transfer-form {
+        border: none;
+    }
+
+    .sea-shenzhen-fee-transfer-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .sea-shenzhen-fee-transfer-summary-card {
+        min-width: 180px;
+        padding: 14px 18px;
+        border-radius: 8px;
+        background: #f5f7fa;
+        border: 1px solid #d7dee6;
+        border-left-width: 5px;
+    }
+
+    .sea-shenzhen-fee-transfer-summary-card .label {
+        display: block;
+        color: #6c757d;
+        margin-bottom: 8px;
+    }
+
+    .sea-shenzhen-fee-transfer-summary-card .value {
+        font-size: 24px;
+        font-weight: 600;
+        color: #1f2d3d;
+    }
+
+    .sea-shenzhen-fee-transfer-summary-card.summary-source {
+        border-left-color: #2f80ed;
+        background: #f2f7ff;
+    }
+
+    .sea-shenzhen-fee-transfer-summary-card.summary-deleted {
+        border-left-color: #f2a900;
+        background: #fff9ec;
+    }
+
+    .sea-shenzhen-fee-transfer-summary-card.summary-created {
+        border-left-color: #2fb344;
+        background: #f0fbf3;
+    }
+
+    .sea-shenzhen-fee-transfer-summary-card.summary-exception {
+        border-left-color: #e83e8c;
+        background: #fff3f8;
+    }
+
+    .sea-shenzhen-fee-transfer-table {
+        max-height: 620px;
+        overflow: auto;
+        border: 1px solid #dee2e6;
+    }
+
+        .sea-shenzhen-fee-transfer-table table {
+            margin-bottom: 0;
+            min-width: 1500px;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .sea-shenzhen-fee-transfer-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #343a40;
+            color: #fff;
+            white-space: nowrap;
+        }
+
+        .sea-shenzhen-fee-transfer-table td,
+        .sea-shenzhen-fee-transfer-table th {
+            padding: 8px;
+            vertical-align: middle;
+            border: 1px solid #dee2e6;
+            white-space: normal;
+            word-break: break-all;
+        }
+
+        .sea-shenzhen-fee-transfer-table tbody tr:nth-of-type(odd) {
+            background-color: #f7f7f7;
+        }
+
+        .sea-shenzhen-fee-transfer-table tbody tr:hover {
+            background-color: #eef5ff;
+        }
+
+    .sea-shenzhen-fee-transfer-toolbar {
+        display: flex;
+        align-items: flex-end;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .sea-shenzhen-fee-transfer-date {
+        width: 260px;
+    }
+</style>
+
+<div class="sea-shenzhen-fee-transfer-page" ng-controller="SeaShenzhenFeeTransferController">
+    <span class="headtype">稅金轉檔</span>
+    <hr />
+
+    <div class="card bg-light rounded p-4 mb-4 sea-shenzhen-fee-transfer-form">
+        <div class="sea-shenzhen-fee-transfer-toolbar">
+            <div class="form-group mb-0 sea-shenzhen-fee-transfer-date">
+                <label for="seaShenzhenFeeTransferDate">日期</label>
+                <input type="text"
+                       id="seaShenzhenFeeTransferDate"
+                       class="form-control"
+                       ng-model="form.dataDate"
+                       uib-datepicker-popup="yyyy-MM-dd"
+                       is-open="datePopup.opened"
+                       ng-click="openDatePopup()"
+                       datepicker-options="dateOptions"
+                       show-button-bar="false"
+                       readonly />
+            </div>
+
+            <div>
+                <button type="button"
+                        class="btn btn-primary"
+                        ng-click="transfer()"
+                        ng-disabled="transferring">
+                    <i class="fa" ng-class="transferring ? 'fa-spinner fa-spin' : 'fa-random'"></i>
+                    {{transferring ? '轉檔中' : '轉檔'}}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info" ng-if="resultMessage">
+        {{resultMessage}}
+    </div>
+
+    <div ng-if="hasResult">
+        <div class="sea-shenzhen-fee-transfer-summary">
+            <div class="sea-shenzhen-fee-transfer-summary-card summary-source">
+                <span class="label">稅金筆數</span>
+                <span class="value">{{result.SourceCount}}</span>
+            </div>
+            <div class="sea-shenzhen-fee-transfer-summary-card summary-deleted">
+                <span class="label">刪除筆數</span>
+                <span class="value">{{result.DeletedCount}}</span>
+            </div>
+            <div class="sea-shenzhen-fee-transfer-summary-card summary-created">
+                <span class="label">新增筆數</span>
+                <span class="value">{{result.CreatedCount}}</span>
+            </div>
+            <div class="sea-shenzhen-fee-transfer-summary-card summary-exception">
+                <span class="label">異常筆數</span>
+                <span class="value">{{result.ExceptionCount}}</span>
+            </div>
+        </div>
+
+        <h4>異常資料</h4>
+        <div class="sea-shenzhen-fee-transfer-table">
+            <table class="table table-bordered table-hover">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>原因</th>
+                        <th>主號</th>
+                        <th>分提單號</th>
+                        <th>物流貨號</th>
+                        <th>收件人</th>
+                        <th>收件人電話</th>
+                        <th>收件地址</th>
+                        <th>稅金1</th>
+                        <th>稅金2</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-if="result.Exceptions.length === 0">
+                        <td colspan="9" class="text-center">本次沒有異常資料</td>
+                    </tr>
+                    <tr ng-repeat="item in result.Exceptions track by $index">
+                        <td>{{item.Reason}}</td>
+                        <td>{{item.MainNumber}}</td>
+                        <td>{{item.TrackingNo}}</td>
+                        <td>{{item.DlvInv}}</td>
+                        <td>{{item.Recipient}}</td>
+                        <td>{{item.RecPhone}}</td>
+                        <td>{{item.RecAddress}}</td>
+                        <td>{{item.Tax1}}</td>
+                        <td>{{item.Tax2}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
