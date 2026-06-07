@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -58,7 +58,7 @@ namespace Service.Data
         public int Fee { get; set; }
 
         /// <summary>
-        /// 是否包稅。
+        /// 稅金支付方式。
         /// </summary>
         [Column("IncludeTax")]
         public string IncludeTax { get; set; }

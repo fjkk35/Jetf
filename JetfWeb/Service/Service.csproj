@@ -736,10 +736,13 @@
     <Compile Include="Services\SjlBatchImport\SjlBatchImportService.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeTransferRequest.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeTransferResponse.cs" />
+    <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeQueryRequest.cs" />
+    <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeQueryResponse.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalQueryRequest.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalQueryResponse.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalUploadRow.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenFeeDownloadService.cs" />
+    <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenFeeQueryService.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenFeeTransferService.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenOriginalService.cs" />
     <Compile Include="Services\SjlBilling\Domain\SjlBillingExportRowModel.cs" />

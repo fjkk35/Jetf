@@ -365,6 +365,7 @@
     <Compile Include="Controllers\ShipmentOutboundBatchImportRevokeController.cs" />
     <Compile Include="Controllers\SjlBatchImportController.cs" />
     <Compile Include="Controllers\SeaShenzhenFeeDownloadController.cs" />
+    <Compile Include="Controllers\SeaShenzhenFeeQueryController.cs" />
     <Compile Include="Controllers\SeaShenzhenFeeTransferController.cs" />
     <Compile Include="Controllers\SeaShenzhenOriginalController.cs" />
     <Compile Include="Controllers\SeaShenzhenOriginalQueryController.cs" />
@@ -865,6 +866,7 @@
     <Content Include="Scripts\ng-controllers\SjlBatchImport\SjlBatchImport.js" />
     <Content Include="Scripts\ng-controllers\SjlBatchImport\SjlBatchImportSearch.js" />
     <Content Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenFeeDownload.js" />
+    <Content Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenFeeQuery.js" />
     <Content Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenFeeTransfer.js" />
     <Content Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginal.js" />
     <Content Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginalQuery.js" />
@@ -2969,6 +2971,7 @@
     <Content Include="Views\SjlBatchImport\Index.cshtml" />
     <Content Include="Views\SjlBatchImport\Search.cshtml" />
     <Content Include="Views\SeaShenzhenFeeDownload\Index.cshtml" />
+    <Content Include="Views\SeaShenzhenFeeQuery\Index.cshtml" />
     <Content Include="Views\SeaShenzhenFeeTransfer\Index.cshtml" />
     <Content Include="Views\SeaShenzhenOriginal\Index.cshtml" />
     <Content Include="Views\SeaShenzhenOriginalQuery\Index.cshtml" />
@@ -2997,6 +3000,7 @@
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaClearance\SeaClearance.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaClearance\SeaClearanceDetail.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenFeeDownload.ts" />
+    <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenFeeQuery.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenFeeTransfer.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ShipmentInboundExceptionRecord\ShipmentInboundExceptionRecord.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginal.ts" />
