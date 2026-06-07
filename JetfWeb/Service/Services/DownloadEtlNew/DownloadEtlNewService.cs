@@ -1203,7 +1203,23 @@ namespace Service.Services.DownloadEtlNew
             }
 
             // 非菜鳥 P 的一般稅金判斷海運與空運不同，保留空運自己的規則以避免隱性改動。
-            return rows.Select(row => CreateRegularDetailRow(row, specialPhones)).ToList();
+            var result = new List<FeeMasterDetailRow>();
+            var feeSourceIndex = rows.FindIndex(row => ToInt(row.TaxAmount) > 0);
+            if (feeSourceIndex < 0)
+            {
+                feeSourceIndex = 0;
+            }
+
+            for (var i = 0; i < rows.Count; i++)
+            {
+                result.Add(CreateRegularDetailRow(
+                    rows[i],
+                    specialPhones,
+                    includeCod: i == 0,
+                    includeFee: i == feeSourceIndex));
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -1212,11 +1228,15 @@ namespace Service.Services.DownloadEtlNew
         /// <param name="row">空運來源資料。</param>
         /// <param name="specialPhones">特殊客戶電話集合。</param>
         /// <returns>FEE_MASTER_DETAIL 明細資料。</returns>
-        private static FeeMasterDetailRow CreateRegularDetailRow(CombinedRow row, HashSet<string> specialPhones)
+        private static FeeMasterDetailRow CreateRegularDetailRow(
+            CombinedRow row,
+            HashSet<string> specialPhones,
+            bool includeCod,
+            bool includeFee)
         {
             var taxAmount = ToInt(row.TaxAmount);
-            var codAmount = ToInt(row.Cc);
-            var feeAmount = row.CodFee ?? 0;
+            var codAmount = includeCod ? ToInt(row.Cc) : 0;
+            var feeAmount = includeFee ? row.CodFee ?? 0 : 0;
             var detailFee = feeAmount;
             var amounts = new TaxAmountSet { Tax1 = taxAmount, Tax2 = 0, Cod = codAmount, Fee = feeAmount };
             var includeTax = NormalizeText(row.IncludeTax);
@@ -1246,22 +1266,23 @@ namespace Service.Services.DownloadEtlNew
                 taxData = CalculateTaxN(amounts);
             }
 
-            return CreateFeeMasterDetailRow(row, detailFee, taxData.ToDlvCod, taxData.TransCod, taxData.CustomerCod);
+            return CreateFeeMasterDetailRow(row, codAmount, detailFee, taxData.ToDlvCod, taxData.TransCod, taxData.CustomerCod);
         }
 
         /// <summary>
         /// 將空運來源資料與已計算完成的明細金額轉成 detail row。
         /// </summary>
         /// <param name="row">空運來源資料。</param>
+        /// <param name="codAmount">明細到付款金額。</param>
         /// <param name="feeAmount">明細手續費。</param>
         /// <param name="toDlvCod">應向物流代收金額。</param>
         /// <returns>FEE_MASTER_DETAIL 明細資料。</returns>
-        private static FeeMasterDetailRow CreateFeeMasterDetailRow(CombinedRow row, int feeAmount, int toDlvCod)
+        private static FeeMasterDetailRow CreateFeeMasterDetailRow(CombinedRow row, int codAmount, int feeAmount, int toDlvCod)
         {
-            return CreateFeeMasterDetailRow(row, feeAmount, toDlvCod, 0, 0);
+            return CreateFeeMasterDetailRow(row, codAmount, feeAmount, toDlvCod, 0, 0);
         }
 
-        private static FeeMasterDetailRow CreateFeeMasterDetailRow(CombinedRow row, int feeAmount, int toDlvCod, int transCod, int customerCod)
+        private static FeeMasterDetailRow CreateFeeMasterDetailRow(CombinedRow row, int codAmount, int feeAmount, int toDlvCod, int transCod, int customerCod)
         {
             return new FeeMasterDetailRow
             {
@@ -1276,7 +1297,7 @@ namespace Service.Services.DownloadEtlNew
                 TaxBase = row.TaxBase.HasValue ? row.TaxBase.Value.ToString(CultureInfo.InvariantCulture) : string.Empty,
                 Tax = row.TaxAmount,
                 Ccfee = string.Empty,
-                Cod = row.Cc,
+                Cod = codAmount.ToString(CultureInfo.InvariantCulture),
                 Fee = feeAmount.ToString(CultureInfo.InvariantCulture),
                 Recipient = row.Recipient,
                 RecPhone = ToNarrowPhone(row.RecPhone),

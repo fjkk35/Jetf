@@ -890,18 +890,20 @@ and not exists (
                 return CreateCainiaoPDetailRows(sourceRows.Select(CreateFeeMasterDetailSourceRow));
             }
 
-            var feeAssigned = false;
             var result = new List<FeeMasterDetailRow>();
-            foreach (var row in sourceRows)
+            var feeSourceIndex = sourceRows.FindIndex(row => (ParseNullableInt(row.Tax) ?? 0) > 0);
+            if (feeSourceIndex < 0)
             {
-                var taxAmount = ParseNullableInt(row.Tax) ?? 0;
-                var includeFee = taxAmount > 0 && !feeAssigned;
-                result.Add(CreateRegularDetailRow(row, customerSpecialPhones, includeFee));
+                feeSourceIndex = 0;
+            }
 
-                if (taxAmount > 0)
-                {
-                    feeAssigned = true;
-                }
+            for (var i = 0; i < sourceRows.Count; i++)
+            {
+                result.Add(CreateRegularDetailRow(
+                    sourceRows[i],
+                    customerSpecialPhones,
+                    includeCod: i == 0,
+                    includeFee: i == feeSourceIndex));
             }
 
             return result;
@@ -913,10 +915,11 @@ and not exists (
         private FeeMasterDetailRow CreateRegularDetailRow(
             SeaTaxUploadJoinedRow row,
             IEnumerable<string> customerSpecialPhones,
+            bool includeCod,
             bool includeFee)
         {
             var taxAmount = ParseNullableInt(row.Tax) ?? 0;
-            var codAmount = ParseNullableInt(row.Cod) ?? 0;
+            var codAmount = includeCod ? ParseNullableInt(row.Cod) ?? 0 : 0;
             var feeAmount = includeFee ? ParseNullableInt(row.CodFee) ?? 0 : 0;
             var detailFee = feeAmount;
             var taxCalculationInput = CreateTaxCalculationInput(taxAmount, 0, codAmount, feeAmount);
@@ -945,7 +948,7 @@ and not exists (
                 taxData = _taxService.GetTaxN(taxCalculationInput);
             }
 
-            return CreateFeeMasterDetailRow(CreateFeeMasterDetailSourceRow(row), detailFee, taxData.ToDlvCod, taxData.TransCod, taxData.CustomerCod);
+            return CreateFeeMasterDetailRow(CreateFeeMasterDetailSourceRow(row), codAmount, detailFee, taxData.ToDlvCod, taxData.TransCod, taxData.CustomerCod);
         }
 
         /// <summary>
@@ -961,11 +964,12 @@ and not exists (
             var result = new List<FeeMasterDetailRow>();
             var remainingCustomerTax = 1000;
             var feeAssigned = false;
+            var codAssigned = false;
 
             foreach (var row in sourceRows)
             {
                 var taxAmount = ParseNullableInt(row.Tax) ?? 0;
-                var codAmount = ParseNullableInt(row.Cod) ?? 0;
+                var codAmount = codAssigned ? 0 : ParseNullableInt(row.Cod) ?? 0;
                 var feeAmount = ParseNullableInt(row.Fee) ?? 0;
 
                 // step1: 客戶可吸收的 1000 額度先從當前稅額扣除。
@@ -984,7 +988,8 @@ and not exists (
                     feeAssigned = true;
                 }
 
-                result.Add(CreateFeeMasterDetailRow(row, detailFee, codAmount + transTax + detailFee, transTax, customerTax));
+                result.Add(CreateFeeMasterDetailRow(row, codAmount, detailFee, codAmount + transTax + detailFee, transTax, customerTax));
+                codAssigned = true;
             }
 
             return result;
@@ -995,6 +1000,7 @@ and not exists (
         /// </summary>
         private static FeeMasterDetailRow CreateFeeMasterDetailRow(
             FeeMasterDetailSourceRow row,
+            int codAmount,
             int feeAmount,
             int toDlvCod,
             int transCod = 0,
@@ -1013,7 +1019,7 @@ and not exists (
                 TaxBase = row.TaxBase,
                 Tax = row.Tax,
                 Ccfee = string.Empty,
-                Cod = row.Cod,
+                Cod = codAmount.ToString(CultureInfo.InvariantCulture),
                 Fee = feeAmount.ToString(CultureInfo.InvariantCulture),
                 Recipient = row.Recipient,
                 RecPhone = row.RecPhone,
