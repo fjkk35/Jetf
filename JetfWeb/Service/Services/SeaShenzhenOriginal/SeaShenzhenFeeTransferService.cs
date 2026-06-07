@@ -137,7 +137,11 @@ namespace Service.Services.SeaShenzhenOriginal
         {
             var tax = (feeMaster.Tax1 ?? 0) + (feeMaster.Tax2 ?? 0);
             var cod = ToAmount(original.Cc);
-            var fee = original.TaxPayment == ShenzhenTaxPayment.C.ToString()
+            // 稅額達 1000 時，依需求一律改為不包稅並加收手續費。
+            var includeTax = tax >= 1000
+                ? ShenzhenTaxPayment.C.ToString()
+                : original.TaxPayment;
+            var fee = includeTax == ShenzhenTaxPayment.C.ToString()
                 ? FeeWhenTaxPaymentC
                 : 0;
 
@@ -151,7 +155,7 @@ namespace Service.Services.SeaShenzhenOriginal
                 Tax = tax,
                 Cod = cod,
                 Fee = fee,
-                IncludeTax = original.TaxPayment.ToString(),
+                IncludeTax = includeTax,
                 DlvCom = original.TransName,
                 Recipient = original.Importer,
                 RecPhone = original.ImporterPhone,
@@ -166,6 +170,9 @@ namespace Service.Services.SeaShenzhenOriginal
 
         /// <summary>
         /// 建立無法轉檔的異常資料，回傳給畫面提示使用者。
+        /// </summary>
+        /// <summary>
+        /// 依條件建立找不到對應託運資料時的異常列。
         /// </summary>
         private static SeaShenzhenFeeTransferExceptionRow CreateExceptionRow(FeeMasterEntity feeMaster, string reason)
         {
@@ -186,6 +193,9 @@ namespace Service.Services.SeaShenzhenOriginal
         /// <summary>
         /// 驗證並取得必要的資料日期參數。
         /// </summary>
+        /// <summary>
+        /// 驗證並取得必要的資料日期參數。
+        /// </summary>
         private static string GetRequiredDataDate(SeaShenzhenFeeTransferRequest request)
         {
             var dataDate = (request?.DataDate ?? string.Empty).Trim();
@@ -197,6 +207,9 @@ namespace Service.Services.SeaShenzhenOriginal
             return dataDate;
         }
 
+        /// <summary>
+        /// 將原始代收金額轉成轉檔表使用的整數金額。
+        /// </summary>
         /// <summary>
         /// 將原始代收金額轉成轉檔表使用的整數金額。
         /// </summary>

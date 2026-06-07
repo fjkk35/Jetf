@@ -119,6 +119,9 @@ namespace Service.Services.SeaShenzhenOriginal
             }
         }
 
+        /// <summary>
+        /// 讀取人工調整 Excel 並轉成列資料。
+        /// </summary>
         private List<SeaShenzhenFeeManualToDlvCodUploadRow> ReadExcelFile(string filePath)
         {
             var result = new List<SeaShenzhenFeeManualToDlvCodUploadRow>();
@@ -166,6 +169,9 @@ namespace Service.Services.SeaShenzhenOriginal
             return result;
         }
 
+        /// <summary>
+        /// 建立人工調整上傳欄位對照表。
+        /// </summary>
         private Dictionary<string, int> GetHeaderMap(ISheet sheet, out int headerRowIndex)
         {
             for (var i = 0; i <= sheet.LastRowNum; i++)
@@ -196,6 +202,9 @@ namespace Service.Services.SeaShenzhenOriginal
             throw new Exception($"Excel 欄位格式不正確，需包含欄位：{string.Join("、", RequiredHeaders)}");
         }
 
+        /// <summary>
+        /// 驗證人工調整上傳資料，並確認可對應到既有託運資料。
+        /// </summary>
         private void ValidateUploadRows(List<SeaShenzhenFeeManualToDlvCodUploadRow> uploadRows)
         {
             foreach (var item in uploadRows)
@@ -265,6 +274,9 @@ namespace Service.Services.SeaShenzhenOriginal
             }
         }
 
+        /// <summary>
+        /// 將驗證成功的人工調整資料寫入資料表。
+        /// </summary>
         private SaveResult SaveUploadRows(List<SeaShenzhenFeeManualToDlvCodUploadRow> uploadRows)
         {
             var now = DateTime.Now;
@@ -336,6 +348,9 @@ namespace Service.Services.SeaShenzhenOriginal
             };
         }
 
+        /// <summary>
+        /// 依欄位名稱取得 Excel 儲存格文字。
+        /// </summary>
         private static string GetCellValue(IRow row, Dictionary<string, int> headerMap, string headerName)
         {
             return headerMap.ContainsKey(headerName)
@@ -343,12 +358,18 @@ namespace Service.Services.SeaShenzhenOriginal
                 : string.Empty;
         }
 
+        /// <summary>
+        /// 判斷 Excel 列是否為空白列。
+        /// </summary>
         private static bool IsEmptyRow(SeaShenzhenFeeManualToDlvCodUploadRow item)
         {
             return string.IsNullOrWhiteSpace(item.DlvInv)
                 && string.IsNullOrWhiteSpace(item.ToDlvCodText);
         }
 
+        /// <summary>
+        /// 將文字轉成 nullable int。
+        /// </summary>
         private static int? ParseNullableInt(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -374,6 +395,9 @@ namespace Service.Services.SeaShenzhenOriginal
             return null;
         }
 
+        /// <summary>
+        /// 將欄位驗證失敗原因追加到指定列資料。
+        /// </summary>
         private static void AddValidationError(SeaShenzhenFeeManualToDlvCodUploadRow item, string fieldName, string reason)
         {
             item.UploadStatus = "失敗";
@@ -397,6 +421,9 @@ namespace Service.Services.SeaShenzhenOriginal
             item.FailReason += $"{fieldName}：{reason}";
         }
 
+        /// <summary>
+        /// 寫入結果統計。
+        /// </summary>
         private class SaveResult
         {
             public int InsertCount { get; set; }

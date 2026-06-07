@@ -77,6 +77,9 @@ namespace Service.Services.SeaShenzhenOriginal
             }
         }
 
+        /// <summary>
+        /// 依查詢條件建立稅金資料查詢 IQueryable。
+        /// </summary>
         private IQueryable<ShenzhenFeeMasterEntity> BuildQuery(SeaShenzhenFeeQueryRequest request)
         {
             var dataDateStart = NormalizeDataDate(request.DataDateStart);
@@ -115,6 +118,9 @@ namespace Service.Services.SeaShenzhenOriginal
             return query;
         }
 
+        /// <summary>
+        /// 將查詢到的資料轉成畫面與 Excel 共用的列資料。
+        /// </summary>
         private List<SeaShenzhenFeeQueryRow> BuildQueryRows(IList<ShenzhenFeeMasterEntity> feeRows)
         {
             var customerNameLookup = GetCustomerNameLookup(feeRows);
@@ -137,6 +143,9 @@ namespace Service.Services.SeaShenzhenOriginal
                 .ToList();
         }
 
+        /// <summary>
+        /// 依查詢結果補齊客戶代碼對應的客戶名稱。
+        /// </summary>
         private Dictionary<string, string> GetCustomerNameLookup(IEnumerable<ShenzhenFeeMasterEntity> feeRows)
         {
             var customerCodes = (feeRows ?? Enumerable.Empty<ShenzhenFeeMasterEntity>())
@@ -163,12 +172,18 @@ namespace Service.Services.SeaShenzhenOriginal
                     StringComparer.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// 將空白字串正規化為 null。
+        /// </summary>
         private static string NullIfEmpty(string value)
         {
             var trimmedValue = (value ?? string.Empty).Trim();
             return string.IsNullOrWhiteSpace(trimmedValue) ? null : trimmedValue;
         }
 
+        /// <summary>
+        /// 將輸入日期文字正規化為 yyyyMMdd。
+        /// </summary>
         private static string NormalizeDataDate(string value)
         {
             var trimmedValue = (value ?? string.Empty).Trim();
@@ -192,6 +207,9 @@ namespace Service.Services.SeaShenzhenOriginal
             throw new Exception("日期格式錯誤");
         }
 
+        /// <summary>
+        /// 將 yyyyMMdd 顯示為 yyyy-MM-dd。
+        /// </summary>
         private static string FormatDataDate(string value)
         {
             var normalizedValue = NormalizeDataDate(value);
@@ -201,6 +219,9 @@ namespace Service.Services.SeaShenzhenOriginal
                 : normalizedValue;
         }
 
+        /// <summary>
+        /// 取得顯示用客戶名稱，查無主檔時退回原始代碼。
+        /// </summary>
         private static string GetCustomerName(string customerCode, Dictionary<string, string> customerNameLookup)
         {
             if (string.IsNullOrWhiteSpace(customerCode))
@@ -217,12 +238,18 @@ namespace Service.Services.SeaShenzhenOriginal
             return customerCode;
         }
 
+        /// <summary>
+        /// 將稅金支付方式代碼轉成顯示用中文。
+        /// </summary>
         private static string GetTaxPaymentDescription(string includeTax)
         {
             var taxPayment = EnumerableExtensions.ParseNullableCode<ShenzhenTaxPayment>(includeTax);
             return taxPayment.HasValue ? taxPayment.Value.ToDescription() : string.Empty;
         }
 
+        /// <summary>
+        /// 建立稅金資料查詢的 Excel 檔案。
+        /// </summary>
         private static IWorkbook CreateWorkbook(IEnumerable<SeaShenzhenFeeQueryRow> rows)
         {
             var workbook = new XSSFWorkbook();

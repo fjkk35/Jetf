@@ -26,6 +26,9 @@
                     <input type="file" id="seaShenzhenOriginalFileInput" accept=".xlsx" class="form-control" />
                 </div>
                 <div class="col-lg-12" style="margin:0.5rem 0;">
+                    <a href="@Url.Action("DownloadTemplate", "SeaShenzhenOriginal")" target="_blank">下載範例</a>
+                </div>
+                <div class="col-lg-12" style="margin:0.5rem 0;">
                     <button type="button" class="btn btn-success confirmbtn" ng-click="uploadFile()" ng-disabled="uploading">
                         <i class="fas fa-upload"></i> {{ uploading ? '上傳中...' : '上傳' }}
                     </button>

@@ -1,5 +1,6 @@
 mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', function ($scope, $http) {
         $scope.data = [];
+    $scope.taxPaymentOptions = [{ Value: '', Text: '全部' }];
         $scope.loading = false;
         $scope.isSearched = false;
         $scope.recordsInfo = '';
@@ -24,8 +25,10 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
             orderNo: '',
             jetfSerial: '',
             importer: '',
-            importerPhone: ''
+            importerPhone: '',
+            taxPayment: ''
         };
+        loadTaxPaymentOptions();
         $scope.openStartDatePopup = function () {
             $scope.startDatePopup.opened = true;
         };
@@ -45,7 +48,8 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
                 orderNo: '',
                 jetfSerial: '',
                 importer: '',
-                importerPhone: ''
+                importerPhone: '',
+                taxPayment: ''
             };
             $scope.data = [];
             $scope.isSearched = false;
@@ -124,9 +128,19 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
                 JetfSerial: $scope.searchForm.jetfSerial,
                 Importer: $scope.searchForm.importer,
                 ImporterPhone: $scope.searchForm.importerPhone,
+                TaxPayment: $scope.searchForm.taxPayment,
                 PageIndex: pageIndex,
                 PageSize: pageSize
             };
+        }
+        function loadTaxPaymentOptions() {
+            $http.get(Router.action('SeaShenzhenOriginalQuery', 'GetTaxPaymentOptions'))
+                .then(function (response) {
+                $scope.taxPaymentOptions = response.data || [{ Value: '', Text: '全部' }];
+            })
+                .catch(function () {
+                $scope.taxPaymentOptions = [{ Value: '', Text: '全部' }];
+            });
         }
         function isValidDateRange() {
             if ($scope.searchForm.dataDateStart && $scope.searchForm.dataDateEnd &&

@@ -17,6 +17,28 @@ namespace Service.Services.SeaShenzhenOriginal
     /// </summary>
     public class SeaShenzhenFeeDownloadService : _BaseService
     {
+        /// <summary>
+        /// 物流代收檔匯出用列資料。
+        /// </summary>
+        private sealed class SeaShenzhenFeeDownloadRow
+        {
+            public string Customer { get; set; }
+
+            public string TrackingNo { get; set; }
+
+            public string DlvInv { get; set; }
+
+            public int ToDlvCod { get; set; }
+
+            public string Recipient { get; set; }
+
+            public string RecPhone { get; set; }
+
+            public string DlvCom { get; set; }
+
+            public string IncludeTax { get; set; }
+        }
+
         public SeaShenzhenFeeDownloadService(JetfDbContext jetfDbContext, DataCenterDbContext dataCenterDbContext)
             : base(jetfDbContext, dataCenterDbContext)
         {
@@ -29,11 +51,7 @@ namespace Service.Services.SeaShenzhenOriginal
         {
             var dataDate = GetRequiredDataDate(request);
 
-            var feeRows = JetfDb.ShenzhenFeeMasters
-                .AsNoTracking()
-                .Where(x => x.DataDate == dataDate && x.IncludeTax == "C")
-                .OrderBy(x => x.Id)
-                .ToList();
+            var feeRows = GetCollectibleRows(dataDate);
 
             if (feeRows.Count == 0)
             {
@@ -50,9 +68,86 @@ namespace Service.Services.SeaShenzhenOriginal
             }
         }
 
-        private Dictionary<string, string> GetCustomerNameLookup(IEnumerable<ShenzhenFeeMasterEntity> feeRows)
+        /// <summary>
+        /// 依資料日期整理可下載的物流代收資料，人工調整命中的資料會強制視為 C。
+        /// </summary>
+        private List<SeaShenzhenFeeDownloadRow> GetCollectibleRows(string dataDate)
         {
-            var customerCodes = (feeRows ?? Enumerable.Empty<ShenzhenFeeMasterEntity>())
+            var collectibleTaxPayment = ShenzhenTaxPayment.C.ToString();
+
+            var dateFeeRows = JetfDb.ShenzhenFeeMasters
+                .AsNoTracking()
+                .Where(x => x.DataDate == dataDate)
+                .OrderBy(x => x.Id)
+                .ToList();
+
+            if (dateFeeRows.Count == 0)
+            {
+                return new List<SeaShenzhenFeeDownloadRow>();
+            }
+
+            var trackingNos = dateFeeRows
+                .Select(x => x.TrackingNo)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var manualByTrackingNo = GetManualToDlvCodRows(trackingNos)
+                .ToDictionary(x => x.TrackingNo, x => x, StringComparer.OrdinalIgnoreCase);
+
+            var result = new List<SeaShenzhenFeeDownloadRow>();
+            foreach (var feeRow in dateFeeRows)
+            {
+                ShenzhenFeeMasterManualToDlvCodEntity manualRow;
+                manualByTrackingNo.TryGetValue(feeRow.TrackingNo, out manualRow);
+
+                // 下載條件：
+                // 1. 原始轉檔稅金類別為 C；或
+                // 2. 人工代收金額調整表命中，此時需強制視為 C 並使用人工 ToDlvCod。
+                if (feeRow.IncludeTax != collectibleTaxPayment && manualRow == null)
+                {
+                    continue;
+                }
+
+                result.Add(new SeaShenzhenFeeDownloadRow
+                {
+                    Customer = feeRow.Customer,
+                    TrackingNo = feeRow.TrackingNo,
+                    DlvInv = feeRow.DlvInv,
+                    ToDlvCod = manualRow != null ? manualRow.ToDlvCod : feeRow.ToDlvCod,
+                    Recipient = feeRow.Recipient,
+                    RecPhone = feeRow.RecPhone,
+                    DlvCom = feeRow.DlvCom,
+                    IncludeTax = manualRow != null ? collectibleTaxPayment : feeRow.IncludeTax
+                });
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 依 TrackingNo 批次載入人工代收金額調整資料。
+        /// 使用 WhereBulkContains 將 TrackingNo 一次寫入暫存表比對，避免大量 Contains 產生過長 IN 條件或參數限制。
+        /// </summary>
+        private List<ShenzhenFeeMasterManualToDlvCodEntity> GetManualToDlvCodRows(List<string> trackingNos)
+        {
+            if (trackingNos == null || trackingNos.Count == 0)
+            {
+                return new List<ShenzhenFeeMasterManualToDlvCodEntity>();
+            }
+
+            return JetfDb.ShenzhenFeeMasterManualToDlvCods
+                .AsNoTracking()
+                .WhereBulkContains(JetfDb, trackingNos, row => row.TrackingNo, key => key)
+                .OrderBy(x => x.Id)
+                .ToList();
+        }
+
+        /// <summary>
+        /// 依匯出資料補齊客戶代碼對應的客戶名稱。
+        /// </summary>
+        private Dictionary<string, string> GetCustomerNameLookup(IEnumerable<SeaShenzhenFeeDownloadRow> feeRows)
+        {
+            var customerCodes = (feeRows ?? Enumerable.Empty<SeaShenzhenFeeDownloadRow>())
                 .Select(x => x.Customer)
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -76,8 +171,11 @@ namespace Service.Services.SeaShenzhenOriginal
                     StringComparer.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// 建立物流代收檔 Excel。
+        /// </summary>
         private IWorkbook CreateCollectibleWorkbook(
-            IEnumerable<ShenzhenFeeMasterEntity> feeRows,
+            IEnumerable<SeaShenzhenFeeDownloadRow> feeRows,
             Dictionary<string, string> customerNameLookup)
         {
             var workbook = new XSSFWorkbook();
@@ -133,6 +231,9 @@ namespace Service.Services.SeaShenzhenOriginal
             return workbook;
         }
 
+        /// <summary>
+        /// 驗證並取得必要的資料日期參數。
+        /// </summary>
         private static string GetRequiredDataDate(SeaShenzhenFeeTransferRequest request)
         {
             var dataDate = (request?.DataDate ?? string.Empty).Trim();
@@ -144,6 +245,9 @@ namespace Service.Services.SeaShenzhenOriginal
             return dataDate;
         }
 
+        /// <summary>
+        /// 取得顯示用客戶名稱，查無主檔時退回原始代碼。
+        /// </summary>
         private static string GetCustomerName(string customerCode, Dictionary<string, string> customerNameLookup)
         {
             if (string.IsNullOrWhiteSpace(customerCode))
@@ -160,6 +264,9 @@ namespace Service.Services.SeaShenzhenOriginal
             return customerCode;
         }
 
+        /// <summary>
+        /// 將稅金支付方式代碼轉成顯示用中文。
+        /// </summary>
         private static string GetTaxPaymentDescription(string includeTax)
         {
             var taxPayment = EnumerableExtensions.ParseNullableCode<ShenzhenTaxPayment>(includeTax);

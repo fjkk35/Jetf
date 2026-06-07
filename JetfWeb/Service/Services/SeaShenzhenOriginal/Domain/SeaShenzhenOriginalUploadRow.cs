@@ -7,6 +7,9 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
     /// </summary>
     public class SeaShenzhenOriginalUploadRow
     {
+        /// <summary>
+        /// Excel 列號。
+        /// </summary>
         public int RowNo { get; set; }
         public string TrackingNo { get; set; }
         public string BlNo { get; set; }
@@ -27,7 +30,14 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
         public decimal? Gw { get; set; }
         public string Memo { get; set; }
         public string Claimant { get; set; }
+        /// <summary>
+        /// 稅金支付方式代碼。
+        /// </summary>
         public string TaxPayment { get; set; }
+
+        /// <summary>
+        /// 上傳狀態。
+        /// </summary>
         public string UploadStatus { get; set; }
         public string FailFieldName { get; set; }
         public string FailReason { get; set; }

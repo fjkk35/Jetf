@@ -1,7 +1,9 @@
 using Service.EnumTax;
+using Service.Extensions;
 using Service.Services.SeaShenzhenOriginal;
 using Service.Services.SeaShenzhenOriginal.Domain;
 using System;
+using System.Linq;
 using System.Web.Mvc;
 using static JETFTAX.Controllers.AccountController;
 
@@ -46,6 +48,24 @@ namespace JETFTAX.Controllers
                     error = ex.Message
                 }, JsonRequestBehavior.AllowGet);
             }
+        }
+
+        [HttpGet]
+        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        public JsonResult GetTaxPaymentOptions()
+        {
+            var list = new[]
+            {
+                new { Value = string.Empty, Text = "全部" }
+            };
+
+            return Json(list.Concat(Enum.GetValues(typeof(ShenzhenTaxPayment))
+                .Cast<ShenzhenTaxPayment>()
+                .Select(item => new
+                {
+                    Value = item.ToString(),
+                    Text = item + "-" + item.ToDescription()
+                })), JsonRequestBehavior.AllowGet);
         }
     }
 }

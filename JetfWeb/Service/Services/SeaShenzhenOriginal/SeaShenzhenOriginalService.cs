@@ -14,6 +14,9 @@ using System.Linq;
 
 namespace Service.Services.SeaShenzhenOriginal
 {
+    /// <summary>
+    /// 新遞託運資料上傳、查詢與範例下載服務。
+    /// </summary>
     public class SeaShenzhenOriginalService : _BaseService
     {
         private static readonly string[] RequiredHeaders =
@@ -60,6 +63,7 @@ namespace Service.Services.SeaShenzhenOriginal
             var jetfSerial = NullIfEmpty(request.JetfSerial);
             var importer = NullIfEmpty(request.Importer);
             var importerPhone = NullIfEmpty(request.ImporterPhone);
+            var taxPayment = NullIfEmpty(request.TaxPayment);
 
             var query = JetfDb.SeaShenzhenOriginals.AsNoTracking().AsQueryable();
 
@@ -104,6 +108,11 @@ namespace Service.Services.SeaShenzhenOriginal
                 query = query.Where(x => x.ImporterPhone.Contains(importerPhone));
             }
 
+            if (!string.IsNullOrWhiteSpace(taxPayment))
+            {
+                query = query.Where(x => x.TaxPayment == taxPayment);
+            }
+
             var totalCount = query.Count();
             var data = query
                 .OrderByDescending(x => x.DataDate)
@@ -130,7 +139,7 @@ namespace Service.Services.SeaShenzhenOriginal
                     GwText = x.Gw.HasValue ? x.Gw.Value.ToString("0.##") : string.Empty,
                     Memo = x.Memo,
                     Claimant = x.Claimant,
-                    TaxPayment = x.TaxPayment
+                    TaxPayment = GetTaxPaymentDescription(x.TaxPayment)
                 })
                 .ToList();
 
@@ -197,6 +206,56 @@ namespace Service.Services.SeaShenzhenOriginal
             }
         }
 
+        /// <summary>
+        /// 產生上傳託運資料的 Excel 範例檔。
+        /// </summary>
+        public byte[] ExportTemplate()
+        {
+            var workbook = new XSSFWorkbook();
+            var sheet = workbook.CreateSheet("上傳託運資料範例");
+            var headerStyle = NpoiStyle.CreateHeaderStyle(workbook);
+            var dataStyle = NpoiStyle.CreateDataStyle(workbook);
+
+            var headerRow = sheet.CreateRow(0);
+            NpoiCell.CreateHeaderCells(headerRow, RequiredHeaders, headerStyle);
+
+            var dataRow = sheet.CreateRow(1);
+            NpoiCell.CreateCell(dataRow, 0, "T1234567890", dataStyle);
+            NpoiCell.CreateCell(dataRow, 1, "BL123456", dataStyle);
+            NpoiCell.CreateCell(dataRow, 2, "ORD0001", dataStyle);
+            NpoiCell.CreateCell(dataRow, 3, "SF123456789", dataStyle);
+            NpoiCell.CreateCell(dataRow, 4, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), dataStyle);
+            NpoiCell.CreateCell(dataRow, 5, "SJL", dataStyle);
+            NpoiCell.CreateCell(dataRow, 6, "王小明", dataStyle);
+            NpoiCell.CreateCell(dataRow, 7, "台北市中正區測試路1號", dataStyle);
+            NpoiCell.CreateCell(dataRow, 8, "0912345678", dataStyle);
+            NpoiCell.CreateCell(dataRow, 9, "測試商品", dataStyle);
+            NpoiCell.CreateDoubleCell(dataRow, 10, 100, dataStyle);
+            NpoiCell.CreateIntCell(dataRow, 11, 1, dataStyle);
+            NpoiCell.CreateDoubleCell(dataRow, 12, 1.5, dataStyle);
+            NpoiCell.CreateCell(dataRow, 13, "備註", dataStyle);
+            NpoiCell.CreateCell(dataRow, 14, "認領人", dataStyle);
+            NpoiCell.CreateCell(dataRow, 15, ShenzhenTaxPayment.XD.ToString(), dataStyle);
+
+            for (var index = 0; index < RequiredHeaders.Length; index++)
+            {
+                sheet.AutoSizeColumn(index);
+                if (sheet.GetColumnWidth(index) < 3000)
+                {
+                    sheet.SetColumnWidth(index, 3000);
+                }
+            }
+
+            using (var stream = new MemoryStream())
+            {
+                workbook.Write(stream);
+                return stream.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// 讀取上傳 Excel 內容並轉成系統使用的列資料。
+        /// </summary>
         private List<SeaShenzhenOriginalUploadRow> ReadExcelFile(string filePath)
         {
             var result = new List<SeaShenzhenOriginalUploadRow>();
@@ -262,6 +321,9 @@ namespace Service.Services.SeaShenzhenOriginal
             return result;
         }
 
+        /// <summary>
+        /// 依標題列建立欄位名稱與欄位索引的對照表。
+        /// </summary>
         private Dictionary<string, int> GetHeaderMap(ISheet sheet, out int headerRowIndex)
         {
             for (var i = 0; i <= sheet.LastRowNum; i++)
@@ -292,6 +354,9 @@ namespace Service.Services.SeaShenzhenOriginal
             throw new Exception($"Excel 欄位格式不正確，需包含欄位：{string.Join("、", RequiredHeaders)}");
         }
 
+        /// <summary>
+        /// 驗證上傳資料格式與必填欄位，並寫入失敗原因。
+        /// </summary>
         private void ValidateUploadRows(List<SeaShenzhenOriginalUploadRow> uploadRows)
         {
             foreach (var item in uploadRows)
@@ -336,7 +401,11 @@ namespace Service.Services.SeaShenzhenOriginal
                     AddValidationError(item, "重量", "格式錯誤");
                 }
 
-                if (!string.IsNullOrWhiteSpace(item.TaxPayment) && !EnumerableExtensions.TryParseCode<ShenzhenTaxPayment>(item.TaxPayment, out _))
+                if (string.IsNullOrWhiteSpace(item.TaxPayment))
+                {
+                    AddValidationError(item, "稅金支付方式", "必填");
+                }
+                else if (!EnumerableExtensions.TryParseCode<ShenzhenTaxPayment>(item.TaxPayment, out _))
                 {
                     AddValidationError(item, "稅金支付方式", "僅支援 XD 或 C");
                 }
@@ -360,6 +429,9 @@ namespace Service.Services.SeaShenzhenOriginal
             }
         }
 
+        /// <summary>
+        /// 將驗證成功的上傳資料寫入 SeaShenzhenOriginal。
+        /// </summary>
         private SaveResult SaveUploadRows(List<SeaShenzhenOriginalUploadRow> uploadRows, DateTime dataDate)
         {
             var now = DateTime.Now;
@@ -426,6 +498,9 @@ namespace Service.Services.SeaShenzhenOriginal
             };
         }
 
+        /// <summary>
+        /// 將單列上傳資料套用到 SeaShenzhenOriginal 實體。
+        /// </summary>
         private void ApplyRow(SeaShenzhenOriginalEntity entity, SeaShenzhenOriginalUploadRow row, DateTime dataDate)
         {
             entity.DataDate = dataDate.Date;
@@ -447,6 +522,9 @@ namespace Service.Services.SeaShenzhenOriginal
             entity.TaxPayment = row.TaxPayment;
         }
 
+        /// <summary>
+        /// 將欄位驗證失敗原因追加到指定列資料。
+        /// </summary>
         private void AddValidationError(SeaShenzhenOriginalUploadRow item, string fieldName, string reason)
         {
             item.UploadStatus = "失敗";
@@ -470,6 +548,9 @@ namespace Service.Services.SeaShenzhenOriginal
             item.FailReason += $"{fieldName}：{reason}";
         }
 
+        /// <summary>
+        /// 依欄位名稱取得 Excel 儲存格文字。
+        /// </summary>
         private string GetCellValue(IRow row, Dictionary<string, int> headerMap, string headerName)
         {
             return headerMap.ContainsKey(headerName)
@@ -477,6 +558,9 @@ namespace Service.Services.SeaShenzhenOriginal
                 : string.Empty;
         }
 
+        /// <summary>
+        /// 判斷 Excel 列是否為空白列。
+        /// </summary>
         private bool IsEmptyRow(SeaShenzhenOriginalUploadRow item)
         {
             return string.IsNullOrWhiteSpace(item.TrackingNo)
@@ -497,6 +581,9 @@ namespace Service.Services.SeaShenzhenOriginal
                 && string.IsNullOrWhiteSpace(item.TaxPayment);
         }
 
+        /// <summary>
+        /// 將文字或 Excel 日期欄位轉成 nullable DateTime。
+        /// </summary>
         private DateTime? ParseNullableDate(IRow row, int cellIndex, string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -524,6 +611,9 @@ namespace Service.Services.SeaShenzhenOriginal
             return null;
         }
 
+        /// <summary>
+        /// 將文字轉成 nullable int。
+        /// </summary>
         private int? ParseNullableInt(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -549,6 +639,9 @@ namespace Service.Services.SeaShenzhenOriginal
             return null;
         }
 
+        /// <summary>
+        /// 將文字轉成 nullable decimal。
+        /// </summary>
         private decimal? ParseNullableDecimal(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -566,6 +659,9 @@ namespace Service.Services.SeaShenzhenOriginal
             return null;
         }
 
+        /// <summary>
+        /// 將文字轉成 nullable double。
+        /// </summary>
         private double? ParseNullableDouble(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -583,11 +679,17 @@ namespace Service.Services.SeaShenzhenOriginal
             return null;
         }
 
+        /// <summary>
+        /// 將空白字串正規化為 null。
+        /// </summary>
         private string NullIfEmpty(string text)
         {
             return string.IsNullOrWhiteSpace(text) ? null : text.Trim();
         }
 
+        /// <summary>
+        /// 將查詢輸入的日期文字轉成只有日期的 DateTime。
+        /// </summary>
         private DateTime? ParseDateOnly(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -602,6 +704,15 @@ namespace Service.Services.SeaShenzhenOriginal
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// 將稅金支付方式代碼轉成顯示用中文。
+        /// </summary>
+        private static string GetTaxPaymentDescription(string taxPayment)
+        {
+            var parsedValue = EnumerableExtensions.ParseNullableCode<ShenzhenTaxPayment>(taxPayment);
+            return parsedValue.HasValue ? parsedValue.Value.ToDescription() : string.Empty;
         }
 
         private class SaveResult

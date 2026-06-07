@@ -162,6 +162,19 @@
             </div>
         </div>
 
+        <div class="row mb-3 align-items-center">
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="seaShenzhenTaxPayment" class="col-lg-4 col-form-label text-right">稅金支付方式</label>
+                <div class="col-lg-8">
+                    <select id="seaShenzhenTaxPayment"
+                            class="form-control"
+                            ng-model="searchForm.taxPayment"
+                            ng-options="item.Value as item.Text for item in taxPaymentOptions">
+                    </select>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
             <div class="col-lg-12 text-right">
                 <button type="button"

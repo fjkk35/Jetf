@@ -74,5 +74,16 @@ namespace JETFTAX.Controllers
 
             return Json(responseModel);
         }
+
+        /// <summary>
+        /// 下載上傳託運資料範例。
+        /// </summary>
+        [HttpGet]
+        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        public ActionResult DownloadTemplate()
+        {
+            var fileBytes = _seaShenzhenOriginalService.ExportTemplate();
+            return File(fileBytes, "application/octet-stream", "新遞託運資料_範例.xlsx");
+        }
     }
 }
