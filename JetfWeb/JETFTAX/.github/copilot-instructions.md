@@ -3,7 +3,7 @@
 3. cshtml不用再引用Angular.js檔案
 4.Service的Model寫在，Services/{controller}Service/Domain/{名稱}Model.cs
 5.匯出 Excel 使用 NPOI 套件，相關擴充方法已置於 Service/Extensions/NPOIExtensions.cs。請優先使用既有的擴充方法，如有不足再於此檔案中新增。」
-6. 查詢資料庫採用 Dapper 套件進行操作。
+6. 查詢資料庫使用 EF 進行操作，批次新增、修改、刪除使用擴充方法，相關擴充方法已置於 Service/Extensions/EntityFrameworkBulkExtensions.cs。請優先使用既有的擴充方法，如有不足再於此檔案中新增。」
 7. Domain/Model 每個欄位都需要加上註解
 8.匯出Excel使用NPOI，JETFTAX\Service\Extensions\NPOIExtensions.cs有擴充方法可以使用
 9.Enum轉換使用擴充方法JETFTAX\Service\Extensions\EnumerableExtensions.cs

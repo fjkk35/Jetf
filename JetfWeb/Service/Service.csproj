@@ -335,6 +335,7 @@
     <Compile Include="EnumTax\ShipmentInboundProcessTransNo.cs" />
     <Compile Include="EnumTax\ShipmentInboundProcessType.cs" />
     <Compile Include="EnumTax\ShipmentInboundSourceType.cs" />
+    <Compile Include="EnumTax\ShenzhenTaxPayment.cs" />
     <Compile Include="EnumTax\TactReptileUrl.cs" />
     <Compile Include="EnumTax\TaxPaymentType.cs" />
     <Compile Include="EnumTax\EtlFamilyTax.cs" />
@@ -738,6 +739,7 @@
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalQueryRequest.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalQueryResponse.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalUploadRow.cs" />
+    <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenFeeDownloadService.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenFeeTransferService.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenOriginalService.cs" />
     <Compile Include="Services\SjlBilling\Domain\SjlBillingExportRowModel.cs" />

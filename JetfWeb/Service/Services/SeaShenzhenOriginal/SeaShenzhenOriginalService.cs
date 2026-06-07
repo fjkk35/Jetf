@@ -1,6 +1,7 @@
-using NPOI.SS.UserModel;
+﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.Data;
+using Service.EnumTax;
 using Service.Extensions;
 using Service.Models;
 using Service.Services.SeaShenzhenOriginal.Domain;
@@ -334,6 +335,11 @@ namespace Service.Services.SeaShenzhenOriginal
                 {
                     AddValidationError(item, "重量", "格式錯誤");
                 }
+
+                if (!string.IsNullOrWhiteSpace(item.TaxPayment) && !ShenzhenTaxPaymentExtensions.TryParseCode(item.TaxPayment, out _))
+                {
+                    AddValidationError(item, "稅金支付方式", "僅支援 XD 或 C");
+                }
             }
 
             var duplicateJetfSerials = uploadRows
@@ -438,7 +444,7 @@ namespace Service.Services.SeaShenzhenOriginal
             entity.Gw = row.Gw;
             entity.Memo = NullIfEmpty(row.Memo);
             entity.Claimant = NullIfEmpty(row.Claimant);
-            entity.TaxPayment = NullIfEmpty(row.TaxPayment);
+            entity.TaxPayment = row.TaxPayment;
         }
 
         private void AddValidationError(SeaShenzhenOriginalUploadRow item, string fieldName, string reason)

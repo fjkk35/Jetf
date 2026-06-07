@@ -1,0 +1,63 @@
+﻿@{
+    ViewBag.Title = "物流代收檔下載";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .sea-shenzhen-fee-download-page {
+        padding: 0 18px 18px;
+        box-sizing: border-box;
+    }
+
+    .sea-shenzhen-fee-download-page .card {
+        border: none;
+    }
+
+    .sea-shenzhen-fee-download-toolbar {
+        display: flex;
+        align-items: flex-end;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .sea-shenzhen-fee-download-date {
+        width: 260px;
+    }
+</style>
+
+<div class="sea-shenzhen-fee-download-page" ng-controller="SeaShenzhenFeeDownloadController">
+    <span class="headtype">物流代收檔下載</span>
+    <hr />
+
+    <div class="card bg-light rounded p-4 mb-4">
+        <div class="sea-shenzhen-fee-download-toolbar">
+            <div class="form-group mb-0 sea-shenzhen-fee-download-date">
+                <label for="seaShenzhenFeeDownloadDate">日期</label>
+                <input type="text"
+                       id="seaShenzhenFeeDownloadDate"
+                       class="form-control"
+                       ng-model="form.dataDate"
+                       uib-datepicker-popup="yyyy-MM-dd"
+                       is-open="datePopup.opened"
+                       ng-click="openDatePopup()"
+                       datepicker-options="dateOptions"
+                       show-button-bar="false"
+                       readonly />
+            </div>
+
+            <div>
+                <button type="button"
+                        class="btn btn-primary"
+                        ng-click="downloadExcel()"
+                        ng-disabled="downloading">
+                    <i class="fa" ng-class="downloading ? 'fa-spinner fa-spin' : 'fa-download'"></i>
+                    {{downloading ? '下載中' : '下載'}}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info" ng-if="resultMessage">
+        {{resultMessage}}
+    </div>
+</div>

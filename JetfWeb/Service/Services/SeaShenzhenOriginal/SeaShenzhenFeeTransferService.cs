@@ -1,4 +1,6 @@
 ﻿using Service.Data;
+using Service.EnumTax;
+using Service.Extensions;
 using Service.Services.SeaShenzhenOriginal.Domain;
 using System;
 using System.Collections.Generic;
@@ -25,11 +27,7 @@ namespace Service.Services.SeaShenzhenOriginal
         /// </summary>
         public SeaShenzhenFeeTransferResponse Transfer(SeaShenzhenFeeTransferRequest request)
         {
-            var dataDate = (request?.DataDate ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(dataDate))
-            {
-                throw new Exception("請輸入資料日期");
-            }
+            var dataDate = GetRequiredDataDate(request);
 
             // 取得指定日期的新遞 FeeMaster 資料，後續只處理 CUSTOMER = CN00132 的資料。
             var feeMasters = JetfDb.FeeMasters
@@ -49,6 +47,12 @@ namespace Service.Services.SeaShenzhenOriginal
             foreach (var feeMaster in feeMasters)
             {
                 var trackingNo = feeMaster.TrackingNo;
+                if (string.IsNullOrWhiteSpace(trackingNo))
+                {
+                    exceptions.Add(CreateExceptionRow(feeMaster, "找不到託運單資料：分提單號空白"));
+                    continue;
+                }
+
                 SeaShenzhenOriginalEntity original;
                 if (!originalLookup.TryGetValue(trackingNo, out original))
                 {
@@ -89,6 +93,7 @@ namespace Service.Services.SeaShenzhenOriginal
 
         /// <summary>
         /// 使用 EntityFrameworkBulkExtensions 的 WhereBulkContains 批次查詢原始託運資料。
+        /// 這裡一次把所有 TrackingNo 丟進暫存表比對，避免逐筆查詢 SeaShenzhenOriginal。
         /// </summary>
         private Dictionary<string, SeaShenzhenOriginalEntity> GetOriginalLookup(IEnumerable<FeeMasterEntity> feeMasters)
         {
@@ -103,11 +108,12 @@ namespace Service.Services.SeaShenzhenOriginal
                 return new Dictionary<string, SeaShenzhenOriginalEntity>(StringComparer.OrdinalIgnoreCase);
             }
 
+            // 以 bulk contains 做批次比對，將 FeeMaster 的 TrackingNo 一次帶進 SQL 暫存表查詢。
             var originals = JetfDb.SeaShenzhenOriginals
                 .AsNoTracking()
                 .WhereBulkContains(JetfDb, trackingNos, x => x.TrackingNo, x => x);
 
-            // 若同一託運單號有多筆原始資料，優先取有託運單號/條碼號的資料排序。
+            // 轉檔規則要求同一 TrackingNo 僅取一筆，且以 JetfSerial 最小者為主。
             return originals
                 .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
                 .GroupBy(x => x.TrackingNo, StringComparer.OrdinalIgnoreCase)
@@ -131,7 +137,7 @@ namespace Service.Services.SeaShenzhenOriginal
         {
             var tax = (feeMaster.Tax1 ?? 0) + (feeMaster.Tax2 ?? 0);
             var cod = ToAmount(original.Cc);
-            var fee = string.Equals(original.TaxPayment, "C", StringComparison.OrdinalIgnoreCase)
+            var fee = original.TaxPayment == ShenzhenTaxPayment.C.ToString()
                 ? FeeWhenTaxPaymentC
                 : 0;
 
@@ -145,7 +151,7 @@ namespace Service.Services.SeaShenzhenOriginal
                 Tax = tax,
                 Cod = cod,
                 Fee = fee,
-                IncludeTax = original.TaxPayment,
+                IncludeTax = original.TaxPayment.ToString(),
                 DlvCom = original.TransName,
                 Recipient = original.Importer,
                 RecPhone = original.ImporterPhone,
@@ -175,6 +181,20 @@ namespace Service.Services.SeaShenzhenOriginal
                 Tax1 = feeMaster.Tax1 ?? 0,
                 Tax2 = feeMaster.Tax2 ?? 0
             };
+        }
+
+        /// <summary>
+        /// 驗證並取得必要的資料日期參數。
+        /// </summary>
+        private static string GetRequiredDataDate(SeaShenzhenFeeTransferRequest request)
+        {
+            var dataDate = (request?.DataDate ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(dataDate))
+            {
+                throw new Exception("請輸入資料日期");
+            }
+
+            return dataDate;
         }
 
         /// <summary>

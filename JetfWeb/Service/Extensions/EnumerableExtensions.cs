@@ -82,6 +82,31 @@ namespace Service.Extensions
 
             return validDescriptions;
         }
+
+        /// <summary>
+        /// 將代碼文字轉換為指定 enum，支援大小寫不敏感比對，且只接受 enum 已定義的值。
+        /// </summary>
+        /// <typeparam name="TEnum">enum 類型。</typeparam>
+        /// <param name="value">要轉換的代碼文字。</param>
+        /// <param name="result">轉換成功時的 enum 值。</param>
+        /// <returns>轉換成功回傳 true，否則回傳 false。</returns>
+        public static bool TryParseCode<TEnum>(string value, out TEnum result) where TEnum : struct, Enum
+        {
+            return Enum.TryParse((value ?? string.Empty).Trim(), true, out result)
+                && Enum.IsDefined(typeof(TEnum), result);
+        }
+
+        /// <summary>
+        /// 將代碼文字轉換為 nullable enum，無法轉換時回傳 null。
+        /// </summary>
+        /// <typeparam name="TEnum">enum 類型。</typeparam>
+        /// <param name="value">要轉換的代碼文字。</param>
+        /// <returns>轉換成功回傳 enum 值，否則回傳 null。</returns>
+        public static TEnum? ParseNullableCode<TEnum>(string value) where TEnum : struct, Enum
+        {
+            TEnum result;
+            return TryParseCode(value, out result) ? result : (TEnum?)null;
+        }
     }
 
     [AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
