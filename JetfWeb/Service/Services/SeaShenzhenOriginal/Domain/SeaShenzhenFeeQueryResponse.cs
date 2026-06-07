@@ -47,5 +47,7 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
         public int Fee { get; set; }
 
         public int ToDlvCod { get; set; }
+
+        public int? ManualToDlvCod { get; set; }
     }
 }

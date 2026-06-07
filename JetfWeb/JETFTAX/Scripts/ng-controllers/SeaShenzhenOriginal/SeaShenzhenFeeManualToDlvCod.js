@@ -1,4 +1,9 @@
 mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http', function ($scope, $http) {
+    function clearSelectedFile(fileInput) {
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    }
     $scope.data = [];
     $scope.uploading = false;
     $scope.loading = false;
@@ -101,6 +106,7 @@ mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http',
         }
         var fileExtension = file.name.split('.').pop().toLowerCase();
         if (fileExtension !== 'xlsx') {
+            clearSelectedFile(fileInput);
             showError('副檔名需為 xlsx');
             return;
         }
@@ -127,7 +133,7 @@ mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http',
                     text: $scope.uploadResult.message,
                     icon: 'success'
                 });
-                fileInput.value = '';
+                clearSelectedFile(fileInput);
                 $('#seaShenzhenFeeManualToDlvCodUploadModal').modal('hide');
                 $scope.loadData();
                 return;
@@ -136,6 +142,7 @@ mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http',
                 success: false,
                 message: returnObj.message || data.msg || '上傳失敗'
             };
+            clearSelectedFile(fileInput);
             swal({
                 title: '錯誤',
                 text: $scope.uploadResult.message,
@@ -148,6 +155,7 @@ mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http',
                 success: false,
                 message: '上傳失敗，請稍後再試'
             };
+            clearSelectedFile(fileInput);
             swal({
                 title: '錯誤',
                 text: '上傳失敗，請稍後再試',

@@ -196,11 +196,12 @@
                         <th>到付款</th>
                         <th>手續費</th>
                         <th>物流代收金額</th>
+                        <th>人工調整物流代收金額</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr ng-if="data.length === 0">
-                        <td colspan="11" class="text-center">查無資料</td>
+                        <td colspan="12" class="text-center">查無資料</td>
                     </tr>
                     <tr ng-repeat="item in data track by item.Id">
                         <td>{{(currentPage - 1) * parsePageSize() + $index + 1}}</td>
@@ -214,6 +215,7 @@
                         <td>{{item.Cod}}</td>
                         <td>{{item.Fee}}</td>
                         <td>{{item.ToDlvCod}}</td>
+                        <td>{{item.ManualToDlvCod}}</td>
                     </tr>
                 </tbody>
             </table>

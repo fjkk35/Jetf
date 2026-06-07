@@ -57,6 +57,12 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
         return value.getFullYear() + '-' + month + '-' + day;
     }
 
+    function clearSelectedFile(fileInput: HTMLInputElement): void {
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    }
+
     $scope.form = {
         dataDate: new Date()
     };
@@ -102,6 +108,7 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
 
         var fileExtension = file.name.split('.').pop().toLowerCase();
         if (fileExtension !== 'xlsx') {
+            clearSelectedFile(fileInput);
             swal({
                 title: '錯誤',
                 text: '副檔名需為 xlsx',
@@ -139,7 +146,7 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
                         icon: 'success'
                     });
 
-                    fileInput.value = '';
+                    clearSelectedFile(fileInput);
                     return;
                 }
 
@@ -147,6 +154,8 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
                     success: false,
                     message: returnObj.message || data.msg || '上傳失敗'
                 };
+
+                clearSelectedFile(fileInput);
 
                 swal({
                     title: '錯誤',
@@ -160,6 +169,8 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
                     success: false,
                     message: '上傳失敗，請稍後再試'
                 };
+
+                clearSelectedFile(fileInput);
 
                 swal({
                     title: '錯誤',
