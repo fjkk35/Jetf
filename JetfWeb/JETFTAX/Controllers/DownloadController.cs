@@ -33,14 +33,14 @@ namespace JETFTAX.Controllers
         /// </summary>
         /// <returns></returns>
         //[UserAuthorize("1", "2")]
-        [UserAuthorize(Authority.DownloadSeaTax)]
-        public ActionResult DownloadSea()
-        {
-            DownloadSeaViewModel vm = new DownloadSeaViewModel();
-            vm.ddlTaxTypeList = _dropDownListService.GetSeaTaxTypeList();
-            vm.date = DateTime.Now.ToString("yyyy-MM-dd");
-            return View(vm);
-        }
+        //[UserAuthorize(Authority.DownloadSeaTax)]
+        //public ActionResult DownloadSea()
+        //{
+        //    DownloadSeaViewModel vm = new DownloadSeaViewModel();
+        //    vm.ddlTaxTypeList = _dropDownListService.GetSeaTaxTypeList();
+        //    vm.date = DateTime.Now.ToString("yyyy-MM-dd");
+        //    return View(vm);
+        //}
 
         /// <summary>
         /// 3-1.物流代收檔下載-海運-Excel
@@ -388,19 +388,19 @@ namespace JETFTAX.Controllers
         /// </summary>
         /// <returns></returns>
         //[UserAuthorize("1", "2", "6")]
-        [UserAuthorize(Authority.DownloadEtlTax)]
-        public ActionResult DownloadEtl()
-        {
-            DownloadEtlViewModel vm = new DownloadEtlViewModel();
-            List<SelectListItem> timeBetweenList = new List<SelectListItem>();
-            timeBetweenList.Add(new SelectListItem() { Text = "前一天22:00-當日08:00", Value = "1" });
-            timeBetweenList.Add(new SelectListItem() { Text = "當日08:00-當日16:00", Value = "2" });
-            timeBetweenList.Add(new SelectListItem() { Text = "當日21:00-當日22:00", Value = "3" });
-            vm.ddlTimeBetweenList = timeBetweenList;
+        //[UserAuthorize(Authority.DownloadEtlTax)]
+        //public ActionResult DownloadEtl()
+        //{
+        //    DownloadEtlViewModel vm = new DownloadEtlViewModel();
+        //    List<SelectListItem> timeBetweenList = new List<SelectListItem>();
+        //    timeBetweenList.Add(new SelectListItem() { Text = "前一天22:00-當日08:00", Value = "1" });
+        //    timeBetweenList.Add(new SelectListItem() { Text = "當日08:00-當日16:00", Value = "2" });
+        //    timeBetweenList.Add(new SelectListItem() { Text = "當日21:00-當日22:00", Value = "3" });
+        //    vm.ddlTimeBetweenList = timeBetweenList;
 
-            vm.date = DateTime.Now.ToString("yyyy-MM-dd");
-            return View(vm);
-        }
+        //    vm.date = DateTime.Now.ToString("yyyy-MM-dd");
+        //    return View(vm);
+        //}
 
         /// <summary>
         ///3-2.物流代收檔下載-空運-稅金資料轉檔

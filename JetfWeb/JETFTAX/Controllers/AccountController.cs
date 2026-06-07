@@ -125,7 +125,7 @@ namespace JETFTAX.Controllers
 
             // 直接沿用既有登入 Session 欄位，讓現有授權邏輯無須調整。
             SignInUser(user.Id, user.Name);
-            return Redirect("/Upload/Seatax");
+            return Redirect("/SeaTaxUpload/Index");
         }
 
 

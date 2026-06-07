@@ -21,7 +21,7 @@
                         showConfirmButton: false, // There won't be any confirm button
                     }).then(function () {
                         //成功導回首頁
-                        location.href = Router.action('Upload', 'Seatax');
+                        location.href = Router.action('SeaTaxUpload', 'Index');
                         //location.href = "/Home/Index";
                     });
                 }

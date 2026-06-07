@@ -109,14 +109,14 @@ namespace JETFTAX.Controllers
         /// </summary>
         /// <returns></returns>
         //[UserAuthorize("1", "2", Authority.UploadSeaTax)]
-        [UserAuthorize(Authority.UploadSeaTax)]
-        public ActionResult Seatax()
-        {
-            SeataxViewModel vm = new SeataxViewModel();
-            vm.ddlTaxTypeList = _dropDownListService.GetSeaTaxTypeList();
-            vm.date = DateTime.Now.ToString("yyyy-MM-dd");
-            return View(vm);
-        }
+        //[UserAuthorize(Authority.UploadSeaTax)]
+        //public ActionResult Seatax()
+        //{
+        //    SeataxViewModel vm = new SeataxViewModel();
+        //    vm.ddlTaxTypeList = _dropDownListService.GetSeaTaxTypeList();
+        //    vm.date = DateTime.Now.ToString("yyyy-MM-dd");
+        //    return View(vm);
+        //}
 
         /// <summary>
         /// 1-1.海運稅金資料上傳-檔案

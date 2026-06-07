@@ -31,7 +31,7 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 依指定日期區間重算空運代收資料，並回寫 FEE_MASTER_TEST。
+        /// 依指定日期區間重算空運代收資料，並回寫 FEE_MASTER。
         /// </summary>
         /// <param name="date">畫面選擇日期。</param>
         /// <param name="timeBetween">畫面選擇的時間區間代碼。</param>
@@ -67,16 +67,16 @@ namespace Service.Services.DownloadEtlNew
 
                 // step4: 此段為既有流程保留但目前註解停用；不主動恢復，避免改變目前上線行為。
                 // 先同步更新菜鳥稅金調整結果，確保後續組出的代收資料與既有流程一致。
-                //responseModel = UpdateCainiaoTaxEdit();
-                //if (responseModel.status != Status.success)
-                //{
-                //    return responseModel;
-                //}
+                responseModel = UpdateCainiaoTaxEdit();
+                if (responseModel.status != Status.success)
+                {
+                    return responseModel;
+                }
 
                 // step5: 依清關、稅單、原始單與客戶設定組出主檔與明細草稿。
                 var feeMasterDrafts = BuildFeeMasterDrafts(startDate, endDate);
 
-                // step6: 將草稿寫回 FEE_MASTER_TEST，並同步重建 FEE_MASTER_DETAIL 明細。
+                // step6: 將草稿寫回 FEE_MASTER，並同步重建 FEE_MASTER_DETAIL 明細。
                 SaveFeeMasters(feeMasterDrafts, dataDate);
                 responseModel.status = Status.success;
             }
@@ -125,7 +125,7 @@ namespace Service.Services.DownloadEtlNew
                 }
 
                 // 先以 fee master 當作報表底稿，後續再依代收類型與物流公司條件做篩選。
-                var feeMasters = JetfDb.FeeMasterTests
+                var feeMasters = JetfDb.FeeMasters
                     .AsNoTracking()
                     .Where(x =>
                         (x.Source == TactSource || x.Source == FtzSource) &&
@@ -275,7 +275,7 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 將同一 tracking 的來源資料轉成 FEE_MASTER_TEST 草稿。
+        /// 將同一 tracking 的來源資料轉成 FEE_MASTER 草稿。
         /// </summary>
         /// <param name="latestRow">同一 tracking 最新出倉的來源資料。</param>
         /// <param name="orderedRows">同一 tracking 依出倉時間排序後的來源資料。</param>
@@ -784,7 +784,7 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 將草稿資料新增或更新到 FEE_MASTER_TEST。
+        /// 將草稿資料新增或更新到 FEE_MASTER。
         /// </summary>
         /// <param name="drafts">待寫入的草稿資料。</param>
         /// <param name="dataDate">資料日期。</param>
@@ -804,8 +804,8 @@ namespace Service.Services.DownloadEtlNew
                     var existingRows = LoadExistingFeeMasters(drafts);
                     var existingLookup = existingRows.ToDictionary(x => BuildCompositeKey(x.MainNumber, x.TrackingNo));
                     var updateTime = DateTime.Now;
-                    var insertedRows = new List<FeeMasterTestEntity>();
-                    var updatedRows = new List<FeeMasterTestEntity>();
+                    var insertedRows = new List<FeeMasterEntity>();
+                    var updatedRows = new List<FeeMasterEntity>();
 
                     // step2: 依 main_number + trackingno 判斷是新增或更新，維持既有 upsert 規則。
                     foreach (var draft in drafts)
@@ -854,8 +854,8 @@ namespace Service.Services.DownloadEtlNew
         /// <param name="updatedRows">本次更新後的主檔資料。</param>
         private void SaveFeeMasterDetails(
             List<FeeMasterDraft> drafts,
-            List<FeeMasterTestEntity> insertedRows,
-            List<FeeMasterTestEntity> updatedRows)
+            List<FeeMasterEntity> insertedRows,
+            List<FeeMasterEntity> updatedRows)
         {
             var masterRows = insertedRows
                 .Concat(updatedRows)
@@ -896,11 +896,11 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 依本次草稿資料載入既有 FEE_MASTER_TEST。
+        /// 依本次草稿資料載入既有 FEE_MASTER。
         /// </summary>
         /// <param name="drafts">待比對的草稿資料。</param>
         /// <returns>既有 fee master 清單。</returns>
-        private List<FeeMasterTestEntity> LoadExistingFeeMasters(IEnumerable<FeeMasterDraft> drafts)
+        private List<FeeMasterEntity> LoadExistingFeeMasters(IEnumerable<FeeMasterDraft> drafts)
         {
             var lookupKeys = (drafts ?? Enumerable.Empty<FeeMasterDraft>())
                 .Where(x => !string.IsNullOrWhiteSpace(x.MainNumber) && !string.IsNullOrWhiteSpace(x.TrackingNo))
@@ -908,10 +908,10 @@ namespace Service.Services.DownloadEtlNew
 
             if (lookupKeys.Count == 0)
             {
-                return new List<FeeMasterTestEntity>();
+                return new List<FeeMasterEntity>();
             }
 
-            return JetfDb.FeeMasterTests
+            return JetfDb.FeeMasters
                 .AsNoTracking()
                 .Where(x => x.SourceType == AirSourceType)
                 .WhereBulkContains(
@@ -1008,14 +1008,14 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 將草稿資料轉成新的 FEE_MASTER_TEST entity。
+        /// 將草稿資料轉成新的 FEE_MASTER entity。
         /// </summary>
         /// <param name="draft">待寫入草稿。</param>
         /// <param name="dataDate">資料日期。</param>
         /// <returns>新的 fee master entity。</returns>
-        private static FeeMasterTestEntity CreateFeeMasterEntity(FeeMasterDraft draft, string dataDate, DateTime createTime)
+        private static FeeMasterEntity CreateFeeMasterEntity(FeeMasterDraft draft, string dataDate, DateTime createTime)
         {
-            return new FeeMasterTestEntity
+            return new FeeMasterEntity
             {
                 DataDate = dataDate,
                 Source = NormalizeText(draft.Source),
@@ -1055,13 +1055,13 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 將草稿資料覆寫到既有 FEE_MASTER_TEST entity。
+        /// 將草稿資料覆寫到既有 FEE_MASTER entity。
         /// </summary>
         /// <param name="entity">既有 fee master。</param>
         /// <param name="draft">最新草稿。</param>
         /// <param name="dataDate">資料日期。</param>
         /// <param name="updateTime">更新時間。</param>
-        private static void ApplyDraftToEntity(FeeMasterTestEntity entity, FeeMasterDraft draft, string dataDate, DateTime updateTime)
+        private static void ApplyDraftToEntity(FeeMasterEntity entity, FeeMasterDraft draft, string dataDate, DateTime updateTime)
         {
             entity.DataDate = dataDate;
             entity.Source = NormalizeText(draft.Source);

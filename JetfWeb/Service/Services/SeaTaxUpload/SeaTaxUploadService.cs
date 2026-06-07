@@ -69,10 +69,9 @@ namespace Service.Services.SeaTaxUpload
                     modifyRows = GetMissingModifyRows(JetfDb, dataDate, source, uploadTime, userId);
                     Logger.Debug($"step3 結束: 查詢缺漏異動資料，補遺筆數={modifyRows.Count}");
 
-                    //測試中先註解掉，正式上線再移除註解
-                    //Logger.Debug($"step4 開始: 重建 FeeMasterModify 快照，補遺筆數={modifyRows.Count}");
-                    //RefreshFeeMasterModifySnapshot(JetfDb, DataCenterDb, modifyRows, dataDate);
-                    //Logger.Debug($"step4 結束: 重建 FeeMasterModify 快照，補遺筆數={modifyRows.Count}");
+                    Logger.Debug($"step4 開始: 重建 FeeMasterModify 快照，補遺筆數={modifyRows.Count}");
+                    RefreshFeeMasterModifySnapshot(JetfDb, DataCenterDb, modifyRows, dataDate);
+                    Logger.Debug($"step4 結束: 重建 FeeMasterModify 快照，補遺筆數={modifyRows.Count}");
 
                     Logger.Debug($"step5 開始: 將補遺資料回補至上傳集合與 SeaTaxUpload，補遺筆數={modifyRows.Count}");
                     AppendModifyRowsToUpload(JetfDb, uploadRows, modifyRows, uploadTime, userId);
@@ -89,16 +88,15 @@ namespace Service.Services.SeaTaxUpload
                 }
             }
 
-            //測試中先註解掉，正式上線再移除註解
-            //Logger.Debug("step6 開始: 更新菜鳥海空運稅金方式");
-            //var updateResponse = _downloadService.UpdateCainiaoTaxEdit();
-            //if (updateResponse.status != Status.success)
-            //{
-            //    Logger.Debug($"step6 結束: 更新菜鳥海空運稅金方式失敗，訊息={updateResponse.msg}");
-            //    return updateResponse;
-            //}
+            Logger.Debug("step6 開始: 更新菜鳥海空運稅金方式");
+            var updateResponse = _downloadService.UpdateCainiaoTaxEdit();
+            if (updateResponse.status != Status.success)
+            {
+                Logger.Debug($"step6 結束: 更新菜鳥海空運稅金方式失敗，訊息={updateResponse.msg}");
+                return updateResponse;
+            }
 
-            //Logger.Debug("step6 結束: 更新菜鳥海空運稅金方式成功");
+            Logger.Debug("step6 結束: 更新菜鳥海空運稅金方式成功");
             Logger.Debug($"step7 開始: 檢查可處理筆數，筆數={uploadRows.Count}");
 
             if (uploadRows.Count == 0)
@@ -120,16 +118,16 @@ namespace Service.Services.SeaTaxUpload
             {
                 try
                 {
-                    Logger.Debug($"step9 開始: 置換 FEE_MASTER_TEST，資料日期={dataDate}，來源={source}，筆數={feeMasterRows.Count}");
+                    Logger.Debug($"step9 開始: 置換 FEE_MASTER，資料日期={dataDate}，來源={source}，筆數={feeMasterRows.Count}");
                     ReplaceFeeMaster(JetfDb, feeMasterRows, dataDate, source);
                     JetfDb.SaveChanges();
                     transaction.Commit();
-                    Logger.Debug($"step9 結束: 置換 FEE_MASTER_TEST 完成，筆數={feeMasterRows.Count}");
+                    Logger.Debug($"step9 結束: 置換 FEE_MASTER 完成，筆數={feeMasterRows.Count}");
                 }
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    Logger.Error(ex, "step9 失敗: 置換 FEE_MASTER_TEST 異常");
+                    Logger.Error(ex, "step9 失敗: 置換 FEE_MASTER 異常");
                     return CreateErrorResponse(ex.Message);
                 }
             }
@@ -335,7 +333,7 @@ and not exists (
         }
 
         /// <summary>
-        /// 將本次上傳資料轉成 FEE_MASTER_TEST 與 FEE_MASTER_DSTAIL 所需的資料結構。
+        /// 將本次上傳資料轉成 FEE_MASTER 與 FEE_MASTER_DSTAIL 所需的資料結構。
         /// </summary>
         private List<SeaTaxFeeMasterRow> BuildFeeMasterRows(
             JetfDbContext jetfDb,
@@ -1072,7 +1070,7 @@ and not exists (
         }
 
         /// <summary>
-        /// 以同資料日期/來源整批覆蓋 FEE_MASTER_TEST 與 FEE_MASTER_DSTAIL。
+        /// 以同資料日期/來源整批覆蓋 FEE_MASTER 與 FEE_MASTER_DSTAIL。
         /// </summary>
         private void ReplaceFeeMaster(
             JetfDbContext jetfDb,
@@ -1085,7 +1083,7 @@ and not exists (
                 return;
             }
 
-            var existingRows = jetfDb.FeeMasterTests
+            var existingRows = jetfDb.FeeMasters
                 .AsNoTracking()
                 .Where(row => row.DataDate == dataDate && row.Source == source && row.SourceType == SeaSourceType)
                 .ToList();
@@ -1099,7 +1097,7 @@ and not exists (
                     existingIds,
                     row => row.FeeMasterId);
 
-                jetfDb.DeleteWhere(jetfDb.FeeMasterTests
+                jetfDb.DeleteWhere(jetfDb.FeeMasters
                     .Where(row => row.DataDate == dataDate && row.Source == source && row.SourceType == SeaSourceType));
             }
 
@@ -1122,11 +1120,11 @@ and not exists (
         }
 
         /// <summary>
-        /// 建立 FEE_MASTER_TEST 寫入實體。
+        /// 建立 FEE_MASTER 寫入實體。
         /// </summary>
-        private static FeeMasterTestEntity CreateFeeMasterEntity(SeaTaxFeeMasterRow row, string dataDate, DateTime createTime)
+        private static FeeMasterEntity CreateFeeMasterEntity(SeaTaxFeeMasterRow row, string dataDate, DateTime createTime)
         {
-            return new FeeMasterTestEntity
+            return new FeeMasterEntity
             {
                 DataDate = dataDate,
                 Source = NormalizeText(row.Source),

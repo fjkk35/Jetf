@@ -124,10 +124,10 @@ namespace Service.Services.DownloadSeaNew
                     return result;
                 }
 
-                // step 1: 先從 FEE_MASTER_TEST 抓出這一天、這個稅金種類的原始資料。
+                // step 1: 先從 FEE_MASTER 抓出這一天、這個稅金種類的原始資料。
                 var feeMasters = LoadFeeMasters(dataDate, taxType, includeTax);
                 var customerNames = GetSeaCustomerNames(feeMasters.Select(x => x.Customer));
-                IEnumerable<FeeMasterTestEntity> filteredRows = feeMasters;
+                IEnumerable<FeeMasterEntity> filteredRows = feeMasters;
 
                 if (!string.IsNullOrEmpty(includeTax) && includeTax != "D" && includeTax != "C")
                 {
@@ -269,15 +269,15 @@ namespace Service.Services.DownloadSeaNew
         }
 
         /// <summary>
-        /// 依日期、稅金種類與包稅條件載入 FEE_MASTER_TEST。
+        /// 依日期、稅金種類與包稅條件載入 FEE_MASTER。
         /// </summary>
         /// <param name="dataDate">資料日期。</param>
         /// <param name="taxType">海運稅金種類。</param>
         /// <param name="includeTax">稅金類型。</param>
         /// <returns>符合條件的 fee master 清單。</returns>
-        private List<FeeMasterTestEntity> LoadFeeMasters(string dataDate, string taxType, string includeTax)
+        private List<FeeMasterEntity> LoadFeeMasters(string dataDate, string taxType, string includeTax)
         {
-            var query = JetfDb.FeeMasterTests
+            var query = JetfDb.FeeMasters
                 .AsNoTracking()
                 .Where(x => x.DataDate == dataDate && x.Source == taxType)
                 .OrderBy(x => x.Id);
@@ -300,7 +300,7 @@ namespace Service.Services.DownloadSeaNew
         /// </summary>
         /// <param name="feeMasters">本次匯出的 fee master 資料。</param>
         /// <returns>客戶與派件公司對照表。</returns>
-        private Dictionary<string, string> BuildSeaCompanyLookup(IEnumerable<FeeMasterTestEntity> feeMasters)
+        private Dictionary<string, string> BuildSeaCompanyLookup(IEnumerable<FeeMasterEntity> feeMasters)
         {
             var customers = feeMasters
                 .Select(x => x.Customer)
@@ -352,7 +352,7 @@ namespace Service.Services.DownloadSeaNew
         /// <param name="entity">fee master 資料。</param>
         /// <param name="customerNames">客戶名稱對照表。</param>
         /// <returns>報表資料列。</returns>
-        private static DownloadSeaNewReportItem MapReportItem(FeeMasterTestEntity entity, IReadOnlyDictionary<string, string> customerNames)
+        private static DownloadSeaNewReportItem MapReportItem(FeeMasterEntity entity, IReadOnlyDictionary<string, string> customerNames)
         {
             customerNames.TryGetValue((entity.Customer ?? string.Empty).Trim(), out var customerName);
 
@@ -447,19 +447,7 @@ namespace Service.Services.DownloadSeaNew
                     return string.Empty;
             }
 
-            return AppendTestSuffix(fileName);
-        }
-
-        private static string AppendTestSuffix(string fileName)
-        {
-            if (string.IsNullOrWhiteSpace(fileName))
-            {
-                return fileName;
-            }
-
-            return fileName.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase)
-                ? fileName.Replace(".xlsx", "(測試).xlsx")
-                : fileName + "(測試)";
+            return fileName;
         }
 
         /// <summary>
