@@ -120,6 +120,50 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
+        /// 依條件查詢人工調整資料，依建立時間由新到舊排序。
+        /// </summary>
+        public SeaShenzhenFeeManualToDlvCodQueryResponse GetData(SeaShenzhenFeeManualToDlvCodQueryRequest request)
+        {
+            request = request ?? new SeaShenzhenFeeManualToDlvCodQueryRequest();
+
+            var pageIndex = request.PageIndex > 0 ? request.PageIndex : 1;
+            var pageSize = request.PageSize > 0 ? request.PageSize : 10;
+            pageSize = Math.Min(pageSize, 200);
+
+            var trackingNo = NullIfEmpty(request.TrackingNo);
+
+            var query = JetfDb.ShenzhenFeeMasterManualToDlvCods.AsNoTracking().AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(trackingNo))
+            {
+                query = query.Where(x => x.TrackingNo.Contains(trackingNo));
+            }
+
+            var totalCount = query.Count();
+            var data = query
+                .OrderByDescending(x => x.CreatedTime)
+                .ThenByDescending(x => x.Id)
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .ToList()
+                .Select(x => new SeaShenzhenFeeManualToDlvCodQueryRow
+                {
+                    Id = x.Id,
+                    TrackingNo = x.TrackingNo,
+                    ToDlvCod = x.ToDlvCod,
+                    CreatedTimeText = x.CreatedTime.ToString("yyyy-MM-dd HH:mm:ss"),
+                    CreatedUser = x.CreatedUser
+                })
+                .ToList();
+
+            return new SeaShenzhenFeeManualToDlvCodQueryResponse
+            {
+                TotalCount = totalCount,
+                Data = data
+            };
+        }
+
+        /// <summary>
         /// 讀取人工調整 Excel 並轉成列資料。
         /// </summary>
         private List<SeaShenzhenFeeManualToDlvCodUploadRow> ReadExcelFile(string filePath)
@@ -393,6 +437,15 @@ namespace Service.Services.SeaShenzhenOriginal
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// 將空白字串正規化為 null。
+        /// </summary>
+        private static string NullIfEmpty(string text)
+        {
+            var trimmedText = (text ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(trimmedText) ? null : trimmedText;
         }
 
         /// <summary>

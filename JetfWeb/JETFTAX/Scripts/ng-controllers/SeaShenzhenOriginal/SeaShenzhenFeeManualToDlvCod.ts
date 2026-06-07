@@ -18,23 +18,161 @@ interface SeaShenzhenFeeManualToDlvCodUploadFailRow {
     ToDlvCodText: string;
 }
 
+interface SeaShenzhenFeeManualToDlvCodQueryRow {
+    Id: number;
+    TrackingNo: string;
+    ToDlvCod: number;
+    CreatedTimeText: string;
+    CreatedUser: string;
+}
+
+interface SeaShenzhenFeeManualToDlvCodQueryResponse {
+    Data?: SeaShenzhenFeeManualToDlvCodQueryRow[];
+    TotalCount?: number;
+    error?: string;
+}
+
 interface SeaShenzhenFeeManualToDlvCodScope extends ng.IScope {
+    data: SeaShenzhenFeeManualToDlvCodQueryRow[];
     uploading: boolean;
+    loading: boolean;
+    isSearched: boolean;
+    recordsInfo: string;
+    currentPage: number;
+    pageSize: string;
+    totalCount: number;
+    totalPages: number;
+    searchForm: {
+        trackingNo: string;
+    };
     uploadFailData: SeaShenzhenFeeManualToDlvCodUploadFailRow[];
     uploadResult: {
         success: boolean;
         message: string;
     } | null;
+    openUploadModal: () => void;
     uploadFile: () => void;
+    search: () => void;
+    clearSearch: () => void;
+    loadData: () => void;
+    changePageSize: () => void;
+    changePage: (page: number) => void;
+    previousPage: () => void;
+    nextPage: () => void;
+    getPages: () => number[];
+    parsePageSize: () => number;
 }
 
 mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http', function (
     $scope: SeaShenzhenFeeManualToDlvCodScope,
     $http: ng.IHttpService
 ) {
+    $scope.data = [];
     $scope.uploading = false;
+    $scope.loading = false;
+    $scope.isSearched = false;
+    $scope.recordsInfo = '';
+    $scope.currentPage = 1;
+    $scope.pageSize = '10';
+    $scope.totalCount = 0;
+    $scope.totalPages = 0;
+    $scope.searchForm = {
+        trackingNo: ''
+    };
     $scope.uploadFailData = [];
     $scope.uploadResult = null;
+
+    $scope.openUploadModal = function (): void {
+        $scope.uploadResult = null;
+        $scope.uploadFailData = [];
+        ($('#seaShenzhenFeeManualToDlvCodUploadModal') as any).modal('show');
+    };
+
+    $scope.search = function (): void {
+        $scope.currentPage = 1;
+        $scope.loadData();
+    };
+
+    $scope.clearSearch = function (): void {
+        $scope.searchForm = {
+            trackingNo: ''
+        };
+        $scope.data = [];
+        $scope.isSearched = false;
+        $scope.recordsInfo = '';
+        $scope.currentPage = 1;
+        $scope.totalCount = 0;
+        $scope.totalPages = 0;
+    };
+
+    $scope.loadData = function (): void {
+        $scope.loading = true;
+
+        $http.post(Router.action('SeaShenzhenFeeManualToDlvCod', 'SearchData'), buildRequest($scope.currentPage, $scope.parsePageSize()))
+            .then(function (response: ng.IHttpResponse<SeaShenzhenFeeManualToDlvCodQueryResponse>): void {
+                var result = response.data || {};
+                if (result.error) {
+                    showError('查詢失敗: ' + result.error);
+                    return;
+                }
+
+                $scope.data = result.Data || [];
+                $scope.totalCount = result.TotalCount || 0;
+                $scope.totalPages = Math.ceil($scope.totalCount / $scope.parsePageSize()) || 0;
+                $scope.isSearched = true;
+                updateRecordsInfo();
+            })
+            .catch(function (): void {
+                showError('查詢失敗，請稍後再試');
+            })
+            .finally(function (): void {
+                $scope.loading = false;
+            });
+    };
+
+    $scope.changePageSize = function (): void {
+        $scope.currentPage = 1;
+        $scope.loadData();
+    };
+
+    $scope.changePage = function (page: number): void {
+        if (page < 1 || page > $scope.totalPages || page === $scope.currentPage) {
+            return;
+        }
+
+        $scope.currentPage = page;
+        $scope.loadData();
+    };
+
+    $scope.previousPage = function (): void {
+        if ($scope.currentPage > 1) {
+            $scope.currentPage--;
+            $scope.loadData();
+        }
+    };
+
+    $scope.nextPage = function (): void {
+        if ($scope.currentPage < $scope.totalPages) {
+            $scope.currentPage++;
+            $scope.loadData();
+        }
+    };
+
+    $scope.getPages = function (): number[] {
+        var pages: number[] = [];
+        var startPage = Math.max(1, $scope.currentPage - 2);
+        var endPage = Math.min($scope.totalPages, $scope.currentPage + 2);
+
+        for (var i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+
+        return pages;
+    };
+
+    $scope.parsePageSize = function (): number {
+        return parseInt($scope.pageSize, 10);
+    };
 
     $scope.uploadFile = function (): void {
         var fileInput = document.getElementById('seaShenzhenFeeManualToDlvCodFileInput') as HTMLInputElement;
@@ -82,6 +220,8 @@ mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http',
                     });
 
                     fileInput.value = '';
+                    ($('#seaShenzhenFeeManualToDlvCodUploadModal') as any).modal('hide');
+                    $scope.loadData();
                     return;
                 }
 
@@ -121,4 +261,26 @@ mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http',
             icon: 'error'
         });
     }
+
+    function buildRequest(pageIndex: number, pageSize: number): any {
+        return {
+            TrackingNo: $scope.searchForm.trackingNo,
+            PageIndex: pageIndex,
+            PageSize: pageSize
+        };
+    }
+
+    function updateRecordsInfo(): void {
+        if ($scope.totalCount === 0) {
+            $scope.recordsInfo = '共 0 筆';
+            return;
+        }
+
+        var pageSize = $scope.parsePageSize();
+        var start = ($scope.currentPage - 1) * pageSize + 1;
+        var end = Math.min($scope.currentPage * pageSize, $scope.totalCount);
+        $scope.recordsInfo = '顯示第 ' + start + ' 至 ' + end + ' 筆，共 ' + $scope.totalCount + ' 筆';
+    }
+
+    $scope.loadData();
 }]);

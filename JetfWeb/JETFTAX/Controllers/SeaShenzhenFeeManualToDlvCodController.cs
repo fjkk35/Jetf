@@ -1,6 +1,7 @@
 using Service.EnumTax;
 using Service.Models;
 using Service.Services.SeaShenzhenOriginal;
+using Service.Services.SeaShenzhenOriginal.Domain;
 using System;
 using System.IO;
 using System.Web;
@@ -25,6 +26,32 @@ namespace JETFTAX.Controllers
         public ActionResult Index()
         {
             return View();
+        }
+
+        /// <summary>
+        /// 依條件查詢人工調整資料。
+        /// </summary>
+        [HttpPost]
+        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        public JsonResult SearchData(SeaShenzhenFeeManualToDlvCodQueryRequest request)
+        {
+            try
+            {
+                var result = _seaShenzhenFeeManualToDlvCodService.GetData(request);
+
+                return Json(new
+                {
+                    Data = result.Data,
+                    TotalCount = result.TotalCount
+                }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    error = ex.Message
+                }, JsonRequestBehavior.AllowGet);
+            }
         }
 
         [HttpPost]

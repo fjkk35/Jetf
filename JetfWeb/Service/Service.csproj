@@ -738,6 +738,8 @@
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeTransferRequest.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeTransferResponse.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeManualToDlvCodUploadRow.cs" />
+    <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeManualToDlvCodQueryRequest.cs" />
+    <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeManualToDlvCodQueryResponse.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeQueryRequest.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeQueryResponse.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalQueryRequest.cs" />
