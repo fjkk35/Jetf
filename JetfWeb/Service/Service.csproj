@@ -299,6 +299,7 @@
     <Compile Include="Data\Models\Jetf\SeaClearanceSjlTaxPaymentEntity.cs" />
     <Compile Include="Data\Models\Jetf\SeaClearanceStepDetailEntity.cs" />
     <Compile Include="Data\Models\Jetf\SeaClearanceStepEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ShenzhenFeeMasterManualToDlvCodEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundEditHistoryEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundExceptionEntity.cs" />
@@ -736,12 +737,14 @@
     <Compile Include="Services\SjlBatchImport\SjlBatchImportService.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeTransferRequest.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeTransferResponse.cs" />
+    <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeManualToDlvCodUploadRow.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeQueryRequest.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeQueryResponse.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalQueryRequest.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalQueryResponse.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalUploadRow.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenFeeDownloadService.cs" />
+    <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenFeeManualToDlvCodService.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenFeeQueryService.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenFeeTransferService.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenOriginalService.cs" />
