@@ -162,7 +162,7 @@ namespace Service.Services.SeaShenzhenOriginal
 
         private static string GetTaxPaymentDescription(string includeTax)
         {
-            var taxPayment = ShenzhenTaxPaymentExtensions.ParseNullableCode(includeTax);
+            var taxPayment = EnumerableExtensions.ParseNullableCode<ShenzhenTaxPayment>(includeTax);
             return taxPayment.HasValue ? taxPayment.Value.ToDescription() : string.Empty;
         }
     }

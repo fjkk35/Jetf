@@ -336,7 +336,7 @@ namespace Service.Services.SeaShenzhenOriginal
                     AddValidationError(item, "重量", "格式錯誤");
                 }
 
-                if (!string.IsNullOrWhiteSpace(item.TaxPayment) && !ShenzhenTaxPaymentExtensions.TryParseCode(item.TaxPayment, out _))
+                if (!string.IsNullOrWhiteSpace(item.TaxPayment) && !EnumerableExtensions.TryParseCode<ShenzhenTaxPayment>(item.TaxPayment, out _))
                 {
                     AddValidationError(item, "稅金支付方式", "僅支援 XD 或 C");
                 }
