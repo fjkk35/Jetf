@@ -9,6 +9,7 @@ using Service.Services.Job.CainiaoNeedJob;
 using Service.Services.Job.ComponentJob;
 using Service.Services.Job.FtzWebClientJob;
 using Service.Services.Job.IncomeJob;
+using Service.Services.Job.SeaShenzhenHctJob;
 using Service.Services.Job.ShipmentInboundProcessStageTransferJob;
 using Service.Services.Job.SjlJob;
 using Service.Services.Job.TactWebClientJob;
@@ -87,6 +88,11 @@ namespace JETFTAX.App_Start
             RecurringJob.AddOrUpdate<SjlJobService>("金祥富稅金資料傳送",
                 service => service.RunJhfTaxJobAsync(),
                 Cron.Daily(22, 10),
+                timeZoneOptions);
+
+            RecurringJob.AddOrUpdate<SeaShenzhenHctJobService>("新遞深圳 HCT 託運傳送",
+                service => service.RunSeaShenzhenHctJobAsync(),
+                "*/10 * * * *",
                 timeZoneOptions);
 
             RecurringJob.AddOrUpdate<ShipmentInboundProcessStageTransferJobService>("預先登記處理轉檔",

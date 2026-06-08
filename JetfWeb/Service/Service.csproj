@@ -659,6 +659,7 @@
     <Compile Include="Services\Job\SjlJob\Domain\JhfTaxResponseModel.cs" />
     <Compile Include="Services\Job\SjlJob\Domain\JhfTaxSendRequestModel.cs" />
     <Compile Include="Services\Job\SjlJob\SjlJobService.cs" />
+    <Compile Include="Services\Job\SeaShenzhenHctJob\SeaShenzhenHctJobService.cs" />
     <Compile Include="Services\Job\ShipmentInboundProcessStageTransferJob\ShipmentInboundProcessStageTransferJobService.cs" />
     <Compile Include="Services\Job\TaxJob\Model\EtlTaxModel.cs" />
     <Compile Include="Services\Job\TaxJob\Model\SeaTaxModel.cs" />
@@ -813,6 +814,7 @@
     <Compile Include="Data\Models\Jetf\FeeMasterModifyEntity.cs" />
     <Compile Include="Data\JetfDbContext.cs" />
     <Compile Include="Data\Models\DataCenter\OriginalListEntity.cs" />
+    <Compile Include="Data\Models\Jetf\SeaShenzhenHctSendLogEntity.cs" />
     <Compile Include="Data\Models\Jetf\SeaShenzhenOriginalEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShenzhenFeeMasterEntity.cs" />
     <Compile Include="Data\Models\Jetf\SeaTaxUploadEntity.cs" />
