@@ -21,7 +21,7 @@ namespace Service.Data
         /// 清關稅資料識別碼。
         /// </summary>
         [Key]
-        [Column("ID", Order = 1)]
+        [Column("ROW_ID", Order = 1)]
         public int Id { get; set; }
 
         /// <summary>
