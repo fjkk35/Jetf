@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -100,6 +100,12 @@ namespace Service.Data
         public decimal? Gw { get; set; }
 
         /// <summary>
+        /// 傳給物流重量。
+        /// </summary>
+        [Column("DlvGw")]
+        public decimal? DlvGw { get; set; }
+
+        /// <summary>
         /// 備註。
         /// </summary>
         [Column("Memo")]
@@ -116,6 +122,18 @@ namespace Service.Data
         /// </summary>
         [Column("TaxPayment")]
         public string TaxPayment { get; set; }
+
+        /// <summary>
+        /// 是否是新竹物流的託運資料。
+        /// </summary>
+        [Column("IsHct")]
+        public bool IsHct { get; set; }
+
+        /// <summary>
+        /// 託運單是否傳送成功。
+        /// </summary>
+        [Column("IsHctSuccess")]
+        public bool IsHctSuccess { get; set; }
 
         /// <summary>
         /// 修改人員。
