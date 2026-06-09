@@ -1140,23 +1140,23 @@ and not exists (
                 OutDateTime = ParseDateTime(row.OutDateTime),
                 TaxBase = ParseNullableInt(row.TaxBase),
                 Tax1 = ParseNullableInt(row.Tax1),
-                Tax2 = ParseNullableInt(row.Tax2),
+                Tax2 = ParseAmountOrZero(row.Tax2),
                 DlvCom = NormalizeText(row.DlvCom),
                 TaxNumber = NormalizeText(row.TaxNumber),
-                Fee = ParseNullableInt(row.Fee),
+                Fee = ParseAmountOrZero(row.Fee),
                 IncludeTax = NormalizeText(row.IncludeTax),
                 Recipient = NormalizeText(row.Recipient),
                 RecPhone = NormalizeText(row.RecPhone),
                 RecAddress = NormalizeText(row.RecAddress),
                 RecId = NormalizeText(row.RecId),
-                Cod = ParseNullableInt(row.Cod),
-                ToDlvCod = NormalizeText(row.ToDlvCod),
+                Cod = ParseAmountOrZero(row.Cod),
+                ToDlvCod = NormalizeAmountTextOrZero(row.ToDlvCod),
                 DlvInv = NormalizeText(row.DlvInv),
                 Download = "1",
                 TaxPayer = NormalizeText(row.TaxPayer),
                 Arrival = NormalizeText(row.Arrival),
-                CustomerCod = ParseNullableInt(row.CustomerCod),
-                TransCod = ParseNullableInt(row.TransCod),
+                CustomerCod = ParseAmountOrZero(row.CustomerCod),
+                TransCod = ParseAmountOrZero(row.TransCod),
                 ModiftyDate = createTime,
                 TaxRecId = NormalizeText(row.TaxRecId)
             };
@@ -1356,6 +1356,23 @@ and not exists (
             }
 
             return decimal.ToInt32(decimal.Truncate(value.Value));
+        }
+
+        /// <summary>
+        /// 將金額欄位安全轉成 int，空值時回傳 0，避免主檔落 null。
+        /// </summary>
+        private static int ParseAmountOrZero(string value)
+        {
+            return ParseNullableInt(value) ?? 0;
+        }
+
+        /// <summary>
+        /// 將字串型金額欄位標準化，空值時改寫為 0。
+        /// </summary>
+        private static string NormalizeAmountTextOrZero(string value)
+        {
+            var normalized = NormalizeText(value);
+            return string.IsNullOrEmpty(normalized) ? "0" : normalized;
         }
 
         /// <summary>
