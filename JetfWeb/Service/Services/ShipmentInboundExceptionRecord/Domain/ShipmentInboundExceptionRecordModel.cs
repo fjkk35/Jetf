@@ -19,6 +19,11 @@ namespace Service.Services.ShipmentInboundExceptionRecord.Domain
         public DateTime InboundDate { get; set; }
 
         /// <summary>
+        /// 資料別。
+        /// </summary>
+        public string DataType { get; set; }
+
+        /// <summary>
         /// 主號。
         /// </summary>
         public string MainNumber { get; set; }

@@ -49,6 +49,7 @@
     }
 
     .exception-record-col-main,
+    .exception-record-col-customer,
     .exception-record-col-tracking {
         width: 220px;
     }
@@ -209,6 +210,7 @@
                 <thead class="thead-dark">
                     <tr>
                         <th class="exception-record-col-date">入庫日期</th>
+                        <th class="exception-record-col-customer">客戶</th>
                         <th class="exception-record-col-main">主號</th>
                         <th class="exception-record-col-tracking">單號</th>
                         <th>異常原因</th>
@@ -216,10 +218,11 @@
                 </thead>
                 <tbody>
                     <tr ng-if="data.length === 0">
-                        <td colspan="4" class="text-center">查無資料</td>
+                        <td colspan="5" class="text-center">查無資料</td>
                     </tr>
                     <tr ng-repeat="item in data">
                         <td class="exception-record-col-date">{{item.InboundDate | customDate}}</td>
+                        <td class="exception-record-col-customer">{{item.CustName || item.CustCode}}</td>
                         <td class="exception-record-col-main">{{item.MainNumber}}</td>
                         <td class="exception-record-col-tracking">
                             <a href="~/ShipmentInboundRecord/Detail?id={{item.Id}}"

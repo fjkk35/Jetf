@@ -46,6 +46,8 @@ namespace Service.Services.ShipmentInboundExceptionRecord
                     .Take(request.PageSize)
                     .ToList();
 
+                FillCustomerNames(data);
+
                 return new ShipmentInboundExceptionRecordResponse
                 {
                     Data = data,
@@ -91,6 +93,8 @@ namespace Service.Services.ShipmentInboundExceptionRecord
                     .ThenBy(x => x.MainNumber)
                     .ThenBy(x => x.TrackingNo)
                     .ToList();
+
+                FillCustomerNames(data);
             }
 
             var excelBytes = CreateExcel(data);
@@ -124,6 +128,7 @@ namespace Service.Services.ShipmentInboundExceptionRecord
             {
                 Id = x.Id,
                 InboundDate = x.InboundDate,
+                DataType = x.DataType,
                 MainNumber = x.MainNumber,
                 TrackingNo = x.TrackingNo,
                 CustCode = x.CustCode,
@@ -147,6 +152,59 @@ namespace Service.Services.ShipmentInboundExceptionRecord
             }
 
             return query;
+        }
+
+        private Dictionary<string, string> GetAirCustNames(IEnumerable<string> custCodes)
+        {
+            return GetAirCustomerNames(custCodes);
+        }
+
+        private Dictionary<string, string> GetSeaCustNames(IEnumerable<string> custCodes)
+        {
+            return GetSeaCustomerNames(custCodes);
+        }
+
+        private void FillCustomerNames(List<ShipmentInboundExceptionRecordModel> data)
+        {
+            if (data == null || !data.Any())
+            {
+                return;
+            }
+
+            var airCustCodes = data.Where(x => x.DataType == "空運" && !string.IsNullOrWhiteSpace(x.CustCode))
+                .Select(x => x.CustCode)
+                .Distinct()
+                .ToList();
+
+            var seaCustCodes = data.Where(x => x.DataType == "海運" && !string.IsNullOrWhiteSpace(x.CustCode))
+                .Select(x => x.CustCode)
+                .Distinct()
+                .ToList();
+
+            var airCustNames = GetAirCustNames(airCustCodes);
+            var seaCustNames = GetSeaCustNames(seaCustCodes);
+
+            foreach (var item in data)
+            {
+                if (string.IsNullOrWhiteSpace(item.CustCode))
+                {
+                    continue;
+                }
+
+                if (item.DataType == "空運" && airCustNames.ContainsKey(item.CustCode))
+                {
+                    item.CustName = airCustNames[item.CustCode];
+                    continue;
+                }
+
+                if (item.DataType == "海運" && seaCustNames.ContainsKey(item.CustCode))
+                {
+                    item.CustName = seaCustNames[item.CustCode];
+                    continue;
+                }
+
+                item.CustName = item.CustCode;
+            }
         }
 
         /// <summary>
@@ -225,7 +283,7 @@ namespace Service.Services.ShipmentInboundExceptionRecord
             var headerStyle = NpoiStyle.CreateHeaderStyle(workbook);
             var dataStyle = NpoiStyle.CreateDataStyle(workbook);
 
-            var headers = new List<string> { "主號", "單號", "異常原因" };
+            var headers = new List<string> { "客戶", "主號", "單號", "異常原因" };
             var headerRow = sheet.CreateRow(0);
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
@@ -233,9 +291,10 @@ namespace Service.Services.ShipmentInboundExceptionRecord
             {
                 var item = data[i];
                 var row = sheet.CreateRow(i + 1);
-                NpoiCell.CreateCell(row, 0, item.MainNumber, dataStyle);
-                NpoiCell.CreateCell(row, 1, item.TrackingNo, dataStyle);
-                NpoiCell.CreateCell(row, 2, item.ExceptionReason, dataStyle);
+                NpoiCell.CreateCell(row, 0, item.CustName, dataStyle);
+                NpoiCell.CreateCell(row, 1, item.MainNumber, dataStyle);
+                NpoiCell.CreateCell(row, 2, item.TrackingNo, dataStyle);
+                NpoiCell.CreateCell(row, 3, item.ExceptionReason, dataStyle);
             }
 
             sheet.AutoSizeColumns(headers.Count, scale: 1.2, minWidth: 18);
