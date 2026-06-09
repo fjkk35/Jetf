@@ -90,10 +90,10 @@ namespace JETFTAX.App_Start
                 Cron.Daily(22, 10),
                 timeZoneOptions);
 
-            RecurringJob.AddOrUpdate<SeaShenzhenHctJobService>("新遞深圳 HCT 託運傳送",
-                service => service.RunSeaShenzhenHctJobAsync(),
-                "*/10 * * * *",
-                timeZoneOptions);
+            //RecurringJob.AddOrUpdate<SeaShenzhenHctJobService>("新遞深圳 HCT 託運傳送",
+            //    service => service.RunSeaShenzhenHctJobAsync(),
+            //    "*/10 * * * *",
+            //    timeZoneOptions);
 
             RecurringJob.AddOrUpdate<ShipmentInboundProcessStageTransferJobService>("預先登記處理轉檔",
                 service => service.RunShipmentInboundProcessStageTransferJobAsync(),
