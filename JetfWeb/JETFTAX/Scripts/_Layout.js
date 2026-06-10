@@ -113,6 +113,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'PdtScanCargoArrivalTime', text: '輸入外車交倉時間', url: '~/PdtScanCargoArrivalTime/Index' },
                 { id: 'EtlClearanceDetails', text: '空快清關明細表', url: '~/EtlClearanceDetails/Index', auth: ['EtlClearanceDetails'] },
                 { id: 'ETLCCLMainDetails', text: '空快清關主號明細表', url: '~/CCLWork/ETLCCLMainDetails', auth: ['EtlClearanceMainDetails'] },
+                { id: 'CoupangReportForm', text: 'Coupang回報表單', url: '~/CoupangReportForm/Index', auth: ['EtlClearanceMainDetails'] },
                 { id: 'EtlErrorG', text: '空快B6F錯單G報表', url: '~/EtlErrorG/Index', auth: ['EtlErrorG'] },
                 { id: 'UploadFileB6F', text: '上傳拆袋資料', url: '~/CCLWork/UploadFileB6F', auth: ['UploadUnpackingBagNo'] },
                 { id: 'EtlMergeBagNo', text: '上傳空快併袋袋號資料', url: '~/EtlMergeBagNo/Upload', auth: ['UploadEtlMergeBagNo'] },

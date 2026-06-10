@@ -509,6 +509,7 @@
     <Compile Include="Services\CainiaoYtoSeaTax\CainiaoYtoSeaTaxService.cs" />
     <Compile Include="Services\CargoService.cs" />
     <Compile Include="Services\CCLWorkService.cs" />
+    <Compile Include="Services\CoupangReportForm\CoupangReportFormService.cs" />
     <Compile Include="Services\CompanySeaTax\CompanySeaTaxService.cs" />
     <Compile Include="Services\CptStatusReport\CptStatusReportService.cs" />
     <Compile Include="Services\CptTradeVan\CptPortalApi.cs" />

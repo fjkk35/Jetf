@@ -297,6 +297,7 @@
     <Compile Include="Controllers\CaptchaController.cs" />
     <Compile Include="Controllers\CargoController.cs" />
     <Compile Include="Controllers\CCLWorkController.cs" />
+    <Compile Include="Controllers\CoupangReportFormController.cs" />
     <Compile Include="Controllers\CompanySeaTaxController.cs" />
     <Compile Include="Controllers\CptStatusReportController.cs" />
     <Compile Include="Controllers\CptTradeVanController.cs" />
@@ -827,6 +828,7 @@
     <Content Include="Scripts\ng-controllers\BatchSearchCargo2\BatchSearchCargo2.js" />
     <Content Include="Scripts\ng-controllers\BatchSearchShenzhenCargo\BatchSearchShenzhenCargo.js" />
     <Content Include="Scripts\ng-controllers\BatchSearchTax\BatchSearchTax.js" />
+    <Content Include="Scripts\ng-controllers\CoupangReportForm\CoupangReportForm.js" />
     <Content Include="Scripts\ng-controllers\Customer\SearchCustomer.js" />
     <Content Include="Scripts\ng-controllers\CustomerTaxCalculate\CustomerTaxCalculate.js" />
     <Content Include="Scripts\ng-controllers\CustomerTaxSetting\CustomerTaxSetting.js" />
@@ -2855,6 +2857,7 @@
     <Content Include="Views\WorkLoad\UploadFile.cshtml" />
     <Content Include="Views\CCLWork\ETLCCLDetails.cshtml" />
     <Content Include="Views\CCLWork\ETLCCLMainDetails.cshtml" />
+    <Content Include="Views\CoupangReportForm\Index.cshtml" />
     <Content Include="Views\WorkLoad\UploadFileEtlBagNo.cshtml" />
     <Content Include="Views\WorkLoad\UploadFileSeaBagNo.cshtml" />
     <Content Include="Views\WorkLoad\UploadFileSeaManifest.cshtml" />
@@ -2997,6 +3000,7 @@
     <None Include="package.json" />
     <None Include="tsconfig.json" />
     <TypeScriptCompile Include="Scripts\ng-controllers\BatchSearchCargo2\BatchSearchCargo2.ts" />
+    <TypeScriptCompile Include="Scripts\ng-controllers\CoupangReportForm\CoupangReportForm.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\Customer\SearchCustomer.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\Ezway\Ezway.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\EzwaySea\EzwaySea.ts" />
