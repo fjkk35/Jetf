@@ -57,6 +57,7 @@ namespace Service.Services.ShipmentInboundPick
                         SeqNo = x.SeqNo,
                         LocationCode = x.LocationCode,
                         ProcessType = (ShipmentInboundProcessType)(x.ProcessType ?? 0),
+                        ProcessTime = x.ProcessTime,
                         ProcessImporter = x.ProcessImporter,
                         ProcessImporterPhone = x.ProcessImporterPhone,
                         ProcessImporterAddr = x.ProcessImporterAddr,
@@ -116,9 +117,10 @@ namespace Service.Services.ShipmentInboundPick
 
             var headerStyle = NpoiStyle.CreateHeaderStyle(workbook);
             var dataStyle = NpoiStyle.CreateDataStyle(workbook);
+            var dateTimeStyle = NpoiStyle.CreateDateTimeStyle(workbook, "yyyy-mm-dd hh:mm:ss");
 
             //檢貨明細
-            CreatePickSheet(workbook, data, headerStyle, dataStyle);
+            CreatePickSheet(workbook, data, headerStyle, dataStyle, dateTimeStyle);
             //新竹
             CreateHctSheet(workbook, data, headerStyle, dataStyle);
             //黑貓
@@ -135,12 +137,12 @@ namespace Service.Services.ShipmentInboundPick
             }
         }
 
-        private void CreatePickSheet(IWorkbook workbook, List<ShipmentInboundPickModel> data, ICellStyle headerStyle, ICellStyle dataStyle)
+        private void CreatePickSheet(IWorkbook workbook, List<ShipmentInboundPickModel> data, ICellStyle headerStyle, ICellStyle dataStyle, ICellStyle dateTimeStyle)
         {
             ISheet sheet = workbook.CreateSheet("撿貨明細");
 
             IRow headerRow = sheet.CreateRow(0);
-            var headers = new List<string> { "單號", "客戶", "流水號", "儲位", "處理方式", "備註" };
+            var headers = new List<string> { "單號", "客戶", "流水號", "儲位", "處理方式", "備註", "客服處理時間" };
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
             int rowIndex = 1;
@@ -153,6 +155,7 @@ namespace Service.Services.ShipmentInboundPick
                 NpoiCell.CreateCell(dataRow, 3, item.LocationCode, dataStyle);
                 NpoiCell.CreateCell(dataRow, 4, item.ProcessTypeName, dataStyle);
                 NpoiCell.CreateCell(dataRow, 5, item.Remark, dataStyle);
+                NpoiCell.CreateDateTimeCell(dataRow, 6, item.ProcessTime, dateTimeStyle);
                 rowIndex++;
             }
 

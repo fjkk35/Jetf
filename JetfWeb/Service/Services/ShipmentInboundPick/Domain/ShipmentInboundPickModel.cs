@@ -44,6 +44,11 @@ namespace Service.Services.ShipmentInboundPick.Domain
         public string ProcessTypeName => ProcessType.ToDescription();
 
         /// <summary>
+        /// 客服處理時間。
+        /// </summary>
+        public DateTime? ProcessTime { get; set; }
+
+        /// <summary>
         /// 重出派件公司。
         /// </summary>
         public ShipmentInboundProcessTransNo ProcessTransNo { get; set; }
