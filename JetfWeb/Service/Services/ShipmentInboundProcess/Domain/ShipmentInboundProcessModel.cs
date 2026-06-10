@@ -66,6 +66,11 @@ namespace Service.Services.ShipmentInboundProcess.Domain
         public string SourceTypeName => SourceType.ToDescription();
 
         /// <summary>
+        /// 最新異常原因。
+        /// </summary>
+        public string ExceptionReason { get; set; }
+
+        /// <summary>
         /// 退件原因(保留)
         /// </summary>
         public string ReturnReason { get; set; }

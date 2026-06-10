@@ -487,6 +487,7 @@
                                 <col style="width: 90px;" />
                                 <col style="width: 200px;" />
                                 <col style="width: 100px;" />
+                                <col style="width: 170px;" />
                                 <col style="width: 230px;" />
                                 <col style="width: 230px;" />
                                 <col style="width: 120px;" />
@@ -502,6 +503,7 @@
                                     <th>派件公司</th>
                                     <th>單號</th>
                                     <th>貨件來源</th>
+                                    <th>異常原因</th>
                                     <th>退件原因</th>
                                     <th>備註</th>
                                     <th>開始處理時間</th>
@@ -511,7 +513,7 @@
                             </thead>
                             <tbody>
                                 <tr ng-if="data.length === 0">
-                                    <td colspan="12" class="text-center">查無資料</td>
+                                    <td colspan="13" class="text-center">查無資料</td>
                                 </tr>
                                 <tr ng-repeat="item in data track by item.Id"
                                     ng-class="{'shipment-process-row-updated': item.RowUpdateHighlight}">
@@ -533,6 +535,7 @@
                                         </span>
                                     </td>
                                     <td>{{item.SourceTypeName}}</td>
+                                    <td>{{item.ExceptionReason}}</td>
                                     <td>
                                         <div ng-if="!item.editingReturnReason" class="shipment-process-editable-cell">
                                             <span class="shipment-process-editable-text">{{item.ReturnReason || ''}}</span>

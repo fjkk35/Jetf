@@ -1,5 +1,6 @@
 ﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using Service.Data;
 using Service.EnumTax;
 using Service.Extensions;
 using Service.Models;
@@ -71,6 +72,7 @@ namespace Service.Services.ShipmentInboundProcess
                 FillTrackingNoCounts(data, query);
                 NormalizeExpiredProcessEditDisplay(data);
                 FillCustomerAndTransNames(data);
+                FillLatestExceptionReasons(data);
 
                 return new ShipmentInboundProcessResponse
                 {
@@ -583,6 +585,7 @@ namespace Service.Services.ShipmentInboundProcess
 
             NormalizeExpiredProcessEditDisplay(model);
             FillCustomerAndTransNames(new List<ShipmentInboundProcessModel> { model });
+            FillLatestExceptionReasons(new List<ShipmentInboundProcessModel> { model });
 
             return model;
         }
@@ -693,6 +696,65 @@ namespace Service.Services.ShipmentInboundProcess
         }
 
         /// <summary>
+        /// 一次回填查詢結果每筆資料最後一筆異常原因，避免逐筆查詢。
+        /// </summary>
+        private void FillLatestExceptionReasons(List<ShipmentInboundProcessModel> data)
+        {
+            var shipmentInboundIds = data
+                .Select(x => x.Id)
+                .Distinct()
+                .ToList();
+
+            if (!shipmentInboundIds.Any())
+            {
+                return;
+            }
+
+            var latestExceptions = JetfDb.ShipmentInboundExceptions
+                .AsNoTracking()
+                .WhereBulkContains(
+                    JetfDb,
+                    shipmentInboundIds,
+                    row => row.ShipmentInboundId,
+                    key => key);
+
+            var exceptionReasonIds = latestExceptions
+                .Where(x => x.ExceptionReasonId.HasValue)
+                .Select(x => x.ExceptionReasonId.Value)
+                .Distinct()
+                .ToList();
+
+            var exceptionReasonDict = JetfDb.ShipmentInboundExceptionReasons
+                .AsNoTracking()
+                .WhereBulkContains(
+                    JetfDb,
+                    exceptionReasonIds,
+                    row => row.Id,
+                    key => key)
+                .ToDictionary(x => x.Id, x => x.Reason);
+
+            var latestExceptionReasonDict = latestExceptions
+                .GroupBy(x => x.ShipmentInboundId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group
+                        .OrderByDescending(x => x.CreatedTime ?? DateTime.MinValue)
+                        .ThenByDescending(x => x.Id)
+                        .Select(x => x.ExceptionReasonId.HasValue && exceptionReasonDict.ContainsKey(x.ExceptionReasonId.Value)
+                            ? exceptionReasonDict[x.ExceptionReasonId.Value]
+                            : null)
+                        .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? string.Empty);
+
+            foreach (var item in data)
+            {
+                if (latestExceptionReasonDict.TryGetValue(item.Id, out var exceptionReason))
+                {
+                    item.ExceptionReason = exceptionReason;
+                }
+            }
+        }
+
+        /// <summary>
         /// 將逾時的處理鎖定從顯示模型中清空，避免前端顯示過期鎖定資訊。
         /// </summary>
         /// <param name="data">待處理的資料列清單。</param>
@@ -791,6 +853,7 @@ namespace Service.Services.ShipmentInboundProcess
                 "派件公司",
                 "單號",
                 "貨件來源",
+                "異常原因",
                 "退件原因",
                 "處理方式",
                 "備註"
@@ -811,9 +874,10 @@ namespace Service.Services.ShipmentInboundProcess
                 NpoiCell.CreateCell(row, 4, item.TransName ?? "", dataStyle);
                 NpoiCell.CreateCell(row, 5, item.TrackingNo ?? "", dataStyle);
                 NpoiCell.CreateCell(row, 6, item.SourceTypeName ?? "", dataStyle);
-                NpoiCell.CreateCell(row, 7, item.ReturnReason ?? "", dataStyle);
-                NpoiCell.CreateCell(row, 8, item.ProcessTypeName ?? "", dataStyle);
-                NpoiCell.CreateCell(row, 9, item.Remark ?? "", dataStyle);
+                NpoiCell.CreateCell(row, 7, item.ExceptionReason ?? "", dataStyle);
+                NpoiCell.CreateCell(row, 8, item.ReturnReason ?? "", dataStyle);
+                NpoiCell.CreateCell(row, 9, item.ProcessTypeName ?? "", dataStyle);
+                NpoiCell.CreateCell(row, 10, item.Remark ?? "", dataStyle);
             }
 
             sheet.AutoSizeColumns(headers.Length, scale: 1.2, minWidth: 15);
