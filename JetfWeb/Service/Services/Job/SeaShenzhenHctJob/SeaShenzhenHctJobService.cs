@@ -111,8 +111,6 @@ namespace Service.Services.Job.SeaShenzhenHctJob
 
         private static HctRequestItem BuildRequestItem(SeaShenzhenOriginalEntity original)
         {
-            var weight = original.DlvGw ?? original.Gw;
-
             return new HctRequestItem
             {
                 Epino = FirstNotEmpty(original.TrackingNo, original.OrderNo, original.JetfSerial),
@@ -120,9 +118,7 @@ namespace Service.Services.Job.SeaShenzhenHctJob
                 Ertel1 = NormalizeText(original.ImporterPhone),
                 Eraddr = NormalizeText(original.ImporterAddress),
                 Ejamt = "1",
-                Eqamt = weight.HasValue
-                    ? weight.Value.ToString("0.###", CultureInfo.InvariantCulture)
-                    : string.Empty,
+                Eqamt = original.DlvGw.ToString("0.###", CultureInfo.InvariantCulture),
                 Escsno = GetSetting("HctEdi.CustomerCode", DefaultCustomerCode),
                 Edelno = NormalizeText(original.JetfSerial),
                 Eqmny = original.Cc.HasValue

@@ -97,13 +97,13 @@ namespace Service.Data
         /// 重量。
         /// </summary>
         [Column("Gw")]
-        public decimal? Gw { get; set; }
+        public decimal Gw { get; set; }
 
         /// <summary>
         /// 傳給物流重量。
         /// </summary>
         [Column("DlvGw")]
-        public decimal? DlvGw { get; set; }
+        public decimal DlvGw { get; set; }
 
         /// <summary>
         /// 備註。

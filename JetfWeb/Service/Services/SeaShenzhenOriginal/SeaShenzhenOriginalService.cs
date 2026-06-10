@@ -19,6 +19,8 @@ namespace Service.Services.SeaShenzhenOriginal
     /// </summary>
     public class SeaShenzhenOriginalService : _BaseService
     {
+        private const string HctTransName = "新竹";
+
         private static readonly string[] RequiredHeaders =
         {
             "報關號碼",
@@ -136,7 +138,7 @@ namespace Service.Services.SeaShenzhenOriginal
                     ItemName = x.ItemName,
                     CcText = x.Cc.HasValue ? x.Cc.Value.ToString("0.##") : string.Empty,
                     QuantityText = x.Quantity.HasValue ? x.Quantity.Value.ToString() : string.Empty,
-                    GwText = x.Gw.HasValue ? x.Gw.Value.ToString("0.##") : string.Empty,
+                    GwText = x.Gw.ToString("0.##"),
                     Memo = x.Memo,
                     Claimant = x.Claimant,
                     TaxPayment = GetTaxPaymentDescription(x.TaxPayment)
@@ -396,9 +398,22 @@ namespace Service.Services.SeaShenzhenOriginal
                     AddValidationError(item, "數量", "格式錯誤");
                 }
 
-                if (!string.IsNullOrWhiteSpace(item.GwText) && !item.Gw.HasValue)
+                if (string.IsNullOrWhiteSpace(item.GwText))
+                {
+                    AddValidationError(item, "重量", "必填");
+                }
+                else if (!item.Gw.HasValue)
                 {
                     AddValidationError(item, "重量", "格式錯誤");
+                }
+
+                if (string.IsNullOrWhiteSpace(item.TransName))
+                {
+                    AddValidationError(item, "寄件通路", "必填");
+                }
+                else if (!string.Equals(item.TransName.Trim(), HctTransName, StringComparison.Ordinal))
+                {
+                    AddValidationError(item, "寄件通路", "僅支援新竹");
                 }
 
                 if (string.IsNullOrWhiteSpace(item.TaxPayment))
@@ -463,6 +478,7 @@ namespace Service.Services.SeaShenzhenOriginal
                         if (existingMap.TryGetValue(key, out entity))
                         {
                             ApplyRow(entity, row, dataDate);
+                            entity.IsHctSuccess = false;
                             entity.ModifiedUser = userId;
                             entity.ModifiedTime = now;
                             updateCount++;
@@ -516,10 +532,27 @@ namespace Service.Services.SeaShenzhenOriginal
             entity.ItemName = NullIfEmpty(row.ItemName);
             entity.Cc = row.Cc;
             entity.Quantity = row.Quantity;
-            entity.Gw = row.Gw;
+            entity.Gw = row.Gw.Value;
+            entity.DlvGw = CalculateDlvGw(row.Gw);
             entity.Memo = NullIfEmpty(row.Memo);
             entity.Claimant = NullIfEmpty(row.Claimant);
             entity.TaxPayment = row.TaxPayment;
+            entity.IsHct = string.Equals(NullIfEmpty(row.TransName), HctTransName, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// 依 HCT 規則計算傳給物流的重量：大於 1 無條件捨去小數，未滿或等於 1 以 1 計。
+        /// </summary>
+        private decimal CalculateDlvGw(decimal? gw)
+        {
+            if (!gw.HasValue)
+            {
+                throw new InvalidOperationException("重量不可為空");
+            }
+
+            return gw.Value > 1
+                ? Math.Truncate(gw.Value)
+                : 1;
         }
 
         /// <summary>
