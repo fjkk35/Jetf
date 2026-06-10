@@ -546,6 +546,8 @@ and not exists (
             SeaOrderOriginalEntity order,
             EtlTipcTaxEntity tax)
         {
+            var cod = order?.Cc;
+
             return new SeaTaxUploadJoinedRow
             {
                 BlNo = uploadRow.BlNo,
@@ -570,7 +572,7 @@ and not exists (
                 ImporterAddr = NormalizeText(order?.ImporterAddress),
                 ImporterId = NormalizeText(order?.ImporterId),
                 JetfSerial = NormalizeText(order?.JetfSerial),
-                Cod = order.Cc.HasValue ? (decimal?)Convert.ToDecimal(order.Cc.Value) : null,
+                Cod = cod.HasValue ? (decimal?)Convert.ToDecimal(cod.Value) : null,
                 Memo = NormalizeText(order?.Memo),
                 Arrival = NormalizeText(order?.Arrival)
             };
