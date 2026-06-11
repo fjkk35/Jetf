@@ -522,5 +522,10 @@ namespace Service.EnumTax
         /// Ezway電子商務通關平台
         /// </summary>
         Ezway,
+
+        /// <summary>
+        /// Coupang回報表單
+        /// </summary>
+        CoupangReportForm,
     }
 }

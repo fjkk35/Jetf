@@ -1,4 +1,4 @@
-using Service.EnumTax;
+﻿using Service.EnumTax;
 using Service.Services.CoupangReportForm;
 using System;
 using System.IO;
@@ -17,14 +17,14 @@ namespace JETFTAX.Controllers
             _coupangReportFormService = coupangReportFormService;
         }
 
-        [UserAuthorize(Authority.EtlClearanceMainDetails)]
+        [UserAuthorize(Authority.CoupangReportForm)]
         public ActionResult Index()
         {
             return View();
         }
 
         [HttpPost]
-        [UserAuthorize(Authority.EtlClearanceMainDetails)]
+        [UserAuthorize(Authority.CoupangReportForm)]
         public JsonResult Upload(HttpPostedFileBase file)
         {
             var handle = Guid.NewGuid().ToString();
