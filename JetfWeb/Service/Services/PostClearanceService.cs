@@ -447,6 +447,8 @@ namespace Service.Services
                          //item.CustName == "巧巧郎" ||
                          item.CustName == "菜鳥網絡(自營翔碩)" ||
                          item.CustName == "菜鳥網絡(自營海絲達)" ||
+                         item.CustName == "淘寶(飛迅馳)" ||
+                         item.CustName == "海克力斯" ||
                          item.CustName == "菜鳥網絡(中外運)" ||
                          item.CustName == "菜鳥網絡(自營中外運)" ||
                          item.CustName == "網訊" ||
