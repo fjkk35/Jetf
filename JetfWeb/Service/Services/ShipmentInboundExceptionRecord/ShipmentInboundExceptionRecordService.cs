@@ -235,7 +235,17 @@ namespace Service.Services.ShipmentInboundExceptionRecord
 
             if (!string.IsNullOrWhiteSpace(request.TrackingNo))
             {
-                query = query.Where(x => x.TrackingNo.Contains(request.TrackingNo));
+                var trackingNos = SplitLines(request.TrackingNo);
+
+                if (trackingNos.Count == 1)
+                {
+                    var trackingNo = trackingNos[0];
+                    query = query.Where(x => x.TrackingNo.Contains(trackingNo));
+                }
+                else if (trackingNos.Count > 1)
+                {
+                    query = query.Where(x => trackingNos.Contains(x.TrackingNo));
+                }
             }
 
             // 客戶多選優先；若未傳多選清單，才使用單一客戶代碼條件。
@@ -269,6 +279,21 @@ namespace Service.Services.ShipmentInboundExceptionRecord
             request.PageSize = request.PageSize <= 0 ? 10 : request.PageSize;
             request.CustCodes = request.CustCodes ?? new List<string>();
             return request;
+        }
+
+        private List<string> SplitLines(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return new List<string>();
+            }
+
+            return value
+                .Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
         }
 
         /// <summary>
