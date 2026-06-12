@@ -63,7 +63,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'SearchCargo2', text: '貨況查詢', url: '~/Cargo/SearchCargo2', auth: ['SearchCargo'] },
                 { id: 'SearchCargo', text: '貨況查詢V2', url: '~/SearchCargo/Index', auth: ['SearchCargo'] },
                 { id: 'BatchSearchCargo2', text: '批量貨況查詢明細表', url: '~/BatchSearchCargo2/Index', auth: ['BatchSearchCargo'] },
-                { id: 'CoupangReportForm', text: 'Coupang回報表單', url: '~/CoupangReportForm/Index', auth: ['CoupangReportForm'] },
+                { id: 'CoupangReportForm', text: '批量查詢Coupang', url: '~/CoupangReportForm/Index', auth: ['CoupangReportForm'] },
                 { id: 'BatchSearchShenzhenCargo', text: '批量查詢速派新遞物流貨號', url: '~/BatchSearchShenzhenCargo/Index', auth: ['BatchSearchShenzhenCargo'] },
                 { id: 'BatchSearchTax', text: '批量稅金查詢', url: '~/BatchSearchTax/Index', auth: ['BatchSearchTax'] },
                 { id: 'BatchSearchCargoShopee', text: '蝦皮預約入倉明細表', url: '~/Cargo/BatchSearchCargoShopee', auth: ['BatchSearchCargoShopee'] },
