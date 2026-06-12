@@ -1,0 +1,80 @@
+﻿@{
+    ViewBag.Title = "SeaCustomerShippingDetails";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="SeaCustomerShippingDetailsController">
+    <span class="headtype">海運客戶託運明細表</span>
+    <hr />
+
+    <form id="SeaCustomerShippingDetailsForm"
+          action="@Url.Action("DownloadExcel", "SeaCustomerShippingDetails")"
+          method="post"
+          enctype="multipart/form-data"
+          class="containertype">
+        <div class="col-lg-12" style="margin-bottom:0.5rem; display:flex; align-items:center; gap:10px;">
+            <label for="sDate" style="margin:0;">出倉日</label>
+            <input type="text"
+                   id="sDate"
+                   name="sDate"
+                   class="datepicker-input form-control"
+                   style="width:180px;"
+                   ng-model="form.sDate"
+                   uib-datepicker-popup="yyyy-MM-dd"
+                   datepicker-options="dateOptions"
+                   is-open="startDatePopup.opened"
+                   ng-click="openStartDatePopup()"
+                   close-text="關閉"
+                   current-text="今天"
+                   show-button-bar="false"
+                   readonly
+                   placeholder="請選擇開始日期" />
+            <span>~</span>
+            <input type="text"
+                   id="eDate"
+                   name="eDate"
+                   class="datepicker-input form-control"
+                   style="width:180px;"
+                   ng-model="form.eDate"
+                   uib-datepicker-popup="yyyy-MM-dd"
+                   datepicker-options="dateOptions"
+                   is-open="endDatePopup.opened"
+                   ng-click="openEndDatePopup()"
+                   close-text="關閉"
+                   current-text="今天"
+                   show-button-bar="false"
+                   readonly
+                   placeholder="請選擇結束日期" />
+        </div>
+        <div class="col-lg-12" style="margin-bottom:0.5rem;">
+            <label for="dataType">倉　　別</label>
+            <select id="dataType"
+                    name="dataType"
+                    class="form-control"
+                    ng-model="form.dataType">
+                <option value="">請選擇</option>
+                <option ng-repeat="item in warehouseList" value="{{item.Value}}">{{item.Text}}</option>
+            </select>
+        </div>
+        <div class="col-lg-12" style="margin-bottom:0.5rem;">
+            <label for="despatchName">客　　戶</label>
+            <select id="despatchName"
+                    name="despatchName"
+                    class="form-control"
+                    ng-model="form.despatchName">
+                <option value="">請選擇</option>
+                <option ng-repeat="item in customerList" value="{{item.Value}}">{{item.Text}}</option>
+            </select>
+        </div>
+
+        <button type="button"
+                class="btn btn-primary confirmbtn col-lg-3"
+                style="font-size: 1.2rem;"
+                ng-click="download()"
+                ng-disabled="loading">
+            <i class="fas fa-download"></i> 下載
+        </button>
+
+        <div class="loader loader-bar" ng-class="{'is-active': loading}" data-rounded data-text="檔案下載中"></div>
+    </form>
+</div>

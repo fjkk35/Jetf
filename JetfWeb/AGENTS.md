@@ -1,0 +1,1 @@
+- Model class 需加 XML 註解，並獨立檔案，不放在 service。

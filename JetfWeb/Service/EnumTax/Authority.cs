@@ -99,6 +99,11 @@ namespace Service.EnumTax
         HctEtlTax,
 
         /// <summary>
+        /// 3-9.海運客戶託運明細表
+        /// </summary>
+        SeaCustomerShippingDetails,
+
+        /// <summary>
         /// 4-1.物流代收金額上傳
         /// </summary>
         UploadCollectibleAmount,
