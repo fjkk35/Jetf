@@ -86,20 +86,35 @@ select
     b.TRANS_NAME as TransName,
     c.TO_DLV_COD as ToDlvCod
 from DATA_CENTER.dbo.CLEARANCE_INFO a
-left join DATA_CENTER.dbo.SEA_ORDER_ORIGINAL b on a.MAIN_NUMBER = b.MAINNUMBER and a.BAG_NUMBER = b.BL_NO and b.GW > 0
-left join jetf.dbo.FEE_MASTER c on c.DLV_INV = b.JETF_SERIAL 
+left join DATA_CENTER.dbo.SEA_ORDER_ORIGINAL b on a.MAIN_NUMBER = b.MAINNUMBER and a.BAG_NUMBER = b.BL_NO
+left join jetf.dbo.FEE_MASTER c on c.DLV_INV = b.JETF_SERIAL and c.Download=1
 where a.SIGN_OUT_TIME between @StartTime and @EndTime
 and a.DATA_TYPE = @DataType
 and b.DESPATCH_NAME = @DespatchName
 order by a.SIGN_OUT_TIME, a.MAIN_NUMBER, a.BAG_NUMBER";
 
-            return conn.Query<SeaCustomerShippingDetailsRow>(sql, new
+            var rows = conn.Query<SeaCustomerShippingDetailsRow>(sql, new
             {
                 StartTime = startTime,
                 EndTime = endTime,
                 DataType = dataType,
                 DespatchName = despatchName
             }).ToList();
+
+            return GroupByJetfSerial(rows);
+        }
+
+        private static List<SeaCustomerShippingDetailsRow> GroupByJetfSerial(List<SeaCustomerShippingDetailsRow> rows)
+        {
+            return rows
+                .GroupBy(x => x.JetfSerial ?? string.Empty)
+                .Select(group =>
+                {
+                    return group
+                        .OrderByDescending(x => x.Gw ?? 0)
+                        .First();
+                })
+                .ToList();
         }
 
         private string GetCustomerFileName(string custCode)
@@ -164,7 +179,7 @@ order by a.SIGN_OUT_TIME, a.MAIN_NUMBER, a.BAG_NUMBER";
                 row.CreateCell(6).SetCellValue(item.Memo ?? string.Empty);
                 row.CreateCell(7).SetCellValue(string.Empty);
                 row.CreateCell(8).SetCellValue(item.Quantity ?? 0);
-                row.CreateCell(9).SetCellValue(ToExcelNumber(item.Gw));
+                row.CreateCell(9).SetCellValue(GetExportGw(item.Gw));
                 row.CreateCell(10).SetCellValue(GetCollectAmount(item));
                 row.CreateCell(11).SetCellValue(string.Empty);
                 row.CreateCell(12).SetCellValue(string.Empty);
@@ -204,9 +219,19 @@ order by a.SIGN_OUT_TIME, a.MAIN_NUMBER, a.BAG_NUMBER";
             return row.Cc ?? 0;
         }
 
-        private static double ToExcelNumber(decimal? value)
+        private static double GetExportGw(decimal? value)
         {
-            return value.HasValue ? Convert.ToDouble(value.Value) : 0;
+            if (!value.HasValue || value.Value <= 0)
+            {
+                return 0;
+            }
+
+            if (value.Value < 1)
+            {
+                return 1;
+            }
+
+            return Convert.ToDouble(Math.Floor(value.Value));
         }
 
         private static string GetInnermostExceptionMessage(Exception exception)
