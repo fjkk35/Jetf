@@ -2,7 +2,6 @@
 using Service.Data;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data.Entity;
 using System.Globalization;
 using System.Linq;
@@ -18,11 +17,13 @@ namespace Service.Services.Job.SeaShenzhenHctJob
     /// </summary>
     public class SeaShenzhenHctJobService : _BaseService
     {
-        private const string JobName = "新遞深圳 HCT 託運傳送";
+        private const string JobName = "新遞 HCT 託運傳送";
         private const string DefaultApiUrl = "https://hctrt.hct.com.tw/edi_webservice2/service1.asmx";
         private const string DefaultSoapAction = "http://tempuri.org/TransData_Json";
-        private const string DefaultCompany = "test";
-        private const string DefaultPassword = "test1";
+        //private const string DefaultCompany = "test";
+        //private const string DefaultPassword = "test1";
+        private const string DefaultCompany = "04974971408";
+        private const string DefaultPassword = "24951752";
         private const string DefaultCustomerCode = "04974971408";
         private static readonly XNamespace SoapNamespace = "http://schemas.xmlsoap.org/soap/envelope/";
         private static readonly XNamespace ServiceNamespace = "http://tempuri.org/";
@@ -41,6 +42,7 @@ namespace Service.Services.Job.SeaShenzhenHctJob
             {
                 var pendingItems = JetfDb.SeaShenzhenOriginals
                     .Where(x => x.IsHct && !x.IsHctSuccess)
+                    .Where( x => x.JetfSerial== "1111031515")
                     .OrderBy(x => x.Id)
                     .ToList();
 
@@ -71,26 +73,50 @@ namespace Service.Services.Job.SeaShenzhenHctJob
 
             if (string.IsNullOrWhiteSpace(validationMessage))
             {
-                var apiResult = await SendToHctAsync(requestJson);
-                responseJson = !string.IsNullOrWhiteSpace(apiResult.ResponseJson)
-                    ? apiResult.ResponseJson
-                    : apiResult.RawResponse;
+                var soapEnvelope = BuildSoapEnvelope(DefaultCompany, DefaultPassword, requestJson);
 
-                if (!apiResult.IsSuccess)
+                using (var client = new HttpClient())
                 {
-                    errMsg = apiResult.ErrorMessage;
-                }
-                else
-                {
-                    var businessResult = ParseBusinessResult(apiResult.ResponseJson);
-                    successCode = businessResult.Success;
-                    errMsg = businessResult.ErrMsg;
+                    client.Timeout = TimeSpan.FromSeconds(60);
 
-                    if (IsBusinessSuccess(successCode))
+                    using (var request = new HttpRequestMessage(HttpMethod.Post, DefaultApiUrl))
+                    using (var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml"))
                     {
-                        original.IsHctSuccess = true;
-                        original.ModifiedUser = GetJobUserId();
-                        original.ModifiedTime = DateTime.Now;
+                        request.Content = content;
+                        request.Headers.Add("SOAPAction", "\"" + DefaultSoapAction + "\"");
+
+                        using (var response = await client.SendAsync(request))
+                        {
+                            var rawResponse = await response.Content.ReadAsStringAsync();
+                            var parsedResponseJson = ExtractResponseJson(rawResponse);
+                            responseJson = !string.IsNullOrWhiteSpace(parsedResponseJson)
+                                ? parsedResponseJson
+                                : rawResponse;
+
+                            if (!response.IsSuccessStatusCode)
+                            {
+                                errMsg = string.Format(
+                                    CultureInfo.InvariantCulture,
+                                    "HCT API HTTP {0} {1}",
+                                    (int)response.StatusCode,
+                                    response.ReasonPhrase);
+                            }
+                            else if (string.IsNullOrWhiteSpace(parsedResponseJson))
+                            {
+                                errMsg = "HCT API 回傳內容無法解析";
+                            }
+                            else
+                            {
+                                var businessResult = ParseBusinessResult(parsedResponseJson);
+                                successCode = businessResult.Success;
+                                errMsg = businessResult.ErrMsg;
+
+                                if (IsBusinessSuccess(successCode))
+                                {
+                                    original.IsHctSuccess = true;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -113,14 +139,14 @@ namespace Service.Services.Job.SeaShenzhenHctJob
         {
             return new HctRequestItem
             {
-                Epino = FirstNotEmpty(original.TrackingNo, original.OrderNo, original.JetfSerial),
-                Ercsig = NormalizeText(original.Importer),
-                Ertel1 = NormalizeText(original.ImporterPhone),
-                Eraddr = NormalizeText(original.ImporterAddress),
+                Epino = original.TrackingNo,
+                Ercsig = original.Importer,
+                Ertel1 = original.ImporterPhone,
+                Eraddr = original.ImporterAddress,
                 Ejamt = "1",
                 Eqamt = original.DlvGw.ToString("0.###", CultureInfo.InvariantCulture),
-                Escsno = GetSetting("HctEdi.CustomerCode", DefaultCustomerCode),
-                Edelno = NormalizeText(original.JetfSerial),
+                Escsno = DefaultCustomerCode,
+                Edelno = original.JetfSerial,
                 Eqmny = original.Cc.HasValue
                     ? original.Cc.Value.ToString("0.##", CultureInfo.InvariantCulture)
                     : "0"
@@ -164,64 +190,6 @@ namespace Service.Services.Job.SeaShenzhenHctJob
             return missingFields.Count == 0
                 ? null
                 : "必要欄位不足：" + string.Join("、", missingFields);
-        }
-
-        private async Task<HctApiCallResult> SendToHctAsync(string requestJson)
-        {
-            var endpoint = GetSetting("HctEdi.ApiUrl", DefaultApiUrl);
-            var company = GetSetting("HctEdi.Company", DefaultCompany);
-            var password = GetSetting("HctEdi.Password", DefaultPassword);
-            var soapEnvelope = BuildSoapEnvelope(company, password, requestJson);
-
-            using (var client = new HttpClient())
-            {
-                client.Timeout = TimeSpan.FromSeconds(60);
-
-                using (var request = new HttpRequestMessage(HttpMethod.Post, endpoint))
-                using (var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml"))
-                {
-                    request.Content = content;
-                    request.Headers.Add("SOAPAction", "\"" + DefaultSoapAction + "\"");
-
-                    using (var response = await client.SendAsync(request))
-                    {
-                        var rawResponse = await response.Content.ReadAsStringAsync();
-                        var parsedResponseJson = ExtractResponseJson(rawResponse);
-
-                        if (!response.IsSuccessStatusCode)
-                        {
-                            return new HctApiCallResult
-                            {
-                                IsSuccess = false,
-                                RawResponse = rawResponse,
-                                ResponseJson = parsedResponseJson,
-                                ErrorMessage = string.Format(
-                                    CultureInfo.InvariantCulture,
-                                    "HCT API HTTP {0} {1}",
-                                    (int)response.StatusCode,
-                                    response.ReasonPhrase)
-                            };
-                        }
-
-                        if (string.IsNullOrWhiteSpace(parsedResponseJson))
-                        {
-                            return new HctApiCallResult
-                            {
-                                IsSuccess = false,
-                                RawResponse = rawResponse,
-                                ErrorMessage = "HCT API 回傳內容無法解析"
-                            };
-                        }
-
-                        return new HctApiCallResult
-                        {
-                            IsSuccess = true,
-                            RawResponse = rawResponse,
-                            ResponseJson = parsedResponseJson
-                        };
-                    }
-                }
-            }
         }
 
         private static HctBusinessResult ParseBusinessResult(string responseJson)
@@ -328,50 +296,6 @@ namespace Service.Services.Job.SeaShenzhenHctJob
             return string.IsNullOrWhiteSpace(value)
                 ? null
                 : value.Trim();
-        }
-
-        private static string FirstNotEmpty(params string[] values)
-        {
-            return values
-                .Select(NormalizeText)
-                .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
-        }
-
-        private static string GetSetting(string key, string defaultValue)
-        {
-            var value = ConfigurationManager.AppSettings[key];
-            return string.IsNullOrWhiteSpace(value)
-                ? defaultValue
-                : value.Trim();
-        }
-
-        private static string Truncate(string value, int maxLength)
-        {
-            if (string.IsNullOrWhiteSpace(value) || value.Length <= maxLength)
-            {
-                return value;
-            }
-
-            return value.Substring(0, maxLength);
-        }
-
-        private string GetJobUserId()
-        {
-            var userId = GetUserId();
-            return string.IsNullOrWhiteSpace(userId)
-                ? "SYSTEM"
-                : userId.Trim();
-        }
-
-        private sealed class HctApiCallResult
-        {
-            public bool IsSuccess { get; set; }
-
-            public string RawResponse { get; set; }
-
-            public string ResponseJson { get; set; }
-
-            public string ErrorMessage { get; set; }
         }
 
         private sealed class HctBusinessResult
