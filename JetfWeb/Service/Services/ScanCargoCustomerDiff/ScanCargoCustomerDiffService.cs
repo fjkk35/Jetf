@@ -72,7 +72,8 @@ with cte as
 select a.MAIN_NUMBER,a.BAG_NUMBER,a.MERGE_NUMBER,a.SIGN_OUT_TIME,isnull(b.Data,c.Data) as Data from cte a 
 left join (select * from [jetf].[dbo].[PdtScanCargoUpload] where DataType=@DataType and UploadTime between @SDate and @EDate) b on a.BAG_NUMBER =b.data 
 left join (select * from [jetf].[dbo].[PdtScanCargoUpload] where DataType=@DataType and UploadTime between @SDate and @EDate) c on a.MERGE_NUMBER =c.data 
-group by a.MAIN_NUMBER,a.BAG_NUMBER,a.MERGE_NUMBER,a.SIGN_OUT_TIME,b.Data,c.Data";
+group by a.MAIN_NUMBER,a.BAG_NUMBER,a.MERGE_NUMBER,a.SIGN_OUT_TIME,b.Data,c.Data
+";
 
             return conn.Query<ScanCargoCustomerDiffModel>(sql, new
             {
@@ -186,6 +187,7 @@ join Process b on a.TrackingNo = b.DLV_INV" ;
             row.CreateCell(7).SetCellValue("差異的袋號");
             row.CreateCell(8).SetCellValue("差異的分號");
             row.CreateCell(9).SetCellValue("備註");
+            row.CreateCell(10).SetCellValue("倉儲漏刷");
 
             sheet.SetColumnWidth(0, 5000);
             sheet.SetColumnWidth(1, 8000);
@@ -197,6 +199,7 @@ join Process b on a.TrackingNo = b.DLV_INV" ;
             sheet.SetColumnWidth(7, 10000);
             sheet.SetColumnWidth(8, 10000);
             sheet.SetColumnWidth(9, 5000);
+            sheet.SetColumnWidth(10, 10000);
 
             row.GetCell(0).CellStyle = cs_Center;
             row.GetCell(1).CellStyle = cs_Center;
@@ -208,6 +211,7 @@ join Process b on a.TrackingNo = b.DLV_INV" ;
             row.GetCell(7).CellStyle = cs_Center;
             row.GetCell(8).CellStyle = cs_Center;
             row.GetCell(9).CellStyle = cs_Center;
+            row.GetCell(10).CellStyle = cs_Center;
 
             // 分組資料
             var dt_Group = (from t in diffData
@@ -221,6 +225,9 @@ join Process b on a.TrackingNo = b.DLV_INV" ;
                                 CheckCount = g.Where(m => m.Data == null && m.SIGN_OUT_TIME == null).Count(),
                                 CheckBagNumber = string.Join(",", g.Where(m => m.Data == null && m.SIGN_OUT_TIME == null)
                                                      .Select(m => m.BAG_NUMBER)),
+                                //倉儲漏刷，沒有出艙有掃貨上車
+                                CheckTrackingNo = string.Join(",", g.Where(m => m.Data != null && m.SIGN_OUT_TIME == null)
+                                                     .Select(m => m.MERGE_NUMBER)),
                                 DiffCount = g.Where(m => m.Data == null && m.SIGN_OUT_TIME != null).Count(),
                                 DiffList = g.Where(m => m.Data == null && m.SIGN_OUT_TIME != null)
                                              .Select(m => new
@@ -284,6 +291,8 @@ join Process b on a.TrackingNo = b.DLV_INV" ;
 
                     irow++;
                 }
+
+                row.CreateCell(10).SetCellValue(item.CheckTrackingNo);
 
                 // 合併 A~G 欄 (0~6 欄)
                 if (diffCount > 1)
