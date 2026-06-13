@@ -25,8 +25,12 @@ namespace JETFTAX.App_Start
         {
             app.MapSignalR();
 
+#if DEBUG
+            GlobalConfiguration.Configuration.UseInMemoryStorage();
+#else
             GlobalConfiguration.Configuration
                 .UseSqlServerStorage("Data Source=192.168.1.4;Initial Catalog=jetf;Persist Security Info=True;User ID=user_c1;Password=a*741jef*;");
+#endif
 
 #if !DEBUG
             app.UseHangfireDashboard("/hangfire");
@@ -90,7 +94,7 @@ namespace JETFTAX.App_Start
                 Cron.Daily(22, 10),
                 timeZoneOptions);
 
-            //RecurringJob.AddOrUpdate<SeaShenzhenHctJobService>("新遞深圳 HCT 託運傳送",
+            //RecurringJob.AddOrUpdate<SeaShenzhenHctJobService>("新遞HCT託運資料傳送",
             //    service => service.RunSeaShenzhenHctJobAsync(),
             //    "*/10 * * * *",
             //    timeZoneOptions);

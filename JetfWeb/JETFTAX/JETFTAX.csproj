@@ -81,6 +81,9 @@
     <Reference Include="Hangfire.Core, Version=1.8.14.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Hangfire.Core.1.8.14\lib\net46\Hangfire.Core.dll</HintPath>
     </Reference>
+    <Reference Include="Hangfire.InMemory, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Hangfire.InMemory.1.0.0\lib\net451\Hangfire.InMemory.dll</HintPath>
+    </Reference>
     <Reference Include="Hangfire.SqlServer, Version=1.8.14.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Hangfire.SqlServer.1.8.14\lib\net451\Hangfire.SqlServer.dll</HintPath>
     </Reference>

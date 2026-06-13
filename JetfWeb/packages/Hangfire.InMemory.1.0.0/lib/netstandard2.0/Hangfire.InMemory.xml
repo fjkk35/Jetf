@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Hangfire.InMemory</name>
+    </assembly>
+    <members>
+        <member name="T:Hangfire.InMemory.InMemoryStorage">
+            <summary>
+            A class that represents an in-memory job storage that stores all data
+            related to background processing in a process' memory.
+            </summary>
+        </member>
+        <member name="M:Hangfire.InMemory.InMemoryStorage.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Hangfire.InMemory.InMemoryStorage"/> class with default options.
+            </summary>
+        </member>
+        <member name="M:Hangfire.InMemory.InMemoryStorage.#ctor(Hangfire.InMemory.InMemoryStorageOptions)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Hangfire.InMemory.InMemoryStorage"/> class with specified options.
+            </summary>
+            <param name="options">The options for the in-memory storage. Cannot be null.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when the <paramref name="options"/> argument is null.</exception>
+        </member>
+        <member name="M:Hangfire.InMemory.InMemoryStorage.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="P:Hangfire.InMemory.InMemoryStorage.Options">
+            <summary>
+            Gets the options for the in-memory storage. 
+            </summary>
+        </member>
+        <member name="P:Hangfire.InMemory.InMemoryStorage.LinearizableReads">
+            <summary>
+            Override of <see cref="P:Hangfire.InMemory.InMemoryStorage.LinearizableReads"/> property. Always returns true for <see cref="T:Hangfire.InMemory.InMemoryStorage"/>.
+            </summary>
+        </member>
+        <member name="M:Hangfire.InMemory.InMemoryStorage.HasFeature(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="M:Hangfire.InMemory.InMemoryStorage.GetMonitoringApi">
+            <inheritdoc />
+        </member>
+        <member name="M:Hangfire.InMemory.InMemoryStorage.GetConnection">
+            <inheritdoc />
+        </member>
+        <member name="M:Hangfire.InMemory.InMemoryStorage.ToString">
+            <inheritdoc />
+        </member>
+        <member name="T:Hangfire.InMemory.InMemoryStorageIdType">
+            <summary>
+            Represents the type using for storing background job identifiers.
+            </summary>
+        </member>
+        <member name="F:Hangfire.InMemory.InMemoryStorageIdType.Long">
+            <summary>
+            Background job identifiers will be integer-based as in Hangfire.SqlServer storage.
+            </summary>
+        </member>
+        <member name="F:Hangfire.InMemory.InMemoryStorageIdType.Guid">
+            <summary>
+            Background job identifiers will be Guid-based like in Hangfire.Pro.Redis storage.
+            </summary>
+        </member>
+        <member name="T:Hangfire.InMemory.InMemoryStorageOptions">
+            <summary>
+            Provides configuration options for in-memory storage in Hangfire.
+            </summary>
+        </member>
+        <member name="P:Hangfire.InMemory.InMemoryStorageOptions.IdType">
+            <summary>
+            Gets or sets the underlying key type for background jobs that can be useful
+            to simulate different persistent storages.
+            </summary>
+        </member>
+        <member name="P:Hangfire.InMemory.InMemoryStorageOptions.MaxExpirationTime">
+            <summary>
+            Gets or sets the maximum expiration time for all the entries. When set, this
+            value overrides any expiration time set in the other places of Hangfire. The
+            main rationale for this is to control the amount of consumed RAM, since we are
+            more limited in this case, especially when comparing to disk-based storages.
+            </summary>
+        </member>
+        <member name="P:Hangfire.InMemory.InMemoryStorageOptions.MaxStateHistoryLength">
+            <summary>
+            Gets or sets the maximum length of state history for each background job. Older
+            records are trimmed to avoid uncontrollable growth when some background job is
+            constantly moved from one state to another without being completed.
+            </summary>
+        </member>
+        <member name="P:Hangfire.InMemory.InMemoryStorageOptions.StringComparer">
+            <summary>
+            Gets or sets comparison rules for keys and indexes inside the storage. You can use
+            this option to match semantics of different storages, for example, use the
+            <see cref="P:System.StringComparer.Ordinal"/> value to match Redis' case-sensitive rules,
+            or use the <see cref="P:System.StringComparer.OrdinalIgnoreCase"/> option to match SQL Server's
+            default case-insensitive rules.
+            </summary>
+        </member>
+        <member name="P:Hangfire.InMemory.InMemoryStorageOptions.CommandTimeout">
+            <summary>
+            Gets or sets the maximum time to wait for a command completion.
+            </summary>
+        </member>
+        <member name="T:Hangfire.GlobalConfigurationExtensions">
+            <summary>
+            Provides extension methods for global configuration to use <see cref="T:Hangfire.InMemory.InMemoryStorage"/>.
+            </summary>
+        </member>
+        <member name="M:Hangfire.GlobalConfigurationExtensions.UseInMemoryStorage(Hangfire.IGlobalConfiguration)">
+            <summary>
+            Configures Hangfire to use the <see cref="T:Hangfire.InMemory.InMemoryStorage"/> with default options.
+            </summary>
+            <param name="configuration">The global configuration on which to set the in-memory storage.</param>
+            <returns>An instance of <see cref="T:Hangfire.IGlobalConfiguration`1"/> for chaining further configuration.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when the <paramref name="configuration"/> argument is null.</exception>
+        </member>
+        <member name="M:Hangfire.GlobalConfigurationExtensions.UseInMemoryStorage(Hangfire.IGlobalConfiguration,Hangfire.InMemory.InMemoryStorageOptions)">
+            <summary>
+            Configures Hangfire to use the <see cref="T:Hangfire.InMemory.InMemoryStorage"/> with the specified options.
+            </summary>
+            <param name="configuration">The global configuration on which to set the in-memory storage.</param>
+            <param name="options">Options for the in-memory storage.</param>
+            <returns>An instance of <see cref="T:Hangfire.IGlobalConfiguration`1"/> for chaining further configuration.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when the <paramref name="configuration"/> or <paramref name="options"/> argument is null.</exception>
+        </member>
+    </members>
+</doc>
