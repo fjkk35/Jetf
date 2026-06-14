@@ -1,10 +1,8 @@
 ﻿using Service.Data;
 using Service.EnumTax;
-using Service.Extensions;
 using Service.Services.SeaShenzhenOriginal.Domain;
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.Linq;
 
 namespace Service.Services.SeaShenzhenOriginal
@@ -15,7 +13,6 @@ namespace Service.Services.SeaShenzhenOriginal
     public class SeaShenzhenFeeTransferService : _BaseService
     {
         private const string TargetCustomer = "CN00132";
-        private const int FeeWhenTaxPaymentC = 30;
 
         public SeaShenzhenFeeTransferService(JetfDbContext jetfDbContext, DataCenterDbContext dataCenterDbContext)
             : base(jetfDbContext, dataCenterDbContext)
@@ -37,7 +34,7 @@ namespace Service.Services.SeaShenzhenOriginal
                 .ToList();
 
             // 先用分提單號批次查出原始託運資料，避免逐筆查詢造成大量 DB round trip。
-            var originalLookup = GetOriginalLookup(feeMasters);
+            var originalLookup = SeaShenzhenFeeTransferShared.GetOriginalLookup(JetfDb, feeMasters.Select(x => x.TrackingNo));
             var now = DateTime.Now;
             var userId = GetUserId();
             var transferRows = new List<ShenzhenFeeMasterEntity>();
@@ -60,7 +57,15 @@ namespace Service.Services.SeaShenzhenOriginal
                     continue;
                 }
 
-                transferRows.Add(CreateTransferRow(feeMaster, original, dataDate, userId, now));
+                transferRows.Add(SeaShenzhenFeeTransferShared.CreateTransferRow(
+                    original,
+                    (feeMaster.Tax1 ?? 0) + (feeMaster.Tax2 ?? 0),
+                    dataDate,
+                    feeMaster.Customer,
+                    SeaShenzhenTaxDataType.Jetf,
+                    feeMaster.Id,
+                    userId,
+                    now));
             }
 
             int deletedCount;
@@ -68,9 +73,12 @@ namespace Service.Services.SeaShenzhenOriginal
             {
                 try
                 {
-                    // 同一資料日期採重轉機制：先刪除既有結果，再整批寫入本次產生的資料。
-                    deletedCount = JetfDb.DeleteByColumnValues<ShenzhenFeeMasterEntity, string>(new[] { dataDate }, x => x.DataDate);
-                    JetfDb.BulkInsert(transferRows);
+                    // 舊轉檔流程只覆蓋未標示報關行的資料，避免誤刪同日不同報關行的上傳結果。
+                    deletedCount = DeleteExistingTransferRows(dataDate, SeaShenzhenTaxDataType.Jetf);
+                    if (transferRows.Count > 0)
+                    {
+                        JetfDb.BulkInsert(transferRows);
+                    }
                     transaction.Commit();
                 }
                 catch
@@ -92,86 +100,6 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
-        /// 使用 EntityFrameworkBulkExtensions 的 WhereBulkContains 批次查詢原始託運資料。
-        /// 這裡一次把所有 TrackingNo 丟進暫存表比對，避免逐筆查詢 SeaShenzhenOriginal。
-        /// </summary>
-        private Dictionary<string, SeaShenzhenOriginalEntity> GetOriginalLookup(IEnumerable<FeeMasterEntity> feeMasters)
-        {
-            var trackingNos = (feeMasters ?? Enumerable.Empty<FeeMasterEntity>())
-                .Select(x => x.TrackingNo)
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            if (trackingNos.Count == 0)
-            {
-                return new Dictionary<string, SeaShenzhenOriginalEntity>(StringComparer.OrdinalIgnoreCase);
-            }
-
-            // 以 bulk contains 做批次比對，將 FeeMaster 的 TrackingNo 一次帶進 SQL 暫存表查詢。
-            var originals = JetfDb.SeaShenzhenOriginals
-                .AsNoTracking()
-                .WhereBulkContains(JetfDb, trackingNos, x => x.TrackingNo, x => x);
-
-            // 轉檔規則要求同一 TrackingNo 僅取一筆，且以 JetfSerial 最小者為主。
-            return originals
-                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
-                .GroupBy(x => x.TrackingNo, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(
-                    group => group.Key,
-                    group => group
-                        .OrderBy(x => x.JetfSerial)
-                        .First(),
-                    StringComparer.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// 依 FeeMaster 與原始託運資料建立深圳稅金轉檔資料列。
-        /// </summary>
-        private static ShenzhenFeeMasterEntity CreateTransferRow(
-            FeeMasterEntity feeMaster,
-            SeaShenzhenOriginalEntity original,
-            string dataDate,
-            string userId,
-            DateTime now)
-        {
-            var tax = (feeMaster.Tax1 ?? 0) + (feeMaster.Tax2 ?? 0);
-            var cod = ToAmount(original.Cc);
-            // 稅額達 1000 時，依需求一律改為不包稅並加收手續費。
-            var includeTax = tax >= 1000
-                ? ShenzhenTaxPayment.C.ToString()
-                : original.TaxPayment;
-            var fee = includeTax == ShenzhenTaxPayment.C.ToString()
-                ? FeeWhenTaxPaymentC
-                : 0;
-
-            return new ShenzhenFeeMasterEntity
-            {
-                FeeMasterId = feeMaster.Id,
-                DataDate = dataDate,
-                Customer = feeMaster.Customer,
-                TrackingNo = original.TrackingNo,
-                DlvInv = original.JetfSerial,
-                Tax = tax,
-                Cod = cod,
-                Fee = fee,
-                IncludeTax = includeTax,
-                DlvCom = original.TransName,
-                Recipient = original.Importer,
-                RecPhone = original.ImporterPhone,
-                RecAddress = original.ImporterAddress,
-                ToDlvCod = tax + cod + fee,
-                CreatedUser = userId,
-                CreatedTime = now,
-                ModifiedUser = userId,
-                ModifiedTime = now
-            };
-        }
-
-        /// <summary>
-        /// 建立無法轉檔的異常資料，回傳給畫面提示使用者。
-        /// </summary>
-        /// <summary>
         /// 依條件建立找不到對應託運資料時的異常列。
         /// </summary>
         private static SeaShenzhenFeeTransferExceptionRow CreateExceptionRow(FeeMasterEntity feeMaster, string reason)
@@ -191,8 +119,14 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
-        /// 驗證並取得必要的資料日期參數。
+        /// 以批次刪除移除同資料日期、同資料類型的既有轉檔資料。
         /// </summary>
+        private int DeleteExistingTransferRows(string dataDate, SeaShenzhenTaxDataType dataType)
+        {
+            return JetfDb.DeleteWhere(JetfDb.ShenzhenFeeMasters
+                .Where(x => x.DataDate == dataDate && x.DataType == dataType));
+        }
+
         /// <summary>
         /// 驗證並取得必要的資料日期參數。
         /// </summary>
@@ -205,22 +139,6 @@ namespace Service.Services.SeaShenzhenOriginal
             }
 
             return dataDate;
-        }
-
-        /// <summary>
-        /// 將原始代收金額轉成轉檔表使用的整數金額。
-        /// </summary>
-        /// <summary>
-        /// 將原始代收金額轉成轉檔表使用的整數金額。
-        /// </summary>
-        private static int ToAmount(double? value)
-        {
-            if (!value.HasValue)
-            {
-                return 0;
-            }
-
-            return Convert.ToInt32(Math.Round(value.Value, MidpointRounding.AwayFromZero));
         }
     }
 }

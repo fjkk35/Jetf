@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Service.EnumTax;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -16,15 +17,21 @@ namespace Service.Data
         public int Id { get; set; }
 
         [Column("FeeMasterId")]
-        public int FeeMasterId { get; set; }
+        public int? FeeMasterId { get; set; }
 
         [Column("DataDate")]
         public string DataDate { get; set; }
 
         /// <summary>
+        /// 資料類型。
+        /// </summary>
+        [Column("DataType")]
+        public SeaShenzhenTaxDataType DataType { get; set; }
+
+        /// <summary>
         /// 客戶名稱。
         /// </summary>
-        [Column("CUSTOMER")]
+        [Column("Customer")]
         public string Customer { get; set; }
 
         /// <summary>

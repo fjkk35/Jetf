@@ -1,0 +1,257 @@
+﻿@{
+    ViewBag.Title = "上傳稅金資料";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .sea-shenzhen-tax-page {
+        padding: 0 18px 18px;
+        box-sizing: border-box;
+    }
+
+    .sea-shenzhen-tax-form {
+        border: none;
+    }
+
+    .sea-shenzhen-tax-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .sea-shenzhen-tax-summary-card {
+        min-width: 180px;
+        padding: 14px 18px;
+        border-radius: 8px;
+        background: #f5f7fa;
+        border: 1px solid #d7dee6;
+        border-left-width: 5px;
+    }
+
+        .sea-shenzhen-tax-summary-card .label {
+            display: block;
+            color: #6c757d;
+            margin-bottom: 8px;
+        }
+
+        .sea-shenzhen-tax-summary-card .value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2d3d;
+        }
+
+        .sea-shenzhen-tax-summary-card.summary-source {
+            border-left-color: #2f80ed;
+            background: #f2f7ff;
+        }
+
+        .sea-shenzhen-tax-summary-card.summary-deleted {
+            border-left-color: #f2a900;
+            background: #fff9ec;
+        }
+
+        .sea-shenzhen-tax-summary-card.summary-created {
+            border-left-color: #2fb344;
+            background: #f0fbf3;
+        }
+
+        .sea-shenzhen-tax-summary-card.summary-exception {
+            border-left-color: #e83e8c;
+            background: #fff3f8;
+        }
+
+    .sea-shenzhen-tax-table {
+        max-height: 620px;
+        overflow: auto;
+        border: 1px solid #dee2e6;
+    }
+
+        .sea-shenzhen-tax-table table {
+            margin-bottom: 0;
+            min-width: 1100px;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .sea-shenzhen-tax-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #343a40;
+            color: #fff;
+            white-space: nowrap;
+        }
+
+        .sea-shenzhen-tax-table td,
+        .sea-shenzhen-tax-table th {
+            padding: 8px;
+            vertical-align: middle;
+            border: 1px solid #dee2e6;
+            white-space: normal;
+            word-break: break-all;
+        }
+
+        .sea-shenzhen-tax-table tbody tr:nth-of-type(odd) {
+            background-color: #f7f7f7;
+        }
+
+        .sea-shenzhen-tax-table tbody tr:hover {
+            background-color: #eef5ff;
+        }
+</style>
+
+<div class="sea-shenzhen-tax-page" ng-controller="SeaShenzhenTaxController">
+    <span class="headtype">上傳稅金資料</span>
+    <hr />
+
+    <div class="containertype">
+        <div class="card bg-light rounded p-4 mb-4 sea-shenzhen-tax-form">
+            <div class="form-group row">
+                <label class="col-lg-1 col-md-3 col-sm-12 control-label" style="padding-top:7px;">資料日期</label>
+                <div class="col-lg-4 col-md-5 col-sm-12" style="margin-bottom:0.5rem;">
+                    <input type="text"
+                           class="form-control"
+                           ng-model="form.dataDate"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           is-open="datePopup.opened"
+                           ng-click="openDatePopup()"
+                           datepicker-options="dateOptions"
+                           show-button-bar="false"
+                           readonly />
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-lg-1 col-md-3 col-sm-12 control-label" style="padding-top:7px;">報關行</label>
+                <div class="col-lg-4 col-md-5 col-sm-12" style="margin-bottom:0.5rem;">
+                    <select class="form-control"
+                            ng-model="form.dataType"
+                            ng-options="item.Value as item.Text for item in taxDataTypeOptions"></select>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-lg-1 col-md-3 col-sm-12 control-label" style="padding-top:7px;">選擇檔案上傳</label>
+                <div class="col-lg-6 col-md-7 col-sm-12" style="margin-bottom:0.5rem;">
+                    <input type="file" id="seaShenzhenTaxFileInput" accept=".xlsx" class="form-control" />
+                </div>
+            </div>
+            <div class="form-group row" style="margin-bottom:0;">
+                <div class="col-lg-offset-1 col-md-offset-3 col-lg-10 col-md-9 col-sm-12" style="margin:0.5rem 0;">
+                    <button type="button" class="btn btn-primary confirmbtn" ng-click="uploadFile()" ng-disabled="uploading">
+                        <i class="fas fa-upload"></i> {{ uploading ? '上傳中...' : '上傳' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="loader loader-bar" ng-class="{'is-active': uploading}" data-rounded data-text="資料處理中"></div>
+
+        <div class="col-lg-12" style="margin-top:1rem;" ng-if="uploadResult">
+            <div class="alert" ng-class="{'alert-success': uploadResult.type === 'success', 'alert-warning': uploadResult.type === 'warning', 'alert-danger': uploadResult.type === 'error'}">
+                {{ uploadResult.message }}
+            </div>
+        </div>
+
+        <div style="margin-top:1rem;" ng-if="uploadSummary">
+            <div class="sea-shenzhen-tax-summary">
+                <div class="sea-shenzhen-tax-summary-card summary-source">
+                    <span class="label">稅金筆數</span>
+                    <span class="value">{{ uploadSummary.SourceCount }}</span>
+                </div>
+                <div class="sea-shenzhen-tax-summary-card summary-deleted">
+                    <span class="label">刪除筆數</span>
+                    <span class="value">{{ uploadSummary.DeletedCount }}</span>
+                </div>
+                <div class="sea-shenzhen-tax-summary-card summary-created">
+                    <span class="label">新增筆數</span>
+                    <span class="value">{{ uploadSummary.CreatedCount }}</span>
+                </div>
+                <div class="sea-shenzhen-tax-summary-card summary-exception">
+                    <span class="label">異常筆數</span>
+                    <span class="value">{{ (uploadSummary.FailCount || 0) + (uploadSummary.ExceptionCount || 0) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-12" style="margin-top:1rem;" ng-if="uploadFailData.length > 0">
+            <div class="clearfix" style="margin-bottom:0.75rem;">
+                <h4 style="float:left; margin:0; line-height:34px;">上傳失敗明細（共 {{ uploadFailData.length }} 筆）</h4>
+                <button type="button" class="btn btn-default" style="float:right;" ng-click="downloadFailData()">
+                    <i class="fas fa-download"></i> 下載失敗明細
+                </button>
+            </div>
+            <div class="sea-shenzhen-tax-table">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>Excel列號</th>
+                            <th>失敗欄位</th>
+                            <th>失敗原因</th>
+                            <th>主號</th>
+                            <th>報單號碼</th>
+                            <th>分號</th>
+                            <th>稅單號碼</th>
+                            <th>稅單金額</th>
+                            <th>納稅人</th>
+                            <th>統編</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="item in uploadFailData" class="table-danger">
+                            <td>{{ item.RowNo }}</td>
+                            <td>{{ item.FailFieldName }}</td>
+                            <td>{{ item.FailReason }}</td>
+                            <td>{{ item.MainNumber }}</td>
+                            <td>{{ item.ClearanceNumber }}</td>
+                            <td>{{ item.TrackingNo }}</td>
+                            <td>{{ item.TaxNumber }}</td>
+                            <td>{{ item.TaxText }}</td>
+                            <td>{{ item.TaxPayer }}</td>
+                            <td>{{ item.TaxRecId }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-lg-12" style="margin-top:1rem;" ng-if="transferExceptions.length > 0">
+            <div class="clearfix" style="margin-bottom:0.75rem;">
+                <h4 style="float:left; margin:0; line-height:34px;">異常明細（共 {{ transferExceptions.length }} 筆）</h4>
+                <button type="button"
+                        class="btn btn-default"
+                        style="float:right;"
+                        ng-click="downloadTransferExceptions()"
+                        ng-disabled="downloadingTransferExceptions">
+                    <i class="fas" ng-class="downloadingTransferExceptions ? 'fa-spinner fa-spin' : 'fa-download'"></i>
+                    {{ downloadingTransferExceptions ? '下載中...' : '下載Excel' }}
+                </button>
+            </div>
+            <div class="sea-shenzhen-tax-table">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th>原因</th>
+                            <th>主號</th>
+                            <th>分號</th>
+                            <th>稅單號碼</th>
+                            <th>稅單金額</th>
+                            <th>納稅人</th>
+                            <th>統編</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="item in transferExceptions" class="table-warning">
+                            <td>{{ item.Reason }}</td>
+                            <td>{{ item.MainNumber }}</td>
+                            <td>{{ item.TrackingNo }}</td>
+                            <td>{{ item.TaxNumber }}</td>
+                            <td>{{ item.Tax }}</td>
+                            <td>{{ item.TaxPayer }}</td>
+                            <td>{{ item.TaxRecId }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

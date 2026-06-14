@@ -98,6 +98,8 @@ namespace Service.Data
 
         public DbSet<SeaTaxUploadEntity> SeaTaxUploads { get; set; }
 
+        public DbSet<SeaShenzhenTaxEntity> SeaShenzhenTaxes { get; set; }
+
         public DbSet<SeaShenzhenOriginalEntity> SeaShenzhenOriginals { get; set; }
 
         public DbSet<SeaShenzhenHctSendLogEntity> SeaShenzhenHctSendLogs { get; set; }
