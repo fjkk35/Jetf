@@ -98,10 +98,20 @@ namespace JETFTAX.Controllers
                 }
 
                 var fileType = Path.GetExtension(file.FileName);
-                if (fileType != ".xlsx")
+                if (!string.Equals(fileType, ".xlsx", StringComparison.OrdinalIgnoreCase))
                 {
                     responseModel.status = Status.error;
                     responseModel.msg = "副檔名需為 xlsx";
+                    return Json(responseModel);
+                }
+
+                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file.FileName);
+                var brokerName = dataTypeValue.ToDescription();
+                if (string.IsNullOrWhiteSpace(fileNameWithoutExtension)
+                    || fileNameWithoutExtension.IndexOf(brokerName, StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    responseModel.status = Status.error;
+                    responseModel.msg = $"檔名需包含報關行「{brokerName}」，請確認報關行是否選擇正確";
                     return Json(responseModel);
                 }
 

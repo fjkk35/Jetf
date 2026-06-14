@@ -17,6 +17,7 @@ mainApp.controller('SeaShenzhenFeeTransferController', ['$scope', '$http', funct
         showWeeks: false
     };
     $scope.transferring = false;
+    $scope.exportingExceptions = false;
     $scope.hasResult = false;
     $scope.resultMessage = '';
     $scope.result = createEmptyResult();
@@ -59,6 +60,43 @@ mainApp.controller('SeaShenzhenFeeTransferController', ['$scope', '$http', funct
             })
             .finally(function () {
                 $scope.transferring = false;
+            });
+    };
+    $scope.downloadExceptions = function () {
+        if (!$scope.result.Exceptions || $scope.result.Exceptions.length === 0) {
+            showMessage('error', '查無異常明細');
+            return;
+        }
+        $scope.exportingExceptions = true;
+        $http.post(Router.action('SeaShenzhenFeeTransfer', 'ExportExceptions'), {
+            DataDate: $scope.result.DataDate || formatDataDate($scope.form.dataDate),
+            Exceptions: $scope.result.Exceptions
+        })
+            .then(function (response) {
+                var data = response.data || {};
+                if (data.Redirect) {
+                    window.location.href = Router.action('Account', 'Login');
+                    return;
+                }
+                if (data.msg) {
+                    showMessage('error', data.msg);
+                    return;
+                }
+                if (data.fileGuid && data.fileName) {
+                    var downloadUrl = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid + '&fileName=' + encodeURIComponent(data.fileName);
+                    var link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = data.fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            })
+            .catch(function () {
+                showMessage('error', '下載發生錯誤，請稍後再試');
+            })
+            .finally(function () {
+                $scope.exportingExceptions = false;
             });
     };
 

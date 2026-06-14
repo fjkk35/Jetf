@@ -69,7 +69,7 @@
 
         .sea-shenzhen-tax-table table {
             margin-bottom: 0;
-            min-width: 1100px;
+            min-width: 1500px;
             border-collapse: separate;
             border-spacing: 0;
         }
@@ -174,15 +174,18 @@
         </div>
 
         <div class="col-lg-12" style="margin-top:1rem;" ng-if="uploadFailData.length > 0">
-            <div class="clearfix" style="margin-bottom:0.75rem;">
-                <h4 style="float:left; margin:0; line-height:34px;">上傳失敗明細（共 {{ uploadFailData.length }} 筆）</h4>
-                <button type="button" class="btn btn-default" style="float:right;" ng-click="downloadFailData()">
-                    <i class="fas fa-download"></i> 下載失敗明細
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h4 class="mb-0">上傳失敗明細（共 {{ uploadFailData.length }} 筆）</h4>
+                <button type="button"
+                        class="btn btn-success"
+                        ng-click="downloadFailData()">
+                    <i class="fa fa-file-excel-o"></i>
+                    下載失敗明細
                 </button>
             </div>
             <div class="sea-shenzhen-tax-table">
                 <table class="table table-bordered table-hover">
-                    <thead>
+                    <thead class="thead-dark">
                         <tr>
                             <th>Excel列號</th>
                             <th>失敗欄位</th>
@@ -197,7 +200,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr ng-repeat="item in uploadFailData" class="table-danger">
+                        <tr ng-repeat="item in uploadFailData track by $index">
                             <td>{{ item.RowNo }}</td>
                             <td>{{ item.FailFieldName }}</td>
                             <td>{{ item.FailReason }}</td>
@@ -215,20 +218,19 @@
         </div>
 
         <div class="col-lg-12" style="margin-top:1rem;" ng-if="transferExceptions.length > 0">
-            <div class="clearfix" style="margin-bottom:0.75rem;">
-                <h4 style="float:left; margin:0; line-height:34px;">異常明細（共 {{ transferExceptions.length }} 筆）</h4>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h4 class="mb-0">異常明細（共 {{ transferExceptions.length }} 筆）</h4>
                 <button type="button"
-                        class="btn btn-default"
-                        style="float:right;"
+                        class="btn btn-success"
                         ng-click="downloadTransferExceptions()"
-                        ng-disabled="downloadingTransferExceptions">
-                    <i class="fas" ng-class="downloadingTransferExceptions ? 'fa-spinner fa-spin' : 'fa-download'"></i>
-                    {{ downloadingTransferExceptions ? '下載中...' : '下載Excel' }}
+                        ng-disabled="uploading || downloadingTransferExceptions">
+                    <i class="fa" ng-class="downloadingTransferExceptions ? 'fa-spinner fa-spin' : 'fa-file-excel-o'"></i>
+                    {{ downloadingTransferExceptions ? '下載中' : '下載異常明細' }}
                 </button>
             </div>
             <div class="sea-shenzhen-tax-table">
                 <table class="table table-bordered table-hover">
-                    <thead>
+                    <thead class="thead-dark">
                         <tr>
                             <th>原因</th>
                             <th>主號</th>
@@ -240,7 +242,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr ng-repeat="item in transferExceptions" class="table-warning">
+                        <tr ng-repeat="item in transferExceptions track by $index">
                             <td>{{ item.Reason }}</td>
                             <td>{{ item.MainNumber }}</td>
                             <td>{{ item.TrackingNo }}</td>

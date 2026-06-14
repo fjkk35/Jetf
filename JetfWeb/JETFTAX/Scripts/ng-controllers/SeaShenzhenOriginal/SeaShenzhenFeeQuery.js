@@ -1,6 +1,7 @@
 mainApp.controller('SeaShenzhenFeeQueryController', ['$scope', '$http', function ($scope, $http) {
     $scope.data = [];
     $scope.taxPaymentOptions = [{ Value: '', Text: '全部' }];
+    $scope.dataTypeOptions = [{ Value: '', Text: '全部' }];
     $scope.loading = false;
     $scope.exporting = false;
     $scope.isSearched = false;
@@ -132,6 +133,7 @@ mainApp.controller('SeaShenzhenFeeQueryController', ['$scope', '$http', function
         return parseInt($scope.pageSize, 10);
     };
     loadTaxPaymentOptions();
+    loadDataTypeOptions();
     function loadTaxPaymentOptions() {
         $http.get(Router.action('SeaShenzhenFeeQuery', 'GetTaxPaymentOptions'))
             .then(function (response) {
@@ -141,13 +143,23 @@ mainApp.controller('SeaShenzhenFeeQueryController', ['$scope', '$http', function
             $scope.taxPaymentOptions = [{ Value: '', Text: '全部' }];
         });
     }
+    function loadDataTypeOptions() {
+        $http.get(Router.action('SeaShenzhenFeeQuery', 'GetDataTypeOptions'))
+            .then(function (response) {
+            $scope.dataTypeOptions = response.data || [{ Value: '', Text: '全部' }];
+        })
+            .catch(function () {
+            $scope.dataTypeOptions = [{ Value: '', Text: '全部' }];
+        });
+    }
     function createSearchForm() {
         return {
             dataDateStart: null,
             dataDateEnd: null,
             trackingNo: '',
             dlvInv: '',
-            includeTax: ''
+            includeTax: '',
+            dataType: ''
         };
     }
     function buildRequest(pageIndex, pageSize) {
@@ -157,6 +169,7 @@ mainApp.controller('SeaShenzhenFeeQueryController', ['$scope', '$http', function
             TrackingNo: $scope.searchForm.trackingNo,
             DlvInv: $scope.searchForm.dlvInv,
             IncludeTax: $scope.searchForm.includeTax,
+            DataType: $scope.searchForm.dataType,
             PageIndex: pageIndex,
             PageSize: pageSize
         };

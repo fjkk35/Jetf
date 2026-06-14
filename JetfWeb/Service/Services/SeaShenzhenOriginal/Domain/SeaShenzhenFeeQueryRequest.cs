@@ -31,6 +31,11 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
         public string IncludeTax { get; set; }
 
         /// <summary>
+        /// 報關行資料類型代碼。
+        /// </summary>
+        public string DataType { get; set; }
+
+        /// <summary>
         /// 每頁筆數。
         /// </summary>
         public int PageSize { get; set; }

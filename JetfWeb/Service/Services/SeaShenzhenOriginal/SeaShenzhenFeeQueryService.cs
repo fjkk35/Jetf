@@ -87,6 +87,8 @@ namespace Service.Services.SeaShenzhenOriginal
             var trackingNo = NullIfEmpty(request.TrackingNo);
             var dlvInv = NullIfEmpty(request.DlvInv);
             var includeTax = NullIfEmpty(request.IncludeTax);
+            var dataType = NullIfEmpty(request.DataType);
+            var manualToDlvCods = JetfDb.ShenzhenFeeMasterManualToDlvCods.AsNoTracking();
 
             var query = JetfDb.ShenzhenFeeMasters.AsNoTracking().AsQueryable();
 
@@ -110,9 +112,27 @@ namespace Service.Services.SeaShenzhenOriginal
                 query = query.Where(x => x.DlvInv.Contains(dlvInv));
             }
 
+            if (!string.IsNullOrWhiteSpace(dataType))
+            {
+                SeaShenzhenTaxDataType dataTypeValue;
+                if (!Enum.TryParse(dataType, true, out dataTypeValue))
+                {
+                    throw new Exception("報關行格式錯誤");
+                }
+
+                query = query.Where(x => x.DataType == dataTypeValue);
+            }
+
             if (!string.IsNullOrWhiteSpace(includeTax))
             {
-                query = query.Where(x => x.IncludeTax == includeTax);
+                if (includeTax == ShenzhenTaxPayment.C.ToString())
+                {
+                    query = query.Where(x => x.IncludeTax == includeTax || manualToDlvCods.Any(y => y.TrackingNo == x.TrackingNo));
+                }
+                else
+                {
+                    query = query.Where(x => x.IncludeTax == includeTax && !manualToDlvCods.Any(y => y.TrackingNo == x.TrackingNo));
+                }
             }
 
             return query;
@@ -132,10 +152,11 @@ namespace Service.Services.SeaShenzhenOriginal
                     Id = x.Id,
                     DataDateText = FormatDataDate(x.DataDate),
                     CustomerName = GetCustomerName(x.Customer, customerNameLookup),
+                    DataTypeDisplay = GetDataTypeDescription(x.DataType),
                     DlvCom = x.DlvCom,
                     TrackingNo = x.TrackingNo,
                     DlvInv = x.DlvInv,
-                    IncludeTaxDisplay = GetTaxPaymentDescription(x.IncludeTax),
+                    IncludeTaxDisplay = GetTaxPaymentDisplay(GetEffectiveIncludeTax(x.IncludeTax, x.TrackingNo, manualToDlvCodLookup)),
                     Tax = x.Tax,
                     Cod = x.Cod,
                     Fee = x.Fee,
@@ -284,12 +305,33 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
-        /// 將稅金支付方式代碼轉成顯示用中文。
+        /// 取得指定 TrackingNo 生效中的稅金支付方式。
         /// </summary>
-        private static string GetTaxPaymentDescription(string includeTax)
+        private static string GetEffectiveIncludeTax(string includeTax, string trackingNo, Dictionary<string, int> manualToDlvCodLookup)
+        {
+            if (!string.IsNullOrWhiteSpace(trackingNo) && manualToDlvCodLookup != null && manualToDlvCodLookup.ContainsKey(trackingNo))
+            {
+                return ShenzhenTaxPayment.C.ToString();
+            }
+
+            return includeTax;
+        }
+
+        /// <summary>
+        /// 將稅金支付方式代碼轉成顯示用文字。
+        /// </summary>
+        private static string GetTaxPaymentDisplay(string includeTax)
         {
             var taxPayment = EnumerableExtensions.ParseNullableCode<ShenzhenTaxPayment>(includeTax);
             return taxPayment.HasValue ? taxPayment.Value.ToDescription() : string.Empty;
+        }
+
+        /// <summary>
+        /// 將報關行代碼轉成顯示用文字。
+        /// </summary>
+        private static string GetDataTypeDescription(SeaShenzhenTaxDataType dataType)
+        {
+            return dataType.ToDescription();
         }
 
         /// <summary>
@@ -307,6 +349,7 @@ namespace Service.Services.SeaShenzhenOriginal
                 "序號",
                 "日期",
                 "客戶",
+                "報關行",
                 "派件公司",
                 "分提單號",
                 "物流貨號",
@@ -329,15 +372,16 @@ namespace Service.Services.SeaShenzhenOriginal
                 NpoiCell.CreateIntCell(row, 0, serialNo++, dataStyle);
                 NpoiCell.CreateCell(row, 1, item.DataDateText, dataStyle);
                 NpoiCell.CreateCell(row, 2, item.CustomerName, dataStyle);
-                NpoiCell.CreateCell(row, 3, item.DlvCom, dataStyle);
-                NpoiCell.CreateCell(row, 4, item.TrackingNo, dataStyle);
-                NpoiCell.CreateCell(row, 5, item.DlvInv, dataStyle);
-                NpoiCell.CreateCell(row, 6, item.IncludeTaxDisplay, dataStyle);
-                NpoiCell.CreateIntCell(row, 7, item.Tax, dataStyle);
-                NpoiCell.CreateIntCell(row, 8, item.Cod, dataStyle);
-                NpoiCell.CreateIntCell(row, 9, item.Fee, dataStyle);
-                NpoiCell.CreateIntCell(row, 10, item.ToDlvCod, dataStyle);
-                NpoiCell.CreateCell(row, 11, item.ManualToDlvCod.HasValue ? item.ManualToDlvCod.Value.ToString() : string.Empty, dataStyle);
+                NpoiCell.CreateCell(row, 3, item.DataTypeDisplay, dataStyle);
+                NpoiCell.CreateCell(row, 4, item.DlvCom, dataStyle);
+                NpoiCell.CreateCell(row, 5, item.TrackingNo, dataStyle);
+                NpoiCell.CreateCell(row, 6, item.DlvInv, dataStyle);
+                NpoiCell.CreateCell(row, 7, item.IncludeTaxDisplay, dataStyle);
+                NpoiCell.CreateIntCell(row, 8, item.Tax, dataStyle);
+                NpoiCell.CreateIntCell(row, 9, item.Cod, dataStyle);
+                NpoiCell.CreateIntCell(row, 10, item.Fee, dataStyle);
+                NpoiCell.CreateIntCell(row, 11, item.ToDlvCod, dataStyle);
+                NpoiCell.CreateCell(row, 12, item.ManualToDlvCod.HasValue ? item.ManualToDlvCod.Value.ToString() : string.Empty, dataStyle);
             }
 
             for (var index = 0; index < headers.Length; index++)

@@ -168,7 +168,17 @@
             </div>
         </div>
 
-        <h4>異常資料</h4>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h4 class="mb-0">異常資料</h4>
+            <button type="button"
+                    class="btn btn-success"
+                    ng-if="result.Exceptions.length > 0"
+                    ng-click="downloadExceptions()"
+                    ng-disabled="transferring || exportingExceptions">
+                <i class="fa" ng-class="exportingExceptions ? 'fa-spinner fa-spin' : 'fa-file-excel-o'"></i>
+                {{exportingExceptions ? '下載中' : '下載異常明細'}}
+            </button>
+        </div>
         <div class="sea-shenzhen-fee-transfer-table">
             <table class="table table-bordered table-hover">
                 <thead class="thead-dark">

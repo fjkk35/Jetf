@@ -9,12 +9,14 @@ interface SeaShenzhenFeeQuerySearchForm {
     trackingNo: string;
     dlvInv: string;
     includeTax: string;
+    dataType: string;
 }
 
 interface SeaShenzhenFeeQueryRow {
     Id: number;
     DataDateText: string;
     CustomerName: string;
+    DataTypeDisplay: string;
     DlvCom: string;
     TrackingNo: string;
     DlvInv: string;
@@ -42,6 +44,7 @@ interface SeaShenzhenFeeQueryExportResponse {
 interface SeaShenzhenFeeQueryScope extends ng.IScope {
     data: SeaShenzhenFeeQueryRow[];
     taxPaymentOptions: SeaShenzhenFeeQueryOption[];
+    dataTypeOptions: SeaShenzhenFeeQueryOption[];
     loading: boolean;
     exporting: boolean;
     isSearched: boolean;
@@ -74,6 +77,7 @@ mainApp.controller('SeaShenzhenFeeQueryController', ['$scope', '$http', function
 ) {
     $scope.data = [];
     $scope.taxPaymentOptions = [{ Value: '', Text: '全部' }];
+    $scope.dataTypeOptions = [{ Value: '', Text: '全部' }];
     $scope.loading = false;
     $scope.exporting = false;
     $scope.isSearched = false;
@@ -231,6 +235,7 @@ mainApp.controller('SeaShenzhenFeeQueryController', ['$scope', '$http', function
     };
 
     loadTaxPaymentOptions();
+    loadDataTypeOptions();
 
     function loadTaxPaymentOptions(): void {
         $http.get(Router.action('SeaShenzhenFeeQuery', 'GetTaxPaymentOptions'))
@@ -242,13 +247,24 @@ mainApp.controller('SeaShenzhenFeeQueryController', ['$scope', '$http', function
             });
     }
 
+    function loadDataTypeOptions(): void {
+        $http.get(Router.action('SeaShenzhenFeeQuery', 'GetDataTypeOptions'))
+            .then(function (response: ng.IHttpResponse<SeaShenzhenFeeQueryOption[]>): void {
+                $scope.dataTypeOptions = response.data || [{ Value: '', Text: '全部' }];
+            })
+            .catch(function (): void {
+                $scope.dataTypeOptions = [{ Value: '', Text: '全部' }];
+            });
+    }
+
     function createSearchForm(): SeaShenzhenFeeQuerySearchForm {
         return {
             dataDateStart: null,
             dataDateEnd: null,
             trackingNo: '',
             dlvInv: '',
-            includeTax: ''
+            includeTax: '',
+            dataType: ''
         };
     }
 
@@ -259,6 +275,7 @@ mainApp.controller('SeaShenzhenFeeQueryController', ['$scope', '$http', function
             TrackingNo: $scope.searchForm.trackingNo,
             DlvInv: $scope.searchForm.dlvInv,
             IncludeTax: $scope.searchForm.includeTax,
+            DataType: $scope.searchForm.dataType,
             PageIndex: pageIndex,
             PageSize: pageSize
         };

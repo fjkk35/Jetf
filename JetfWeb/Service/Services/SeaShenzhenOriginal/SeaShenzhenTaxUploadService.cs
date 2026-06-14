@@ -35,6 +35,8 @@ namespace Service.Services.SeaShenzhenOriginal
             {
                 var dataDateText = dataDate.ToString("yyyyMMdd");
                 var dataTypeText = dataType.ToDescription();
+
+                // Step1: 依報關行設定讀取 Excel 與欄位定義。
                 var definition = GetHeaderDefinition(dataType);
                 var uploadRows = ReadExcelFile(filePath, definition);
 
@@ -43,6 +45,7 @@ namespace Service.Services.SeaShenzhenOriginal
                     return new ResponseModel("Excel 檔案中沒有資料");
                 }
 
+                // Step2: 驗證每筆上傳資料，拆分成功與失敗明細。
                 ValidateUploadRows(uploadRows, definition);
 
                 var failList = uploadRows.Where(x => x.UploadStatus == "失敗").ToList();
@@ -71,7 +74,10 @@ namespace Service.Services.SeaShenzhenOriginal
                     };
                 }
 
+                // Step3: 將成功資料寫入上傳檔與深圳稅金主檔。
                 var result = SaveUploadRows(successRows, dataDateText, dataType, dataTypeText);
+
+                // Step4: 合併失敗明細與轉檔結果，回傳畫面摘要。
                 result.SourceCount = uploadRows.Count;
                 result.FailCount = failList.Count;
                 result.Data = failList;
@@ -120,6 +126,8 @@ namespace Service.Services.SeaShenzhenOriginal
         {
             var now = DateTime.Now;
             var userId = GetUserId();
+
+            // Step3-1: 先將成功列轉成 SeaShenzhenTax 實體。
             var taxEntities = uploadRows
                 .Select(row => new SeaShenzhenTaxEntity
                 {
@@ -137,6 +145,7 @@ namespace Service.Services.SeaShenzhenOriginal
                 })
                 .ToList();
 
+            // Step3-2: 依分號彙總稅額，建立深圳稅金主檔與異常明細。
             var originalLookup = SeaShenzhenFeeTransferShared.GetOriginalLookup(JetfDb, taxEntities.Select(x => x.TrackingNo));
             var transferRows = new List<ShenzhenFeeMasterEntity>();
             var exceptions = new List<SeaShenzhenTaxTransferExceptionRow>();
@@ -167,6 +176,7 @@ namespace Service.Services.SeaShenzhenOriginal
             {
                 try
                 {
+                    // Step3-3: 先清除同批次舊資料，再批次寫入新資料並回填關聯 Id。
                     DeleteExistingUploadRows(dataDate, dataTypeValue);
                     deletedCount = DeleteExistingTransferRows(dataDate, dataTypeValue);
 

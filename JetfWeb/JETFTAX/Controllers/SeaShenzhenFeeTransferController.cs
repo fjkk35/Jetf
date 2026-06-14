@@ -60,5 +60,44 @@ namespace JETFTAX.Controllers
                 });
             }
         }
+
+        [HttpPost]
+        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        public JsonResult ExportExceptions(SeaShenzhenFeeTransferExceptionExportRequest request)
+        {
+            try
+            {
+                var fileBytes = _seaShenzhenFeeTransferService.ExportExceptionExcel(request);
+                var fileGuid = Guid.NewGuid().ToString();
+                var fileName = BuildExceptionFileName(request?.DataDate);
+
+                TempData[fileGuid] = fileBytes;
+
+                return Json(new
+                {
+                    fileGuid,
+                    fileName,
+                    msg = string.Empty
+                }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    fileGuid = string.Empty,
+                    fileName = string.Empty,
+                    msg = ex.Message
+                }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        private static string BuildExceptionFileName(string dataDate)
+        {
+            var label = string.IsNullOrWhiteSpace(dataDate)
+                ? DateTime.Now.ToString("yyyyMMdd")
+                : dataDate.Trim();
+
+            return $"新遞稅金轉檔異常明細_{label}.xlsx";
+        }
     }
 }

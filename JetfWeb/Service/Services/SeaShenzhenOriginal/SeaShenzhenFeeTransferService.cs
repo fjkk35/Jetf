@@ -1,8 +1,12 @@
-﻿using Service.Data;
+﻿using NPOI.SS.UserModel;
+using NPOI.XSSF.UserModel;
+using Service.Data;
 using Service.EnumTax;
+using Service.Extensions;
 using Service.Services.SeaShenzhenOriginal.Domain;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace Service.Services.SeaShenzhenOriginal
@@ -100,6 +104,25 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
+        /// 匯出轉檔異常明細 Excel。
+        /// </summary>
+        public byte[] ExportExceptionExcel(SeaShenzhenFeeTransferExceptionExportRequest request)
+        {
+            var rows = (request?.Exceptions ?? new List<SeaShenzhenFeeTransferExceptionRow>()).ToList();
+            if (rows.Count == 0)
+            {
+                throw new Exception("查無異常明細");
+            }
+
+            var workbook = CreateExceptionWorkbook(rows);
+            using (var stream = new MemoryStream())
+            {
+                workbook.Write(stream);
+                return stream.ToArray();
+            }
+        }
+
+        /// <summary>
         /// 依條件建立找不到對應託運資料時的異常列。
         /// </summary>
         private static SeaShenzhenFeeTransferExceptionRow CreateExceptionRow(FeeMasterEntity feeMaster, string reason)
@@ -125,6 +148,58 @@ namespace Service.Services.SeaShenzhenOriginal
         {
             return JetfDb.DeleteWhere(JetfDb.ShenzhenFeeMasters
                 .Where(x => x.DataDate == dataDate && x.DataType == dataType));
+        }
+
+        /// <summary>
+        /// 建立轉檔異常明細 Excel。
+        /// </summary>
+        private static IWorkbook CreateExceptionWorkbook(IEnumerable<SeaShenzhenFeeTransferExceptionRow> rows)
+        {
+            var workbook = new XSSFWorkbook();
+            var sheet = workbook.CreateSheet("轉檔異常明細");
+            var headerStyle = NpoiStyle.CreateHeaderStyle(workbook);
+            var dataStyle = NpoiStyle.CreateDataStyle(workbook);
+            var headers = new[]
+            {
+                "原因",
+                "主號",
+                "分提單號",
+                "物流貨號",
+                "收件人",
+                "收件人電話",
+                "收件地址",
+                "稅金1",
+                "稅金2"
+            };
+
+            var headerRow = sheet.CreateRow(0);
+            NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
+
+            var rowIndex = 1;
+            foreach (var item in rows ?? Enumerable.Empty<SeaShenzhenFeeTransferExceptionRow>())
+            {
+                var row = sheet.CreateRow(rowIndex++);
+                NpoiCell.CreateCell(row, 0, item.Reason, dataStyle);
+                NpoiCell.CreateCell(row, 1, item.MainNumber, dataStyle);
+                NpoiCell.CreateCell(row, 2, item.TrackingNo, dataStyle);
+                NpoiCell.CreateCell(row, 3, item.DlvInv, dataStyle);
+                NpoiCell.CreateCell(row, 4, item.Recipient, dataStyle);
+                NpoiCell.CreateCell(row, 5, item.RecPhone, dataStyle);
+                NpoiCell.CreateCell(row, 6, item.RecAddress, dataStyle);
+                NpoiCell.CreateIntCell(row, 7, item.Tax1, dataStyle);
+                NpoiCell.CreateIntCell(row, 8, item.Tax2, dataStyle);
+            }
+
+            for (var index = 0; index < headers.Length; index++)
+            {
+                sheet.AutoSizeColumn(index);
+                if (sheet.GetColumnWidth(index) < 3000)
+                {
+                    sheet.SetColumnWidth(index, 3000);
+                }
+            }
+
+            return workbook;
         }
 
         /// <summary>

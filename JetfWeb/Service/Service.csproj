@@ -740,6 +740,7 @@
     <Compile Include="Services\SjlBatchImport\SjlBatchImportService.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeTransferRequest.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeTransferResponse.cs" />
+    <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeTransferExceptionExportRequest.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeManualToDlvCodUploadRow.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeManualToDlvCodQueryRequest.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenFeeManualToDlvCodQueryResponse.cs" />
