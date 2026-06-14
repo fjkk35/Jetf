@@ -33,6 +33,11 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
         public string TaxPayment { get; set; }
 
         /// <summary>
+        /// 報關行資料類型代碼。
+        /// </summary>
+        public string DataType { get; set; }
+
+        /// <summary>
         /// 頁碼。
         /// </summary>
         public int PageIndex { get; set; }

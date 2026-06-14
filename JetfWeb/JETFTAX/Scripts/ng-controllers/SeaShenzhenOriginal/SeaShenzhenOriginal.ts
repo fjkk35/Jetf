@@ -1,4 +1,9 @@
-﻿interface SeaShenzhenOriginalUploadReturnObject {
+﻿interface SeaShenzhenOriginalTaxDataTypeOption {
+    Value: string;
+    Text: string;
+}
+
+interface SeaShenzhenOriginalUploadReturnObject {
     data?: SeaShenzhenOriginalUploadFailRow[];
     message?: string;
 }
@@ -34,10 +39,12 @@ interface SeaShenzhenOriginalUploadFailRow {
 interface SeaShenzhenOriginalUploadScope extends ng.IScope {
     form: {
         dataDate: Date;
+        dataType: string;
     };
     datePopup: { opened: boolean };
     dateOptions: any;
     uploading: boolean;
+    taxDataTypeOptions: SeaShenzhenOriginalTaxDataTypeOption[];
     uploadFailData: SeaShenzhenOriginalUploadFailRow[];
     uploadResult: {
         success: boolean;
@@ -63,8 +70,19 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
         }
     }
 
+    function getSelectedBrokerName(): string {
+        for (var i = 0; i < $scope.taxDataTypeOptions.length; i++) {
+            if ($scope.taxDataTypeOptions[i].Value === $scope.form.dataType) {
+                return $scope.taxDataTypeOptions[i].Text;
+            }
+        }
+
+        return '';
+    }
+
     $scope.form = {
-        dataDate: new Date()
+        dataDate: new Date(),
+        dataType: ''
     };
     $scope.datePopup = { opened: false };
     $scope.dateOptions = {
@@ -75,8 +93,11 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
         showWeeks: false
     };
     $scope.uploading = false;
+    $scope.taxDataTypeOptions = [{ Value: '', Text: '請選擇' }];
     $scope.uploadFailData = [];
     $scope.uploadResult = null;
+
+    loadTaxDataTypeOptions();
 
     $scope.openDatePopup = function (): void {
         $scope.datePopup.opened = true;
@@ -106,12 +127,33 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
             return;
         }
 
+        if (!$scope.form.dataType) {
+            swal({
+                title: '錯誤',
+                text: '請選擇報關行',
+                icon: 'error'
+            });
+            return;
+        }
+
         var fileExtension = file.name.split('.').pop().toLowerCase();
         if (fileExtension !== 'xlsx') {
             clearSelectedFile(fileInput);
             swal({
                 title: '錯誤',
                 text: '副檔名需為 xlsx',
+                icon: 'error'
+            });
+            return;
+        }
+
+        var brokerName = getSelectedBrokerName();
+        var fileNameWithoutExtension = file.name.replace(/\.[^.]+$/, '');
+        if (brokerName && fileNameWithoutExtension.indexOf(brokerName) < 0) {
+            clearSelectedFile(fileInput);
+            swal({
+                title: '錯誤',
+                text: '檔名需包含報關行「' + brokerName + '」',
                 icon: 'error'
             });
             return;
@@ -124,6 +166,7 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
         var formData = new FormData();
         formData.append('file', file);
         formData.append('dataDate', formatDate($scope.form.dataDate));
+        formData.append('dataType', $scope.form.dataType);
 
         $http.post(Router.action('SeaShenzhenOriginal', 'Upload'), formData, {
             transformRequest: angular.identity,
@@ -182,4 +225,14 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
                 $scope.uploading = false;
             });
     };
+
+    function loadTaxDataTypeOptions(): void {
+        $http.get(Router.action('SeaShenzhenOriginal', 'GetTaxDataTypeOptions'))
+            .then(function (response: ng.IHttpResponse<SeaShenzhenOriginalTaxDataTypeOption[]>): void {
+                $scope.taxDataTypeOptions = response.data || [{ Value: '', Text: '請選擇' }];
+            })
+            .catch(function (): void {
+                $scope.taxDataTypeOptions = [{ Value: '', Text: '請選擇' }];
+            });
+    }
 }]);

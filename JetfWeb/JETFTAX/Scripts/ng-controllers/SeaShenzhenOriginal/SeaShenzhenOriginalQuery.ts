@@ -13,11 +13,13 @@ interface SeaShenzhenOriginalQuerySearchForm {
     importer: string;
     importerPhone: string;
     taxPayment: string;
+    dataType: string;
 }
 
 interface SeaShenzhenOriginalQueryRow {
     Id: number;
     DataDateText: string;
+    DataTypeDisplay: string;
     TrackingNo: string;
     BlNo: string;
     OrderNo: string;
@@ -45,6 +47,7 @@ interface SeaShenzhenOriginalQueryResponse {
 interface SeaShenzhenOriginalQueryScope extends ng.IScope {
     data: SeaShenzhenOriginalQueryRow[];
     taxPaymentOptions: SeaShenzhenOriginalQueryOption[];
+    dataTypeOptions: SeaShenzhenOriginalQueryOption[];
     loading: boolean;
     isSearched: boolean;
     recordsInfo: string;
@@ -75,6 +78,7 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
 ) {
     $scope.data = [];
     $scope.taxPaymentOptions = [{ Value: '', Text: '全部' }];
+    $scope.dataTypeOptions = [{ Value: '', Text: '全部' }];
     $scope.loading = false;
     $scope.isSearched = false;
     $scope.recordsInfo = '';
@@ -103,10 +107,12 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
         jetfSerial: '',
         importer: '',
         importerPhone: '',
-        taxPayment: ''
+        taxPayment: '',
+        dataType: ''
     };
 
     loadTaxPaymentOptions();
+    loadDataTypeOptions();
 
     $scope.openStartDatePopup = function (): void {
         $scope.startDatePopup.opened = true;
@@ -131,7 +137,8 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
             jetfSerial: '',
             importer: '',
             importerPhone: '',
-            taxPayment: ''
+            taxPayment: '',
+            dataType: ''
         };
         $scope.data = [];
         $scope.isSearched = false;
@@ -225,6 +232,7 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
             Importer: $scope.searchForm.importer,
             ImporterPhone: $scope.searchForm.importerPhone,
             TaxPayment: $scope.searchForm.taxPayment,
+            DataType: $scope.searchForm.dataType,
             PageIndex: pageIndex,
             PageSize: pageSize
         };
@@ -237,6 +245,16 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
             })
             .catch(function (): void {
                 $scope.taxPaymentOptions = [{ Value: '', Text: '全部' }];
+            });
+    }
+
+    function loadDataTypeOptions(): void {
+        $http.get(Router.action('SeaShenzhenOriginalQuery', 'GetDataTypeOptions'))
+            .then(function (response: ng.IHttpResponse<SeaShenzhenOriginalQueryOption[]>): void {
+                $scope.dataTypeOptions = response.data || [{ Value: '', Text: '全部' }];
+            })
+            .catch(function (): void {
+                $scope.dataTypeOptions = [{ Value: '', Text: '全部' }];
             });
     }
 

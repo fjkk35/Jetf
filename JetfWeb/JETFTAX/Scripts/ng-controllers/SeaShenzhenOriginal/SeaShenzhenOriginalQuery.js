@@ -1,6 +1,7 @@
 mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', function ($scope, $http) {
         $scope.data = [];
     $scope.taxPaymentOptions = [{ Value: '', Text: '全部' }];
+    $scope.dataTypeOptions = [{ Value: '', Text: '全部' }];
         $scope.loading = false;
         $scope.isSearched = false;
         $scope.recordsInfo = '';
@@ -26,9 +27,11 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
             jetfSerial: '',
             importer: '',
             importerPhone: '',
-            taxPayment: ''
+            taxPayment: '',
+            dataType: ''
         };
         loadTaxPaymentOptions();
+        loadDataTypeOptions();
         $scope.openStartDatePopup = function () {
             $scope.startDatePopup.opened = true;
         };
@@ -49,7 +52,8 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
                 jetfSerial: '',
                 importer: '',
                 importerPhone: '',
-                taxPayment: ''
+                taxPayment: '',
+                dataType: ''
             };
             $scope.data = [];
             $scope.isSearched = false;
@@ -129,6 +133,7 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
                 Importer: $scope.searchForm.importer,
                 ImporterPhone: $scope.searchForm.importerPhone,
                 TaxPayment: $scope.searchForm.taxPayment,
+                DataType: $scope.searchForm.dataType,
                 PageIndex: pageIndex,
                 PageSize: pageSize
             };
@@ -140,6 +145,15 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
             })
                 .catch(function () {
                 $scope.taxPaymentOptions = [{ Value: '', Text: '全部' }];
+            });
+        }
+        function loadDataTypeOptions() {
+            $http.get(Router.action('SeaShenzhenOriginalQuery', 'GetDataTypeOptions'))
+                .then(function (response) {
+                $scope.dataTypeOptions = response.data || [{ Value: '', Text: '全部' }];
+            })
+                .catch(function () {
+                $scope.dataTypeOptions = [{ Value: '', Text: '全部' }];
             });
         }
         function isValidDateRange() {

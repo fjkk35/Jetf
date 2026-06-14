@@ -67,5 +67,23 @@ namespace JETFTAX.Controllers
                     Text = item + "-" + item.ToDescription()
                 })), JsonRequestBehavior.AllowGet);
         }
+
+        [HttpGet]
+        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        public JsonResult GetDataTypeOptions()
+        {
+            var list = new[]
+            {
+                new { Value = string.Empty, Text = "全部" }
+            };
+
+            return Json(list.Concat(Enum.GetValues(typeof(SeaShenzhenTaxDataType))
+                .Cast<SeaShenzhenTaxDataType>()
+                .Select(item => new
+                {
+                    Value = item.ToString(),
+                    Text = item.ToDescription()
+                })), JsonRequestBehavior.AllowGet);
+        }
     }
 }

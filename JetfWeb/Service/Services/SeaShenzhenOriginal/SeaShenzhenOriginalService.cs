@@ -66,6 +66,7 @@ namespace Service.Services.SeaShenzhenOriginal
             var importer = NullIfEmpty(request.Importer);
             var importerPhone = NullIfEmpty(request.ImporterPhone);
             var taxPayment = NullIfEmpty(request.TaxPayment);
+            var dataType = NullIfEmpty(request.DataType);
 
             var query = JetfDb.SeaShenzhenOriginals.AsNoTracking().AsQueryable();
 
@@ -115,6 +116,17 @@ namespace Service.Services.SeaShenzhenOriginal
                 query = query.Where(x => x.TaxPayment == taxPayment);
             }
 
+            if (!string.IsNullOrWhiteSpace(dataType))
+            {
+                SeaShenzhenTaxDataType dataTypeValue;
+                if (!EnumerableExtensions.TryParseCode<SeaShenzhenTaxDataType>(dataType, out dataTypeValue))
+                {
+                    throw new Exception("報關行格式錯誤");
+                }
+
+                query = query.Where(x => x.DataType == dataTypeValue);
+            }
+
             var totalCount = query.Count();
             var data = query
                 .OrderByDescending(x => x.DataDate)
@@ -126,6 +138,7 @@ namespace Service.Services.SeaShenzhenOriginal
                 {
                     Id = x.Id,
                     DataDateText = x.DataDate.ToString("yyyy-MM-dd"),
+                    DataTypeDisplay = x.DataType.ToDescription(),
                     TrackingNo = x.TrackingNo,
                     BlNo = x.BlNo,
                     OrderNo = x.OrderNo,
@@ -155,7 +168,7 @@ namespace Service.Services.SeaShenzhenOriginal
         /// <summary>
         /// 上傳新遞託運資料。
         /// </summary>
-        public ResponseModel Upload(string filePath, DateTime dataDate)
+        public ResponseModel Upload(string filePath, DateTime dataDate, SeaShenzhenTaxDataType dataType)
         {
             try
             {
@@ -185,7 +198,7 @@ namespace Service.Services.SeaShenzhenOriginal
                     };
                 }
 
-                var saveResult = SaveUploadRows(uploadRows, dataDate);
+                var saveResult = SaveUploadRows(uploadRows, dataDate, dataType);
                 var successMessage = $"成功上傳 {uploadRows.Count} 筆資料，新增 {saveResult.InsertCount} 筆，修改 {saveResult.UpdateCount} 筆";
                 return new ResponseModel
                 {
@@ -447,7 +460,7 @@ namespace Service.Services.SeaShenzhenOriginal
         /// <summary>
         /// 將驗證成功的上傳資料寫入 SeaShenzhenOriginal。
         /// </summary>
-        private SaveResult SaveUploadRows(List<SeaShenzhenOriginalUploadRow> uploadRows, DateTime dataDate)
+        private SaveResult SaveUploadRows(List<SeaShenzhenOriginalUploadRow> uploadRows, DateTime dataDate, SeaShenzhenTaxDataType dataType)
         {
             var now = DateTime.Now;
             var userId = GetUserId();
@@ -477,7 +490,7 @@ namespace Service.Services.SeaShenzhenOriginal
                         SeaShenzhenOriginalEntity entity;
                         if (existingMap.TryGetValue(key, out entity))
                         {
-                            ApplyRow(entity, row, dataDate);
+                            ApplyRow(entity, row, dataDate, dataType);
                             entity.IsHctSuccess = false;
                             entity.ModifiedUser = userId;
                             entity.ModifiedTime = now;
@@ -491,7 +504,7 @@ namespace Service.Services.SeaShenzhenOriginal
                                 CreatedUser = userId,
                                 CreatedTime = now
                             };
-                            ApplyRow(entity, row, dataDate);
+                            ApplyRow(entity, row, dataDate, dataType);
                             JetfDb.SeaShenzhenOriginals.Add(entity);
                             insertCount++;
                         }
@@ -517,9 +530,10 @@ namespace Service.Services.SeaShenzhenOriginal
         /// <summary>
         /// 將單列上傳資料套用到 SeaShenzhenOriginal 實體。
         /// </summary>
-        private void ApplyRow(SeaShenzhenOriginalEntity entity, SeaShenzhenOriginalUploadRow row, DateTime dataDate)
+        private void ApplyRow(SeaShenzhenOriginalEntity entity, SeaShenzhenOriginalUploadRow row, DateTime dataDate, SeaShenzhenTaxDataType dataType)
         {
             entity.DataDate = dataDate.Date;
+            entity.DataType = dataType;
             entity.TrackingNo = NullIfEmpty(row.TrackingNo);
             entity.BlNo = NullIfEmpty(row.BlNo);
             entity.OrderNo = NullIfEmpty(row.OrderNo);

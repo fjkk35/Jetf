@@ -83,7 +83,7 @@ select
     b.QUANTITY as Quantity,
     b.MEMO as Memo,
     b.JETF_SERIAL as JetfSerial,
-    b.TRANS_NAME as TransName,
+    b.TRANS_TAXPAYMENT as TransName,
     c.TO_DLV_COD as ToDlvCod
 from DATA_CENTER.dbo.CLEARANCE_INFO a
 left join DATA_CENTER.dbo.SEA_ORDER_ORIGINAL b on a.MAIN_NUMBER = b.MAINNUMBER and a.BAG_NUMBER = b.BL_NO

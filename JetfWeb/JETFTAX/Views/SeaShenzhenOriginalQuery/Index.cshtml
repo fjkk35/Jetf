@@ -173,6 +173,17 @@
                     </select>
                 </div>
             </div>
+
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="seaShenzhenDataType" class="col-lg-4 col-form-label text-right">報關行</label>
+                <div class="col-lg-8">
+                    <select id="seaShenzhenDataType"
+                            class="form-control"
+                            ng-model="searchForm.dataType"
+                            ng-options="item.Value as item.Text for item in dataTypeOptions">
+                    </select>
+                </div>
+            </div>
         </div>
 
         <div class="row">
@@ -227,6 +238,7 @@
                     <tr>
                         <th>序號</th>
                         <th>日期</th>
+                        <th>報關行</th>
                         <th>報關號碼</th>
                         <th>提單號碼</th>
                         <th>訂單編號</th>
@@ -247,11 +259,12 @@
                 </thead>
                 <tbody>
                     <tr ng-if="data.length === 0">
-                        <td colspan="18" class="text-center">查無資料</td>
+                        <td colspan="19" class="text-center">查無資料</td>
                     </tr>
                     <tr ng-repeat="item in data track by item.Id">
                         <td>{{(currentPage - 1) * parsePageSize() + $index + 1}}</td>
                         <td>{{item.DataDateText}}</td>
+                        <td>{{item.DataTypeDisplay}}</td>
                         <td>{{item.TrackingNo}}</td>
                         <td>{{item.BlNo}}</td>
                         <td>{{item.OrderNo}}</td>

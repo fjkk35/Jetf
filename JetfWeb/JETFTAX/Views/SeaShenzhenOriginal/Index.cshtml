@@ -3,15 +3,26 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div ng-controller="SeaShenzhenOriginalController">
+<style>
+    .sea-shenzhen-original-page {
+        padding: 0 18px 18px;
+        box-sizing: border-box;
+    }
+
+    .sea-shenzhen-original-form {
+        border: none;
+    }
+</style>
+
+<div class="sea-shenzhen-original-page" ng-controller="SeaShenzhenOriginalController">
     <span class="headtype">上傳託運資料</span>
     <hr />
 
     <div class="containertype">
-        <div class="card bg-light rounded p-4 mb-4" style="border:none;">
-            <div class="row">
-                <div class="col-lg-12" style="margin-bottom:0.5rem;">
-                    <label>資料日期</label>
+        <div class="card bg-light rounded p-4 mb-4 sea-shenzhen-original-form">
+            <div class="form-group row">
+                <label class="col-lg-1 col-md-3 col-sm-12 control-label" style="padding-top:7px;">資料日期</label>
+                <div class="col-lg-4 col-md-5 col-sm-12" style="margin-bottom:0.5rem;">
                     <input type="text"
                            class="form-control"
                            ng-model="form.dataDate"
@@ -22,13 +33,28 @@
                            show-button-bar="false"
                            readonly />
                 </div>
-                <div class="col-lg-12" style="margin-bottom:0.5rem;">
+            </div>
+            <div class="form-group row">
+                <label class="col-lg-1 col-md-3 col-sm-12 control-label" style="padding-top:7px;">報關行</label>
+                <div class="col-lg-4 col-md-5 col-sm-12" style="margin-bottom:0.5rem;">
+                    <select class="form-control"
+                            ng-model="form.dataType"
+                            ng-options="item.Value as item.Text for item in taxDataTypeOptions"></select>
+                </div>
+            </div>
+            <div class="form-group row">
+                <label class="col-lg-1 col-md-3 col-sm-12 control-label" style="padding-top:7px;">選擇檔案上傳</label>
+                <div class="col-lg-6 col-md-7 col-sm-12" style="margin-bottom:0.5rem;">
                     <input type="file" id="seaShenzhenOriginalFileInput" accept=".xlsx" class="form-control" />
                 </div>
-                <div class="col-lg-12" style="margin:0.5rem 0;">
+            </div>
+            <div class="form-group row">
+                <div class="col-lg-offset-1 col-md-offset-3 col-lg-10 col-md-9 col-sm-12" style="margin:0.5rem 0;">
                     <a href="@Url.Action("DownloadTemplate", "SeaShenzhenOriginal")" target="_blank">下載範例</a>
                 </div>
-                <div class="col-lg-12" style="margin:0.5rem 0;">
+            </div>
+            <div class="form-group row" style="margin-bottom:0;">
+                <div class="col-lg-offset-1 col-md-offset-3 col-lg-10 col-md-9 col-sm-12" style="margin:0.5rem 0;">
                     <button type="button" class="btn btn-success confirmbtn" ng-click="uploadFile()" ng-disabled="uploading">
                         <i class="fas fa-upload"></i> {{ uploading ? '上傳中...' : '上傳' }}
                     </button>

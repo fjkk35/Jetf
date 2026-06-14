@@ -28,8 +28,19 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
         /// </summary>
         public int Id { get; set; }
 
+        /// <summary>
+        /// 資料日期。
+        /// </summary>
         public string DataDateText { get; set; }
 
+        /// <summary>
+        /// 報關行。
+        /// </summary>
+        public string DataTypeDisplay { get; set; }
+
+        /// <summary>
+        /// 報關號碼。
+        /// </summary>
         public string TrackingNo { get; set; }
 
         public string BlNo { get; set; }

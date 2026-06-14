@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Service.EnumTax;
 
 namespace Service.Data
 {
@@ -20,6 +21,12 @@ namespace Service.Data
         /// </summary>
         [Column("DataDate")]
         public DateTime DataDate { get; set; }
+
+        /// <summary>
+        /// 報關行。
+        /// </summary>
+        [Column("DataType")]
+        public SeaShenzhenTaxDataType DataType { get; set; }
 
         /// <summary>
         /// 報關號碼。

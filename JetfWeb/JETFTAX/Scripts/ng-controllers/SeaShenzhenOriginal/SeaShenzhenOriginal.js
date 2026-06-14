@@ -9,8 +9,17 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
                 fileInput.value = '';
             }
         }
+        function getSelectedBrokerName() {
+            for (var i = 0; i < $scope.taxDataTypeOptions.length; i++) {
+                if ($scope.taxDataTypeOptions[i].Value === $scope.form.dataType) {
+                    return $scope.taxDataTypeOptions[i].Text;
+                }
+            }
+            return '';
+        }
         $scope.form = {
-            dataDate: new Date()
+            dataDate: new Date(),
+            dataType: ''
         };
         $scope.datePopup = { opened: false };
         $scope.dateOptions = {
@@ -21,8 +30,10 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
             showWeeks: false
         };
         $scope.uploading = false;
+        $scope.taxDataTypeOptions = [{ Value: '', Text: '請選擇' }];
         $scope.uploadFailData = [];
         $scope.uploadResult = null;
+        loadTaxDataTypeOptions();
         $scope.openDatePopup = function () {
             $scope.datePopup.opened = true;
         };
@@ -47,6 +58,14 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
                 });
                 return;
             }
+            if (!$scope.form.dataType) {
+                swal({
+                    title: '錯誤',
+                    text: '請選擇報關行',
+                    icon: 'error'
+                });
+                return;
+            }
             var fileExtension = file.name.split('.').pop().toLowerCase();
             if (fileExtension !== 'xlsx') {
                 clearSelectedFile(fileInput);
@@ -57,12 +76,24 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
                 });
                 return;
             }
+            var brokerName = getSelectedBrokerName();
+            var fileNameWithoutExtension = file.name.replace(/\.[^.]+$/, '');
+            if (brokerName && fileNameWithoutExtension.indexOf(brokerName) < 0) {
+                clearSelectedFile(fileInput);
+                swal({
+                    title: '錯誤',
+                    text: '檔名需包含報關行「' + brokerName + '」',
+                    icon: 'error'
+                });
+                return;
+            }
             $scope.uploading = true;
             $scope.uploadResult = null;
             $scope.uploadFailData = [];
             var formData = new FormData();
             formData.append('file', file);
             formData.append('dataDate', formatDate($scope.form.dataDate));
+            formData.append('dataType', $scope.form.dataType);
             $http.post(Router.action('SeaShenzhenOriginal', 'Upload'), formData, {
                 transformRequest: angular.identity,
                 headers: { 'Content-Type': undefined }
@@ -112,4 +143,13 @@ mainApp.controller('SeaShenzhenOriginalController', ['$scope', '$http', function
                 $scope.uploading = false;
             });
         };
+        function loadTaxDataTypeOptions() {
+            $http.get(Router.action('SeaShenzhenOriginal', 'GetTaxDataTypeOptions'))
+                .then(function (response) {
+                $scope.taxDataTypeOptions = response.data || [{ Value: '', Text: '請選擇' }];
+            })
+                .catch(function () {
+                $scope.taxDataTypeOptions = [{ Value: '', Text: '請選擇' }];
+            });
+        }
     }]);
