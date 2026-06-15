@@ -226,8 +226,11 @@ join Process b on a.TrackingNo = b.DLV_INV" ;
                                 CheckBagNumber = string.Join(",", g.Where(m => m.Data == null && m.SIGN_OUT_TIME == null)
                                                      .Select(m => m.BAG_NUMBER)),
                                 //倉儲漏刷，沒有出艙有掃貨上車
-                                CheckTrackingNo = string.Join(",", g.Where(m => m.Data != null && m.SIGN_OUT_TIME == null)
-                                                     .Select(m => m.MERGE_NUMBER)),
+                                CheckTrackingNoList = g.Where(m => m.Data != null && m.SIGN_OUT_TIME == null)
+                                                     .Select(m => m.MERGE_NUMBER)
+                                                     .Where(m => string.IsNullOrEmpty(m) == false)
+                                                     .Distinct()
+                                                     .ToList(),
                                 DiffCount = g.Where(m => m.Data == null && m.SIGN_OUT_TIME != null).Count(),
                                 DiffList = g.Where(m => m.Data == null && m.SIGN_OUT_TIME != null)
                                              .Select(m => new
@@ -264,7 +267,9 @@ join Process b on a.TrackingNo = b.DLV_INV" ;
 
                 int startRow = irow;
                 int diffCount = item.DiffList.Count;
-                int endRow = startRow + (diffCount > 0 ? diffCount - 1 : 0);
+                int checkTrackingNoCount = item.CheckTrackingNoList.Count;
+                int rowCount = Math.Max(Math.Max(diffCount, checkTrackingNoCount), 1);
+                int endRow = startRow + rowCount - 1;
 
                 row = sheet.CreateRow(irow);
                 row.CreateCell(0).SetCellValue(item.MainNumber);
@@ -275,39 +280,42 @@ join Process b on a.TrackingNo = b.DLV_INV" ;
                 row.CreateCell(5).SetCellValue(item.CheckBagNumber);
                 row.CreateCell(6).SetCellValue(item.DiffCount);
 
-                foreach (var diff in item.DiffList)
+                for (int index = 0; index < rowCount; index++)
                 {
-                    row = sheet.GetRow(irow) ?? sheet.CreateRow(irow);
-                    row.CreateCell(7).SetCellValue(diff.BagNumber);
-                    row.CreateCell(8).SetCellValue(diff.MergeNumber);
-                    if (process.ContainsKey(diff.MergeNumber))
+                    int currentRowIndex = startRow + index;
+                    row = sheet.GetRow(currentRowIndex) ?? sheet.CreateRow(currentRowIndex);
+
+                    if (index < item.DiffList.Count)
                     {
-                        var processType = process[diff.MergeNumber];
-                        if (processTypeRemark.ContainsKey(processType))
+                        var diff = item.DiffList[index];
+                        row.CreateCell(7).SetCellValue(diff.BagNumber);
+                        row.CreateCell(8).SetCellValue(diff.MergeNumber);
+                        if (process.ContainsKey(diff.MergeNumber))
                         {
-                            row.CreateCell(9).SetCellValue(processTypeRemark[processType]);
+                            var processType = process[diff.MergeNumber];
+                            if (processTypeRemark.ContainsKey(processType))
+                            {
+                                row.CreateCell(9).SetCellValue(processTypeRemark[processType]);
+                            }
                         }
                     }
 
-                    irow++;
+                    if (index < item.CheckTrackingNoList.Count)
+                    {
+                        row.CreateCell(10).SetCellValue(item.CheckTrackingNoList[index]);
+                    }
                 }
 
-                row.CreateCell(10).SetCellValue(item.CheckTrackingNo);
+                irow += rowCount;
 
                 // 合併 A~G 欄 (0~6 欄)
-                if (diffCount > 1)
+                if (rowCount > 1)
                 {
                     for (int col = 0; col <= 6; col++)
                     {
                         var mergeRegion = new CellRangeAddress(startRow, endRow, col, col);
                         sheet.AddMergedRegion(mergeRegion);
                     }
-                }
-
-                // 若 DiffList 為空，手動遞增 irow
-                if (item.DiffList.Count == 0)
-                {
-                    irow++;
                 }
             }
 
