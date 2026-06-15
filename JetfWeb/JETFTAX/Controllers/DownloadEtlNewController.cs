@@ -1,4 +1,4 @@
-using JETFTAX.Models;
+﻿using JETFTAX.Models;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.EnumTax;
@@ -17,6 +17,8 @@ namespace JETFTAX.Controllers
     {
         private readonly GlobalService _globalService;
         private readonly DownloadEtlNewService _downloadEtlNewService;
+        private static readonly SemaphoreSlim UploadEtlSemaphore = new SemaphoreSlim(1, 1);
+        private static string UploadEtlExecutingUserId = string.Empty;
 
         public DownloadEtlNewController(GlobalService globalService, DownloadEtlNewService downloadEtlNewService)
         {
@@ -35,14 +37,28 @@ namespace JETFTAX.Controllers
         {
             var responseModel = new ResponseModel();
 
+            if (!UploadEtlSemaphore.Wait(0))
+            {
+                responseModel.status = Status.error;
+                responseModel.msg = $"[{UploadEtlExecutingUserId}]正在執行轉檔，請等待執行完成後再試";
+                return Json(responseModel, JsonRequestBehavior.AllowGet);
+            }
+
             try
             {
-                responseModel = _downloadEtlNewService.UploadEtl(vm.date, vm.timeBetween, vm.sTime, vm.eTime, UserContextService.GetUserId());
+                var userId = UserContextService.GetUserId();
+                UploadEtlExecutingUserId = userId;
+                responseModel = _downloadEtlNewService.UploadEtl(vm.date, vm.timeBetween, vm.sTime, vm.eTime, userId);
             }
             catch (Exception ex)
             {
                 responseModel.status = Status.error;
                 responseModel.msg = ex.Message;
+            }
+            finally
+            {
+                UploadEtlExecutingUserId = string.Empty;
+                UploadEtlSemaphore.Release();
             }
 
             return Json(responseModel, JsonRequestBehavior.AllowGet);
