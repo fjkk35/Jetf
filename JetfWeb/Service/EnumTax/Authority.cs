@@ -104,6 +104,11 @@ namespace Service.EnumTax
         SeaCustomerShippingDetails,
 
         /// <summary>
+        /// 3-10.海運主號託運明細表(無稅金)
+        /// </summary>
+        SeaMainNumberShippingDetails,
+
+        /// <summary>
         /// 4-1.物流代收金額上傳
         /// </summary>
         UploadCollectibleAmount,

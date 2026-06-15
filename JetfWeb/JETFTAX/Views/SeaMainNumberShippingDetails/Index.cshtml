@@ -1,0 +1,42 @@
+﻿@{
+    ViewBag.Title = "SeaMainNumberShippingDetails";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="SeaMainNumberShippingDetailsController">
+    <span class="headtype">海運主號託運明細表(無稅金)</span>
+    <hr />
+
+    <form id="SeaMainNumberShippingDetailsForm"
+          action="@Url.Action("DownloadExcel", "SeaMainNumberShippingDetails")"
+          method="post"
+          enctype="multipart/form-data"
+          class="containertype">
+        <div class="col-lg-12" style="margin-bottom:0.5rem;">
+            <label for="mainNumbers" style="display:block; margin-bottom:0.5rem; font-size:1.1rem; font-weight:600;">主號</label>
+            <textarea id="mainNumbers"
+                      name="mainNumbers"
+                      class="form-control"
+                      rows="10"
+                      ng-model="form.mainNumbers"
+                      placeholder="請輸入主號，每行一筆"></textarea>
+        </div>
+
+        <div class="col-lg-12">
+            <button type="button"
+                    class="btn btn-success"
+                    ng-click="download()"
+                    ng-disabled="loading">
+                <i class="fa fa-download"></i> 下載
+            </button>
+            <button type="button"
+                    class="btn btn-warning"
+                    ng-click="clearMainNumbers()"
+                    ng-disabled="loading || !form.mainNumbers">
+                <i class="fa fa-refresh"></i> 清除
+            </button>
+        </div>
+
+        <div class="loader loader-bar" ng-class="{'is-active': loading}" data-rounded data-text="檔案下載中"></div>
+    </form>
+</div>

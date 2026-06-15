@@ -34,6 +34,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'CainiaoTaxEdit', text: '3-7.菜鳥包稅稅金方式修改上傳', url: '~/Upload/CainiaoTaxEdit', auth: ['UploadCainiaoModifyTax'] },
                 { id: 'HctEtlTax', text: '3-8.空快客戶託運新竹明細表', url: '~/HctEtlTax/Index', auth: ['HctEtlTax'] },
                 { id: 'SeaCustomerShippingDetails', text: '3-9.海運客戶託運明細表', url: '~/SeaCustomerShippingDetails/Index', auth: ['SeaCustomerShippingDetails'] },
+                { id: 'SeaMainNumberShippingDetails', text: '3-10.海運主號託運明細表(無稅金)', url: '~/SeaMainNumberShippingDetails/Index', auth: ['SeaMainNumberShippingDetails'] },
                 //{ id: 'Receive', text: '4-1.物流代收金額上傳', url: '~/Upload/Receive', auth: ['UploadCollectibleAmount'] },
                 //{ id: 'DownloadReceive', text: '4-2.物流代收金額差異表', url: '~/Download/DownloadReceive', auth: ['DownloadCollectibleAmount'] },
                 //{ id: 'Transfer', text: '5-1.物流代收匯款上傳', url: '~/Upload/Transfer', auth: ['UploadCollectibleRemittance'] },
