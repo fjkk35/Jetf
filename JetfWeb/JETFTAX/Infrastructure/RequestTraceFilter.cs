@@ -15,7 +15,6 @@ namespace JETFTAX.Infrastructure
     public sealed class RequestTraceFilter : ActionFilterAttribute
     {
         private static readonly Logger Logger = LogManager.GetLogger("RequestTrace");
-        private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer();
         private const string RequestTraceParamsKey = "RequestTraceFilter.Params";
         private const string RequestTraceStartTimeKey = "RequestTraceFilter.StartTimeUtc";
 
@@ -120,7 +119,23 @@ namespace JETFTAX.Infrastructure
                 return string.Empty;
             }
 
-            return $" | Params={Serializer.Serialize(payload)}";
+            try
+            {
+                return $" | Params={CreateSerializer().Serialize(payload)}";
+            }
+            catch (Exception ex)
+            {
+                return $" | Params=<serialize failed: {ex.GetType().Name}: {ex.Message}>";
+            }
+        }
+
+        private static JavaScriptSerializer CreateSerializer()
+        {
+            return new JavaScriptSerializer
+            {
+                MaxJsonLength = int.MaxValue,
+                RecursionLimit = 100
+            };
         }
 
         private static object SanitizeValue(object value, int depth)

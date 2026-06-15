@@ -146,9 +146,7 @@ namespace JETFTAX
 
         protected void Application_AcquireRequestState()
         {
-            var hasSessionState = Context?.Handler is IRequiresSessionState || Context?.Handler is IReadOnlySessionState;
-            var userId = hasSessionState ? Session?["user_id"]?.ToString() : null;
-            MappedDiagnosticsLogicalContext.Set("userId", string.IsNullOrWhiteSpace(userId) ? "Unknown" : userId.Trim());
+            SetUserIdLogContext();
         }
 
         protected void Application_EndRequest()
@@ -164,11 +162,32 @@ namespace JETFTAX
                 return;
             }
 
+            SetUserIdLogContext();
+
             var request = Context?.Request;
             var method = request?.HttpMethod ?? "UNKNOWN";
             var path = request?.Url?.AbsolutePath ?? request?.RawUrl ?? string.Empty;
 
             Logger.Error(exception, $"Unhandled_Exception[Error] - [{method}] {path}");
+        }
+
+        private void SetUserIdLogContext()
+        {
+            MappedDiagnosticsLogicalContext.Set("userId", ResolveCurrentUserId());
+        }
+
+        private string ResolveCurrentUserId()
+        {
+            try
+            {
+                var hasSessionState = Context?.Handler is IRequiresSessionState || Context?.Handler is IReadOnlySessionState;
+                var userId = hasSessionState ? Session?["user_id"]?.ToString() : null;
+                return string.IsNullOrWhiteSpace(userId) ? "Unknown" : userId.Trim();
+            }
+            catch
+            {
+                return "Unknown";
+            }
         }
 
         private static void CleanupExpiredLogFolders()
