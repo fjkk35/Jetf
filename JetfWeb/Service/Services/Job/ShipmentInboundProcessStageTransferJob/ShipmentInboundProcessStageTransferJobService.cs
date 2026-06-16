@@ -223,8 +223,8 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
             string editUser,
             Func<T, string> formatter)
         {
-            var oldText = formatter(oldValue);
-            var newText = formatter(newValue);
+            var oldText = NormalizeHistoryText(formatter(oldValue));
+            var newText = NormalizeHistoryText(formatter(newValue));
 
             if (string.Equals(oldText, newText, StringComparison.Ordinal))
             {
@@ -240,6 +240,16 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
                 EditTime = editTime,
                 EditUser = editUser
             });
+        }
+
+        /// <summary>
+        /// 將編輯紀錄顯示文字正規化；null 與空字串都視為空值。
+        /// </summary>
+        /// <param name="value">原始顯示文字。</param>
+        /// <returns>正規化後的顯示文字。</returns>
+        private string NormalizeHistoryText(string value)
+        {
+            return value ?? string.Empty;
         }
 
         /// <summary>
