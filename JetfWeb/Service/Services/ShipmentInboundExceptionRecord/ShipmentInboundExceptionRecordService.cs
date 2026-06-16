@@ -146,9 +146,9 @@ namespace Service.Services.ShipmentInboundExceptionRecord
                     .FirstOrDefault()
             });
 
-            if (!string.IsNullOrWhiteSpace(request.ExceptionReason))
+            if (request.ExceptionReasons.Any())
             {
-                query = query.Where(x => x.ExceptionReason.Contains(request.ExceptionReason));
+                query = query.Where(x => request.ExceptionReasons.Contains(x.ExceptionReason));
             }
 
             return query;
@@ -278,6 +278,13 @@ namespace Service.Services.ShipmentInboundExceptionRecord
             request.Page = request.Page <= 0 ? 1 : request.Page;
             request.PageSize = request.PageSize <= 0 ? 10 : request.PageSize;
             request.CustCodes = request.CustCodes ?? new List<string>();
+            request.ExceptionReasons = request.ExceptionReasons?
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct()
+                .ToList()
+                ?? new List<string>();
+
             return request;
         }
 

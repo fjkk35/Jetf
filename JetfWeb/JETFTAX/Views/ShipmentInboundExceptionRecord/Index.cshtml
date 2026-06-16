@@ -58,6 +58,96 @@
         padding: 0 18px 18px;
         box-sizing: border-box;
     }
+
+    .exception-reason-selector-input {
+        cursor: pointer;
+        background-color: #fff;
+    }
+
+        .exception-reason-selector-input[readonly] {
+            background-color: #fff;
+        }
+
+    .exception-reason-modal .modal-dialog {
+        width: 90%;
+        max-width: 720px;
+    }
+
+    .exception-reason-modal .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .exception-reason-modal .modal-title {
+        margin: 0;
+        color: #666;
+        text-align: left;
+        flex: 1;
+    }
+
+    .exception-reason-modal .close {
+        float: none;
+        margin: 0 0 0 16px;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .exception-reason-toolbar {
+        margin-bottom: 18px;
+    }
+
+        .exception-reason-toolbar label {
+            padding: 6px 4px;
+        }
+
+        .exception-reason-toolbar label,
+        .exception-reason-grid .exception-reason-item label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+    .exception-reason-checkbox {
+        margin: 0 8px 0 0;
+        vertical-align: middle;
+        transform: scale(1.4);
+        -webkit-transform: scale(1.4);
+        -ms-transform: scale(1.4);
+        transform-origin: center center;
+        -webkit-transform-origin: center center;
+    }
+
+    .exception-reason-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+    }
+
+        .exception-reason-grid .exception-reason-item {
+            width: calc((100% - 24px) / 3);
+            min-width: 180px;
+        }
+
+        .exception-reason-grid .exception-reason-item label {
+            padding: 6px 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .exception-reason-grid .exception-reason-item input[type=checkbox] {
+            margin: 0 8px 0 0;
+        }
+
+    @@media (max-width: 767px) {
+        .exception-reason-grid .exception-reason-item {
+            width: 100%;
+            min-width: 100%;
+        }
+    }
 </style>
 
 <div ng-controller="ShipmentInboundExceptionRecordController">
@@ -144,12 +234,14 @@
             <div class="form-group row col-lg-3 mb-0">
                 <label for="exceptionReason" class="col-lg-4 col-form-label text-right">異常原因</label>
                 <div class="col-lg-8">
-                    <select id="exceptionReason"
-                            class="form-control"
-                            ng-model="searchForm.exceptionReason">
-                        <option value="">全部</option>
-                        <option ng-repeat="reason in exceptionReasonList" value="{{reason.Value}}">{{reason.Text}}</option>
-                    </select>
+                    <input type="text"
+                           id="exceptionReason"
+                           class="form-control exception-reason-selector-input"
+                           ng-model="exceptionReasonDisplayText"
+                           ng-attr-title="{{exceptionReasonDisplayFullText}}"
+                           ng-click="openExceptionReasonModal()"
+                           readonly
+                           placeholder="請點選異常原因" />
                 </div>
             </div>
         </div>
@@ -256,6 +348,46 @@
                         </li>
                     </ul>
                 </nav>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade exception-reason-modal" id="exceptionReasonSelectModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">異常原因選擇</h4>
+                    <button type="button" class="close" ng-click="closeExceptionReasonModal()" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="exception-reason-toolbar" ng-if="exceptionReasonList.length > 0">
+                        <label>
+                            <input type="checkbox"
+                                   class="exception-reason-checkbox"
+                                   ng-model="exceptionReasonSelectAll"
+                                   ng-click="toggleAllExceptionReasons($event)" />
+                            <span>全選</span>
+                        </label>
+                    </div>
+
+                    <div class="exception-reason-grid" ng-if="exceptionReasonList.length > 0">
+                        <div class="exception-reason-item" ng-repeat="reason in exceptionReasonList track by reason.Value">
+                            <label ng-attr-title="{{reason.Text}}">
+                                <input type="checkbox"
+                                       class="exception-reason-checkbox"
+                                       ng-model="exceptionReasonModal.selectedMap[reason.Value]"
+                                       ng-change="onExceptionReasonItemChanged()" />
+                                <span>{{reason.Text}}</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div ng-if="exceptionReasonList.length === 0" class="text-center text-muted py-3">
+                        查無異常原因清單
+                    </div>
+                </div>
             </div>
         </div>
     </div>
