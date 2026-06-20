@@ -373,6 +373,13 @@
                                 <div class="detail-value">{{data.ReturnReason}}</div>
                             </div>
                         </div>
+
+                        <div class="detail-col">
+                            <div class="detail-row">
+                                <div class="detail-label">退貨單號：</div>
+                                <div class="detail-value">{{data.ReturnTrackingNo}}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -396,7 +403,11 @@
                                     <div id="exceptionImageGallery" class="exception-gallery" ng-if="data.ExceptionImages && data.ExceptionImages.length > 0">
                                         <div class="exception-image-card" ng-repeat="image in data.ExceptionImages track by $index">
                                             <div class="exception-image-link">
-                                                <img class="exception-image" ng-src="{{image.ImageUrl}}" alt="異常圖片 {{$index + 1}}" />
+                                                <img class="exception-image"
+                                                     ng-src="{{image.ImageUrl}}"
+                                                     loading="lazy"
+                                                     decoding="async"
+                                                     alt="異常圖片 {{$index + 1}}" />
                                             </div>
                                             <div class="exception-image-meta">{{image.CreatedTimeText}}</div>
                                         </div>

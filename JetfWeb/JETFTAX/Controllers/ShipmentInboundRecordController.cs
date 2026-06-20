@@ -56,9 +56,9 @@ namespace JETFTAX.Controllers
                 }
 
                 data.ExceptionImages = data.ExceptionImages
-                    .Select(x =>
+                    .Select((x, index) =>
                     {
-                        x.ImageUrl = ToImageDataUrl(x.FilePath);
+                        x.ImageUrl = Url.Action("GetExceptionImage", "ShipmentInboundRecord", new { id = data.Id, imageIndex = index });
                         return x;
                     })
                     .Where(x => !string.IsNullOrWhiteSpace(x.ImageUrl))
@@ -78,27 +78,36 @@ namespace JETFTAX.Controllers
             }
         }
 
-        private string ToImageDataUrl(string filePath)
+        /// <summary>
+        /// 取得異常圖片。
+        /// </summary>
+        /// <param name="id">貨件入庫資料主鍵。</param>
+        /// <param name="imageIndex">圖片索引。</param>
+        /// <returns>圖片檔案。</returns>
+        [HttpGet]
+        [UserAuthorize(Authority.ShipmentInboundRecord)]
+        public ActionResult GetExceptionImage(int id, int imageIndex)
         {
-            if (string.IsNullOrWhiteSpace(filePath))
-            {
-                return null;
-            }
-
             try
             {
+                var filePath = _shipmentInboundRecordService.GetExceptionImagePath(id, imageIndex);
+                if (string.IsNullOrWhiteSpace(filePath))
+                {
+                    return HttpNotFound();
+                }
+
                 var fileBytes = _imageStorageService.ReadAllBytes(filePath);
                 if (fileBytes == null || fileBytes.Length == 0)
                 {
-                    return null;
+                    return HttpNotFound();
                 }
 
                 var mimeType = System.Web.MimeMapping.GetMimeMapping(filePath);
-                return $"data:{mimeType};base64,{Convert.ToBase64String(fileBytes)}";
+                return File(fileBytes, mimeType);
             }
             catch
             {
-                return null;
+                return HttpNotFound();
             }
         }
 
