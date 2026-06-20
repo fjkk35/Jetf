@@ -104,6 +104,7 @@ namespace Service.Services.ShipmentInboundBatchImport
                         ReturnTrackingNo = row.GetCellData(5),
                         Size = row.GetCellData(6),
                         ReturnReason = row.GetCellData(7),
+                        Remark = row.GetCellData(8),
                         UploadOpe = GetUserId()
                     };
 
@@ -205,6 +206,7 @@ namespace Service.Services.ShipmentInboundBatchImport
                             Cod = x.Cod,
                             Fee = x.Fee,
                             ReturnReason = x.ReturnReason,
+                            Remark = x.Remark,
                             IsOrderOriginal = x.IsOrderOriginal,
                             UploadOpe = x.UploadOpe,
                             CreatedTime = DateTime.Now

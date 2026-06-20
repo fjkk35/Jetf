@@ -151,5 +151,10 @@ namespace Service.Services.ShipmentInboundBatchImport.Domain
         /// 退件原因
         /// </summary>
         public string ReturnReason { get; set; }
+
+        /// <summary>
+        /// 備註。
+        /// </summary>
+        public string Remark { get; set; }
     }
 }
