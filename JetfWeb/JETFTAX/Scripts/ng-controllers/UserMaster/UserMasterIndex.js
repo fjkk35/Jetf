@@ -8,6 +8,8 @@
     $scope.saving = false;
     $scope.query = {
         userId: '',
+        userName: '',
+        userStatus: 'all',
         authorityGroupId: 'all'
     };
 
@@ -24,6 +26,14 @@
 
         if ($scope.query.userId) {
             params.userId = $scope.query.userId;
+        }
+
+        if ($scope.query.userName) {
+            params.userName = $scope.query.userName;
+        }
+
+        if ($scope.query.userStatus !== 'all' && $scope.query.userStatus !== null && $scope.query.userStatus !== undefined) {
+            params.userStatus = $scope.query.userStatus;
         }
 
         if ($scope.query.authorityGroupId !== 'all' && $scope.query.authorityGroupId !== null && $scope.query.authorityGroupId !== undefined) {
@@ -50,6 +60,8 @@
     $scope.resetQuery = function () {
         $scope.query = {
             userId: '',
+            userName: '',
+            userStatus: 'all',
             authorityGroupId: 'all'
         };
         $scope.loadUsers();

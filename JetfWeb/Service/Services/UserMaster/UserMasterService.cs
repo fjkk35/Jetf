@@ -20,11 +20,17 @@ namespace Service.Services.UserMaster
         /// 取得所有會員清單
         /// </summary>
         /// <returns>會員清單</returns>
-        public List<UserMasterDto> GetUsers(string userId = null, int? authorityGroupId = null)
+        public List<UserMasterDto> GetUsers(string userId = null, string userName = null, string userStatus = null, int? authorityGroupId = null)
         {
             var normalizedUserId = string.IsNullOrWhiteSpace(userId)
                 ? null
                 : userId.Trim();
+            var normalizedUserName = string.IsNullOrWhiteSpace(userName)
+                ? null
+                : userName.Trim();
+            var normalizedUserStatus = string.IsNullOrWhiteSpace(userStatus)
+                ? null
+                : userStatus.Trim();
 
             var sql = @"
                 SELECT 
@@ -40,6 +46,8 @@ namespace Service.Services.UserMaster
                 LEFT JOIN [dbo].[AuthorityGroup] ag ON uag.AuthorityGroupId = ag.Id
                 WHERE u.USER_ID<>'admin'
                     AND (@UserId IS NULL OR u.USER_ID LIKE '%' + @UserId + '%')
+                    AND (@UserName IS NULL OR u.USER_NAME LIKE '%' + @UserName + '%')
+                    AND (@UserStatus IS NULL OR u.USER_STATUS = @UserStatus)
                     AND (
                         @AuthorityGroupId IS NULL
                         OR EXISTS (
@@ -73,6 +81,8 @@ namespace Service.Services.UserMaster
                 new
                 {
                     UserId = normalizedUserId,
+                    UserName = normalizedUserName,
+                    UserStatus = normalizedUserStatus,
                     AuthorityGroupId = authorityGroupId
                 },
                 splitOn: "GroupId"
