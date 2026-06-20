@@ -800,9 +800,10 @@
     <Compile Include="Services\SeaCustomerShippingDetails\SeaCustomerShippingDetailsExportResult.cs" />
     <Compile Include="Services\SeaCustomerShippingDetails\SeaCustomerShippingDetailsRow.cs" />
     <Compile Include="Services\SeaCustomerShippingDetails\SeaCustomerShippingDetailsService.cs" />
-      <Compile Include="Services\SeaMainNumberShippingDetails\SeaMainNumberShippingDetailsExportResult.cs" />
-      <Compile Include="Services\SeaMainNumberShippingDetails\SeaMainNumberShippingDetailsRow.cs" />
-      <Compile Include="Services\SeaMainNumberShippingDetails\SeaMainNumberShippingDetailsService.cs" />
+    <Compile Include="Services\SeaMainNumberShippingDetails\SeaMainNumberShippingDetailsExportResult.cs" />
+    <Compile Include="Services\SeaMainNumberShippingDetails\SeaMainNumberShippingDetailsRow.cs" />
+    <Compile Include="Services\SeaMainNumberShippingDetails\SeaMainNumberShippingDetailsService.cs" />
+    <Compile Include="Models\SeaMainNumberShippingDetails\SeaMainNumberShippingDetailsDownloadFile.cs" />
     <Compile Include="Services\SeaTaxUpload\FeeMasterDetailRow.cs" />
     <Compile Include="Services\SeaTaxUpload\SeaTaxFeeMasterRow.cs" />
     <Compile Include="Services\SeaTaxUpload\SeaTaxModifyRow.cs" />
