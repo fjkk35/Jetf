@@ -1,4 +1,5 @@
 using Service.Models;
+using Service.Models.SeaCustomerShippingDetails;
 using System.Collections.Generic;
 
 namespace Service.Services.SeaCustomerShippingDetails
@@ -13,6 +14,7 @@ namespace Service.Services.SeaCustomerShippingDetails
         /// </summary>
         public SeaCustomerShippingDetailsExportResult()
         {
+            Files = new List<SeaCustomerShippingDetailsDownloadFile>();
             Rows = new List<SeaCustomerShippingDetailsRow>();
             status = Status.success;
             msg = string.Empty;
@@ -37,6 +39,11 @@ namespace Service.Services.SeaCustomerShippingDetails
         /// Excel 檔案內容。
         /// </summary>
         public byte[] FileBytes { get; set; }
+
+        /// <summary>
+        /// 下載檔案清單。
+        /// </summary>
+        public List<SeaCustomerShippingDetailsDownloadFile> Files { get; set; }
 
         /// <summary>
         /// 匯出明細資料。

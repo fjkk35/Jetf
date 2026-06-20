@@ -800,6 +800,7 @@
     <Compile Include="Services\SeaCustomerShippingDetails\SeaCustomerShippingDetailsExportResult.cs" />
     <Compile Include="Services\SeaCustomerShippingDetails\SeaCustomerShippingDetailsRow.cs" />
     <Compile Include="Services\SeaCustomerShippingDetails\SeaCustomerShippingDetailsService.cs" />
+    <Compile Include="Models\SeaCustomerShippingDetails\SeaCustomerShippingDetailsDownloadFile.cs" />
     <Compile Include="Services\SeaMainNumberShippingDetails\SeaMainNumberShippingDetailsExportResult.cs" />
     <Compile Include="Services\SeaMainNumberShippingDetails\SeaMainNumberShippingDetailsRow.cs" />
     <Compile Include="Services\SeaMainNumberShippingDetails\SeaMainNumberShippingDetailsService.cs" />

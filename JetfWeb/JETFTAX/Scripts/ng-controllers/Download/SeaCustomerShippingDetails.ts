@@ -1,9 +1,13 @@
 // <reference path="../../types/global.d.ts" />
 
-interface SeaCustomerShippingDetailsResponse {
-    Redirect?: boolean;
+interface SeaCustomerShippingDetailsDownloadFile {
     fileGuid?: string;
     fileName?: string;
+}
+
+interface SeaCustomerShippingDetailsResponse extends SeaCustomerShippingDetailsDownloadFile {
+    Redirect?: boolean;
+    files?: SeaCustomerShippingDetailsDownloadFile[];
     msg?: string;
 }
 
@@ -86,21 +90,33 @@ mainApp.controller('SeaCustomerShippingDetailsController', ['$scope', '$http', f
         };
     }
 
-    function downloadFile(response: SeaCustomerShippingDetailsResponse): void {
-        if (!response.fileGuid || !response.fileName) {
+    function downloadFile(file: SeaCustomerShippingDetailsDownloadFile): void {
+        if (!file.fileGuid || !file.fileName) {
             return;
         }
 
         var path = Router.action('Download', 'DownloadFile')
-            + '?fileGuid=' + encodeURIComponent(response.fileGuid)
-            + '&filename=' + encodeURIComponent(response.fileName);
+            + '?fileGuid=' + encodeURIComponent(file.fileGuid)
+            + '&filename=' + encodeURIComponent(file.fileName);
         var link = document.createElement('a');
         link.href = path;
-        link.download = response.fileName;
+        link.download = file.fileName;
         link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    }
+
+    function downloadFiles(response: SeaCustomerShippingDetailsResponse): void {
+        var files = response.files && response.files.length
+            ? response.files
+            : [response];
+
+        angular.forEach(files, function (file: SeaCustomerShippingDetailsDownloadFile, index: number) {
+            window.setTimeout(function () {
+                downloadFile(file);
+            }, index * 300);
+        });
     }
 
     var today = new Date();
@@ -171,7 +187,7 @@ mainApp.controller('SeaCustomerShippingDetailsController', ['$scope', '$http', f
                 return;
             }
 
-            downloadFile(data);
+            downloadFiles(data);
         }).catch(function () {
             showError('檔案下載失敗，請稍後再試');
         }).finally(function () {

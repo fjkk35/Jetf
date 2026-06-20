@@ -44,20 +44,30 @@ mainApp.controller('SeaCustomerShippingDetailsController', ['$scope', '$http', f
                 DespatchName: $scope.form.despatchName
             };
         }
-        function downloadFile(response) {
-            if (!response.fileGuid || !response.fileName) {
+        function downloadFile(file) {
+            if (!file.fileGuid || !file.fileName) {
                 return;
             }
             var path = Router.action('Download', 'DownloadFile')
-                + '?fileGuid=' + encodeURIComponent(response.fileGuid)
-                + '&filename=' + encodeURIComponent(response.fileName);
+                + '?fileGuid=' + encodeURIComponent(file.fileGuid)
+                + '&filename=' + encodeURIComponent(file.fileName);
             var link = document.createElement('a');
             link.href = path;
-            link.download = response.fileName;
+            link.download = file.fileName;
             link.style.display = 'none';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+        function downloadFiles(response) {
+            var files = response.files && response.files.length
+                ? response.files
+                : [response];
+            angular.forEach(files, function (file, index) {
+                window.setTimeout(function () {
+                    downloadFile(file);
+                }, index * 300);
+            });
         }
         var today = new Date();
         $scope.warehouseList = [];
@@ -115,7 +125,7 @@ mainApp.controller('SeaCustomerShippingDetailsController', ['$scope', '$http', f
                     showError(data.msg);
                     return;
                 }
-                downloadFile(data);
+                downloadFiles(data);
             }).catch(function () {
                 showError('檔案下載失敗，請稍後再試');
             }).finally(function () {

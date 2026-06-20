@@ -46,6 +46,11 @@ namespace Service.Services.SeaCustomerShippingDetails
         public decimal? Gw { get; set; }
 
         /// <summary>
+        /// 淨重。
+        /// </summary>
+        public decimal? Nw { get; set; }
+
+        /// <summary>
         /// 商品數量。
         /// </summary>
         public int? Quantity { get; set; }
