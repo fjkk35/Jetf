@@ -1,6 +1,8 @@
 using Renci.SshNet;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Service.Services.ShipmentInboundCommon
 {
@@ -30,6 +32,84 @@ namespace Service.Services.ShipmentInboundCommon
             }
 
             return ReadSftpBytes(filePath);
+        }
+
+        public Dictionary<string, byte[]> ReadAllBytes(IEnumerable<string> filePaths)
+        {
+            var result = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+            ReadAllBytes(filePaths, (filePath, fileBytes) => result[filePath] = fileBytes);
+            return result;
+        }
+
+        public void ReadAllBytes(IEnumerable<string> filePaths, Action<string, byte[]> onFileRead)
+        {
+            if (filePaths == null)
+            {
+                return;
+            }
+
+            var pathInfos = filePaths
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Select(x =>
+                {
+                    if (!Uri.TryCreate(x, UriKind.Absolute, out var uri)
+                        || !string.Equals(uri.Scheme, "sftp", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return null;
+                    }
+
+                    return new
+                    {
+                        FilePath = x,
+                        Uri = uri,
+                        Port = uri.Port > 0 ? uri.Port : 22,
+                        RemotePath = Uri.UnescapeDataString(uri.AbsolutePath)
+                    };
+                })
+                .Where(x => x != null)
+                .ToList();
+
+            foreach (var group in pathInfos.GroupBy(x => new { x.Uri.Host, x.Port }))
+            {
+                try
+                {
+                    using (var client = new SftpClient(group.Key.Host, group.Key.Port, DefaultSftpUserName, DefaultSftpPassword))
+                    {
+                        client.Connect();
+
+                        foreach (var item in group)
+                        {
+                            try
+                            {
+                                if (!client.Exists(item.RemotePath))
+                                {
+                                    continue;
+                                }
+
+                                using (var stream = new MemoryStream())
+                                {
+                                    client.DownloadFile(item.RemotePath, stream);
+                                    var fileBytes = stream.ToArray();
+                                    if (fileBytes.Length > 0)
+                                    {
+                                        onFileRead?.Invoke(item.FilePath, fileBytes);
+                                    }
+                                }
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        client.Disconnect();
+                    }
+                }
+                catch
+                {
+                }
+            }
         }
 
         /// <summary>

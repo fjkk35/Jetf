@@ -329,7 +329,10 @@ namespace Service.Services.ShipmentInboundExceptionRecord
                 NpoiCell.CreateCell(row, 3, item.ExceptionReason, dataStyle);
             }
 
-            sheet.AutoSizeColumns(headers.Count, scale: 1.2, minWidth: 18);
+            sheet.SetColumnWidth(0, 24 * 256);
+            sheet.SetColumnWidth(1, 24 * 256);
+            sheet.SetColumnWidth(2, 24 * 256);
+            sheet.SetColumnWidth(3, 36 * 256);
 
             using (var ms = new MemoryStream())
             {
@@ -390,44 +393,61 @@ namespace Service.Services.ShipmentInboundExceptionRecord
                     .ToList();
             }
 
-            var usedEntryNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var imagesByShipmentId = images
+                .GroupBy(x => x.ShipmentInboundId)
+                .ToDictionary(x => x.Key, x => x.ToList());
+            var exportImages = new List<Tuple<ShipmentInboundExceptionRecordModel, ShipmentInboundExceptionImageExportModel, int>>();
 
             foreach (var item in data)
             {
+                if (!imagesByShipmentId.TryGetValue(item.Id, out var shipmentImages))
+                {
+                    continue;
+                }
+
                 // 需求只顯示最新異常原因，因此圖片也優先匯出同一個異常原因的圖片。
-                var itemImages = images
-                    .Where(x => x.ShipmentInboundId == item.Id && x.ExceptionReasonId == item.ExceptionReasonId)
+                var itemImages = shipmentImages
+                    .Where(x => x.ExceptionReasonId == item.ExceptionReasonId)
                     .ToList();
 
                 if (!itemImages.Any())
                 {
                     // 歷史資料可能沒有異常原因 Id，找不到同原因圖片時退回該貨件全部圖片。
-                    itemImages = images
-                        .Where(x => x.ShipmentInboundId == item.Id)
-                        .ToList();
+                    itemImages = shipmentImages;
                 }
 
                 for (int i = 0; i < itemImages.Count; i++)
                 {
-                    var image = itemImages[i];
-                    var fileBytes = _imageStorageService.ReadAllBytes(image.FilePath);
-                    if (fileBytes == null || fileBytes.Length == 0)
-                    {
-                        continue;
-                    }
+                    exportImages.Add(Tuple.Create(item, itemImages[i], i + 1));
+                }
+            }
 
-                    var extension = _imageStorageService.GetExtension(image.FilePath);
-                    if (string.IsNullOrWhiteSpace(extension))
-                    {
-                        extension = ".jpg";
-                    }
+            var exportImagesByPath = exportImages
+                .GroupBy(x => x.Item2.FilePath, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(x => x.Key, x => x.ToList(), StringComparer.OrdinalIgnoreCase);
+            var usedEntryNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                    var entryName = BuildImageEntryName(item, i + 1, extension);
+            _imageStorageService.ReadAllBytes(exportImagesByPath.Keys, (filePath, fileBytes) =>
+            {
+                if (fileBytes == null || fileBytes.Length == 0)
+                {
+                    return;
+                }
+
+                var extension = _imageStorageService.GetExtension(filePath);
+                if (string.IsNullOrWhiteSpace(extension))
+                {
+                    extension = ".jpg";
+                }
+
+                foreach (var exportImage in exportImagesByPath[filePath])
+                {
+                    var entryName = BuildImageEntryName(exportImage.Item1, exportImage.Item3, extension);
                     entryName = EnsureUniqueEntryName(entryName, usedEntryNames);
 
                     AddBytes(zip, entryName, fileBytes);
                 }
-            }
+            });
         }
 
         /// <summary>
