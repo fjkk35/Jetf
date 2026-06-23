@@ -700,14 +700,27 @@ namespace Service.Services.ShipmentInboundProcess
         /// </summary>
         private void FillLatestExceptionReasons(List<ShipmentInboundProcessModel> data)
         {
-            var shipmentInboundIds = data
-                .Select(x => x.Id)
-                .Distinct()
-                .ToList();
+            var latestExceptionReasonDict = GetLatestExceptionReasonMap(data.Select(x => x.Id).Distinct().ToList());
 
+            foreach (var item in data)
+            {
+                if (latestExceptionReasonDict.TryGetValue(item.Id, out var exceptionReason))
+                {
+                    item.ExceptionReason = exceptionReason;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 取得指定貨件清單最後一筆異常原因對照表。
+        /// </summary>
+        /// <param name="shipmentInboundIds">貨件入庫 Id 清單。</param>
+        /// <returns>貨件入庫 Id 與異常原因對照。</returns>
+        private Dictionary<int, string> GetLatestExceptionReasonMap(List<int> shipmentInboundIds)
+        {
             if (!shipmentInboundIds.Any())
             {
-                return;
+                return new Dictionary<int, string>();
             }
 
             var latestExceptions = JetfDb.ShipmentInboundExceptions
@@ -733,7 +746,7 @@ namespace Service.Services.ShipmentInboundProcess
                     key => key)
                 .ToDictionary(x => x.Id, x => x.Reason);
 
-            var latestExceptionReasonDict = latestExceptions
+            return latestExceptions
                 .GroupBy(x => x.ShipmentInboundId)
                 .ToDictionary(
                     group => group.Key,
@@ -744,14 +757,6 @@ namespace Service.Services.ShipmentInboundProcess
                             ? exceptionReasonDict[x.ExceptionReasonId.Value]
                             : null)
                         .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? string.Empty);
-
-            foreach (var item in data)
-            {
-                if (latestExceptionReasonDict.TryGetValue(item.Id, out var exceptionReason))
-                {
-                    item.ExceptionReason = exceptionReason;
-                }
-            }
         }
 
         /// <summary>

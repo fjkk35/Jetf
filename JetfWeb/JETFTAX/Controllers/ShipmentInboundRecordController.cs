@@ -263,6 +263,30 @@ namespace JETFTAX.Controllers
         }
 
         /// <summary>
+        /// 匯出客戶版 Excel。
+        /// </summary>
+        /// <param name="searchRequest">查詢條件。</param>
+        /// <returns>客戶版 Excel 檔案。</returns>
+        [HttpPost]
+        [UserAuthorize(Authority.ShipmentInboundRecord)]
+        public JsonResult ExportCustomerExcel(ShipmentInboundRecordRequest searchRequest)
+        {
+            try
+            {
+                var result = _shipmentInboundRecordService.GetCustomerExportExcel(searchRequest);
+
+                var handle = Guid.NewGuid().ToString();
+                TempData[handle] = result.FileBytes;
+
+                return Json(new { fileGuid = handle, fileName = result.FileName, msg = "" }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { fileGuid = "", fileName = "", msg = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        /// <summary>
         /// 更新金額
         /// </summary>
         [HttpPost]

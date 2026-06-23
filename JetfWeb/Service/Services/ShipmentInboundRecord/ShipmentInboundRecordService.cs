@@ -691,6 +691,125 @@ namespace Service.Services.ShipmentInboundRecord
         }
 
         /// <summary>
+        /// 匯出客戶版 Excel。
+        /// </summary>
+        /// <param name="request">查詢條件。</param>
+        /// <returns>客戶版 Excel 檔案。</returns>
+        public ShipmentInboundRecordExportExcelResult GetCustomerExportExcel(ShipmentInboundRecordRequest request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            var exportRequest = new ShipmentInboundRecordRequest
+            {
+                InboundDateStart = request.InboundDateStart,
+                InboundDateEnd = request.InboundDateEnd,
+                ProcessType = request.ProcessType,
+                LocationCode = request.LocationCode,
+                CustCode = request.CustCode,
+                CustCodes = request.CustCodes,
+                SourceType = request.SourceType,
+                TrackingNo = request.TrackingNo,
+                OutboundTrackingNo = request.OutboundTrackingNo,
+                DataType = request.DataType,
+                WarehouseProcessType = request.WarehouseProcessType,
+                WarehouseProcessTypeIsEmpty = request.WarehouseProcessTypeIsEmpty,
+                IsOrderOriginal = request.IsOrderOriginal,
+                Page = 1,
+                PageSize = 100000
+            };
+
+            var dataResult = GetData(exportRequest);
+            var data = dataResult?.Data ?? new List<ShipmentInboundRecordModel>();
+
+            var workbook = new XSSFWorkbook();
+            var sheet = workbook.CreateSheet("客戶Excel");
+
+            var headerStyle = NpoiStyle.CreateHeaderStyle(workbook);
+            var dataStyle = NpoiStyle.CreateDataStyle(workbook);
+            var numberStyle = NpoiStyle.CreateNumberStyle(workbook);
+            var dateStyle = NpoiStyle.CreateDateTimeStyle(workbook, "yyyy-mm-dd");
+
+            var headers = new List<string>
+            {
+                "入庫日期",
+                "進口方式",
+                "客戶",
+                "單號",
+                "貨件來源",
+                "退件原因",
+                "異常原因",
+                "處理方式",
+                "重出派件公司",
+                "收件人",
+                "電話",
+                "宅配地址",
+                "門市店號",
+                "門市名稱",
+                "運費",
+                "稅金",
+                "手續費",
+                "代收款總金額",
+                "倉庫狀態",
+                "出庫日期",
+                "重出單號",
+                "備註"
+            };
+
+            var headerRow = sheet.CreateRow(0);
+            NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
+
+            for (int i = 0; i < data.Count; i++)
+            {
+                var item = data[i];
+                var row = sheet.CreateRow(i + 1);
+
+                int c = 0;
+                NpoiCell.CreateDateTimeCell(row, c++, item.InboundDate, dateStyle);
+                NpoiCell.CreateCell(row, c++, item.DataType, dataStyle);
+                NpoiCell.CreateCell(row, c++, string.IsNullOrWhiteSpace(item.CustName) ? item.CustCode : item.CustName, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.TrackingNo, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.SourceTypeName, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.ReturnReason, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.ExceptionReason, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.ProcessTypeName, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.ProcessTransName, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.ProcessImporter, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.ProcessImporterPhone, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.ProcessImporterAddr, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.StoreCode, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.StoreName, dataStyle);
+                NpoiCell.CreateIntCell(row, c++, item.FreightFee, numberStyle);
+                NpoiCell.CreateIntCell(row, c++, item.Tax, numberStyle);
+                NpoiCell.CreateIntCell(row, c++, item.Fee, numberStyle);
+                NpoiCell.CreateIntCell(row, c++, item.TotalAmount, numberStyle);
+                NpoiCell.CreateCell(row, c++, item.WarehouseProcessName, dataStyle);
+                NpoiCell.CreateDateTimeCell(row, c++, item.OutboundDate, dateStyle);
+                NpoiCell.CreateCell(row, c++, item.OutboundTrackingNo, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.Remark, dataStyle);
+            }
+
+            sheet.AutoSizeColumns(headers.Count, scale: 1.15, minWidth: 10);
+
+            byte[] bytes;
+            using (var ms = new MemoryStream())
+            {
+                workbook.Write(ms);
+                bytes = ms.ToArray();
+            }
+
+            var fileName = $"貨件紀錄查詢_客戶Excel_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+
+            return new ShipmentInboundRecordExportExcelResult
+            {
+                FileName = fileName,
+                FileBytes = bytes
+            };
+        }
+
+        /// <summary>
         /// 更新不明貨件的基本資料。
         /// </summary>
         /// <param name="request">更新請求。</param>

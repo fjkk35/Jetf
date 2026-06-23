@@ -3,6 +3,7 @@
     $scope.data = [];
     $scope.loading = false;
     $scope.exporting = false;
+    $scope.exportingCustomer = false;
     $scope.isSearched = false;
 
     // 分頁相關
@@ -394,6 +395,66 @@
             })
             .finally(function () {
                 $scope.exporting = false;
+            });
+    };
+
+    // 下載客戶版 Excel
+    $scope.downloadCustomerExcel = function () {
+        if ($scope.searchForm.inboundDateStart && $scope.searchForm.inboundDateEnd && $scope.searchForm.inboundDateStart > $scope.searchForm.inboundDateEnd) {
+            alert('開始日期不可大於結束日期');
+            return;
+        }
+
+        $scope.exportingCustomer = true;
+
+        var request = {
+            InboundDateStart: formatDate($scope.searchForm.inboundDateStart),
+            InboundDateEnd: formatDate($scope.searchForm.inboundDateEnd),
+            CustCode: $scope.searchForm.custCode,
+            CustCodes: $scope.customerSelectAll ? [] : ($scope.selectedCustCodes || []),
+            SourceType: $scope.searchForm.sourceType,
+            TrackingNo: $scope.searchForm.trackingNo,
+            OutboundTrackingNo: $scope.searchForm.outboundTrackingNo,
+            ProcessType: $scope.searchForm.processType,
+            LocationCode: $scope.searchForm.locationCode,
+            DataType: $scope.searchForm.dataType,
+            WarehouseProcessType: $scope.searchForm.warehouseProcessType,
+            WarehouseProcessTypeIsEmpty: $scope.searchForm.warehouseProcessTypeIsEmpty,
+            IsOrderOriginal: $scope.searchForm.unknownShipmentOnly ? false : null,
+            Page: 1,
+            PageSize: 10
+        };
+
+        $http.post(Router.action('ShipmentInboundRecord', 'ExportCustomerExcel'), request)
+            .then(function (response) {
+                var data = response.data || {};
+
+                if (data.Redirect) {
+                    window.location = Router.action('Account', 'Login');
+                    return;
+                }
+
+                if (data.msg) {
+                    alert(data.msg);
+                    return;
+                }
+
+                if (data.fileGuid && data.fileName) {
+                    var downloadUrl = Router.action('Download', 'DownloadFile') + '?fileGuid=' + data.fileGuid + '&fileName=' + encodeURIComponent(data.fileName);
+                    var link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = data.fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            })
+            .catch(function (error) {
+                console.error('下載客戶 Excel 失敗:', error);
+                alert('下載失敗，請稍後再試');
+            })
+            .finally(function () {
+                $scope.exportingCustomer = false;
             });
     };
 
