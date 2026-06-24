@@ -462,7 +462,7 @@ namespace Service.Services.ShipmentInboundCommon
                     .Select(x => new ShipmentFeeData
                     {
                         TrackingNo = x.DlvInv,
-                        Tax = (x.Tax1 ?? 0) + (x.Tax2 ?? 0),
+                        Tax = (x.Tax1 ?? 0) + (x.Tax2 ?? 0) - (x.CustomerCod ?? 0),
                         Ccfee = x.Ccfee,
                         Cod = x.Cod,
                         Fee = x.Fee
