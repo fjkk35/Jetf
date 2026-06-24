@@ -133,5 +133,15 @@ namespace Service.Services.ShipmentInboundPick.Domain
         /// 備註。
         /// </summary>
         public string Remark { get; set; }
+
+        /// <summary>
+        /// 車牌號碼。
+        /// </summary>
+        public string CarNo { get; set; }
+
+        /// <summary>
+        /// 預計自取日期。
+        /// </summary>
+        public DateTime? PickupTime { get; set; }
     }
 }

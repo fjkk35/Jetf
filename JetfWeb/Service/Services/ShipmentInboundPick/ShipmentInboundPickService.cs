@@ -71,7 +71,9 @@ namespace Service.Services.ShipmentInboundPick
                         CustCode = x.CustCode,
                         DataType = x.DataType,
                         ProcessTransNo = (ShipmentInboundProcessTransNo)(x.ProcessTransNo ?? 0),
-                        Remark = x.Remark
+                        Remark = x.Remark,
+                        CarNo = x.CarNo,
+                        PickupTime = x.PickupTime
                     })
                     .ToList();
 
@@ -117,10 +119,13 @@ namespace Service.Services.ShipmentInboundPick
 
             var headerStyle = NpoiStyle.CreateHeaderStyle(workbook);
             var dataStyle = NpoiStyle.CreateDataStyle(workbook);
+            var dateStyle = NpoiStyle.CreateDateTimeStyle(workbook, "yyyy-mm-dd");
             var dateTimeStyle = NpoiStyle.CreateDateTimeStyle(workbook, "yyyy-mm-dd hh:mm:ss");
 
             //檢貨明細
             CreatePickSheet(workbook, data, headerStyle, dataStyle, dateTimeStyle);
+            //自提
+            CreateSelfPickupSheet(workbook, data, headerStyle, dataStyle, dateStyle, dateTimeStyle);
             //新竹
             CreateHctSheet(workbook, data, headerStyle, dataStyle);
             //黑貓
@@ -160,6 +165,47 @@ namespace Service.Services.ShipmentInboundPick
             }
 
             //AutoSize+20字元
+            sheet.AutoSizeColumns(headers.Count, scale: 1, minWidth: 20);
+        }
+
+        private void CreateSelfPickupSheet(
+            IWorkbook workbook,
+            List<ShipmentInboundPickModel> data,
+            ICellStyle headerStyle,
+            ICellStyle dataStyle,
+            ICellStyle dateStyle,
+            ICellStyle dateTimeStyle)
+        {
+            ISheet sheet = workbook.CreateSheet("自提");
+
+            var filteredData = data.Where(x => x.ProcessType == ShipmentInboundProcessType.SelfPickup).ToList();
+
+            IRow headerRow = sheet.CreateRow(0);
+            var headers = new List<string>
+            {
+                "單號", "客戶", "流水號", "儲位", "處理方式", "收件人", "電話", "稅金", "預計自取日期", "車牌號碼", "備註", "客服處理時間"
+            };
+            NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
+
+            int rowIndex = 1;
+            foreach (var item in filteredData)
+            {
+                IRow dataRow = sheet.CreateRow(rowIndex);
+                NpoiCell.CreateCell(dataRow, 0, item.TrackingNo, dataStyle);
+                NpoiCell.CreateCell(dataRow, 1, item.CustName, dataStyle);
+                NpoiCell.CreateCell(dataRow, 2, item.SeqNo, dataStyle);
+                NpoiCell.CreateCell(dataRow, 3, item.LocationCode, dataStyle);
+                NpoiCell.CreateCell(dataRow, 4, item.ProcessTypeName, dataStyle);
+                NpoiCell.CreateCell(dataRow, 5, item.ProcessImporter, dataStyle);
+                NpoiCell.CreateCell(dataRow, 6, item.ProcessImporterPhone, dataStyle);
+                NpoiCell.CreateIntCell(dataRow, 7, item.Tax, dataStyle);
+                NpoiCell.CreateDateTimeCell(dataRow, 8, item.PickupTime, dateStyle);
+                NpoiCell.CreateCell(dataRow, 9, item.CarNo, dataStyle);
+                NpoiCell.CreateCell(dataRow, 10, item.Remark, dataStyle);
+                NpoiCell.CreateDateTimeCell(dataRow, 11, item.ProcessTime, dateTimeStyle);
+                rowIndex++;
+            }
+
             sheet.AutoSizeColumns(headers.Count, scale: 1, minWidth: 20);
         }
 
