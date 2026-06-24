@@ -742,10 +742,10 @@ public sealed class PortalService(
                 .Where(entity => entity.Download == "1" && entity.IncludeTax == "N" && entity.DlvInv == dlvInv)
                 .Select(entity => new FeeMasterDto
                 {
-                    Tax = (entity.Tax1 ?? 0) + (entity.Tax2 ?? 0),
+                    Tax = (entity.Tax1 ?? 0) + (entity.Tax2 ?? 0) - (entity.CustomerCod ?? 0),
                     Ccfee = entity.Ccfee ?? 0,
                     Cod = entity.Cod ?? 0,
-                    Fee =30,
+                    Fee = 30,
                 })
                 .FirstOrDefaultAsync(cancellationToken);
         }

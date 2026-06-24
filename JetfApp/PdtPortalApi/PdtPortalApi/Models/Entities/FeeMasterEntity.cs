@@ -51,4 +51,10 @@ public sealed class FeeMasterEntity
     /// </summary>
     [Column("COD")]
     public int? Cod { get; set; }
+
+    /// <summary>
+    /// 客戶代收金額。
+    /// </summary>
+    [Column("CUSTOMER_COD")]
+    public int? CustomerCod { get; set; }
 }
