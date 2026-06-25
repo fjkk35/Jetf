@@ -114,6 +114,7 @@ namespace Service.Services.Ftz
             var flightDict = new Dictionary<string, string>();
             var trackingNoDict = new Dictionary<string, string>();
             var bagNoDict = new Dictionary<string, string>();
+            Dictionary<string, string> airTransNameLookup = null;
 
             // 1. 批次查詢客戶名稱
             if (allMwbs.Any())
@@ -150,46 +151,20 @@ namespace Service.Services.Ftz
             // 3. 批次查詢分提單號的派件公司
             if (allHwbs.Any())
             {
-                var sql = @"
-                        SELECT TRACKINGNO, jetf.dbo.GetTRANS_NAME(CLEARANCEWAREHOUSING) AS TRANS_NAME 
-                        FROM DATA_CENTER.[dbo].[ORIGINALLIST] 
-                        WHERE TRACKINGNO IN @TrackingNos 
-                        union all
-                        SELECT BAGNO, jetf.dbo.GetTRANS_NAME(CLEARANCEWAREHOUSING) AS TRANS_NAME 
-                        FROM DATA_CENTER.[dbo].[ORIGINALLIST] 
-                        WHERE BAGNO IN @TrackingNos
-                ";
-
-                var trackings = conn.Query<(string TRACKINGNO, string TRANS_NAME)>(sql, new { TrackingNos = allHwbs });
-
-                trackingNoDict = trackings
-                    .GroupBy(x => x.TRACKINGNO)
-                    .ToDictionary(
-                        g => g.Key,
-                        g => g.First().TRANS_NAME
-                        );
+                airTransNameLookup = GetAirTransNameLookup();
+                trackingNoDict = GetOriginalTransNameLookup(allHwbs, true, true, airTransNameLookup);
             }
 
             // 4. 批次查詢袋號的派件公司
             if (allBagNos.Any())
             {
-                var sql = @"
-                        SELECT BAGNO, jetf.dbo.GetTRANS_NAME(CLEARANCEWAREHOUSING) AS TRANS_NAME 
-                        FROM DATA_CENTER.[dbo].[ORIGINALLIST] 
-                        WHERE BAGNO IN @BagNos";
+                if (airTransNameLookup == null)
+                {
+                    airTransNameLookup = GetAirTransNameLookup();
+                }
 
-                var bags = conn.Query<(string BAGNO, string TRANS_NAME)>(sql, new { BagNos = allBagNos });
-                bagNoDict = bags
-                    .GroupBy(x => x.BAGNO)
-                    .ToDictionary(
-                        g => g.Key,
-                        g => g.First().TRANS_NAME);
+                bagNoDict = GetOriginalTransNameLookup(allBagNos, false, true, airTransNameLookup);
             }
-
-
-            StringBuilder sb_Bagno = new StringBuilder();
-            sb_Bagno.Append("select BAGNO,jetf.dbo.GetTRANS_NAME(CLEARANCEWAREHOUSING) as TRANS_NAME from DATA_CENTER.[dbo].[ORIGINALLIST] ");
-            sb_Bagno.Append("where BAGNO=@BAGNO ");
 
             // 使用字典填充資料
             list.ForEach(r =>
@@ -230,6 +205,94 @@ namespace Service.Services.Ftz
                     }
                 });
             });
+        }
+
+        /// <summary>
+        /// 取得空運派件代碼與派件公司名稱對照。
+        /// </summary>
+        private Dictionary<string, string> GetAirTransNameLookup()
+        {
+            var sql = @"
+                    SELECT TRANS_NO, TRANS_NAME
+                    FROM [jetf].[dbo].[customer_master]
+                    WHERE TRAN_TYPE = N'空運'";
+
+            return conn.Query<(string TRANS_NO, string TRANS_NAME)>(sql)
+                .Where(x => !string.IsNullOrWhiteSpace(x.TRANS_NO))
+                .GroupBy(x => x.TRANS_NO.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.Select(y => y.TRANS_NAME).FirstOrDefault(),
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 依分號或袋號批次查詢派件公司名稱。
+        /// </summary>
+        private Dictionary<string, string> GetOriginalTransNameLookup(
+            IEnumerable<string> trackingNos,
+            bool includeTrackingNo,
+            bool includeBagNo,
+            Dictionary<string, string> transNameLookup = null)
+        {
+            var keys = (trackingNos ?? Enumerable.Empty<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (!keys.Any() || (!includeTrackingNo && !includeBagNo))
+            {
+                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            var sqlParts = new List<string>();
+            if (includeTrackingNo)
+            {
+                sqlParts.Add(@"
+                        SELECT TRACKINGNO AS TRACKINGNO, CLEARANCEWAREHOUSING AS TRANS_NO
+                        FROM DATA_CENTER.[dbo].[ORIGINALLIST]
+                        WHERE TRACKINGNO IN @TrackingNos");
+            }
+
+            if (includeBagNo)
+            {
+                sqlParts.Add(@"
+                        SELECT BAGNO AS TRACKINGNO, CLEARANCEWAREHOUSING AS TRANS_NO
+                        FROM DATA_CENTER.[dbo].[ORIGINALLIST]
+                        WHERE BAGNO IN @TrackingNos");
+            }
+
+            transNameLookup = transNameLookup ?? GetAirTransNameLookup();
+            var originalRows = conn.Query<(string TRACKINGNO, string TRANS_NO)>(
+                string.Join(@"
+                        UNION ALL", sqlParts),
+                new { TrackingNos = keys });
+
+            return originalRows
+                .Where(x => !string.IsNullOrWhiteSpace(x.TRACKINGNO))
+                .GroupBy(x => x.TRACKINGNO.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    x => x.Key,
+                    x => GetTransNameByTransNo(transNameLookup, x.Select(y => y.TRANS_NO).FirstOrDefault()),
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 依派件代碼取得派件公司名稱。
+        /// </summary>
+        private string GetTransNameByTransNo(Dictionary<string, string> transNameLookup, string transNo)
+        {
+            if (string.IsNullOrWhiteSpace(transNo))
+            {
+                return "";
+            }
+
+            string transName;
+            var key = transNo.Trim();
+            return transNameLookup != null && transNameLookup.TryGetValue(key, out transName)
+                ? transName
+                : "";
         }
 
         /// <summary>
@@ -610,9 +673,11 @@ namespace Service.Services.Ftz
                     StringComparer.OrdinalIgnoreCase);
 
             var unreceivedUploadRowsByMainItem = GetUnreceivedUploadRowsByMainItem(results, uploadRowsByMwb);
+            var unreceivedUploadRows = unreceivedUploadRowsByMainItem.SelectMany(x => x.Value).ToList();
+            SetUnreceivedTransName(unreceivedUploadRows);
             var airDetainStatusLookup = GetAirDetainStatusLookup(
                 results,
-                unreceivedUploadRowsByMainItem.SelectMany(x => x.Value));
+                unreceivedUploadRows);
 
             // ========== 第一個頁籤：主號查詢結果 ==========
             ISheet sheet = workbook.CreateSheet("Ftz主號查詢結果");
@@ -634,6 +699,13 @@ namespace Service.Services.Ftz
 
             headers.AddRange(transNames);
             headers.Add("未收單件數");
+
+            var unreceivedTransNames = unreceivedUploadRows
+                .Where(x => !string.IsNullOrWhiteSpace(x.TransName))
+                .Select(x => x.TransName)
+                .Distinct()
+                .ToList();
+            headers.AddRange(unreceivedTransNames.Select(x => x));
 
             IRow headerRow = sheet.CreateRow(0);
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
@@ -691,6 +763,12 @@ namespace Service.Services.Ftz
                     ? unreceivedRows.Count
                     : 0;
                 NpoiCell.CreateIntCell(dataRow, column++, unreceivedCount, dataStyle);
+
+                foreach (var transName in unreceivedTransNames)
+                {
+                    var unreceivedTransNameCount = unreceivedRows?.Count(x => x.TransName == transName) ?? 0;
+                    NpoiCell.CreateIntCell(dataRow, column++, unreceivedTransNameCount, dataStyle);
+                }
             }
 
             // ========== 第二個頁籤：未進倉明細 ==========
@@ -764,7 +842,7 @@ namespace Service.Services.Ftz
                     NpoiCell.CreateCell(detailDataRow, 9, "", dataStyle);
                     NpoiCell.CreateCell(detailDataRow, 10, "", dataStyle);
                     NpoiCell.CreateCell(detailDataRow, 11, "", dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 12, "", dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 12, uploadRow.TransName ?? "", dataStyle);
                     NpoiCell.CreateCell(detailDataRow, 13, GetAirDetainStatus(airDetainStatusLookup, uploadRow.BagNo), dataStyle);
                     detailRowIndex++;
                 }
@@ -830,6 +908,37 @@ namespace Service.Services.Ftz
             }
 
             return unreceivedRowsByMainItem;
+        }
+
+        /// <summary>
+        /// 批次查詢未收單資料的派件公司。
+        /// </summary>
+        private void SetUnreceivedTransName(IEnumerable<FtzMainUploadExcelRow> uploadRows)
+        {
+            var rows = (uploadRows ?? Enumerable.Empty<FtzMainUploadExcelRow>())
+                .Where(x => !string.IsNullOrWhiteSpace(x.BagNo))
+                .ToList();
+
+            if (!rows.Any())
+            {
+                return;
+            }
+
+            var trackingNos = rows
+                .Select(x => x.BagNo.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var transNameLookup = GetOriginalTransNameLookup(trackingNos, true, true);
+
+            foreach (var row in rows)
+            {
+                string transName;
+                if (transNameLookup.TryGetValue(row.BagNo.Trim(), out transName))
+                {
+                    row.TransName = transName;
+                }
+            }
         }
 
         /// <summary>
