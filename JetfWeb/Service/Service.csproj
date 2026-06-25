@@ -557,6 +557,7 @@
     <Compile Include="Services\Ftz\Domain\FtzLoginRequest.cs" />
     <Compile Include="Services\Ftz\Domain\FtzMainQueryRequest.cs" />
     <Compile Include="Services\Ftz\Domain\FtzMainQueryResult.cs" />
+    <Compile Include="Services\Ftz\Domain\FtzMainUploadExcelRow.cs" />
     <Compile Include="Services\Ftz\Domain\FtzMainQueryViewModel.cs" />
     <Compile Include="Services\Ftz\Domain\FtzNoGciQueryResult.cs" />
     <Compile Include="Services\Ftz\Domain\FtzQueryRequest.cs" />

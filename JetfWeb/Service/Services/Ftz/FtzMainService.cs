@@ -2,13 +2,16 @@
 using Newtonsoft.Json;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using Service.Data;
 using Service.Extensions;
 using Service.Models;
 using Service.Services.Ftz.Domain;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Entity;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -236,7 +239,7 @@ namespace Service.Services.Ftz
         {
             // 建立查詢 URL
 
-            var queryUrl = $"{MAIN_QUERY_URL}?ieType=I&mwb={Uri.EscapeDataString(mwb)}&eid=0335&boxno=0H4&_search=false&nd={DateTimeOffset.Now.ToUnixTimeMilliseconds()}&rows=500&page=1&sidx=&sord=asc";
+            var queryUrl = $"{MAIN_QUERY_URL}?ieType=I&mwb={Uri.EscapeDataString(mwb)}&eid=0335&boxno=0H4&_search=false&nd={DateTimeOffset.Now.ToUnixTimeMilliseconds()}&rows=10000&page=1&sidx=&sord=asc";
 
             var response = await httpClient.GetAsync(queryUrl);
             var jsonContent = await response.Content.ReadAsStringAsync();
@@ -440,9 +443,142 @@ namespace Service.Services.Ftz
         }
 
         /// <summary>
+        /// 讀取主號查詢上傳 Excel 的明細資料。
+        /// </summary>
+        /// <param name="uploadStream">上傳檔案串流。</param>
+        /// <returns>分艙單收單註記為 X 的資料列。</returns>
+        public List<FtzMainUploadExcelRow> ReadMainUploadRows(Stream uploadStream)
+        {
+            if (uploadStream == null)
+            {
+                return new List<FtzMainUploadExcelRow>();
+            }
+
+            // 同一個檔案可能先被查詢流程讀過，再被匯出流程重讀，先把串流位置歸零。
+            if (uploadStream.CanSeek)
+            {
+                uploadStream.Position = 0;
+            }
+
+            IWorkbook workbook;
+            try
+            {
+                workbook = WorkbookFactory.Create(uploadStream);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"讀取 Excel 失敗：{ex.Message}");
+            }
+
+            // 需求只接受「明細」頁籤，其他頁籤資料一律不處理。
+            var sheet = workbook.GetSheet("明細");
+            if (sheet == null)
+            {
+                throw new Exception("找不到 Excel 頁籤：明細");
+            }
+
+            // 先定位表頭，之後才能依欄名讀取主號、袋號與收單註記。
+            var headerInfo = FindMainUploadHeader(sheet);
+            var headerMap = headerInfo.Item2;
+            var requiredHeaders = new[] { "袋號", "主號", "分艙單收單註記" };
+            var missingHeaders = requiredHeaders.Where(header => !headerMap.ContainsKey(header)).ToList();
+
+            if (missingHeaders.Any())
+            {
+                throw new Exception($"明細頁籤缺少欄位：{string.Join("、", missingHeaders)}");
+            }
+
+            var uploadRows = new List<FtzMainUploadExcelRow>();
+            for (int rowIndex = headerInfo.Item1 + 1; rowIndex <= sheet.LastRowNum; rowIndex++)
+            {
+                var row = sheet.GetRow(rowIndex);
+                if (row == null)
+                {
+                    continue;
+                }
+
+                var bagNo = row.GetCellData(headerMap["袋號"]);
+                var mwb = row.GetCellData(headerMap["主號"]);
+                var receiptMark = row.GetCellData(headerMap["分艙單收單註記"]);
+
+                // 只有收單註記為 X 的資料，才需要納入後續未收單比對。
+                if (!string.Equals(receiptMark, "X", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                // 主號或袋號缺值時無法比對，直接略過。
+                if (string.IsNullOrWhiteSpace(bagNo) || string.IsNullOrWhiteSpace(mwb))
+                {
+                    continue;
+                }
+
+                uploadRows.Add(new FtzMainUploadExcelRow
+                {
+                    BagNo = bagNo.Trim(),
+                    Mwb = mwb.Trim(),
+                    ReceiptMark = receiptMark.Trim()
+                });
+            }
+
+            return uploadRows;
+        }
+
+        /// <summary>
+        /// 尋找主號上傳 Excel 的表頭列。
+        /// </summary>
+        /// <param name="sheet">工作表。</param>
+        /// <returns>表頭列索引與欄位對照。</returns>
+        private Tuple<int, Dictionary<string, int>> FindMainUploadHeader(ISheet sheet)
+        {
+            var requiredHeaders = new[] { "袋號", "主號", "分艙單收單註記" };
+            var bestHeaderRowIndex = -1;
+            var bestHeaderMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var bestMatchCount = 0;
+
+            for (int rowIndex = sheet.FirstRowNum; rowIndex <= sheet.LastRowNum; rowIndex++)
+            {
+                var row = sheet.GetRow(rowIndex);
+                if (row == null || row.LastCellNum < 0)
+                {
+                    continue;
+                }
+
+                var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                var startCellIndex = row.FirstCellNum < 0 ? 0 : row.FirstCellNum;
+                for (int cellIndex = startCellIndex; cellIndex < row.LastCellNum; cellIndex++)
+                {
+                    var headerName = row.GetCellData(cellIndex);
+                    if (string.IsNullOrWhiteSpace(headerName) || headerMap.ContainsKey(headerName))
+                    {
+                        continue;
+                    }
+
+                    headerMap.Add(headerName.Trim(), cellIndex);
+                }
+
+                // 有些檔案前面會有說明列，這裡挑出最符合需求欄位數的那一列當表頭。
+                var matchCount = requiredHeaders.Count(header => headerMap.ContainsKey(header));
+                if (matchCount > bestMatchCount)
+                {
+                    bestMatchCount = matchCount;
+                    bestHeaderRowIndex = rowIndex;
+                    bestHeaderMap = headerMap;
+                }
+
+                if (matchCount == requiredHeaders.Length)
+                {
+                    break;
+                }
+            }
+
+            return Tuple.Create(bestHeaderRowIndex, bestHeaderMap);
+        }
+
+        /// <summary>
         /// 主號查詢匯出 Excel
         /// </summary>
-        public async Task<IWorkbook> ExportMainExcel(FtzMainQueryRequest request)
+        public async Task<IWorkbook> ExportMainExcel(FtzMainQueryRequest request, List<FtzMainUploadExcelRow> uploadRows = null)
         {
             // 先查詢資料
             var queryResult = await MainQueryAsync(request);
@@ -540,7 +676,7 @@ namespace Service.Services.Ftz
             string[] detailHeaders = new string[]
             {
                 "項次", "提單號碼", "分號", "報單號碼", "袋號",
-                "申報", "進倉", "出倉", "報關類別", "備註", "一分號多袋","B6F", "派件公司"
+                "申報", "進倉", "出倉", "報關類別", "備註", "一分號多袋","B6F", "派件公司", "狀態"
             };
 
             IRow detailHeaderRow = detailSheet.CreateRow(0);
@@ -551,6 +687,23 @@ namespace Service.Services.Ftz
             {
                 detailSheet.SetColumnWidth(i, 4000);
             }
+
+            // 先把上傳資料依主號整理，並在同一主號內用袋號去重，方便後續快速比對。
+            var uploadRowsByMwb = (uploadRows ?? new List<FtzMainUploadExcelRow>())
+                .Where(row => !string.IsNullOrWhiteSpace(row.Mwb) && !string.IsNullOrWhiteSpace(row.BagNo))
+                .GroupBy(row => row.Mwb.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group
+                        .GroupBy(row => row.BagNo.Trim(), StringComparer.OrdinalIgnoreCase)
+                        .Select(rowGroup => rowGroup.First())
+                        .ToList(),
+                    StringComparer.OrdinalIgnoreCase);
+
+            var unreceivedUploadRowsByMainItem = GetUnreceivedUploadRowsByMainItem(results, uploadRowsByMwb);
+            var airDetainStatusLookup = GetAirDetainStatusLookup(
+                results,
+                unreceivedUploadRowsByMainItem.SelectMany(x => x.Value));
 
             // 填入未進倉明細資料
             var detailRowIndex = 1;
@@ -576,12 +729,165 @@ namespace Service.Services.Ftz
                         NpoiCell.CreateCell(detailDataRow, 10, detail.realTotBag ?? "", dataStyle); // 一分號多袋
                         NpoiCell.CreateCell(detailDataRow, 11, detail.IsB6F.ToString() ?? "", dataStyle);
                         NpoiCell.CreateCell(detailDataRow, 12, detail.TransName ?? "", dataStyle);
+                        NpoiCell.CreateCell(detailDataRow, 13, GetAirDetainStatus(airDetainStatusLookup, detail.hwb), dataStyle);
                         detailRowIndex++;
                     }
+                }
+
+                List<FtzMainUploadExcelRow> mainUploadRows;
+                if (!unreceivedUploadRowsByMainItem.TryGetValue(mainItem, out mainUploadRows))
+                {
+                    continue;
+                }
+
+                foreach (var uploadRow in mainUploadRows)
+                {
+                    // 上傳檔有、查詢結果沒有時，依需求在未進倉明細補一列未收單資料。
+                    IRow detailDataRow = detailSheet.CreateRow(detailRowIndex);
+
+                    NpoiCell.CreateIntCell(detailDataRow, 0, itemNo++, dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 1, uploadRow.Mwb ?? "", dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 2, uploadRow.BagNo ?? "", dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 3, "未收單", dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 4, "", dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 5, "", dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 6, "", dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 7, "", dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 8, "", dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 9, "", dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 10, "", dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 11, "", dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 12, "", dataStyle);
+                    NpoiCell.CreateCell(detailDataRow, 13, GetAirDetainStatus(airDetainStatusLookup, uploadRow.BagNo), dataStyle);
+                    detailRowIndex++;
                 }
             }
 
             return workbook;
+        }
+
+        /// <summary>
+        /// 取得需要補到未進倉明細的未收單上傳資料。
+        /// </summary>
+        private Dictionary<FtzMainQueryViewModel, List<FtzMainUploadExcelRow>> GetUnreceivedUploadRowsByMainItem(
+            List<FtzMainQueryViewModel> results,
+            Dictionary<string, List<FtzMainUploadExcelRow>> uploadRowsByMwb)
+        {
+            var unreceivedRowsByMainItem = new Dictionary<FtzMainQueryViewModel, List<FtzMainUploadExcelRow>>();
+            foreach (var mainItem in results ?? new List<FtzMainQueryViewModel>())
+            {
+                var mwb = string.IsNullOrWhiteSpace(mainItem.Mwb) ? string.Empty : mainItem.Mwb.Trim();
+                List<FtzMainUploadExcelRow> mainUploadRows;
+                if (!string.IsNullOrWhiteSpace(mainItem.ErrorMessage) ||
+                    uploadRowsByMwb == null ||
+                    !uploadRowsByMwb.TryGetValue(mwb, out mainUploadRows))
+                {
+                    continue;
+                }
+
+                var knownHwbs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                if (mainItem.NotGciDetails != null)
+                {
+                    foreach (var detail in mainItem.NotGciDetails)
+                    {
+                        var hwb = string.IsNullOrWhiteSpace(detail.hwb) ? string.Empty : detail.hwb.Trim();
+                        if (string.IsNullOrWhiteSpace(hwb))
+                        {
+                            continue;
+                        }
+
+                        knownHwbs.Add(hwb);
+                    }
+                }
+
+                if (mainItem.RawData?.Rows != null)
+                {
+                    foreach (var rawRow in mainItem.RawData.Rows)
+                    {
+                        var rawHwb = string.IsNullOrWhiteSpace(rawRow.Hwb) ? string.Empty : rawRow.Hwb.Trim();
+                        if (!string.IsNullOrWhiteSpace(rawHwb))
+                        {
+                            knownHwbs.Add(rawHwb);
+                        }
+                    }
+                }
+
+                unreceivedRowsByMainItem[mainItem] = mainUploadRows
+                    .Where(uploadRow =>
+                    {
+                        var bagNo = string.IsNullOrWhiteSpace(uploadRow.BagNo) ? string.Empty : uploadRow.BagNo.Trim();
+                        return !string.IsNullOrWhiteSpace(bagNo) && !knownHwbs.Contains(bagNo);
+                    })
+                    .ToList();
+            }
+
+            return unreceivedRowsByMainItem;
+        }
+
+        /// <summary>
+        /// 批次查詢 AIR_DETAIN 狀態。
+        /// </summary>
+        private Dictionary<string, string> GetAirDetainStatusLookup(
+            List<FtzMainQueryViewModel> results,
+            IEnumerable<FtzMainUploadExcelRow> unreceivedUploadRows)
+        {
+            var trackingNos = (results ?? new List<FtzMainQueryViewModel>())
+                .Where(x => x.NotGciDetails != null)
+                .SelectMany(x => x.NotGciDetails)
+                .Select(x => x.hwb)
+                .Concat((unreceivedUploadRows ?? Enumerable.Empty<FtzMainUploadExcelRow>()).Select(x => x.BagNo))
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (trackingNos.Count == 0)
+            {
+                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            return DataCenterDb.AirDetains
+                .AsNoTracking()
+                .WhereBulkContains(DataCenterDb, trackingNos, x => x.TrackingNo, x => x)
+                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
+                .GroupBy(x => x.TrackingNo, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    x => x.Key,
+                    x => FormatAirDetainModel(x.Select(y => y.Model).FirstOrDefault()),
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 取得 AIR_DETAIN 狀態顯示文字。
+        /// </summary>
+        private string GetAirDetainStatus(Dictionary<string, string> statusLookup, string hwb)
+        {
+            if (statusLookup == null || string.IsNullOrWhiteSpace(hwb))
+            {
+                return "";
+            }
+
+            string status;
+            return statusLookup.TryGetValue(hwb.Trim(), out status) ? status : "";
+        }
+
+        /// <summary>
+        /// 轉換 AIR_DETAIN MODEL 顯示文字。
+        /// </summary>
+        private string FormatAirDetainModel(string model)
+        {
+            if (model == "DU")
+            {
+                return "出口地扣留";
+            }
+
+            if (model == "GF")
+            {
+                return "G類無ID";
+            }
+
+            return model ?? "";
         }
     }
 }

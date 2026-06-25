@@ -27,6 +27,35 @@
         $scope.results = [];
         $scope.mainQueryResults = []; // 改為陣列
         $scope.bagQueryResults = []; // 併袋號查詢結果
+        $scope.mainUploadFile = null;
+    };
+
+    // 主號模式的上傳檔會同時供查詢與匯出使用，這裡只保留檔案物件本身。
+    $scope.onMainUploadFileChanged = function (input) {
+        var file = input && input.files && input.files.length > 0 ? input.files[0] : null;
+        $scope.$applyAsync(function () {
+            $scope.mainUploadFile = file;
+        });
+    };
+
+    // 主號查詢有檔案時改用 multipart/form-data，讓文字與檔案可以一起送到後端。
+    $scope.buildMainUploadFormData = function () {
+        var formData = new FormData();
+        formData.append('mwb', ($scope.queryData.hwbqList || '').trim());
+        if ($scope.mainUploadFile) {
+            formData.append('uploadFile', $scope.mainUploadFile);
+        }
+        return formData;
+    };
+
+    // Content-Type 交給瀏覽器自動帶 boundary，避免 multipart 格式被手動 header 破壞。
+    $scope.getMainRequestConfig = function () {
+        return {
+            transformRequest: angular.identity,
+            headers: {
+                'Content-Type': undefined
+            }
+        };
     };
 
     // 登入
@@ -153,7 +182,11 @@
             mwb: $scope.queryData.hwbqList.trim()
         };
 
-        $http.post(Router.action('Ftz', 'QueryMain'), mainQueryRequest)
+        var requestPromise = $scope.mainUploadFile
+            ? $http.post(Router.action('Ftz', 'QueryMain'), $scope.buildMainUploadFormData(), $scope.getMainRequestConfig())
+            : $http.post(Router.action('Ftz', 'QueryMain'), mainQueryRequest);
+
+        requestPromise
             .then(function (response) {
                 $scope.isLoading = false;
                 if (response.data.status == 'success') {
@@ -240,6 +273,13 @@
         $scope.mainQueryResults = []; // 修改為陣列
         $scope.bagQueryResults = []; // 清除併袋號查詢結果
         $scope.queryData.hwbqList = '';
+        $scope.mainUploadFile = null;
+
+        // 同步把原生 file input 清空，避免同一個檔案重新選取時 change 事件不觸發。
+        var uploadFileInput = document.getElementById('mainUploadFile');
+        if (uploadFileInput) {
+            uploadFileInput.value = '';
+        }
     };
 
     // 清除主號查詢結果
@@ -334,7 +374,14 @@
             requestData = $scope.queryData;
         }
 
-        $http.post(Router.action('Ftz', exportAction), requestData)
+        var exportPromise = null;
+        if ($scope.selectedQueryType === 'mwb' && $scope.mainUploadFile) {
+            exportPromise = $http.post(Router.action('Ftz', exportAction), $scope.buildMainUploadFormData(), $scope.getMainRequestConfig());
+        } else {
+            exportPromise = $http.post(Router.action('Ftz', exportAction), requestData);
+        }
+
+        exportPromise
             .then(function (response) {
                 $scope.isLoading = false;
                 if (response.data.status == "error" || !response.data.fileGuid) {

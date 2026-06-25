@@ -64,7 +64,7 @@ namespace JETFTAX.Controllers
         /// 主號查詢
         /// </summary>
         [HttpPost]
-        public async Task<JsonResult> QueryMain(FtzMainQueryRequest request)
+        public async Task<JsonResult> QueryMain(FtzMainQueryRequest request, HttpPostedFileBase uploadFile)
         {
             try
             {
@@ -128,11 +128,18 @@ namespace JETFTAX.Controllers
         /// 主號查詢匯出 Excel
         /// </summary>
         [HttpPost]
-        public async Task<JsonResult> ExportMainExcel(FtzMainQueryRequest request)
+        public async Task<JsonResult> ExportMainExcel(FtzMainQueryRequest request, HttpPostedFileBase uploadFile)
         {
             try
             {
-                var workbook = await _ftzService.ExportMainExcel(request);
+                List<FtzMainUploadExcelRow> uploadRows = null;
+
+                if (uploadFile != null && uploadFile.ContentLength > 0)
+                {
+                    uploadRows = _ftzService.ReadMainUploadRows(uploadFile.InputStream);
+                }
+
+                var workbook = await _ftzService.ExportMainExcel(request, uploadRows);
 
                 string handle = Guid.NewGuid().ToString();
                 string fileName = $"Ftz主號查詢結果_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
