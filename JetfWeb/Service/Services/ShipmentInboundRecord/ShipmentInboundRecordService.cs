@@ -800,7 +800,7 @@ namespace Service.Services.ShipmentInboundRecord
                 bytes = ms.ToArray();
             }
 
-            var fileName = $"貨件紀錄查詢_客戶Excel_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+            var fileName = $"倉庫異常紀錄-{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
 
             return new ShipmentInboundRecordExportExcelResult
             {
