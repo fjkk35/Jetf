@@ -597,6 +597,23 @@ namespace Service.Services.Ftz
             var headerStyle = NpoiStyle.CreateHeaderStyle(workbook, 12, true);
             var dataStyle = NpoiStyle.CreateDataStyle(workbook);
 
+            // 先把上傳資料整理成實際需要補到未進倉明細的未收單資料，供兩個頁籤共用。
+            var uploadRowsByMwb = (uploadRows ?? new List<FtzMainUploadExcelRow>())
+                .Where(row => !string.IsNullOrWhiteSpace(row.Mwb) && !string.IsNullOrWhiteSpace(row.BagNo))
+                .GroupBy(row => row.Mwb.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group
+                        .GroupBy(row => row.BagNo.Trim(), StringComparer.OrdinalIgnoreCase)
+                        .Select(rowGroup => rowGroup.First())
+                        .ToList(),
+                    StringComparer.OrdinalIgnoreCase);
+
+            var unreceivedUploadRowsByMainItem = GetUnreceivedUploadRowsByMainItem(results, uploadRowsByMwb);
+            var airDetainStatusLookup = GetAirDetainStatusLookup(
+                results,
+                unreceivedUploadRowsByMainItem.SelectMany(x => x.Value));
+
             // ========== 第一個頁籤：主號查詢結果 ==========
             ISheet sheet = workbook.CreateSheet("Ftz主號查詢結果");
 
@@ -616,6 +633,7 @@ namespace Service.Services.Ftz
                             .ToList();
 
             headers.AddRange(transNames);
+            headers.Add("未收單件數");
 
             IRow headerRow = sheet.CreateRow(0);
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
@@ -667,6 +685,12 @@ namespace Service.Services.Ftz
 
                     NpoiCell.CreateIntCell(dataRow, column++, totalCount, dataStyle);
                 }
+
+                List<FtzMainUploadExcelRow> unreceivedRows;
+                var unreceivedCount = unreceivedUploadRowsByMainItem.TryGetValue(item, out unreceivedRows)
+                    ? unreceivedRows.Count
+                    : 0;
+                NpoiCell.CreateIntCell(dataRow, column++, unreceivedCount, dataStyle);
             }
 
             // ========== 第二個頁籤：未進倉明細 ==========
@@ -687,23 +711,6 @@ namespace Service.Services.Ftz
             {
                 detailSheet.SetColumnWidth(i, 4000);
             }
-
-            // 先把上傳資料依主號整理，並在同一主號內用袋號去重，方便後續快速比對。
-            var uploadRowsByMwb = (uploadRows ?? new List<FtzMainUploadExcelRow>())
-                .Where(row => !string.IsNullOrWhiteSpace(row.Mwb) && !string.IsNullOrWhiteSpace(row.BagNo))
-                .GroupBy(row => row.Mwb.Trim(), StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(
-                    group => group.Key,
-                    group => group
-                        .GroupBy(row => row.BagNo.Trim(), StringComparer.OrdinalIgnoreCase)
-                        .Select(rowGroup => rowGroup.First())
-                        .ToList(),
-                    StringComparer.OrdinalIgnoreCase);
-
-            var unreceivedUploadRowsByMainItem = GetUnreceivedUploadRowsByMainItem(results, uploadRowsByMwb);
-            var airDetainStatusLookup = GetAirDetainStatusLookup(
-                results,
-                unreceivedUploadRowsByMainItem.SelectMany(x => x.Value));
 
             // 填入未進倉明細資料
             var detailRowIndex = 1;
