@@ -675,6 +675,7 @@
     <Compile Include="Services\ShipmentInboundBatchImport\ShipmentInboundBatchImportService.cs" />
     <Compile Include="Services\ShipmentInboundReturnImport\Domain\ShipmentInboundReturnImportModel.cs" />
     <Compile Include="Services\ShipmentInboundReturnImport\ShipmentInboundReturnImportService.cs" />
+    <Compile Include="Services\ShipmentInboundCommon\ShipmentInboundFeePolicy.cs" />
     <Compile Include="Services\ShipmentInboundCommon\ShipmentInboundTrackingNoService.cs" />
     <Compile Include="Services\ShipmentInboundCommon\ShipmentInboundExceptionImageStorageService.cs" />
     <Compile Include="Services\ShipmentInboundLocationTransfer\Domain\LocationHistoryModel.cs" />

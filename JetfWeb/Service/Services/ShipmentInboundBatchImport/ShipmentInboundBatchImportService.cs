@@ -204,7 +204,7 @@ namespace Service.Services.ShipmentInboundBatchImport
                             Tax = x.Tax,
                             Ccfee = x.Ccfee,
                             Cod = x.Cod,
-                            Fee = x.Fee,
+                            Fee = ShipmentInboundFeePolicy.NormalizeFee(x.CustCode, x.Fee),
                             ReturnReason = x.ReturnReason,
                             Remark = x.Remark,
                             IsOrderOriginal = x.IsOrderOriginal,

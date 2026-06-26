@@ -31,6 +31,11 @@ namespace Service.Services.ShipmentInboundProcess.Domain
         public string CustCode { get; set; }
 
         /// <summary>
+        /// 此客戶是否套用特殊手續費規則。
+        /// </summary>
+        public bool IsSpecialFeeCustomer { get; set; }
+
+        /// <summary>
         /// 客戶名稱
         /// </summary>
         public string CustName { get; set; }

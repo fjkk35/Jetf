@@ -1,6 +1,7 @@
 ﻿using NLog;
 using Service.EnumTax;
 using Service.Extensions;
+using Service.Services.ShipmentInboundCommon;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -51,6 +52,7 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
                         var shipment = pair.Shipment;
 
                         var processOpe = stage.ProcessOpe;
+                        NormalizeStageFee(stage, shipment);
 
                         AddEditHistories(JetfDb, shipment, stage, syncTime, processOpe);
                         ApplyStageValues(stage, shipment, syncTime, processOpe);
@@ -133,6 +135,30 @@ namespace Service.Services.Job.ShipmentInboundProcessStageTransferJob
             shipment.PickupTime = stage.PickupTime;
             shipment.ProcessOpe = processOpe;
             shipment.ProcessTime = processTime;
+        }
+
+        /// <summary>
+        /// 將預先登記手續費正規化為實際轉檔值。
+        /// </summary>
+        /// <param name="stage">預先登記處理資料。</param>
+        /// <param name="shipment">正式 ShipmentInbound 資料。</param>
+        private void NormalizeStageFee(
+            Data.ShipmentInboundProcessStageEntity stage,
+            Data.ShipmentInboundEntity shipment)
+        {
+            if (!stage.ProcessType.HasValue)
+            {
+                return;
+            }
+
+            stage.Fee = ShipmentInboundFeePolicy.CalculateProcessFee(
+                shipment.CustCode,
+                stage.ProcessType,
+                stage.ProcessTransNo,
+                stage.FreightPayerNo,
+                stage.FreightFee,
+                stage.Tax,
+                stage.CcFee);
         }
 
         /// <summary>

@@ -43,6 +43,20 @@
         return value ? value.trim() : '';
     }
 
+    function isSpecialFeeCustomer() {
+        return !!($scope.processForm && $scope.processForm.isSpecialFeeCustomer);
+    }
+
+    function applySpecialFeeRule() {
+        if (!isSpecialFeeCustomer()) {
+            return false;
+        }
+
+        var freightFee = parseFloat($scope.processForm.freightFee) || 0;
+        $scope.processForm.fee = freightFee > 0 ? 30 : 0;
+        return true;
+    }
+
     function getCurrentProcessItemId() {
         return $scope.shouldReleaseProcessEditOnHide && $scope.currentItem
             ? $scope.currentItem.Id
@@ -148,6 +162,7 @@
         freightPayerNo: null,
         freightFee: 0,
         fee: 0,
+        isSpecialFeeCustomer: false,
         carNo: '',
         pickupTime: '',
         remark: ''
@@ -244,6 +259,10 @@
 
     // 自動計算手續費
     $scope.calcFee = function () {
+        if (applySpecialFeeRule()) {
+            return;
+        }
+
         var freightFee = parseFloat($scope.processForm.freightFee) || 0;
         var tax = parseFloat($scope.processForm.tax) || 0;
         var ccfee = parseFloat($scope.processForm.ccfee) || 0;
@@ -342,6 +361,7 @@
             freightPayerNo: null,
             freightFee: 0,
             fee: 0,
+            isSpecialFeeCustomer: !!item.IsSpecialFeeCustomer,
             carNo: '',
             pickupTime: null,
             remark: item.Remark || ''
@@ -471,6 +491,7 @@
                     freightPayerNo: detail.FreightPayerNo,
                     freightFee: detail.FreightFee || 0,
                     fee: detail.Fee || 0,
+                    isSpecialFeeCustomer: !!(detail.IsSpecialFeeCustomer || item.IsSpecialFeeCustomer),
                     carNo: detail.CarNo || '',
                     pickupTime: pickupTimeDate,
                     remark: detail.Remark || ''

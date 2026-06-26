@@ -4,6 +4,7 @@ using Service.Data;
 using Service.EnumTax;
 using Service.Extensions;
 using Service.Models;
+using Service.Services.ShipmentInboundCommon;
 using Service.Services.ShipmentInboundProcess.Domain;
 using System;
 using System.Collections.Generic;
@@ -69,6 +70,7 @@ namespace Service.Services.ShipmentInboundProcess
                     })
                     .ToList();
 
+                FillFeePolicyFlags(data);
                 FillTrackingNoCounts(data, query);
                 NormalizeExpiredProcessEditDisplay(data);
                 FillCustomerAndTransNames(data);
@@ -127,7 +129,14 @@ namespace Service.Services.ShipmentInboundProcess
                         NormalizeUpdateRequest(request);
                         ValidateUpdateRequest(request, newProcessType);
 
-                        var newFee = CalculateFee(newProcessType, request.ProcessTransNo, request.FreightPayerNo, request.FreightFee, request.Tax, request.Ccfee);
+                        var newFee = ShipmentInboundFeePolicy.CalculateProcessFee(
+                            existing.CustCode,
+                            newProcessType,
+                            request.ProcessTransNo,
+                            request.FreightPayerNo,
+                            request.FreightFee,
+                            request.Tax,
+                            request.Ccfee);
 
                         existing.ProcessType = newProcessType;
                         existing.ProcessTransNo = request.ProcessTransNo;
@@ -309,39 +318,6 @@ namespace Service.Services.ShipmentInboundProcess
         }
 
         /// <summary>
-        /// 計算代收手續費。
-        /// </summary>
-        /// <param name="processType">處理方式。</param>
-        /// <param name="processTransNo">重出派件公司。</param>
-        /// <param name="freightPayerNo">重出運費支付方。</param>
-        /// <param name="freightFee">重出運費。</param>
-        /// <param name="tax">稅金。</param>
-        /// <param name="ccfee">報關費。</param>
-        /// <returns>代收手續費。</returns>
-        private int CalculateFee(
-            ShipmentInboundProcessType processType,
-            byte? processTransNo,
-            byte? freightPayerNo,
-            int? freightFee,
-            int? tax,
-            int? ccfee)
-        {
-            // 僅在「開新單號重出 + 7-11」時，才額外依運費支付方判斷手續費。
-            if (processType == ShipmentInboundProcessType.NewTrackingNo
-                && processTransNo == (byte)ShipmentInboundProcessTransNo.SevenEleven)
-            {
-                return freightPayerNo == (byte)ShipmentInboundFreightPayerNo.Consignee ? 30 : 0;
-            }
-
-            // 其餘情況維持原本只要有運費、稅金或報關費任一金額就收 30 的邏輯。
-            return (freightFee ?? 0) > 0
-                || (tax ?? 0) > 0
-                || (ccfee ?? 0) > 0
-                ? 30
-                : 0;
-        }
-
-        /// <summary>
         /// 依 Id 取得單筆貨件回倉處理明細。
         /// </summary>
         /// <param name="id">貨件回倉資料 Id。</param>
@@ -349,12 +325,13 @@ namespace Service.Services.ShipmentInboundProcess
         public ShipmentInboundProcessDetailModel GetDetailById(int id)
         {
             {
-                return JetfDb.ShipmentInbounds
+                var detail = JetfDb.ShipmentInbounds
                     .AsNoTracking()
                     .Where(x => x.Id == id)
                     .Select(x => new ShipmentInboundProcessDetailModel
                     {
                         Id = x.Id,
+                        CustCode = x.CustCode,
                         ProcessType = x.ProcessType.HasValue ? (ShipmentInboundProcessType?)x.ProcessType.Value : null,
                         ProcessTransNo = x.ProcessTransNo.HasValue ? (ShipmentInboundProcessTransNo?)x.ProcessTransNo.Value : null,
                         ProcessImporter = x.ProcessImporter,
@@ -373,6 +350,13 @@ namespace Service.Services.ShipmentInboundProcess
                         Remark = x.Remark
                     })
                     .FirstOrDefault();
+
+                if (detail != null)
+                {
+                    detail.IsSpecialFeeCustomer = ShipmentInboundFeePolicy.IsSpecialFeeCustomer(detail.CustCode);
+                }
+
+                return detail;
             }
         }
 
@@ -569,6 +553,7 @@ namespace Service.Services.ShipmentInboundProcess
                     : default(ShipmentInboundSourceType),
                 ReturnTrackingNo = entity.ReturnTrackingNo,
                 CustCode = entity.CustCode,
+                IsSpecialFeeCustomer = ShipmentInboundFeePolicy.IsSpecialFeeCustomer(entity.CustCode),
                 TransNo = entity.TransNo,
                 TransName = entity.TransName,
                 ReturnReason = entity.ReturnReason,
@@ -647,6 +632,18 @@ namespace Service.Services.ShipmentInboundProcess
         private Dictionary<string, string> GetAirTransNames(List<string> transNos)
         {
             return base.GetAirTransNames(transNos);
+        }
+
+        /// <summary>
+        /// Marks rows whose freight fee and handling fee are forced to zero by customer policy.
+        /// </summary>
+        /// <param name="data">Rows to mark.</param>
+        private void FillFeePolicyFlags(List<ShipmentInboundProcessModel> data)
+        {
+            foreach (var item in data)
+            {
+                item.IsSpecialFeeCustomer = ShipmentInboundFeePolicy.IsSpecialFeeCustomer(item.CustCode);
+            }
         }
 
         /// <summary>

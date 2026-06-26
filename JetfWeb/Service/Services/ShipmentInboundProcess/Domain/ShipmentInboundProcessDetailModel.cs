@@ -15,6 +15,16 @@ namespace Service.Services.ShipmentInboundProcess.Domain
         public int Id { get; set; }
 
         /// <summary>
+        /// 客戶代碼
+        /// </summary>
+        public string CustCode { get; set; }
+
+        /// <summary>
+        /// 此客戶是否套用特殊手續費規則。
+        /// </summary>
+        public bool IsSpecialFeeCustomer { get; set; }
+
+        /// <summary>
         /// 處理類型
         /// </summary>
         public ShipmentInboundProcessType? ProcessType { get; set; }
