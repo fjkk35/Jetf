@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -226,7 +226,7 @@ public sealed class PortalService(
                 ? null
                 : await GetFeeDataAsync(originalJetfSerial, cancellationToken);
             var cod = feeData?.Cod ?? sourceCod;
-            var fee = (feeData?.Tax ?? 0) > 0 || (feeData?.Ccfee ?? 0) > 0 ? 30 : 0;
+            var fee = ShipmentInboundFeePolicy.CalculateInboundFee(custCode, feeData?.Tax, feeData?.Ccfee);
 
 			var entity = new ShipmentInboundEntity
 			{
