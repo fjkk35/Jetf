@@ -218,6 +218,43 @@
                     </select>
                 </div>
             </div>
+
+            <!-- 客戶(多選) -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="custCodeOption" class="col-lg-4 col-form-label text-right">客戶</label>
+                <div class="col-lg-8">
+                    <customer-multi-select
+                        select-all="customerSelectAll"
+                        selected-cust-codes="selectedCustCodes"
+                        display-text="customerDisplayText"
+                        display-full-text="customerDisplayFullText">
+                    </customer-multi-select>
+                </div>
+            </div>
+
+            <div class="form-group col-lg-3 mb-0 d-flex align-items-center">
+                <div class="unknown-shipment-toggle">
+                    <input type="checkbox"
+                           id="warehouseProcessTypeIsEmpty"
+                           class="unknown-shipment-checkbox"
+                           ng-model="searchForm.warehouseProcessTypeIsEmpty"
+                           ng-change="onWarehouseProcessTypeIsEmptyChanged()" />
+                    <label for="warehouseProcessTypeIsEmpty" class="unknown-shipment-label">無倉庫狀態</label>
+                </div>
+            </div>
+
+            <div class="form-group col-lg-3 mb-0 d-flex align-items-center">
+                <div class="unknown-shipment-toggle">
+                    <input type="checkbox"
+                           id="recordUnknownShipmentOnly"
+                           class="unknown-shipment-checkbox"
+                           ng-model="searchForm.unknownShipmentOnly" />
+                    <label for="recordUnknownShipmentOnly" class="unknown-shipment-label">只查不明貨件</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
             <!-- 入庫日期(起) -->
             <div class="form-group row col-lg-3 mb-0">
                 <label for="inboundDateStart" class="col-lg-4 col-form-label text-right">入庫日期(起)</label>
@@ -258,16 +295,43 @@
                 </div>
             </div>
 
-            <!-- 客戶(多選) -->
+            <!-- 出庫日期(起) -->
             <div class="form-group row col-lg-3 mb-0">
-                <label for="custCodeOption" class="col-lg-4 col-form-label text-right">客戶</label>
+                <label for="outboundDateStart" class="col-lg-4 col-form-label text-right">出庫日期(起)</label>
                 <div class="col-lg-8">
-                    <customer-multi-select
-                        select-all="customerSelectAll"
-                        selected-cust-codes="selectedCustCodes"
-                        display-text="customerDisplayText"
-                        display-full-text="customerDisplayFullText">
-                    </customer-multi-select>
+                    <input type="text"
+                           id="outboundDateStart"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.outboundDateStart"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="outboundStartDatePopup.opened"
+                           ng-click="openOutboundStartDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇開始日期" />
+                </div>
+            </div>
+
+            <!-- 出庫日期(迄) -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="outboundDateEnd" class="col-lg-4 col-form-label text-right">出庫日期(迄)</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="outboundDateEnd"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.outboundDateEnd"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="outboundEndDatePopup.opened"
+                           ng-click="openOutboundEndDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="請選擇結束日期" />
                 </div>
             </div>
         </div>
@@ -348,33 +412,6 @@
                         <option value="">全部</option>
                         <option ng-repeat="type in warehouseProcessTypeList" value="{{type.Value}}">{{type.Text}}</option>
                     </select>
-                </div>
-            </div>
-
-            <div class="form-group row col-lg-3 mb-0">
-                <label class="col-lg-4 col-form-label text-right"></label>
-                <div class="col-lg-8 d-flex align-items-center">
-                    <div class="unknown-shipment-toggle">
-                        <input type="checkbox"
-                               id="warehouseProcessTypeIsEmpty"
-                               class="unknown-shipment-checkbox"
-                               ng-model="searchForm.warehouseProcessTypeIsEmpty"
-                               ng-change="onWarehouseProcessTypeIsEmptyChanged()" />
-                        <label for="warehouseProcessTypeIsEmpty" class="unknown-shipment-label">無倉庫狀態</label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group row col-lg-3 mb-0">
-                <label class="col-lg-4 col-form-label text-right"></label>
-                <div class="col-lg-8 d-flex align-items-center">
-                    <div class="unknown-shipment-toggle">
-                        <input type="checkbox"
-                               id="recordUnknownShipmentOnly"
-                               class="unknown-shipment-checkbox"
-                               ng-model="searchForm.unknownShipmentOnly" />
-                        <label for="recordUnknownShipmentOnly" class="unknown-shipment-label">只查不明貨件</label>
-                    </div>
                 </div>
             </div>
         </div>

@@ -256,6 +256,14 @@ namespace Service.Services.ShipmentInboundRecord
                 query = query.WhereIf(true, x => x.InboundDate < inboundDateEnd);
             }
 
+            query = query.WhereIf(DateTime.TryParse(request.OutboundDateStart, out var outboundStartDate), x => x.OutboundDate >= outboundStartDate);
+
+            if (DateTime.TryParse(request.OutboundDateEnd, out var outboundEndDate))
+            {
+                var outboundDateEnd = outboundEndDate.AddDays(1);
+                query = query.WhereIf(true, x => x.OutboundDate < outboundDateEnd);
+            }
+
             query = query.WhereIf(!string.IsNullOrWhiteSpace(request.DataType), x => x.DataType == request.DataType);
 
             if (byte.TryParse(request.ProcessType, out var processType))
@@ -552,6 +560,8 @@ namespace Service.Services.ShipmentInboundRecord
             {
                 InboundDateStart = request.InboundDateStart,
                 InboundDateEnd = request.InboundDateEnd,
+                OutboundDateStart = request.OutboundDateStart,
+                OutboundDateEnd = request.OutboundDateEnd,
                 ProcessType = request.ProcessType,
                 LocationCode = request.LocationCode,
                 CustCode = request.CustCode,
@@ -706,6 +716,8 @@ namespace Service.Services.ShipmentInboundRecord
             {
                 InboundDateStart = request.InboundDateStart,
                 InboundDateEnd = request.InboundDateEnd,
+                OutboundDateStart = request.OutboundDateStart,
+                OutboundDateEnd = request.OutboundDateEnd,
                 ProcessType = request.ProcessType,
                 LocationCode = request.LocationCode,
                 CustCode = request.CustCode,

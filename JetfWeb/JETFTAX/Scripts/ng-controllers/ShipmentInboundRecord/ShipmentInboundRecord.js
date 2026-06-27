@@ -149,6 +149,8 @@
     // 日期選擇器狀態
     $scope.startDatePopup = { opened: false };
     $scope.endDatePopup = { opened: false };
+    $scope.outboundStartDatePopup = { opened: false };
+    $scope.outboundEndDatePopup = { opened: false };
 
     // 日期選擇器選項
     $scope.dateOptions = {
@@ -169,6 +171,8 @@
     $scope.searchForm = {
         inboundDateStart: null,
         inboundDateEnd: null,
+        outboundDateStart: null,
+        outboundDateEnd: null,
         custCode: '',
         sourceType: '',
         trackingNo: '',
@@ -247,6 +251,16 @@
         $scope.endDatePopup.opened = true;
     };
 
+    // 開啟出庫開始日期選擇器
+    $scope.openOutboundStartDatePopup = function () {
+        $scope.outboundStartDatePopup.opened = true;
+    };
+
+    // 開啟出庫結束日期選擇器
+    $scope.openOutboundEndDatePopup = function () {
+        $scope.outboundEndDatePopup.opened = true;
+    };
+
     // 查詢
     $scope.search = function () {
         $scope.currentPage = 1;
@@ -264,6 +278,8 @@
         $scope.searchForm = {
             inboundDateStart: null,
             inboundDateEnd: null,
+            outboundDateStart: null,
+            outboundDateEnd: null,
             custCode: '',
             sourceType: '',
             trackingNo: '',
@@ -289,8 +305,7 @@
 
     // 載入資料
     $scope.loadData = function () {
-        if ($scope.searchForm.inboundDateStart && $scope.searchForm.inboundDateEnd && $scope.searchForm.inboundDateStart > $scope.searchForm.inboundDateEnd) {
-            alert('開始日期不可大於結束日期');
+        if (!validateDateRanges()) {
             return;
         }
 
@@ -299,6 +314,8 @@
         var request = {
             InboundDateStart: formatDate($scope.searchForm.inboundDateStart),
             InboundDateEnd: formatDate($scope.searchForm.inboundDateEnd),
+            OutboundDateStart: formatDate($scope.searchForm.outboundDateStart),
+            OutboundDateEnd: formatDate($scope.searchForm.outboundDateEnd),
             CustCode: $scope.searchForm.custCode,
             CustCodes: $scope.customerSelectAll ? [] : ($scope.selectedCustCodes || []),
             SourceType: $scope.searchForm.sourceType,
@@ -339,8 +356,7 @@
 
     // 下載Excel
     $scope.downloadExcel = function () {
-        if ($scope.searchForm.inboundDateStart && $scope.searchForm.inboundDateEnd && $scope.searchForm.inboundDateStart > $scope.searchForm.inboundDateEnd) {
-            alert('開始日期不可大於結束日期');
+        if (!validateDateRanges()) {
             return;
         }
 
@@ -349,6 +365,8 @@
         var request = {
             InboundDateStart: formatDate($scope.searchForm.inboundDateStart),
             InboundDateEnd: formatDate($scope.searchForm.inboundDateEnd),
+            OutboundDateStart: formatDate($scope.searchForm.outboundDateStart),
+            OutboundDateEnd: formatDate($scope.searchForm.outboundDateEnd),
             CustCode: $scope.searchForm.custCode,
             CustCodes: $scope.customerSelectAll ? [] : ($scope.selectedCustCodes || []),
             SourceType: $scope.searchForm.sourceType,
@@ -400,8 +418,7 @@
 
     // 下載客戶版 Excel
     $scope.downloadCustomerExcel = function () {
-        if ($scope.searchForm.inboundDateStart && $scope.searchForm.inboundDateEnd && $scope.searchForm.inboundDateStart > $scope.searchForm.inboundDateEnd) {
-            alert('開始日期不可大於結束日期');
+        if (!validateDateRanges()) {
             return;
         }
 
@@ -410,6 +427,8 @@
         var request = {
             InboundDateStart: formatDate($scope.searchForm.inboundDateStart),
             InboundDateEnd: formatDate($scope.searchForm.inboundDateEnd),
+            OutboundDateStart: formatDate($scope.searchForm.outboundDateStart),
+            OutboundDateEnd: formatDate($scope.searchForm.outboundDateEnd),
             CustCode: $scope.searchForm.custCode,
             CustCodes: $scope.customerSelectAll ? [] : ($scope.selectedCustCodes || []),
             SourceType: $scope.searchForm.sourceType,
@@ -515,6 +534,22 @@
         var start = ($scope.currentPage - 1) * parseInt($scope.pageSize) + 1;
         var end = Math.min($scope.currentPage * parseInt($scope.pageSize), $scope.totalCount);
         $scope.recordsInfo = '顯示第 ' + start + ' 至 ' + end + ' 筆，共 ' + $scope.totalCount + ' 筆';
+    }
+
+    function validateDateRanges() {
+        if ($scope.searchForm.inboundDateStart && $scope.searchForm.inboundDateEnd &&
+            $scope.searchForm.inboundDateStart > $scope.searchForm.inboundDateEnd) {
+            alert('入庫日期(起)不可大於入庫日期(迄)');
+            return false;
+        }
+
+        if ($scope.searchForm.outboundDateStart && $scope.searchForm.outboundDateEnd &&
+            $scope.searchForm.outboundDateStart > $scope.searchForm.outboundDateEnd) {
+            alert('出庫日期(起)不可大於出庫日期(迄)');
+            return false;
+        }
+
+        return true;
     }
 
     // 格式化日期

@@ -16,6 +16,16 @@ namespace Service.Services.ShipmentInboundRecord.Domain
         public string InboundDateEnd { get; set; }
 
         /// <summary>
+        /// 出庫日期(起)。
+        /// </summary>
+        public string OutboundDateStart { get; set; }
+
+        /// <summary>
+        /// 出庫日期(迄)。
+        /// </summary>
+        public string OutboundDateEnd { get; set; }
+
+        /// <summary>
         /// 處理方式
         /// </summary>
         public string ProcessType { get; set; }
