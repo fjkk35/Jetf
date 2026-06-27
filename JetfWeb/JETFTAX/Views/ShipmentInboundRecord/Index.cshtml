@@ -197,6 +197,19 @@
         width: 1.3rem;
         height: 1.3rem;
     }
+
+    .btn-customer-excel {
+        color: #fff;
+        background-color: #1e7e34;
+        border-color: #1e7e34;
+    }
+
+    .btn-customer-excel:hover,
+    .btn-customer-excel:focus {
+        color: #fff;
+        background-color: #19692c;
+        border-color: #19692c;
+    }
 </style>
 
 <div ng-controller="ShipmentInboundRecordController">
@@ -439,7 +452,7 @@
                     {{exporting ? '匯出中...' : '下載Excel'}}
                 </button>
                 <button type="button"
-                        class="btn btn-primary ml-2"
+                        class="btn btn-customer-excel ml-2"
                         ng-click="downloadCustomerExcel()"
                         ng-disabled="loading || exporting || exportingCustomer">
                     <i class="fa" ng-class="{'fa-spinner fa-spin': exportingCustomer, 'fa-download': !exportingCustomer}"></i>
