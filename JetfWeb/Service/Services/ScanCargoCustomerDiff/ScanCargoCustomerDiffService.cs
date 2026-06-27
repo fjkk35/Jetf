@@ -226,7 +226,11 @@ join Process b on a.TrackingNo = b.DLV_INV" ;
                                 CheckBagNumber = string.Join(",", g.Where(m => m.Data == null && m.SIGN_OUT_TIME == null)
                                                      .Select(m => m.BAG_NUMBER)),
                                 //倉儲漏刷，沒有出艙有掃貨上車
-                                CheckTrackingNoList = g.Where(m => m.Data != null && m.SIGN_OUT_TIME == null)
+                                //刷到的資料=袋號，只要任一筆已有出艙時間，代表該袋已出艙，不列入倉儲漏刷
+                                CheckTrackingNoList = g.Where(m => m.Data != null
+                                                                && m.SIGN_OUT_TIME == null
+                                                                && !g.Any(x => x.Data == m.BAG_NUMBER
+                                                                            && x.SIGN_OUT_TIME != null))
                                                      .Select(m => m.MERGE_NUMBER)
                                                      .Where(m => string.IsNullOrEmpty(m) == false)
                                                      .Distinct()
