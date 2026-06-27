@@ -70,6 +70,50 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             var urlParams = new URLSearchParams(window.location.search);
             return urlParams.get('id');
         }
+        function getApiErrorMessage(error, fallbackMessage) {
+            var data = error && error.data !== undefined ? error.data : error;
+            if (data) {
+                if (typeof data === 'string') {
+                    return data;
+                }
+                if (data.msg) {
+                    return data.msg;
+                }
+                if (data.error) {
+                    return data.error;
+                }
+                if (data.Message) {
+                    return data.Message;
+                }
+                if (data.ExceptionMessage) {
+                    return data.ExceptionMessage;
+                }
+            }
+            if (error && error.statusText) {
+                return fallbackMessage + "：" + error.statusText;
+            }
+            return fallbackMessage;
+        }
+        function showApiError(fallbackMessage, error) {
+            swal({
+                title: "錯誤",
+                text: getApiErrorMessage(error, fallbackMessage),
+                icon: "error"
+            });
+        }
+        function hasApiError(response) {
+            var data = response && response.data !== undefined ? response.data : response;
+            if (!data || typeof data !== 'object' || Array.isArray(data)) {
+                return false;
+            }
+            if (data.Redirect) {
+                return false;
+            }
+            if (data.status === 'error' || data.IsSuccess === false || data.error) {
+                return true;
+            }
+            return !!data.msg && (data.ReturnObject === null || data.ReturnObject === undefined);
+        }
         // 載入基礎資料
         $scope.loadInitialData = function () {
             var promises = [
@@ -81,6 +125,13 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 $http.get(Router.action('AbnormalState', 'GetAllAbnormalStates'))
             ];
             Promise.all(promises).then(function (responses) {
+                var failedResponse = responses.find(function (response) {
+                    return hasApiError(response);
+                });
+                if (failedResponse) {
+                    showApiError("載入基礎資料失敗", failedResponse);
+                    return;
+                }
                 $scope.customsBrokerOptions = responses[0].data || [];
                 $scope.customsBrokerageOptions = responses[1].data || [];
                 $scope.postEntryOptions = responses[2].data || [];
@@ -91,11 +142,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 $scope.$apply();
             }).catch(function (error) {
                 console.error('載入基礎資料失敗:', error);
-                swal({
-                    title: "錯誤",
-                    text: "載入基礎資料失敗",
-                    icon: "error"
-                });
+                showApiError("載入基礎資料失敗", error);
             });
         };
         // 載入明細資料（僅載入基本資料）
@@ -105,6 +152,10 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 .then(function (response) {
                 if (response.data.Redirect) {
                     window.location.href = Router.action('Account', 'Login');
+                    return;
+                }
+                if (hasApiError(response) || !response.data.ReturnObject) {
+                    showApiError("載入明細資料失敗", response);
                     return;
                 }
                 $scope.detailData = response.data.ReturnObject;
@@ -118,20 +169,20 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             })
                 .catch(function (error) {
                 console.error('載入明細資料失敗:', error);
-                swal({
-                    title: "錯誤",
-                    text: "載入明細資料失敗",
-                    icon: "error"
-                });
+                showApiError("載入明細資料失敗", error);
             });
         };
         // 更新入倉與出倉時間
         $scope.updateSignInOutTime = function () {
             $http.post(Router.action('SeaClearance', 'UpdateSignInOutTime'), { id: $scope.detailData.Id })
                 .then(function (response) {
+                if (hasApiError(response)) {
+                    showApiError("更新入倉與出倉時間失敗", response);
+                    return;
+                }
                 if (response.data.status === 'success' || response.data.ReturnObject) {
                     var result = response.data.ReturnObject;
-                    if (result.Updated) {
+                    if (result && result.Updated) {
                         console.log('入倉與出倉時間已更新');
                         $scope.detailData.SignInTime = result.SignInTime;
                         $scope.detailData.SignOutTime = result.SignOutTime;
@@ -140,6 +191,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             })
                 .catch(function (error) {
                 console.error('更新入倉與出倉時間失敗:', error);
+                showApiError("更新入倉與出倉時間失敗", error);
             });
         };
         // 載入完整資料（包含所有相關資料）
@@ -165,11 +217,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             })
                 .catch(function (error) {
                 console.error('載入完整資料失敗:', error);
-                swal({
-                    title: "錯誤",
-                    text: "載入完整資料失敗",
-                    icon: "error"
-                });
+                showApiError("載入完整資料失敗", error);
             });
         };
         // 載入 CPT 關貿資料
@@ -186,6 +234,11 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                     TrackingNo: $scope.detailData.TrackingNo,
                 }
             }).then(function (response) {
+                if (hasApiError(response)) {
+                    showApiError("載入 CPT 資料失敗", response);
+                    $scope.cptData = null;
+                    return;
+                }
                 if (response.data && response.data.ReturnObject) {
                     $scope.cptData = response.data.ReturnObject;
                     console.log('CPT 資料載入成功:', $scope.cptData);
@@ -206,6 +259,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             }).catch(function (error) {
                 console.error('載入 CPT 資料失敗:', error);
                 $scope.cptData = null;
+                showApiError("載入 CPT 資料失敗", error);
             }).finally(function () {
                 $scope.isLoadingCptData = false; // 結束載入
             });
@@ -216,11 +270,17 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 params: { seaClearanceDetailId: detailId }
             }).then(function (response) {
                 var selectedIds = response.data;
+                if (hasApiError(response) || !Array.isArray(selectedIds)) {
+                    $scope.selectedCategories = [];
+                    showApiError("載入明細簽審類別失敗", response);
+                    return;
+                }
                 $scope.selectedCategories = $scope.approvalCategoryOptions.filter(function (category) {
                     return selectedIds.includes(category.Id);
                 });
             }).catch(function (error) {
                 console.error('載入明細簽審類別失敗:', error);
+                showApiError("載入明細簽審類別失敗", error);
             });
         };
         // 載入明細的授權表單
@@ -230,22 +290,34 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 params: { seaClearanceDetailId: detailId, type: 1 }
             }).then(function (response) {
                 var selectedIds = response.data;
+                if (hasApiError(response) || !Array.isArray(selectedIds)) {
+                    $scope.selectedReceivedOriginalForms = [];
+                    showApiError("載入收到正本選單失敗", response);
+                    return;
+                }
                 $scope.selectedReceivedOriginalForms = $scope.authorizationFormOptions.filter(function (form) {
                     return selectedIds.includes(form.Id);
                 });
             }).catch(function (error) {
                 console.error('載入收到正本選單失敗:', error);
+                showApiError("載入收到正本選單失敗", error);
             });
             // 載入寄文件選單
             $http.get(Router.action('SeaClearance', 'GetDetailAuthorizationForms'), {
                 params: { seaClearanceDetailId: detailId, type: 2 }
             }).then(function (response) {
                 var selectedIds = response.data;
+                if (hasApiError(response) || !Array.isArray(selectedIds)) {
+                    $scope.selectedDocumentDeliveryForms = [];
+                    showApiError("載入寄文件選單失敗", response);
+                    return;
+                }
                 $scope.selectedDocumentDeliveryForms = $scope.authorizationFormOptions.filter(function (form) {
                     return selectedIds.includes(form.Id);
                 });
             }).catch(function (error) {
                 console.error('載入寄文件選單失敗:', error);
+                showApiError("載入寄文件選單失敗", error);
             });
         };
         // 載入授權表單歷史記錄
@@ -258,9 +330,15 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             $http.get(Router.action('SeaClearance', 'GetAuthorizationFormHistory'), {
                 params: params
             }).then(function (response) {
+                if (hasApiError(response) || !Array.isArray(response.data)) {
+                    $scope.authorizationFormHistory = [];
+                    showApiError("載入授權表單歷史記錄失敗", response);
+                    return;
+                }
                 $scope.authorizationFormHistory = response.data || [];
             }).catch(function (error) {
                 console.error('載入授權表單歷史記錄失敗:', error);
+                showApiError("載入授權表單歷史記錄失敗", error);
             });
         };
         // 取得報驗公司名稱
@@ -483,7 +561,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 field: apiField,
                 newValue: newValue || null
             }).then(function (response) {
-                if (response.data.status === 'success') {
+                if (!hasApiError(response) && response.data.status === 'success') {
                     // 更新資料模型
                     switch (fieldName) {
                         case 'DeclNo':
@@ -528,16 +606,12 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 else {
                     swal({
                         title: "錯誤",
-                        text: response.data.msg || "更新失敗",
+                        text: getApiErrorMessage(response, "更新失敗"),
                         icon: "error"
                     });
                 }
             }).catch(function (error) {
-                swal({
-                    title: "錯誤",
-                    text: "更新失敗",
-                    icon: "error"
-                });
+                showApiError("更新失敗", error);
             });
         };
         // 儲存簽審類別
@@ -552,7 +626,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 seaClearanceDetailId: $scope.detailData.Id,
                 categoryIds: selectedIds
             }).then(function (response) {
-                if (response.data.status === 'success') {
+                if (!hasApiError(response) && response.data.status === 'success') {
                     $scope.selectedCategories = $scope.approvalCategoryOptions.filter(function (category) {
                         return selectedIds.includes(category.Id);
                     });
@@ -567,16 +641,12 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 else {
                     swal({
                         title: "錯誤",
-                        text: response.data.msg || "更新失敗",
+                        text: getApiErrorMessage(response, "更新失敗"),
                         icon: "error"
                     });
                 }
             }).catch(function (error) {
-                swal({
-                    title: "錯誤",
-                    text: "更新失敗",
-                    icon: "error"
-                });
+                showApiError("更新失敗", error);
             });
         };
         // 檢查是否有選中的授權表單
@@ -605,7 +675,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 type: $scope.currentAuthFormType,
                 formIds: selectedIds
             }).then(function (response) {
-                if (response.data.status === 'success') {
+                if (!hasApiError(response) && response.data.status === 'success') {
                     var selectedForms = $scope.authorizationFormOptions.filter(function (form) {
                         return selectedIds.includes(form.Id);
                     });
@@ -629,16 +699,12 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 else {
                     swal({
                         title: "錯誤",
-                        text: response.data.msg || "更新失敗",
+                        text: getApiErrorMessage(response, "更新失敗"),
                         icon: "error"
                     });
                 }
             }).catch(function (error) {
-                swal({
-                    title: "錯誤",
-                    text: "更新失敗",
-                    icon: "error"
-                });
+                showApiError("更新失敗", error);
             });
         };
         // 取消編輯
@@ -669,15 +735,16 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             $http.post(Router.action('SeaClearance', 'GetEditHistory'), {
                 seaClearanceDetailId: $scope.detailData.Id
             }).then(function (response) {
+                if (hasApiError(response) || !Array.isArray(response.data)) {
+                    $scope.editHistory = [];
+                    showApiError("載入編輯紀錄失敗", response);
+                    return;
+                }
                 $scope.editHistory = response.data || [];
                 // 使用 Bootstrap Modal 方法開啟
                 $('#editHistoryModal').modal('show');
             }).catch(function (error) {
-                swal({
-                    title: "錯誤",
-                    text: "載入編輯紀錄失敗",
-                    icon: "error"
-                });
+                showApiError("載入編輯紀錄失敗", error);
             });
         };
         // 初始化
@@ -687,6 +754,11 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             $http.get(Router.action('SeaClearance', 'GetProcessor'), {
                 params: { seaClearanceDetailId: detailId }
             }).then(function (response) {
+                if (hasApiError(response)) {
+                    $scope.processor = '';
+                    showApiError("載入負責人失敗", response);
+                    return;
+                }
                 if (response.data && response.data.ReturnObject !== undefined) {
                     $scope.processor = response.data.ReturnObject || '';
                     console.log('負責人:', $scope.processor);
@@ -694,6 +766,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             }).catch(function (error) {
                 console.error('載入負責人失敗:', error);
                 $scope.processor = '';
+                showApiError("載入負責人失敗", error);
             });
         };
         // 載入當前步驟
@@ -701,10 +774,16 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             $http.get(Router.action('SeaClearance', 'GetSeaClearanceStepHistory'), {
                 params: { seaClearanceDetailId: detailId }
             }).then(function (response) {
+                if (hasApiError(response) || !Array.isArray(response.data)) {
+                    $scope.allSteps = [];
+                    showApiError("載入步驟失敗", response);
+                    return;
+                }
                 $scope.allSteps = response.data || [];
                 console.log('全部步驟:', $scope.allSteps);
             }).catch(function (error) {
                 console.error('載入步驟失敗:', error);
+                showApiError("載入步驟失敗", error);
             });
         };
         // 載入步驟詳細
@@ -716,19 +795,27 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             if (!stepId || isNaN(stepId)) {
                 console.log('無效的步驟ID，清空步驟詳細');
                 $scope.availableStepDetails = [];
-                return;
+                return null;
             }
-            $http.get(Router.action('SeaClearance', 'GetStepDetails'), {
+            return $http.get(Router.action('SeaClearance', 'GetStepDetails'), {
                 params: { stepId: stepId }
             }).then(function (response) {
+                if (hasApiError(response) || !Array.isArray(response.data)) {
+                    $scope.availableStepDetails = [];
+                    showApiError("載入步驟詳細失敗", response);
+                    return false;
+                }
                 $scope.availableStepDetails = response.data || [];
                 // 初始化選擇狀態
                 $scope.tempValues.StepDetails = {};
                 $scope.tempValues.selectedStepDetailId = null; // 初始化單選值
                 console.log('載入步驟詳細成功，數量:', $scope.availableStepDetails.length);
+                return true;
             }).catch(function (error) {
                 console.error('載入步驟詳細失敗:', error);
                 $scope.availableStepDetails = [];
+                showApiError("載入步驟詳細失敗", error);
+                return false;
             });
         };
         // 取得選中的步驟名稱
@@ -780,11 +867,14 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             // 確保有載入步驟詳細
             if ($scope.availableStepDetails.length === 0) {
                 console.log('步驟詳細為空，重新載入...');
-                $scope.loadStepDetails();
-                // 等待資料載入完成
-                setTimeout(function () {
-                    $('#stepDetailModal').modal('show');
-                }, 1000);
+                var loadStepDetailsPromise = $scope.loadStepDetails();
+                if (loadStepDetailsPromise && loadStepDetailsPromise.then) {
+                    loadStepDetailsPromise.then(function (isLoaded) {
+                        if (isLoaded !== false) {
+                            $('#stepDetailModal').modal('show');
+                        }
+                    });
+                }
             }
             else {
                 $('#stepDetailModal').modal('show');
@@ -839,24 +929,20 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 stepId: stepId,
                 stepDetailIds: selectedDetailIds
             }).then(function (response) {
-                if (response.data.status === 'success' || response.data.ReturnObject) {
+                if (!hasApiError(response) && (response.data.status === 'success' || response.data.ReturnObject)) {
                     $scope.completeStepSave(response.data.ReturnObject);
                 }
                 else {
                     swal({
                         title: "錯誤",
-                        text: response.data.msg || "儲存步驟失敗",
+                        text: getApiErrorMessage(response, "儲存步驟失敗"),
                         icon: "error"
                     });
                 }
                 $scope.savingStep = false;
             }).catch(function (error) {
                 console.error('儲存步驟失敗:', error);
-                swal({
-                    title: "錯誤",
-                    text: "儲存步驟失敗",
-                    icon: "error"
-                });
+                showApiError("儲存步驟失敗", error);
                 $scope.savingStep = false;
             });
         };
@@ -900,11 +986,20 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                     stepId: stepId
                 }
             }).then(function (response) {
+                if (hasApiError(response) || !Array.isArray(response.data)) {
+                    $scope.stepOptions = [];
+                    $scope.tempValues.selectedStepId = null;
+                    showApiError("載入可用步驟失敗", response);
+                    return;
+                }
                 $scope.stepOptions = response.data || [];
-                $scope.tempValues.selectedStepId = $scope.stepOptions[$scope.stepOptions.length - 1].Id;
+                $scope.tempValues.selectedStepId = $scope.stepOptions.length > 0
+                    ? $scope.stepOptions[$scope.stepOptions.length - 1].Id
+                    : null;
                 console.log('載入可用步驟，數量:', $scope.stepOptions.length);
             }).catch(function (error) {
                 console.error('載入可用步驟失敗:', error);
+                showApiError("載入可用步驟失敗", error);
             });
         };
         // 處理鍵盤事件
@@ -939,10 +1034,16 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             $http.get(Router.action('SeaClearance', 'GetSeaClearanceAbnormalStateHistory'), {
                 params: { seaClearanceDetailId: detailId }
             }).then(function (response) {
+                if (hasApiError(response) || !Array.isArray(response.data)) {
+                    $scope.allAbnormalStates = [];
+                    showApiError("載入異常狀態失敗", response);
+                    return;
+                }
                 $scope.allAbnormalStates = response.data || [];
                 console.log('全部異常狀態:', $scope.allAbnormalStates);
             }).catch(function (error) {
                 console.error('載入異常狀態失敗:', error);
+                showApiError("載入異常狀態失敗", error);
             });
         };
         // 載入異常狀態詳細
@@ -954,18 +1055,26 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             if (!abnormalStateId || isNaN(abnormalStateId)) {
                 console.log('無效的異常狀態ID，清空異常狀態詳細');
                 $scope.availableAbnormalStateDetails = [];
-                return;
+                return null;
             }
-            $http.get(Router.action('SeaClearance', 'GetAbnormalStateDetails'), {
+            return $http.get(Router.action('SeaClearance', 'GetAbnormalStateDetails'), {
                 params: { abnormalStateId: abnormalStateId }
             }).then(function (response) {
+                if (hasApiError(response) || !Array.isArray(response.data)) {
+                    $scope.availableAbnormalStateDetails = [];
+                    showApiError("載入異常狀態詳細失敗", response);
+                    return false;
+                }
                 $scope.availableAbnormalStateDetails = response.data || [];
                 // 初始化選擇狀態
                 $scope.tempValues.AbnormalStateDetails = {};
                 console.log('載入異常狀態詳細成功，數量:', $scope.availableAbnormalStateDetails.length);
+                return true;
             }).catch(function (error) {
                 console.error('載入異常狀態詳細失敗:', error);
                 $scope.availableAbnormalStateDetails = [];
+                showApiError("載入異常狀態詳細失敗", error);
+                return false;
             });
         };
         // 取得選中的異常狀態名稱
@@ -994,11 +1103,14 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             // 確保有載入異常狀態詳細
             if ($scope.availableAbnormalStateDetails.length === 0) {
                 console.log('異常狀態詳細為空，重新載入...');
-                $scope.loadAbnormalStateDetails();
-                // 等待資料載入完成
-                setTimeout(function () {
-                    $('#abnormalStateDetailModal').modal('show');
-                }, 1000);
+                var loadAbnormalStateDetailsPromise = $scope.loadAbnormalStateDetails();
+                if (loadAbnormalStateDetailsPromise && loadAbnormalStateDetailsPromise.then) {
+                    loadAbnormalStateDetailsPromise.then(function (isLoaded) {
+                        if (isLoaded !== false) {
+                            $('#abnormalStateDetailModal').modal('show');
+                        }
+                    });
+                }
             }
             else {
                 $('#abnormalStateDetailModal').modal('show');
@@ -1040,25 +1152,21 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 abnormalStateId: abnormalStateId,
                 abnormalStateDetailIds: selectedDetailIds
             }).then(function (response) {
-                if (response.data.status === 'success' || response.data.ReturnObject) {
+                if (!hasApiError(response) && (response.data.status === 'success' || response.data.ReturnObject)) {
                     $scope.detailData.CurrentAbnormalStateId = abnormalStateId;
                     $scope.completeAbnormalStateSave();
                 }
                 else {
                     swal({
                         title: "錯誤",
-                        text: response.data.msg || "儲存異常狀態失敗",
+                        text: getApiErrorMessage(response, "儲存異常狀態失敗"),
                         icon: "error"
                     });
                 }
                 $scope.savingAbnormalState = false;
             }).catch(function (error) {
                 console.error('儲存異常狀態失敗:', error);
-                swal({
-                    title: "錯誤",
-                    text: "儲存異常狀態失敗",
-                    icon: "error"
-                });
+                showApiError("儲存異常狀態失敗", error);
                 $scope.savingAbnormalState = false;
             });
         };
@@ -1087,10 +1195,16 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             $http.get(Router.action('SeaClearance', 'GetSeaClearanceRemarks'), {
                 params: { seaClearanceDetailId: detailId }
             }).then(function (response) {
+                if (hasApiError(response) || !Array.isArray(response.data)) {
+                    $scope.remarks = [];
+                    showApiError("載入備註記錄失敗", response);
+                    return;
+                }
                 $scope.remarks = response.data || [];
                 console.log('載入備註記錄，數量:', $scope.remarks.length);
             }).catch(function (error) {
                 console.error('載入備註記錄失敗:', error);
+                showApiError("載入備註記錄失敗", error);
             });
         };
         // 新增備註
@@ -1108,7 +1222,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 seaClearanceDetailId: $scope.detailData.Id,
                 remark: $scope.tempValues.newRemark.trim()
             }).then(function (response) {
-                if (response.data.status === 'success' || response.data.ReturnObject) {
+                if (!hasApiError(response) && (response.data.status === 'success' || response.data.ReturnObject)) {
                     swal({
                         title: "成功",
                         text: "備註新增成功",
@@ -1123,17 +1237,13 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 else {
                     swal({
                         title: "錯誤",
-                        text: response.data.msg || "新增備註失敗",
+                        text: getApiErrorMessage(response, "新增備註失敗"),
                         icon: "error"
                     });
                 }
             }).catch(function (error) {
                 console.error('新增備註失敗:', error);
-                swal({
-                    title: "錯誤",
-                    text: "新增備註失敗",
-                    icon: "error"
-                });
+                showApiError("新增備註失敗", error);
             });
         };
         // 驗證信箱格式的函數（支援多個信箱，使用逗號分隔）
@@ -1214,7 +1324,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             $http.post(Router.action('SeaClearance', 'UpdateEta'), {
                 id: $scope.detailData.Id
             }).then(function (response) {
-                if (response.data.status === 'success') {
+                if (!hasApiError(response) && response.data.status === 'success') {
                     if ($scope.detailData.SeaOrderOriginals && $scope.detailData.SeaOrderOriginals[0]) {
                         $scope.detailData.SeaOrderOriginals[0].Eta = response.data.ReturnObject;
                     }
@@ -1227,16 +1337,12 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 else {
                     swal({
                         title: "錯誤",
-                        text: response.data.msg || "更新失敗",
+                        text: getApiErrorMessage(response, "更新失敗"),
                         icon: "error"
                     });
                 }
-            }).catch(function () {
-                swal({
-                    title: "錯誤",
-                    text: "更新失敗",
-                    icon: "error"
-                });
+            }).catch(function (error) {
+                showApiError("更新失敗", error);
             }).finally(function () {
                 $scope.isUpdatingEta = false;
             });
@@ -1258,7 +1364,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             $http.post(Router.action('SeaClearance', 'UpdateImportDate'), {
                 id: $scope.detailData.Id
             }).then(function (response) {
-                if (response.data.status === 'success' && response.data.ReturnObject) {
+                if (!hasApiError(response) && response.data.status === 'success' && response.data.ReturnObject) {
                     var updatedData = response.data.ReturnObject;
                     $scope.detailData.ImportDate = updatedData.ImportDate;
                     $scope.detailData.CustomerDeadline = updatedData.CustomerDeadline;
@@ -1274,16 +1380,12 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 else {
                     swal({
                         title: "錯誤",
-                        text: response.data.msg || "更新失敗",
+                        text: getApiErrorMessage(response, "更新失敗"),
                         icon: "error"
                     });
                 }
-            }).catch(function () {
-                swal({
-                    title: "錯誤",
-                    text: "更新失敗",
-                    icon: "error"
-                });
+            }).catch(function (error) {
+                showApiError("更新失敗", error);
             }).finally(function () {
                 $scope.isUpdatingImportDate = false;
             });
