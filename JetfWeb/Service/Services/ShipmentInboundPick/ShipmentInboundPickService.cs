@@ -147,7 +147,7 @@ namespace Service.Services.ShipmentInboundPick
             ISheet sheet = workbook.CreateSheet("撿貨明細");
 
             IRow headerRow = sheet.CreateRow(0);
-            var headers = new List<string> { "單號", "客戶", "流水號", "儲位", "處理方式", "備註", "客服處理時間" };
+            var headers = new List<string> { "單號", "客戶", "流水號", "儲位", "處理方式", "重出派件公司", "備註", "客服處理時間" };
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
             int rowIndex = 1;
@@ -159,8 +159,9 @@ namespace Service.Services.ShipmentInboundPick
                 NpoiCell.CreateCell(dataRow, 2, item.SeqNo, dataStyle);
                 NpoiCell.CreateCell(dataRow, 3, item.LocationCode, dataStyle);
                 NpoiCell.CreateCell(dataRow, 4, item.ProcessTypeName, dataStyle);
-                NpoiCell.CreateCell(dataRow, 5, item.Remark, dataStyle);
-                NpoiCell.CreateDateTimeCell(dataRow, 6, item.ProcessTime, dateTimeStyle);
+                NpoiCell.CreateCell(dataRow, 5, item.ProcessTransName, dataStyle);
+                NpoiCell.CreateCell(dataRow, 6, item.Remark, dataStyle);
+                NpoiCell.CreateDateTimeCell(dataRow, 7, item.ProcessTime, dateTimeStyle);
                 rowIndex++;
             }
 

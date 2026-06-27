@@ -54,6 +54,13 @@ namespace Service.Services.ShipmentInboundPick.Domain
         public ShipmentInboundProcessTransNo ProcessTransNo { get; set; }
 
         /// <summary>
+        /// 重出派件公司名稱。
+        /// </summary>
+        public string ProcessTransName => Enum.IsDefined(typeof(ShipmentInboundProcessTransNo), ProcessTransNo)
+            ? ProcessTransNo.ToDescription()
+            : string.Empty;
+
+        /// <summary>
         /// 收件人。
         /// </summary>
         public string ProcessImporter { get; set; }

@@ -131,13 +131,14 @@
                                     <th>流水號</th>
                                     <th>儲位</th>
                                     <th>處理方式</th>
+                                    <th>重出派件公司</th>
                                     <th>備註</th>
                                     <th>客服處理時間</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr ng-if="data.length === 0">
-                                    <td colspan="8" class="text-center">查無資料</td>
+                                    <td colspan="9" class="text-center">查無資料</td>
                                 </tr>
                                 <tr ng-repeat="item in data">
                                     <td>{{$index + 1}}</td>
@@ -146,6 +147,7 @@
                                     <td>{{item.SeqNo}}</td>
                                     <td>{{item.LocationCode}}</td>
                                     <td>{{item.ProcessTypeName}}</td>
+                                    <td>{{item.ProcessTransName}}</td>
                                     <td>{{item.Remark}}</td>
                                     <td>{{item.ProcessTime | customDateTime}}</td>
                                 </tr>
