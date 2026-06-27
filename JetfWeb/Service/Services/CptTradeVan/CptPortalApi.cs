@@ -13,9 +13,6 @@ namespace Service.Services.CptTradeVan
 {
     public class CptPortalApi
     {
-        private const string Gb350MawbUrl = "https://portal.sw.nat.gov.tw/APGQ/GB350!queryMawb";
-        private const string Gb350DetailUrl = "https://portal.sw.nat.gov.tw/APGQ/GB350!queryDetail";
-
         public Gb326Model GetGb326(Dictionary<string, string> parameters)
         {
             int retryCount = 0;
@@ -220,6 +217,8 @@ namespace Service.Services.CptTradeVan
             Gb350Model result = new Gb350Model();
             try
             {
+                string url = "https://portal.sw.nat.gov.tw/APGQ/GB350!queryMawb";
+
                 using (HttpClient client = new HttpClient())
                 {
                     ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -228,7 +227,7 @@ namespace Service.Services.CptTradeVan
                     var content = new StringContent(formData, Encoding.UTF8, "application/x-www-form-urlencoded");
 
                     //發送 POST 請求
-                    HttpResponseMessage response = client.PostAsync(Gb350MawbUrl, content).Result;
+                    HttpResponseMessage response = client.PostAsync(url, content).Result;
 
                     // 檢查請求是否成功
                     if (response.IsSuccessStatusCode)
@@ -259,13 +258,15 @@ namespace Service.Services.CptTradeVan
             Gb350DetailModel result = new Gb350DetailModel();
             try
             {
+                string url = "https://portal.sw.nat.gov.tw/APGQ/GB350!queryDetail";
+
                 using (HttpClient client = new HttpClient())
                 {
                     ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                     client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
                     var content = new FormUrlEncodedContent(parameters);
                     //發送 POST 請求
-                    HttpResponseMessage response = client.PostAsync(Gb350DetailUrl, content).Result;
+                    HttpResponseMessage response = client.PostAsync(url, content).Result;
 
                     // 檢查請求是否成功
                     if (response.IsSuccessStatusCode)

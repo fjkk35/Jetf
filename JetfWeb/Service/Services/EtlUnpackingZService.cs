@@ -311,6 +311,7 @@ namespace Service.Services
                         row.CreateCell(0).SetCellValue(item.POUCH_NO);
                         row.CreateCell(1).SetCellValue(item.QTY);
                         row.CreateCell(2).SetCellValue(item.WEIGHT);
+                        row.CreateCell(3).SetCellValue(item.HAWB);
                         row.CreateCell(4).SetCellValue(item.REMARK);
                         row.CreateCell(5).SetCellValue(item.SOURCE_NOTE);
                         row.CreateCell(6).SetCellValue(r.MAWB);
