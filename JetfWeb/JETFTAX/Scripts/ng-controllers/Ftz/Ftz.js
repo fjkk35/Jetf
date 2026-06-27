@@ -9,9 +9,6 @@
         $scope.queryData = {
             hwbqList: ''
         };
-        $scope.mainQueryData = {
-            mwb: ''
-        };
         $scope.bagQueryData = {
             bagNoList: ''
         };
@@ -25,12 +22,11 @@
         $scope.isLoggedIn = false;
         $scope.isLoading = false;
         $scope.results = [];
-        $scope.mainQueryResults = []; // 改為陣列
         $scope.bagQueryResults = []; // 併袋號查詢結果
         $scope.mainUploadFile = null;
     };
 
-    // 主號模式的上傳檔會同時供查詢與匯出使用，這裡只保留檔案物件本身。
+    // 主號模式的上傳檔供匯出使用，這裡只保留檔案物件本身。
     $scope.onMainUploadFileChanged = function (input) {
         var file = input && input.files && input.files.length > 0 ? input.files[0] : null;
         $scope.$applyAsync(function () {
@@ -38,7 +34,7 @@
         });
     };
 
-    // 主號查詢有檔案時改用 multipart/form-data，讓文字與檔案可以一起送到後端。
+    // 主號匯出有檔案時改用 multipart/form-data，讓文字與檔案可以一起送到後端。
     $scope.buildMainUploadFormData = function () {
         var formData = new FormData();
         formData.append('mwb', ($scope.queryData.hwbqList || '').trim());
@@ -111,9 +107,6 @@
         if ($scope.selectedQueryType === 'hwb') {
             // 分提單號查詢
             $scope.query();
-        } else if ($scope.selectedQueryType === 'mwb') {
-            // 主號查詢
-            $scope.queryMainUnified();
         } else if ($scope.selectedQueryType === 'bag') {
             // 併袋號查詢
             $scope.queryBag();
@@ -138,7 +131,6 @@
                 $scope.isLoading = false;
                 if (response.data.status == 'success') {
                     $scope.results = response.data.ReturnObject || [];
-                    $scope.mainQueryResults = []; // 清除主號查詢結果
                     $scope.bagQueryResults = []; // 清除併袋號查詢結果
                     if ($scope.results.length === 0) {
                         swal({
@@ -151,59 +143,6 @@
                     swal({
                         title: "查詢失敗",
                         text: response.data.Message || "查詢失敗",
-                        icon: "error"
-                    });
-                }
-            }, function (error) {
-                $scope.isLoading = false;
-                swal({
-                    title: "錯誤",
-                    text: "查詢發生錯誤",
-                    icon: "error"
-                });
-                console.error(error);
-            });
-    };
-
-    // 主號查詢（統一查詢介面使用）
-    $scope.queryMainUnified = function () {
-        if (!$scope.queryData.hwbqList || $scope.queryData.hwbqList.trim() === '') {
-            swal({
-                title: "錯誤",
-                text: "請輸入主號",
-                icon: "error"
-            });
-            return;
-        }
-
-        $scope.isLoading = true;
-
-        var mainQueryRequest = {
-            mwb: $scope.queryData.hwbqList.trim()
-        };
-
-        var requestPromise = $scope.mainUploadFile
-            ? $http.post(Router.action('Ftz', 'QueryMain'), $scope.buildMainUploadFormData(), $scope.getMainRequestConfig())
-            : $http.post(Router.action('Ftz', 'QueryMain'), mainQueryRequest);
-
-        requestPromise
-            .then(function (response) {
-                $scope.isLoading = false;
-                if (response.data.status == 'success') {
-                    $scope.mainQueryResults = response.data.ReturnObject || [];
-                    $scope.results = []; // 清除分提單號查詢結果
-                    $scope.bagQueryResults = []; // 清除併袋號查詢結果
-                    if ($scope.mainQueryResults.length === 0) {
-                        swal({
-                            title: "查詢結果",
-                            text: "查無資料",
-                            icon: "info"
-                        });
-                    }
-                } else {
-                    swal({
-                        title: "查詢失敗",
-                        text: response.data.msg || response.data.Message || "查詢失敗",
                         icon: "error"
                     });
                 }
@@ -241,7 +180,6 @@
                 if (response.data.status == 'success') {
                     $scope.bagQueryResults = response.data.ReturnObject || [];
                     $scope.results = []; // 清除分提單號查詢結果
-                    $scope.mainQueryResults = []; // 清除主號查詢結果
                     if ($scope.bagQueryResults.length === 0) {
                         swal({
                             title: "查詢結果",
@@ -270,7 +208,6 @@
     // 清除結果
     $scope.clearResults = function () {
         $scope.results = [];
-        $scope.mainQueryResults = []; // 修改為陣列
         $scope.bagQueryResults = []; // 清除併袋號查詢結果
         $scope.queryData.hwbqList = '';
         $scope.mainUploadFile = null;
@@ -280,70 +217,6 @@
         if (uploadFileInput) {
             uploadFileInput.value = '';
         }
-    };
-
-    // 清除主號查詢結果
-    $scope.clearMainResult = function () {
-        $scope.mainQueryResults = []; // 修改為陣列
-        $scope.mainQueryData.mwb = '';
-    };
-
-    // 取得所有不重複的派件公司名稱
-    $scope.getDistinctTransNames = function () {
-        if (!$scope.mainQueryResults || $scope.mainQueryResults.length === 0) {
-            return [];
-        }
-
-        var transNamesSet = {};
-        $scope.mainQueryResults.forEach(function (item) {
-            if (item.NotGciDetails && item.NotGciDetails.length > 0) {
-                item.NotGciDetails.forEach(function (detail) {
-                    if (!detail.IsB6F && detail.TransName) {
-                        transNamesSet[detail.TransName] = true;
-                    }
-                });
-            }
-        });
-
-        return Object.keys(transNamesSet);
-    };
-
-    // 計算派件公司的數量
-    $scope.getTransNameCount = function (item, transName) {
-        if (!item.NotGciDetails || item.NotGciDetails.length === 0) {
-            return 0;
-        }
-
-        var bagnosCount = 0;
-        var trackingnoCount = 0;
-        var bagnoCount = 0;
-
-        // 一分號多袋
-        item.NotGciDetails.forEach(function (detail) {
-            if (!detail.IsB6F && detail.realTotBag && !detail.expBagNo && detail.TransName === transName) {
-                bagnosCount += detail.realTotBag.split(',').length;
-            }
-        });
-
-        // 件數
-        item.NotGciDetails.forEach(function (detail) {
-            if (!detail.IsB6F && !detail.realTotBag && !detail.expBagNo && detail.TransName === transName) {
-                trackingnoCount++;
-            }
-        });
-
-        // 袋數（去重）
-        var uniqueBagNos = {};
-        item.NotGciDetails.forEach(function (detail) {
-            if (!detail.IsB6F && detail.expBagNo && detail.TransName === transName) {
-                var key = detail.expBagNo + '_' + detail.TransName;
-                uniqueBagNos[key] = true;
-            }
-        });
-        bagnoCount = Object.keys(uniqueBagNos).length;
-
-        var totalCount = bagnosCount + trackingnoCount + bagnoCount;
-        return totalCount > 0 ? totalCount : '';
     };
 
     // 匯出 Excel

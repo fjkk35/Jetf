@@ -21,6 +21,11 @@ namespace Service.Services.Ftz.Domain
         public string ReceiptMark { get; set; }
 
         /// <summary>
+        /// 1分號多件之分號。
+        /// </summary>
+        public string OneHwbMultiPieceHwb { get; set; }
+
+        /// <summary>
         /// 派件公司。
         /// </summary>
         public string TransName { get; set; }

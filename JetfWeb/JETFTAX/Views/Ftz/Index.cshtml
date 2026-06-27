@@ -71,7 +71,7 @@
                         </div>
                         <div class="form-group">
                             <div class="col-sm-offset-2 col-sm-10">
-                                <button type="button" class="btn btn-success" ng-click="queryUnified()" ng-disabled="isLoading">
+                                <button type="button" class="btn btn-success" ng-click="queryUnified()" ng-disabled="isLoading" ng-show="selectedQueryType !== 'mwb'">
                                     <i class="fa fa-search"></i> 查詢
                                 </button>
                                 <button type="button" class="btn btn-warning" ng-click="clearResults()" ng-disabled="isLoading">
@@ -144,139 +144,6 @@
                                     <td>{{item.clearanceType}}</td>
                                     <td>{{item.examinationNote}}</td>
                                     <td>{{item.remarks}}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 主號查詢結果顯示（在統一查詢區塊） -->
-            <div class="panel panel-success" ng-show="mainQueryResults.length > 0 && selectedQueryType === 'mwb'">
-                <div class="panel-heading">
-                    <h3 class="panel-title">主號查詢結果（共 {{mainQueryResults.length}} 筆）</h3>
-                </div>
-                <div class="panel-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-bordered table-hover">
-                            <colgroup>
-                                <col style="width: 8%;"><!-- 主號 -->
-                                <col style="width: 8%;"><!-- 客戶名稱 -->
-                                <col style="width: 6%;"><!-- 航班 -->
-                                <col style="width: 4%;"><!-- 申報 -->
-                                <col style="width: 4%;"><!-- 進倉 -->
-                                <col style="width: 5%;"><!-- 未進倉件 -->
-                                <col style="width: 4%;"><!-- B6F -->
-                                <col style="width: 6%;"><!-- B6F分號 -->
-                                <col style="width: 10%;"><!-- 未進倉件不含B6F分號 -->
-                                <col style="width: 4%;"><!-- 併袋 -->
-                                <col style="width: 5%;"><!-- 進倉袋 -->
-                                <col style="width: 5%;"><!-- 未進倉袋 -->
-                                <col style="width: 5%;"><!-- 未進倉小計 -->
-                                <col style="width: 8%;"><!-- 未進倉申報袋號 -->
-                                <col style="width: 5%;"><!-- 錯誤訊息 -->
-                                <col ng-repeat="transName in getDistinctTransNames()" style="width: 5%;"><!-- 動態欄位 -->
-                            </colgroup>
-                            <thead>
-                                <tr>
-                                    <th>主號</th>
-                                    <th>客戶名稱</th>
-                                    <th>航班</th>
-                                    <th>申報</th>
-                                    <th>進倉</th>
-                                    <th>未進倉件</th>
-                                    <th>B6F</th>
-                                    <th>B6F分號</th>
-                                    <th>未進倉件不含B6F分號</th>
-                                    <th>併袋</th>
-                                    <th>進倉袋</th>
-                                    <th>未進倉袋</th>
-                                    <th>未進倉小計</th>
-                                    <th>未進倉申報袋號</th>
-                                    <th>錯誤訊息</th>
-                                    <th ng-repeat="transName in getDistinctTransNames()">{{transName}}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr ng-repeat="item in mainQueryResults">
-                                    <td>{{item.Mwb}}</td>
-                                    <td>{{item.Customer}}</td>
-                                    <td>{{item.FlightNumber}}</td>
-                                    <td>{{item.HwbPiece}}</td>
-                                    <td>{{item.HwbGciPiece}}</td>
-                                    <td><span class="text-danger">{{item.NotGciPiece}}</span></td>
-                                    <td>{{item.B6FCount}}</td>
-                                    <td>{{item.B6FHwb}}</td>
-                                    <td>{{item.NotGciPieceNotB6F}}</td>
-                                    <td>{{item.ExpBagCount}}</td>
-                                    <td>{{item.ExpBagGciCount}}</td>
-                                    <td><span class="text-danger">{{item.NotGciBag}}</span></td>
-                                    <td><span class="text-danger"><strong>{{item.NotGciTotal}}</strong></span></td>
-                                    <td>{{item.NotGciPieceExpBagNo}}</td>
-                                    <td>{{item.ErrorMessage}}</td>
-                                    <td ng-repeat="transName in getDistinctTransNames()">{{getTransNameCount(item, transName)}}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 未進倉明細表格 -->
-            <div class="panel panel-warning" ng-repeat="mainItem in mainQueryResults" ng-show="mainItem.NotGciDetails && mainItem.NotGciDetails.length > 0 && selectedQueryType === 'mwb'">
-                <div class="panel-heading">
-                    <h3 class="panel-title">未進倉明細 - 主號：{{mainItem.Mwb}}（共 {{mainItem.NotGciDetails.length}} 筆）</h3>
-                </div>
-                <div class="panel-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-bordered table-hover">
-                            <colgroup>
-                                <col style="width: 5%;"><!-- 項次 -->
-                                <col style="width: 10%;"><!-- 提單號碼 -->
-                                <col style="width: 8%;"><!-- 分號 -->
-                                <col style="width: 10%;"><!-- 報單號碼 -->
-                                <col style="width: 8%;"><!-- 袋號 -->
-                                <col style="width: 5%;"><!-- 申報 -->
-                                <col style="width: 5%;"><!-- 進倉 -->
-                                <col style="width: 5%;"><!-- 出倉 -->
-                                <col style="width: 8%;"><!-- 報關類別 -->
-                                <col style="width: 10%;"><!-- 備註 -->
-                                <col style="width: 8%;"><!-- 一分號多袋 -->
-                                <col style="width: 5%;"><!-- B6F -->
-                                <col style="width: 8%;"><!-- 派件公司 -->
-                            </colgroup>
-                            <thead>
-                                <tr>
-                                    <th>項次</th>
-                                    <th>提單號碼</th>
-                                    <th>分號</th>
-                                    <th>報單號碼</th>
-                                    <th>袋號</th>
-                                    <th>申報</th>
-                                    <th>進倉</th>
-                                    <th>出倉</th>
-                                    <th>報關類別</th>
-                                    <th>備註</th>
-                                    <th>一分號多袋</th>
-                                    <th>B6F</th>
-                                    <th>派件公司</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr ng-repeat="detail in mainItem.NotGciDetails">
-                                    <td>{{$index + 1}}</td>
-                                    <td>{{detail.mwb}}</td>
-                                    <td>{{detail.hwb}}</td>
-                                    <td>{{detail.declNo}}</td>
-                                    <td>{{detail.expBagNo}}</td>
-                                    <td>{{detail.piece}}</td>
-                                    <td>{{detail.gciPiece}}</td>
-                                    <td>{{detail.gcoPiece}}</td>
-                                    <td>{{detail.declType}}</td>
-                                    <td>{{detail.remarks}}</td>
-                                    <td>{{detail.realTotBag}}</td>
-                                    <td>{{detail.IsB6F}}</td>
-                                    <td>{{detail.TransName}}</td>
                                 </tr>
                             </tbody>
                         </table>

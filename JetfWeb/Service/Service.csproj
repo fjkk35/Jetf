@@ -562,6 +562,7 @@
     <Compile Include="Services\Ftz\Domain\FtzMainUploadExcelRow.cs" />
     <Compile Include="Services\Ftz\Domain\FtzMainQueryViewModel.cs" />
     <Compile Include="Services\Ftz\Domain\FtzNoGciQueryResult.cs" />
+    <Compile Include="Services\Ftz\Domain\FtzPlinkErrorRow.cs" />
     <Compile Include="Services\Ftz\Domain\FtzQueryRequest.cs" />
     <Compile Include="Services\Ftz\Domain\FtzQueryResult.cs" />
     <Compile Include="Services\Ftz\FtzBagService.cs" />

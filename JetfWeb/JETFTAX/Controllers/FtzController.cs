@@ -61,23 +61,6 @@ namespace JETFTAX.Controllers
         }
 
         /// <summary>
-        /// 主號查詢
-        /// </summary>
-        [HttpPost]
-        public async Task<JsonResult> QueryMain(FtzMainQueryRequest request, HttpPostedFileBase uploadFile)
-        {
-            try
-            {
-                var result = await _ftzService.MainQueryAsync(request);
-                return Json(result);
-            }
-            catch (Exception ex)
-            {
-                return Json(new ResponseModel(ex.Message));
-            }
-        }
-
-        /// <summary>
         /// 併袋號查詢
         /// </summary>
         [HttpPost]

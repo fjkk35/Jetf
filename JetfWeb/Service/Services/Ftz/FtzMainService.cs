@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Newtonsoft.Json;
 using NPOI.SS.UserModel;
+using NPOI.SS.Util;
 using NPOI.XSSF.UserModel;
 using Service.Data;
 using Service.Extensions;
@@ -8,14 +9,10 @@ using Service.Models;
 using Service.Services.Ftz.Domain;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Entity;
-using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Service.Services.Ftz
@@ -25,7 +22,7 @@ namespace Service.Services.Ftz
         /// <summary>
         /// 主號查詢
         /// </summary>
-        public async Task<ResponseModel> MainQueryAsync(FtzMainQueryRequest request)
+        public async Task<ResponseModel> MainQueryAsync(FtzMainQueryRequest request, List<FtzMainUploadExcelRow> uploadRows = null)
         {
             try
             {
@@ -81,6 +78,7 @@ namespace Service.Services.Ftz
 
                 //取得派件公司
                 GetTransName(results);
+                SetUnreceivedB6FCounts(results, uploadRows);
 
                 return new ResponseModel
                 {
@@ -99,12 +97,12 @@ namespace Service.Services.Ftz
             // 收集所有需要查詢的主號、分號、袋號
             var allMwbs = list.Select(r => r.Mwb).Distinct().ToList();
             var allHwbs = list.SelectMany(r => r.NotGciDetails ?? new List<Row>())
-                             .Where(x => !x.IsB6F && string.IsNullOrEmpty(x.expBagNo))
+                             .Where(x => string.IsNullOrEmpty(x.expBagNo))
                              .Select(x => x.hwb)
                              .Distinct()
                              .ToList();
             var allBagNos = list.SelectMany(r => r.NotGciDetails ?? new List<Row>())
-                               .Where(x => !x.IsB6F && !string.IsNullOrEmpty(x.expBagNo))
+                               .Where(x => !string.IsNullOrEmpty(x.expBagNo))
                                .Select(x => x.expBagNo)
                                .Distinct()
                                .ToList();
@@ -184,23 +182,20 @@ namespace Service.Services.Ftz
                 // 設定派件公司
                 r.NotGciDetails?.ForEach(x =>
                 {
-                    if (x.IsB6F == false)
+                    if (string.IsNullOrEmpty(x.expBagNo))
                     {
-                        if (string.IsNullOrEmpty(x.expBagNo))
+                        // 用分提單號查詢
+                        if (trackingNoDict.ContainsKey(x.hwb))
                         {
-                            // 用分提單號查詢
-                            if (trackingNoDict.ContainsKey(x.hwb))
-                            {
-                                x.TransName = trackingNoDict[x.hwb];
-                            }
+                            x.TransName = trackingNoDict[x.hwb];
                         }
-                        else
+                    }
+                    else
+                    {
+                        // 用袋號查詢
+                        if (bagNoDict.ContainsKey(x.expBagNo))
                         {
-                            // 用袋號查詢
-                            if (bagNoDict.ContainsKey(x.expBagNo))
-                            {
-                                x.TransName = bagNoDict[x.expBagNo];
-                            }
+                            x.TransName = bagNoDict[x.expBagNo];
                         }
                     }
                 });
@@ -329,76 +324,14 @@ namespace Service.Services.Ftz
             {
                 model.NotGciDetails = await QueryNotGciDetailsAsync(httpClient, mwb);
 
-                model.NotGciDetails.ForEach(r =>
-                {
-                    r.IsB6F = IsB6F(r.expBagNo, r.declNo);
-                });
-
-                model.B6FCount = model.NotGciDetails.Count(r => r.IsB6F);
-                model.B6FHwb = string.Join(",", model.NotGciDetails.Where(r => r.IsB6F).Select(r => r.hwb));
-                //未進倉件不含B6F分號
-                model.NotGciPieceNotB6F = string.Join(",", model.NotGciDetails
-                    .Where(r => !r.IsB6F && string.IsNullOrEmpty(r.expBagNo))
-                    .Select(r => r.hwb));
                 //未進倉申報袋號
                 model.NotGciPieceExpBagNo = string.Join(",", model.NotGciDetails
-                    .Where(r => !string.IsNullOrEmpty(r.expBagNo) && !r.declNo.Contains("0H4W"))
+                    .Where(r => !string.IsNullOrEmpty(r.expBagNo) && !(r.declNo ?? "").Contains("0H4W"))
                     .Select(r => r.expBagNo)
                     .Distinct());
             }
 
             return model;
-        }
-
-        /// <summary>
-        /// 確認是否為B6F
-        /// </summary>
-        /// <param name="bagNo">袋號</param>
-        /// <param name="clearanceNo">報單號碼</param>
-        /// <returns></returns>
-        private bool IsB6F(string bagNo, string clearanceNo)
-        {
-            int index;
-            string clearanceBagNo = "";
-            if ((index = clearanceNo.IndexOf("0H4W")) > -1)
-            {
-                clearanceBagNo = clearanceNo.Substring(index);
-            }
-            else
-            {
-                return false;
-            }
-
-            //查詢客代
-            string custNo = GetSysAirBag(clearanceBagNo);
-
-            bool result = string.IsNullOrEmpty(bagNo) &&
-                     clearanceNo.Contains("0H4W") &&
-                     custNo != "CN00121" ? true : false;
-
-            return result;
-        }
-
-        /// <summary>
-        /// 查詢客代
-        /// </summary>
-        /// <param name="bagNo"></param>
-        /// <returns></returns>
-        private string GetSysAirBag(string bagNo)
-        {
-            string custNo = "";
-            DataTable dt = new DataTable();
-            using (SqlDataAdapter da = new SqlDataAdapter("select CUST_CODE from DATA_CENTER.dbo.SYS_AIR_BAG where BAG_NUMBER=@BAG_NUMBER", conn))
-            {
-                da.SelectCommand.Parameters.Add("@BAG_NUMBER", SqlDbType.NVarChar).Value = bagNo;
-                da.Fill(dt);
-            }
-            if (dt.Rows.Count > 0)
-            {
-                custNo = dt.Rows[0]["CUST_CODE"].ToString().Trim();
-            }
-
-            return custNo;
         }
 
         /// <summary>
@@ -543,7 +476,7 @@ namespace Service.Services.Ftz
             // 先定位表頭，之後才能依欄名讀取主號、袋號與收單註記。
             var headerInfo = FindMainUploadHeader(sheet);
             var headerMap = headerInfo.Item2;
-            var requiredHeaders = new[] { "袋號", "主號", "分艙單收單註記" };
+            var requiredHeaders = new[] { "袋號", "主號", "分艙單收單註記", "1分號多件之分號" };
             var missingHeaders = requiredHeaders.Where(header => !headerMap.ContainsKey(header)).ToList();
 
             if (missingHeaders.Any())
@@ -563,6 +496,7 @@ namespace Service.Services.Ftz
                 var bagNo = row.GetCellData(headerMap["袋號"]);
                 var mwb = row.GetCellData(headerMap["主號"]);
                 var receiptMark = row.GetCellData(headerMap["分艙單收單註記"]);
+                var oneHwbMultiPieceHwb = row.GetCellData(headerMap["1分號多件之分號"]);
 
                 // 只有收單註記為 X 的資料，才需要納入後續未收單比對。
                 if (!string.Equals(receiptMark, "X", StringComparison.OrdinalIgnoreCase))
@@ -580,7 +514,8 @@ namespace Service.Services.Ftz
                 {
                     BagNo = bagNo.Trim(),
                     Mwb = mwb.Trim(),
-                    ReceiptMark = receiptMark.Trim()
+                    ReceiptMark = receiptMark.Trim(),
+                    OneHwbMultiPieceHwb = (oneHwbMultiPieceHwb ?? "").Trim()
                 });
             }
 
@@ -594,7 +529,7 @@ namespace Service.Services.Ftz
         /// <returns>表頭列索引與欄位對照。</returns>
         private Tuple<int, Dictionary<string, int>> FindMainUploadHeader(ISheet sheet)
         {
-            var requiredHeaders = new[] { "袋號", "主號", "分艙單收單註記" };
+            var requiredHeaders = new[] { "袋號", "主號", "分艙單收單註記", "1分號多件之分號" };
             var bestHeaderRowIndex = -1;
             var bestHeaderMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             var bestMatchCount = 0;
@@ -639,6 +574,65 @@ namespace Service.Services.Ftz
         }
 
         /// <summary>
+        /// 依主號整理主號查詢上傳資料。
+        /// </summary>
+        private Dictionary<string, List<FtzMainUploadExcelRow>> BuildMainUploadRowsByMwb(IEnumerable<FtzMainUploadExcelRow> uploadRows)
+        {
+            return (uploadRows ?? Enumerable.Empty<FtzMainUploadExcelRow>())
+                .Where(row => !string.IsNullOrWhiteSpace(row.Mwb) && !string.IsNullOrWhiteSpace(row.BagNo))
+                .GroupBy(row => row.Mwb.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group
+                        .GroupBy(row => row.BagNo.Trim(), StringComparer.OrdinalIgnoreCase)
+                        .Select(rowGroup => rowGroup.First())
+                        .ToList(),
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 設定未收單 B6F 筆數。
+        /// </summary>
+        private void SetUnreceivedB6FCounts(List<FtzMainQueryViewModel> results, List<FtzMainUploadExcelRow> uploadRows)
+        {
+            if (results == null || uploadRows == null || !uploadRows.Any())
+            {
+                return;
+            }
+
+            var uploadRowsByMwb = BuildMainUploadRowsByMwb(uploadRows);
+            var unreceivedRowsByMainItem = GetUnreceivedUploadRowsByMainItem(results, uploadRowsByMwb);
+            var unreceivedRows = unreceivedRowsByMainItem.SelectMany(x => x.Value).ToList();
+            var plinkErrorRowsLookup = GetPlinkErrorRowsLookup(unreceivedRows);
+
+            SetUnreceivedB6FCounts(results, unreceivedRowsByMainItem, plinkErrorRowsLookup);
+        }
+
+        /// <summary>
+        /// 設定未收單 B6F 筆數。
+        /// </summary>
+        private void SetUnreceivedB6FCounts(
+            List<FtzMainQueryViewModel> results,
+            Dictionary<FtzMainQueryViewModel, List<FtzMainUploadExcelRow>> unreceivedRowsByMainItem,
+            Dictionary<string, List<FtzPlinkErrorRow>> plinkErrorRowsLookup)
+        {
+            foreach (var result in results ?? new List<FtzMainQueryViewModel>())
+            {
+                List<FtzMainUploadExcelRow> unreceivedRows;
+                if (unreceivedRowsByMainItem == null ||
+                    !unreceivedRowsByMainItem.TryGetValue(result, out unreceivedRows))
+                {
+                    result.UnreceivedB6FCount = 0;
+                    continue;
+                }
+
+                result.UnreceivedB6FCount = unreceivedRows
+                    .Count(row => GetPlinkErrorRows(plinkErrorRowsLookup, row.BagNo)
+                        .Any(x => ContainsB6FReason(x.Reason)));
+            }
+        }
+
+        /// <summary>
         /// 主號查詢匯出 Excel
         /// </summary>
         public async Task<IWorkbook> ExportMainExcel(FtzMainQueryRequest request, List<FtzMainUploadExcelRow> uploadRows = null)
@@ -651,7 +645,7 @@ namespace Service.Services.Ftz
                 throw new Exception(queryResult.msg ?? "查詢失敗");
             }
 
-            var results = queryResult.ReturnObject as List<FtzMainQueryViewModel>;
+            var results = queryResult.ReturnObject as List<FtzMainQueryViewModel> ?? new List<FtzMainQueryViewModel>();
 
             // 建立 Excel
             IWorkbook workbook = new XSSFWorkbook();
@@ -661,20 +655,13 @@ namespace Service.Services.Ftz
             var dataStyle = NpoiStyle.CreateDataStyle(workbook);
 
             // 先把上傳資料整理成實際需要補到未進倉明細的未收單資料，供兩個頁籤共用。
-            var uploadRowsByMwb = (uploadRows ?? new List<FtzMainUploadExcelRow>())
-                .Where(row => !string.IsNullOrWhiteSpace(row.Mwb) && !string.IsNullOrWhiteSpace(row.BagNo))
-                .GroupBy(row => row.Mwb.Trim(), StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(
-                    group => group.Key,
-                    group => group
-                        .GroupBy(row => row.BagNo.Trim(), StringComparer.OrdinalIgnoreCase)
-                        .Select(rowGroup => rowGroup.First())
-                        .ToList(),
-                    StringComparer.OrdinalIgnoreCase);
+            var uploadRowsByMwb = BuildMainUploadRowsByMwb(uploadRows);
 
             var unreceivedUploadRowsByMainItem = GetUnreceivedUploadRowsByMainItem(results, uploadRowsByMwb);
             var unreceivedUploadRows = unreceivedUploadRowsByMainItem.SelectMany(x => x.Value).ToList();
             SetUnreceivedTransName(unreceivedUploadRows);
+            var plinkErrorRowsLookup = GetPlinkErrorRowsLookup(unreceivedUploadRows);
+            SetUnreceivedB6FCounts(results, unreceivedUploadRowsByMainItem, plinkErrorRowsLookup);
             var airDetainStatusLookup = GetAirDetainStatusLookup(
                 results,
                 unreceivedUploadRows);
@@ -685,14 +672,14 @@ namespace Service.Services.Ftz
             // 建立表頭
             var headers = new List<string>
               {
-                  "主號","客戶名稱","航班", "申報", "進倉","未進倉件","B6F","B6F分號","未進倉件不含B6F分號",
+                  "主號","客戶名稱","航班", "申報", "進倉","未進倉件","未收單B6F",
                   "併袋", "進倉袋", "未進倉袋", "未進倉小計","未進倉申報袋號","錯誤訊息"
               };
 
             //取得所有派件公司，加入表頭
             var transNames = results.Where(r => r.NotGciDetails != null)
                             .SelectMany(r => r.NotGciDetails)
-                            .Where(r => r.IsB6F == false && r.TransName != null)
+                            .Where(r => r.TransName != null)
                             .Select(r => r.TransName)
                             .Distinct()
                             .ToList();
@@ -728,9 +715,7 @@ namespace Service.Services.Ftz
                 NpoiCell.CreateCell(dataRow, column++, item.HwbPiece ?? "", dataStyle);
                 NpoiCell.CreateCell(dataRow, column++, item.HwbGciPiece ?? "", dataStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.NotGciPiece, dataStyle);
-                NpoiCell.CreateIntCell(dataRow, column++, item.B6FCount, dataStyle);
-                NpoiCell.CreateIntCell(dataRow, column++, item.B6FHwb, dataStyle);
-                NpoiCell.CreateCell(dataRow, column++, item.NotGciPieceNotB6F, dataStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.UnreceivedB6FCount, dataStyle);
                 NpoiCell.CreateCell(dataRow, column++, item.ExpBagCount ?? "", dataStyle);
                 NpoiCell.CreateCell(dataRow, column++, item.ExpBagGciCount ?? "", dataStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.NotGciBag, dataStyle);
@@ -741,12 +726,12 @@ namespace Service.Services.Ftz
                 //派件公司
                 foreach (var transName in transNames)
                 {
-                    //一分號多袋
-                    var bagnosCount = item.NotGciDetails?.Where(r => r.IsB6F == false && !string.IsNullOrEmpty(r.realTotBag) && string.IsNullOrEmpty(r.expBagNo) && r.TransName == transName).Select(r => r.realTotBagCount).Sum() ?? 0;
+                    //一分號多件
+                    var bagnosCount = item.NotGciDetails?.Where(r => !string.IsNullOrEmpty(r.realTotBag) && string.IsNullOrEmpty(r.expBagNo) && r.TransName == transName).Select(r => r.realTotBagCount).Sum() ?? 0;
                     //件數
-                    var trackingnoCount = item.NotGciDetails?.Where(r => r.IsB6F == false && string.IsNullOrEmpty(r.realTotBag) && string.IsNullOrEmpty(r.expBagNo) && r.TransName == transName).Count() ?? 0;
+                    var trackingnoCount = item.NotGciDetails?.Where(r => string.IsNullOrEmpty(r.realTotBag) && string.IsNullOrEmpty(r.expBagNo) && r.TransName == transName).Count() ?? 0;
                     //袋數
-                    var bagnoCount = item.NotGciDetails?.Where(r => r.IsB6F == false && !string.IsNullOrEmpty(r.expBagNo) && r.TransName == transName)
+                    var bagnoCount = item.NotGciDetails?.Where(r => !string.IsNullOrEmpty(r.expBagNo) && r.TransName == transName)
                                               .Select(r => new
                                               {
                                                   r.expBagNo,
@@ -778,7 +763,7 @@ namespace Service.Services.Ftz
             string[] detailHeaders = new string[]
             {
                 "項次", "提單號碼", "分號", "報單號碼", "袋號",
-                "申報", "進倉", "出倉", "報關類別", "備註", "一分號多袋","B6F", "派件公司", "狀態"
+                "申報", "進倉", "出倉", "報關類別", "備註", "一分號多件", "錯單類別", "錯單單號", "派件公司", "狀態"
             };
 
             IRow detailHeaderRow = detailSheet.CreateRow(0);
@@ -811,10 +796,11 @@ namespace Service.Services.Ftz
                         NpoiCell.CreateCell(detailDataRow, 7, detail.gcoPiece ?? "", dataStyle); // 出倉
                         NpoiCell.CreateCell(detailDataRow, 8, detail.declType ?? "", dataStyle); // 報關類別
                         NpoiCell.CreateCell(detailDataRow, 9, detail.remarks ?? "", dataStyle); // 備註
-                        NpoiCell.CreateCell(detailDataRow, 10, detail.realTotBag ?? "", dataStyle); // 一分號多袋
-                        NpoiCell.CreateCell(detailDataRow, 11, detail.IsB6F.ToString() ?? "", dataStyle);
-                        NpoiCell.CreateCell(detailDataRow, 12, detail.TransName ?? "", dataStyle);
-                        NpoiCell.CreateCell(detailDataRow, 13, GetAirDetainStatus(airDetainStatusLookup, detail.hwb), dataStyle);
+                        NpoiCell.CreateCell(detailDataRow, 10, "", dataStyle); // 一分號多件
+                        NpoiCell.CreateCell(detailDataRow, 11, "", dataStyle); // 錯單類別
+                        NpoiCell.CreateCell(detailDataRow, 12, "", dataStyle); // 錯單單號
+                        NpoiCell.CreateCell(detailDataRow, 13, detail.TransName ?? "", dataStyle);
+                        NpoiCell.CreateCell(detailDataRow, 14, GetAirDetainStatus(airDetainStatusLookup, detail.hwb), dataStyle);
                         detailRowIndex++;
                     }
                 }
@@ -828,23 +814,43 @@ namespace Service.Services.Ftz
                 foreach (var uploadRow in mainUploadRows)
                 {
                     // 上傳檔有、查詢結果沒有時，依需求在未進倉明細補一列未收單資料。
-                    IRow detailDataRow = detailSheet.CreateRow(detailRowIndex);
+                    var errorRows = GetPlinkErrorRows(plinkErrorRowsLookup, uploadRow.BagNo);
+                    var errorRowCount = Math.Max(errorRows.Count, 1);
+                    var startRowIndex = detailRowIndex;
+                    var status = GetAirDetainStatus(airDetainStatusLookup, uploadRow.BagNo);
+                    var displayItemNo = itemNo++;
 
-                    NpoiCell.CreateIntCell(detailDataRow, 0, itemNo++, dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 1, uploadRow.Mwb ?? "", dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 2, uploadRow.BagNo ?? "", dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 3, "未收單", dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 4, "", dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 5, "", dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 6, "", dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 7, "", dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 8, "", dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 9, "", dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 10, "", dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 11, "", dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 12, uploadRow.TransName ?? "", dataStyle);
-                    NpoiCell.CreateCell(detailDataRow, 13, GetAirDetainStatus(airDetainStatusLookup, uploadRow.BagNo), dataStyle);
-                    detailRowIndex++;
+                    for (int errorIndex = 0; errorIndex < errorRowCount; errorIndex++)
+                    {
+                        IRow detailDataRow = detailSheet.CreateRow(detailRowIndex);
+
+                        if (errorIndex == 0)
+                        {
+                            NpoiCell.CreateIntCell(detailDataRow, 0, displayItemNo, dataStyle);
+                            NpoiCell.CreateCell(detailDataRow, 1, uploadRow.Mwb ?? "", dataStyle);
+                            NpoiCell.CreateCell(detailDataRow, 2, uploadRow.BagNo ?? "", dataStyle);
+                            NpoiCell.CreateCell(detailDataRow, 3, "未收單", dataStyle);
+                            NpoiCell.CreateCell(detailDataRow, 4, "", dataStyle);
+                            NpoiCell.CreateCell(detailDataRow, 5, "", dataStyle);
+                            NpoiCell.CreateCell(detailDataRow, 6, "", dataStyle);
+                            NpoiCell.CreateCell(detailDataRow, 7, "", dataStyle);
+                            NpoiCell.CreateCell(detailDataRow, 8, "", dataStyle);
+                            NpoiCell.CreateCell(detailDataRow, 9, "", dataStyle);
+                            NpoiCell.CreateCell(detailDataRow, 10, uploadRow.OneHwbMultiPieceHwb ?? "", dataStyle);
+                        }
+                        else
+                        {
+                            CreateBlankCells(detailDataRow, 0, 10, dataStyle);
+                        }
+
+                        NpoiCell.CreateCell(detailDataRow, 11, errorIndex < errorRows.Count ? errorRows[errorIndex].Hawb ?? "" : "", dataStyle);
+                        NpoiCell.CreateCell(detailDataRow, 12, "", dataStyle);
+                        NpoiCell.CreateCell(detailDataRow, 13, uploadRow.TransName ?? "", dataStyle);
+                        NpoiCell.CreateCell(detailDataRow, 14, status, dataStyle);
+                        detailRowIndex++;
+                    }
+
+                    MergeColumns(detailSheet, startRowIndex, detailRowIndex - 1, 0, 10);
                 }
             }
 
@@ -938,6 +944,93 @@ namespace Service.Services.Ftz
                 {
                     row.TransName = transName;
                 }
+            }
+        }
+
+        /// <summary>
+        /// 批次查詢未收單資料的錯單資料。
+        /// </summary>
+        private Dictionary<string, List<FtzPlinkErrorRow>> GetPlinkErrorRowsLookup(IEnumerable<FtzMainUploadExcelRow> uploadRows)
+        {
+            var hawbs = (uploadRows ?? Enumerable.Empty<FtzMainUploadExcelRow>())
+                .Where(x => !string.IsNullOrWhiteSpace(x.BagNo))
+                .Select(x => x.BagNo.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (!hawbs.Any())
+            {
+                return new Dictionary<string, List<FtzPlinkErrorRow>>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            var sql = @"
+                    SELECT HAWB AS Hawb, REASON AS Reason
+                    FROM [DATA_CENTER].[dbo].[ETL_PLINK_ERROR]
+                    WHERE HAWB IN @Hawbs
+                    ORDER BY HAWB, ROW_ID";
+
+            return conn.Query<FtzPlinkErrorRow>(sql, new { Hawbs = hawbs })
+                .Where(x => !string.IsNullOrWhiteSpace(x.Hawb))
+                .GroupBy(x => x.Hawb.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.Select(y => new FtzPlinkErrorRow
+                    {
+                        Hawb = y.Hawb ?? "",
+                        Reason = y.Reason ?? ""
+                    }).ToList(),
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 取得袋號對應的錯單資料。
+        /// </summary>
+        private List<FtzPlinkErrorRow> GetPlinkErrorRows(Dictionary<string, List<FtzPlinkErrorRow>> lookup, string bagNo)
+        {
+            if (lookup == null || string.IsNullOrWhiteSpace(bagNo))
+            {
+                return new List<FtzPlinkErrorRow>();
+            }
+
+            List<FtzPlinkErrorRow> rows;
+            return lookup.TryGetValue(bagNo.Trim(), out rows)
+                ? rows
+                : new List<FtzPlinkErrorRow>();
+        }
+
+        /// <summary>
+        /// 判斷錯單類別是否包含 B6F。
+        /// </summary>
+        private bool ContainsB6FReason(string reason)
+        {
+            return !string.IsNullOrWhiteSpace(reason) &&
+                reason.IndexOf("B6F", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>
+        /// 建立空白儲存格並套用樣式。
+        /// </summary>
+        private void CreateBlankCells(IRow row, int firstColumn, int lastColumn, ICellStyle style)
+        {
+            for (int columnIndex = firstColumn; columnIndex <= lastColumn; columnIndex++)
+            {
+                NpoiCell.CreateCell(row, columnIndex, "", style);
+            }
+        }
+
+        /// <summary>
+        /// 合併指定欄位的多列儲存格。
+        /// </summary>
+        private void MergeColumns(ISheet sheet, int firstRow, int lastRow, int firstColumn, int lastColumn)
+        {
+            if (sheet == null || lastRow <= firstRow)
+            {
+                return;
+            }
+
+            for (int columnIndex = firstColumn; columnIndex <= lastColumn; columnIndex++)
+            {
+                sheet.AddMergedRegion(new CellRangeAddress(firstRow, lastRow, columnIndex, columnIndex));
             }
         }
 

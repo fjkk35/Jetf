@@ -49,10 +49,10 @@ namespace Service.Services.Ftz.Domain
         /// <summary>備註</summary>
         public string remarks { get; set; }
 
-        /// <summary>一分號多袋</summary>
+        /// <summary>一分號多件</summary>
         public string realTotBag { get; set; }
 
-        /// <summary>一分號多袋數</summary>
+        /// <summary>一分號多件數</summary>
         public int realTotBagCount
         {
             get
@@ -85,8 +85,6 @@ namespace Service.Services.Ftz.Domain
         public string impPic { get; set; }
         public string bagPic { get; set; }
         public string realBagPic { get; set; }
-
-        public bool IsB6F { get; set; }
 
         /// <summary>
         /// 派件公司

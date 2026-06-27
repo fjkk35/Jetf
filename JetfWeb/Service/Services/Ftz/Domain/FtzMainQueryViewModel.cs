@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,109 +7,99 @@ using System.Threading.Tasks;
 namespace Service.Services.Ftz.Domain
 {
     /// <summary>
-    /// Ftz ¥D¸¹¬d¸ßµ²ªG¡]¥Î©ó«eºİ®i¥Ü¡^
+    /// Ftz ä¸»è™ŸæŸ¥è©¢çµæœï¼ˆç”¨æ–¼å‰ç«¯å±•ç¤ºï¼‰
     /// </summary>
     public class FtzMainQueryViewModel
     {
         /// <summary>
-        /// ¥D¸¹
+        /// ä¸»è™Ÿ
         /// </summary>
         public string Mwb { get; set; }
 
         /// <summary>
-        /// ¤À¸¹
+        /// åˆ†è™Ÿ
         /// </summary>
         public string HwbCount { get; set; }
 
         /// <summary>
-        /// ¥Ó³ø
+        /// ç”³å ±
         /// </summary>
         public string HwbPiece { get; set; }
 
         /// <summary>
-        /// ¶i­Ü
+        /// é€²å€‰
         /// </summary>
         public string HwbGciPiece { get; set; }
 
         /// <summary>
-        /// ¥X­Ü
+        /// å‡ºå€‰
         /// </summary>
         public string HwbGcoPiece { get; set; }
 
         /// <summary>
-        /// ¶i­Ü­«¶q
+        /// é€²å€‰é‡é‡
         /// </summary>
         public string GciWeight { get; set; }
 
         /// <summary>
-        /// ¥¼¶i­Ü (¥Ó³ø - ¶i­Ü)
+        /// æœªé€²å€‰ (ç”³å ± - é€²å€‰)
         /// </summary>
         public int NotGciPiece { get; set; }
 
         /// <summary>
-        /// ¨Ö³U
+        /// ä½µè¢‹
         /// </summary>
         public string ExpBagCount { get; set; }
 
         /// <summary>
-        /// ¶i­Ü³U
+        /// é€²å€‰è¢‹
         /// </summary>
         public string ExpBagGciCount { get; set; }
 
         /// <summary>
-        /// ¥X­Ü³U
+        /// å‡ºå€‰è¢‹
         /// </summary>
         public string ExpBagGcoCount { get; set; }
 
         /// <summary>
-        /// ¥¼¶i­Ü³U (¨Ö³U - ¶i­Ü³U)
+        /// æœªé€²å€‰è¢‹ (ä½µè¢‹ - é€²å€‰è¢‹)
         /// </summary>
         public int NotGciBag { get; set; }
 
         /// <summary>
-        /// ¥¼¶i­Ü¤p­p (¥¼¶i­Ü + ¥¼¶i­Ü³U)
+        /// æœªé€²å€‰å°è¨ˆ (æœªé€²å€‰ + æœªé€²å€‰è¢‹)
         /// </summary>
         public int NotGciTotal { get; set; }
 
         /// <summary>
-        /// B6F¥ó¼Æ
+        /// æœªæ”¶å–®B6Fç­†æ•¸
         /// </summary>
-        public int B6FCount { get; set; }
+        public int UnreceivedB6FCount { get; set; }
 
         /// <summary>
-        /// B6F¤À¸¹
-        /// </summary>
-        public string B6FHwb { get; set; }
-
-        /// <summary>
-        /// ¥¼¶i­Ü¥ó¤£§tB6F¤À¸¹
-        /// </summary>
-        public string NotGciPieceNotB6F { get; set; }
-
-        /// <summary>
-        /// ¥¼¶i­Ü¥Ó³ø³U¸¹
+        /// æœªé€²å€‰ç”³å ±è¢‹è™Ÿ
         /// </summary>
         public string NotGciPieceExpBagNo { get; set; }
 
         /// <summary>
-        /// «È¤á
+        /// å®¢æˆ¶
         /// </summary>
         public string Customer { get; set; }
 
         /// <summary>
-        /// ¯è¯Z
+        /// èˆªç­
         /// </summary>
         public string FlightNumber { get; set; }
 
         /// <summary>
-        /// ¿ù»~°T®§
+        /// éŒ¯èª¤è¨Šæ¯
         /// </summary>
         public string ErrorMessage { get; set; }
 
         public List<Row> NotGciDetails { get; set; }
 
         /// <summary>
-        /// ­ì©l API ¦^À³¸ê®Æ
+        /// åŸå§‹ API å›æ‡‰è³‡æ–™
         /// </summary>
         public FtzMainQueryResult RawData { get; set; }
     }
