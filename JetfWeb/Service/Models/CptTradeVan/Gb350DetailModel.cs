@@ -3,15 +3,10 @@ using System.Collections.Generic;
 namespace Service.Models.CptTradeVan
 {
     /// <summary>
-    /// GB350 空運進口貨物新艙單主號查詢結果。
+    /// GB350 空運進口貨物新艙單明細查詢結果。
     /// </summary>
-    public class Gb350Model
+    public class Gb350DetailModel
     {
-        /// <summary>
-        /// 查詢主號。
-        /// </summary>
-        public string SearchMawb { get; set; }
-
         /// <summary>
         /// 總頁數。
         /// </summary>
@@ -33,14 +28,14 @@ namespace Service.Models.CptTradeVan
         public string Status { get; set; }
 
         /// <summary>
-        /// 樣式類別。
+        /// 樣式類別名稱。
         /// </summary>
-        public string Class { get; set; }
+        public string ClassName { get; set; }
 
         /// <summary>
-        /// 主號查詢資料列。
+        /// 明細查詢資料列。
         /// </summary>
-        public List<Gb350GridModel> GridModel { get; set; }
+        public List<Gb350DetailGridModel> GridModel { get; set; }
 
         /// <summary>
         /// 搜尋欄位。

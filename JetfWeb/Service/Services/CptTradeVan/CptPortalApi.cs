@@ -13,6 +13,9 @@ namespace Service.Services.CptTradeVan
 {
     public class CptPortalApi
     {
+        private const string Gb350MawbUrl = "https://portal.sw.nat.gov.tw/APGQ/GB350!queryMawb";
+        private const string Gb350DetailUrl = "https://portal.sw.nat.gov.tw/APGQ/GB350!queryDetail";
+
         public Gb326Model GetGb326(Dictionary<string, string> parameters)
         {
             int retryCount = 0;
@@ -203,6 +206,82 @@ namespace Service.Services.CptTradeVan
                 retryCount++;
                 Thread.Sleep(1000);
             } while (retryCount < maxRetries);
+
+            return result;
+        }
+
+        /// <summary>
+        /// (GB350)空運進口貨物新艙單資料查詢-主號
+        /// </summary>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        public Gb350Model GetGb350Mawb(Dictionary<string, string> parameters)
+        {
+            Gb350Model result = new Gb350Model();
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+                    var formData = new FormUrlEncodedContent(parameters).ReadAsStringAsync().Result;
+                    var content = new StringContent(formData, Encoding.UTF8, "application/x-www-form-urlencoded");
+
+                    //發送 POST 請求
+                    HttpResponseMessage response = client.PostAsync(Gb350MawbUrl, content).Result;
+
+                    // 檢查請求是否成功
+                    if (response.IsSuccessStatusCode)
+                    {
+                        result = JsonConvert.DeserializeObject<Gb350Model>(response.Content.ReadAsStringAsync().Result);
+                    }
+                    else
+                    {
+                        result.Msg = "查詢失敗";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Msg = ex.Message;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// (GB350)空運進口貨物新艙單資料查詢-明細
+        /// </summary>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        public Gb350DetailModel GetGb350Detail(Dictionary<string, string> parameters)
+        {
+            Gb350DetailModel result = new Gb350DetailModel();
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
+                    var content = new FormUrlEncodedContent(parameters);
+                    //發送 POST 請求
+                    HttpResponseMessage response = client.PostAsync(Gb350DetailUrl, content).Result;
+
+                    // 檢查請求是否成功
+                    if (response.IsSuccessStatusCode)
+                    {
+                        result = JsonConvert.DeserializeObject<Gb350DetailModel>(response.Content.ReadAsStringAsync().Result);
+                    }
+                    else
+                    {
+                        result.Msg = "查詢失敗";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Msg = ex.Message;
+            }
 
             return result;
         }

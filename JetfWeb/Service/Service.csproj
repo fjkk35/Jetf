@@ -373,6 +373,9 @@
     <Compile Include="Models\CptTradeVan\Gb321Model.cs" />
     <Compile Include="Models\CptTradeVan\Gb326Model.cs" />
     <Compile Include="Models\CptTradeVan\Gb330Model.cs" />
+    <Compile Include="Models\CptTradeVan\Gb350DetailGridModel.cs" />
+    <Compile Include="Models\CptTradeVan\Gb350DetailModel.cs" />
+    <Compile Include="Models\CptTradeVan\Gb350GridModel.cs" />
     <Compile Include="Models\CptTradeVan\Gb350Model.cs" />
     <Compile Include="Models\CptTradeVan\Gb353Model.cs" />
     <Compile Include="Models\CptTradeVan\Gb378Model.cs" />
@@ -393,7 +396,6 @@
     <Compile Include="Models\EtlCustWorkLoad\ArrivalTimeModel.cs" />
     <Compile Include="Models\EtlCustWorkLoad\SignOutTimeModel.cs" />
     <Compile Include="Models\EtlUnpackingZ\EtlUnpackingZModel.cs" />
-    <Compile Include="Models\EtlUnpackingZ\MawbModel.cs" />
     <Compile Include="Models\ExportClearance\ExportClearanceInfoModel.cs" />
     <Compile Include="Models\ExportClearance\ExportFlightDetailModel.cs" />
     <Compile Include="Models\GlobalModel.cs" />

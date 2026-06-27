@@ -1,8 +1,9 @@
 ﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.Models;
+using Service.Models.CptTradeVan;
 using Service.Models.EtlUnpackingZ;
-using Service.Models.ExportClearance;
+using Service.Services.CptTradeVan;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -10,23 +11,22 @@ using System.Data;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Net.Http;
-using Newtonsoft.Json;
-using System.Net;
 
 namespace Service.Services
 {
     public class EtlUnpackingZService
     {
-        private string mawbUrl = "https://portal.sw.nat.gov.tw/APGQ/GB350!queryMawb";
-
-        private string detailUrl = "https://portal.sw.nat.gov.tw/APGQ/GB350!queryDetail";
-
+        private readonly CptPortalApi _cptPortalApi;
         private SqlConnection conn;
-        public EtlUnpackingZService()
+
+        public EtlUnpackingZService() : this(new CptPortalApi())
         {
+        }
+
+        public EtlUnpackingZService(CptPortalApi cptPortalApi)
+        {
+            _cptPortalApi = cptPortalApi ?? new CptPortalApi();
             conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString);
         }
 
@@ -177,7 +177,7 @@ namespace Service.Services
         public IWorkbook Download(List<string> search)
         {
             //主號查詢
-            List<MawbModel> mawbList = SearchMawb(search);
+            List<Gb350Model> mawbList = SearchMawb(search);
 
             //明細查詢
             SearchDetail(mawbList);
@@ -199,7 +199,7 @@ namespace Service.Services
         /// <param name="workbook"></param>
         /// <param name="mawbList"></param>
         /// <returns></returns>
-        IWorkbook GetMawbSheet(IWorkbook workbook, List<MawbModel> mawbList)
+        IWorkbook GetMawbSheet(IWorkbook workbook, List<Gb350Model> mawbList)
         {
             ISheet sheet = workbook.CreateSheet("主號");
             //表頭  
@@ -219,9 +219,9 @@ namespace Service.Services
             {
                 row = sheet.CreateRow(iRow);
                 row.CreateCell(0).SetCellValue(iRow);
-                row.CreateCell(1).SetCellValue(item.searchMawb);
-                row.CreateCell(2).SetCellValue(item.gridModel.Count);
-                row.CreateCell(3).SetCellValue(item.msg);
+                row.CreateCell(1).SetCellValue(item.SearchMawb);
+                row.CreateCell(2).SetCellValue(item.GridModel?.Count ?? 0);
+                row.CreateCell(3).SetCellValue(item.Msg);
                 iRow++;
             }
 
@@ -234,7 +234,7 @@ namespace Service.Services
         /// <param name="workbook"></param>
         /// <param name="mawbList"></param>
         /// <returns></returns>
-        void GetMawb2Sheet(IWorkbook workbook, List<MawbModel> mawbList)
+        void GetMawb2Sheet(IWorkbook workbook, List<Gb350Model> mawbList)
         {
             ISheet sheet = workbook.CreateSheet("主號2");
             //表頭  
@@ -257,7 +257,7 @@ namespace Service.Services
             int iRow = 1;
             foreach (var mawb in mawbList)
             {
-                foreach (var item in mawb.gridModel)
+                foreach (var item in mawb.GridModel ?? new List<Gb350GridModel>())
                 {
                     row = sheet.CreateRow(iRow);
                     row.CreateCell(0).SetCellValue(iRow);
@@ -268,7 +268,7 @@ namespace Service.Services
                     }
                     row.CreateCell(3).SetCellValue(item.TOT_PACK_QTY);
                     row.CreateCell(4).SetCellValue(item.STATUS);
-                    row.CreateCell(5).SetCellValue(item.Detail.msg);
+                    row.CreateCell(5).SetCellValue(item.Detail?.Msg);
                     iRow++;
                 }
             }
@@ -280,7 +280,7 @@ namespace Service.Services
         /// <param name="workbook"></param>
         /// <param name="mawbList"></param>
         /// <returns></returns>
-        void GetDetailSheet(IWorkbook workbook, List<MawbModel> mawbList)
+        void GetDetailSheet(IWorkbook workbook, List<Gb350Model> mawbList)
         {
             ISheet sheet = workbook.CreateSheet("明細");
             //表頭  
@@ -303,9 +303,9 @@ namespace Service.Services
             int iRow = 1;
             foreach (var mawb in mawbList)
             {
-                mawb.gridModel.ForEach(r =>
+                mawb.GridModel?.ForEach(r =>
                 {
-                    r.Detail.gridModel?.ForEach(item =>
+                    r.Detail?.GridModel?.ForEach(item =>
                     {
                         row = sheet.CreateRow(iRow);
                         row.CreateCell(0).SetCellValue(item.POUCH_NO);
@@ -330,9 +330,9 @@ namespace Service.Services
         /// 查詢主號
         /// </summary>
         /// <returns></returns>
-        List<MawbModel> SearchMawb(List<string> search)
+        List<Gb350Model> SearchMawb(List<string> search)
         {
-            List<MawbModel> mawbList = new List<MawbModel>();
+            List<Gb350Model> mawbList = new List<Gb350Model>();
 
             foreach (var item in search)
             {
@@ -361,14 +361,13 @@ namespace Service.Services
         /// </summary>
         /// <param name="mawbList"></param>
         /// <returns></returns>
-        void SearchDetail(List<MawbModel> mawbList)
+        void SearchDetail(List<Gb350Model> mawbList)
         {
-            List<DetailModel> detailList = new List<DetailModel>();
             foreach (var mawb in mawbList)
             {
-                if (mawb.msg.Contains("[查詢成功]"))
+                if ((mawb.Msg ?? "").Contains("[查詢成功]"))
                 {
-                    foreach (var item in mawb.gridModel)
+                    foreach (var item in mawb.GridModel ?? new List<Gb350GridModel>())
                     {
                         if (DateTime.TryParseExact(item.TRANS_DATE, "yyyyMMddHHmmss", null, System.Globalization.DateTimeStyles.None, out var transDate))
                         {
@@ -392,38 +391,10 @@ namespace Service.Services
         /// </summary>
         /// <param name="parameters"></param>
         /// <returns></returns>
-        MawbModel PostMawb(Dictionary<string, string> parameters)
+        Gb350Model PostMawb(Dictionary<string, string> parameters)
         {
-            MawbModel result = new MawbModel();
-            try
-            {
-                using (HttpClient client = new HttpClient())
-                {
-                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
-                    var formData = new FormUrlEncodedContent(parameters).ReadAsStringAsync().Result;
-                    var content = new StringContent(formData, Encoding.UTF8, "application/x-www-form-urlencoded");
-
-                    //發送 POST 請求
-                    HttpResponseMessage response = client.PostAsync(mawbUrl, content).Result;
-
-                    // 檢查請求是否成功
-                    if (response.IsSuccessStatusCode)
-                    {
-                        result = JsonConvert.DeserializeObject<MawbModel>(response.Content.ReadAsStringAsync().Result);
-                    }
-                    else
-                    {
-                        result.msg = "查詢失敗";
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                result.msg = ex.Message;
-            }
-
-            result.searchMawb = parameters["tab4.mawb"];
+            Gb350Model result = _cptPortalApi.GetGb350Mawb(parameters);
+            result.SearchMawb = parameters["tab4.mawb"];
 
             return result;
         }
@@ -433,35 +404,9 @@ namespace Service.Services
         /// </summary>
         /// <param name="parameters"></param>
         /// <returns></returns>
-        DetailModel PostDetail(Dictionary<string, string> parameters)
+        Gb350DetailModel PostDetail(Dictionary<string, string> parameters)
         {
-            DetailModel result = new DetailModel();
-            try
-            {
-                using (HttpClient client = new HttpClient())
-                {
-                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
-                    var content = new FormUrlEncodedContent(parameters);
-                    //發送 POST 請求
-                    HttpResponseMessage response = client.PostAsync(detailUrl, content).Result;
-
-                    // 檢查請求是否成功
-                    if (response.IsSuccessStatusCode)
-                    {
-                        result = JsonConvert.DeserializeObject<DetailModel>(response.Content.ReadAsStringAsync().Result);
-                    }
-                    else
-                    {
-                        result.msg = "查詢失敗";
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                result.msg = ex.Message;
-            }
-            return result;
+            return _cptPortalApi.GetGb350Detail(parameters);
         }
     }
 }
