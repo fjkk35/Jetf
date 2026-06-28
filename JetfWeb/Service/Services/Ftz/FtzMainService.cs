@@ -843,8 +843,9 @@ namespace Service.Services.Ftz
                             CreateBlankCells(detailDataRow, 0, 10, dataStyle);
                         }
 
-                        NpoiCell.CreateCell(detailDataRow, 11, errorIndex < errorRows.Count ? errorRows[errorIndex].Hawb ?? "" : "", dataStyle);
-                        NpoiCell.CreateCell(detailDataRow, 12, "", dataStyle);
+                        var errorRow = errorIndex < errorRows.Count ? errorRows[errorIndex] : null;
+                        NpoiCell.CreateCell(detailDataRow, 11, errorRow?.Reason ?? "", dataStyle);
+                        NpoiCell.CreateCell(detailDataRow, 12, errorRow?.Hawb ?? "", dataStyle);
                         NpoiCell.CreateCell(detailDataRow, 13, uploadRow.TransName ?? "", dataStyle);
                         NpoiCell.CreateCell(detailDataRow, 14, status, dataStyle);
                         detailRowIndex++;
