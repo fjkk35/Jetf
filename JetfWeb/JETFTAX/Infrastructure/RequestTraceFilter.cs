@@ -15,6 +15,7 @@ namespace JETFTAX.Infrastructure
     public sealed class RequestTraceFilter : ActionFilterAttribute
     {
         private static readonly Logger Logger = LogManager.GetLogger("RequestTrace");
+        private const string UnknownUserId = "Unknown";
         private const string RequestTraceParamsKey = "RequestTraceFilter.Params";
         private const string RequestTraceStartTimeKey = "RequestTraceFilter.StartTimeUtc";
 
@@ -47,6 +48,8 @@ namespace JETFTAX.Infrastructure
                 return;
             }
 
+            RefreshUserIdLogContext(filterContext);
+
             var request = filterContext.HttpContext?.Request;
             if (request == null)
             {
@@ -64,6 +67,24 @@ namespace JETFTAX.Infrastructure
 
             var costText = GetCostText(filterContext);
             Logger.Debug($"{stage}[Debug] - [{method}] {path}{costText}");
+        }
+
+        private static void RefreshUserIdLogContext(ControllerContext filterContext)
+        {
+            MappedDiagnosticsLogicalContext.Set("userId", ResolveCurrentUserId(filterContext));
+        }
+
+        private static string ResolveCurrentUserId(ControllerContext filterContext)
+        {
+            try
+            {
+                var userId = filterContext?.HttpContext?.Session?["user_id"]?.ToString();
+                return string.IsNullOrWhiteSpace(userId) ? UnknownUserId : userId.Trim();
+            }
+            catch
+            {
+                return UnknownUserId;
+            }
         }
 
         private static void CacheRequestParameters(ActionExecutingContext filterContext)
