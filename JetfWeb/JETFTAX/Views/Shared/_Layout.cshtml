@@ -44,7 +44,7 @@
     var authorities = Session["user_auth"] as List<string> ?? new List<string>();
     var partnersJson = JsonConvert.SerializeObject(partners);
     var authoritiesJson = JsonConvert.SerializeObject(authorities);
-    var userName = Session["user_name"].ToString() ?? string.Empty;
+    var userName = Convert.ToString(Session["user_name"]) ?? string.Empty;
 }
 <body id="page-top" ng-controller="LayoutController" ng-cloak>
     <script>

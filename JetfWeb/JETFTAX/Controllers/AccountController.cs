@@ -134,6 +134,7 @@ namespace JETFTAX.Controllers
             //清除Session
             Session.Remove("user_id");
             Session.Remove("user_name");
+            Session.Remove("user_partner");
             Session.Remove("user_auth");
             return RedirectToAction("Login", "Account");
         }
