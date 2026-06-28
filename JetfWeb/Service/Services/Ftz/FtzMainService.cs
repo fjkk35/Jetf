@@ -241,35 +241,37 @@ namespace Service.Services.Ftz
                 return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             }
 
-            var sqlParts = new List<string>();
+            var originalRows = new List<(string TrackingNo, string TransNo)>();
             if (includeTrackingNo)
             {
-                sqlParts.Add(@"
-                        SELECT TRACKINGNO AS TRACKINGNO, CLEARANCEWAREHOUSING AS TRANS_NO
-                        FROM DATA_CENTER.[dbo].[ORIGINALLIST]
-                        WHERE TRACKINGNO IN @TrackingNos");
+                originalRows.AddRange(DataCenterDb.OriginalLists
+                    .AsNoTracking()
+                    .WhereBulkContains(DataCenterDb, keys, x => x.TrackingNo, x => x)
+                    .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
+                    .Select(x => (
+                        x.TrackingNo,
+                        x.ClearanceWarehousing.HasValue ? x.ClearanceWarehousing.Value.ToString() : "")));
             }
 
             if (includeBagNo)
             {
-                sqlParts.Add(@"
-                        SELECT BAGNO AS TRACKINGNO, CLEARANCEWAREHOUSING AS TRANS_NO
-                        FROM DATA_CENTER.[dbo].[ORIGINALLIST]
-                        WHERE BAGNO IN @TrackingNos");
+                originalRows.AddRange(DataCenterDb.OriginalLists
+                    .AsNoTracking()
+                    .WhereBulkContains(DataCenterDb, keys, x => x.BagNo, x => x)
+                    .Where(x => !string.IsNullOrWhiteSpace(x.BagNo))
+                    .Select(x => (
+                        x.BagNo,
+                        x.ClearanceWarehousing.HasValue ? x.ClearanceWarehousing.Value.ToString() : "")));
             }
 
             transNameLookup = transNameLookup ?? GetAirTransNameLookup();
-            var originalRows = conn.Query<(string TRACKINGNO, string TRANS_NO)>(
-                string.Join(@"
-                        UNION ALL", sqlParts),
-                new { TrackingNos = keys });
 
             return originalRows
-                .Where(x => !string.IsNullOrWhiteSpace(x.TRACKINGNO))
-                .GroupBy(x => x.TRACKINGNO.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
+                .GroupBy(x => x.TrackingNo.Trim(), StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(
                     x => x.Key,
-                    x => GetTransNameByTransNo(transNameLookup, x.Select(y => y.TRANS_NO).FirstOrDefault()),
+                    x => GetTransNameByTransNo(transNameLookup, x.Select(y => y.TransNo).FirstOrDefault()),
                     StringComparer.OrdinalIgnoreCase);
         }
 
@@ -964,14 +966,12 @@ namespace Service.Services.Ftz
                 return new Dictionary<string, List<FtzPlinkErrorRow>>(StringComparer.OrdinalIgnoreCase);
             }
 
-            var sql = @"
-                    SELECT HAWB AS Hawb, REASON AS Reason
-                    FROM [DATA_CENTER].[dbo].[ETL_PLINK_ERROR]
-                    WHERE HAWB IN @Hawbs
-                    ORDER BY HAWB, ROW_ID";
-
-            return conn.Query<FtzPlinkErrorRow>(sql, new { Hawbs = hawbs })
+            return DataCenterDb.EtlPlinkErrors
+                .AsNoTracking()
+                .WhereBulkContains(DataCenterDb, hawbs, x => x.Hawb, x => x)
                 .Where(x => !string.IsNullOrWhiteSpace(x.Hawb))
+                .OrderBy(x => x.Hawb)
+                .ThenBy(x => x.RowId)
                 .GroupBy(x => x.Hawb.Trim(), StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(
                     x => x.Key,
