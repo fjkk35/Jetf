@@ -2,6 +2,7 @@
 using Service.EnumTax;
 using Service.Models;
 using Service.Services;
+using JETFTAX.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -29,11 +30,13 @@ namespace JETFTAX.Controllers
         }
 
         // GET: Account
+        [AllowAnonymous]
         public ActionResult Login()
         {
             return View();
         }
 
+        [AllowAnonymous]
         [HttpPost]
         public JsonResult Login(AccountViewModel vm)
         {
@@ -82,6 +85,7 @@ namespace JETFTAX.Controllers
         /// <summary>
         /// 透過 URL 參數執行 SSO 登入，驗證成功後沿用既有 Session 登入流程。
         /// </summary>
+        [AllowAnonymous]
         [HttpGet]
         public ActionResult SsoLogin(string userId, string timestamp, string sign)
         {
@@ -129,6 +133,7 @@ namespace JETFTAX.Controllers
         }
 
 
+        [AllowAnonymous]
         public ActionResult LogOff()
         {
             //清除Session
@@ -216,28 +221,7 @@ namespace JETFTAX.Controllers
                 //When user has not login yet
                 if (string.IsNullOrEmpty(loginUser))
                 {
-                    var redirectUrl = "~/Account/Login";
-                    if (!filterContext.HttpContext.Request.IsAjaxRequest())
-                    {
-                        filterContext.Result = new RedirectResult(redirectUrl);
-                    }
-                    else
-                    {
-                        filterContext.Result = new JsonResult
-                        {
-                            Data = new
-                            {
-                                Success = false,
-                                Message = string.Empty,
-                                Redirect = redirectUrl,
-
-                                //recordsTotal = 0,
-                                //recordsFiltered = 0,
-                                data = "[]",
-                            },
-                            JsonRequestBehavior= JsonRequestBehavior.AllowGet
-                        };
-                    }
+                    filterContext.Result = SessionAuthorizeFilter.CreateLoginRequiredResult(filterContext);
                     return;
                 }
             }
@@ -257,6 +241,12 @@ namespace JETFTAX.Controllers
             protected override bool AuthorizeCore(HttpContextBase httpContext)
             {
                 bool authorize = false;
+                var userId = httpContext?.Session?["user_id"]?.ToString();
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return false;
+                }
+
                 var userAuth = httpContext.Session["user_auth"] as List<string>;
 
                 if (userAuth != null)
@@ -279,6 +269,14 @@ namespace JETFTAX.Controllers
 
             protected override void HandleUnauthorizedRequest(AuthorizationContext filterContext)
             {
+                var userId = filterContext?.HttpContext?.Session?["user_id"]?.ToString();
+                var userAuth = filterContext?.HttpContext?.Session?["user_auth"] as List<string>;
+                if (string.IsNullOrWhiteSpace(userId) || userAuth == null)
+                {
+                    filterContext.Result = SessionAuthorizeFilter.CreateLoginRequiredResult(filterContext);
+                    return;
+                }
+
                 filterContext.Result = new RedirectToRouteResult(
                    new RouteValueDictionary
                    {

@@ -133,6 +133,54 @@
     @Scripts.Render("~/bundles/angular")
     <script src="~/Scripts/lib/jquery-ui.min.js"></script>
     <script src="~/Scripts/lib/angular/sortable.min.js"></script>
+    <script>
+        (function () {
+            function getLoginRedirect(xhr) {
+                if (!xhr) {
+                    return null;
+                }
+
+                var headerRedirect = xhr.getResponseHeader ? xhr.getResponseHeader('X-Login-Redirect') : null;
+                if (headerRedirect) {
+                    return headerRedirect;
+                }
+
+                if (xhr.responseJSON && xhr.responseJSON.Redirect) {
+                    return xhr.responseJSON.Redirect;
+                }
+
+                if (xhr.responseText) {
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+                        return data && data.Redirect ? data.Redirect : null;
+                    } catch (e) {
+                        return null;
+                    }
+                }
+
+                return null;
+            }
+
+            function redirectToLogin(redirect) {
+                if (!redirect || window.__redirectingToLogin) {
+                    return;
+                }
+
+                window.__redirectingToLogin = true;
+                window.location.href = redirect;
+            }
+
+            $(document).ajaxError(function (event, xhr) {
+                if (xhr && xhr.status === 401) {
+                    redirectToLogin(getLoginRedirect(xhr) || '@Url.Content("~/Account/Login")');
+                }
+            });
+
+            $(document).ajaxComplete(function (event, xhr) {
+                redirectToLogin(getLoginRedirect(xhr));
+            });
+        })();
+    </script>
     @RenderSection("scripts", required: false)
 </body>
 </html>

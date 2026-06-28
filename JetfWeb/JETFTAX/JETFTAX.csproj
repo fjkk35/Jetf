@@ -271,6 +271,7 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\Startup.cs" />
     <Compile Include="Infrastructure\RequestTraceFilter.cs" />
+    <Compile Include="Infrastructure\SessionAuthorizeFilter.cs" />
     <Compile Include="Hubs\MainHub.cs" />
     <Compile Include="Controllers\AbnormalStateController.cs" />
     <Compile Include="Controllers\AccountController.cs" />
