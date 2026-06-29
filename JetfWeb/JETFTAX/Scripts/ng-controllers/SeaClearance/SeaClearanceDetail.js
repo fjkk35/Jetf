@@ -4,7 +4,7 @@ moment.locale('zh-tw');
 // Angular.js 應用程式 - 加入 ui.bootstrap 依賴
 var app = angular.module('seaClearanceDetailApp', ['commonFilters', 'ui.bootstrap']);
 // Controller
-app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', function ($scope, $http, $filter) {
+app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', '$q', function ($scope, $http, $filter, $q) {
         // 初始化資料
         $scope.detailId = getQueryStringId();
         $scope.detailData = null;
@@ -19,11 +19,19 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
         $scope.editHistory = [];
         $scope.authorizationFormHistory = [];
         $scope.currentAuthFormType = 1; // 1=收到正本選單、2=寄文件選單
+        $scope.isOptionDataLoaded = false;
         $scope.showFullContactEmail = false; // 控制聯繫人信箱的顯示/隱藏狀態
         $scope.processor = ''; // 負責人
         // CPT 關貿資料
         $scope.cptData = null;
         $scope.isLoadingCptData = false; // CPT 資料載入狀態
+        $scope.isOptionDataLoading = false;
+        $scope.isApprovalCategoriesLoading = false;
+        $scope.isAuthorizationFormsLoading = false;
+        $scope.isRemarksLoading = false;
+        $scope.isAvailableStepsLoading = false;
+        $scope.isProcessorLoading = false;
+        $scope.isSignInOutTimeLoading = false;
         // 步驟相關資料
         $scope.stepOptions = [];
         $scope.availableStepDetails = [];
@@ -50,6 +58,13 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
         $scope.isAnyEditing = function () {
             return !!$scope.currentEditField;
         };
+        function isFieldWaitingForData(fieldName) {
+            var optionDataFields = ['Post_Entry', 'CustomsBroker', 'CustomsBrokerage'];
+            if (optionDataFields.indexOf(fieldName) >= 0 && !$scope.isOptionDataLoaded) {
+                return true;
+            }
+            return (fieldName === 'SignInTime' || fieldName === 'SignOutTime') && $scope.isSignInOutTimeLoading;
+        }
         // 日期選擇器設定
         $scope.dateOptions = {
             formatYear: 'yyyy',
@@ -114,8 +129,9 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             }
             return !!data.msg && (data.ReturnObject === null || data.ReturnObject === undefined);
         }
-        // 載入基礎資料
+        // 載入選項資料
         $scope.loadInitialData = function () {
+            $scope.isOptionDataLoading = true;
             var promises = [
                 $http.get(Router.action('CustomsBroker', 'GetAllForDropdown')),
                 $http.get(Router.action('SeaClearance', 'GetCustomsBrokerageOptions')),
@@ -124,7 +140,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 $http.get(Router.action('AuthorizationForm', 'GetAll')),
                 $http.get(Router.action('AbnormalState', 'GetAllAbnormalStates'))
             ];
-            Promise.all(promises).then(function (responses) {
+            return $q.all(promises).then(function (responses) {
                 var failedResponse = responses.find(function (response) {
                     return hasApiError(response);
                 });
@@ -138,11 +154,15 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 $scope.approvalCategoryOptions = responses[3].data || [];
                 $scope.authorizationFormOptions = responses[4].data || [];
                 $scope.abnormalStateOptions = responses[5].data || [];
-                $scope.loadData();
-                $scope.$apply();
+                $scope.isOptionDataLoaded = true;
+                if ($scope.detailData && $scope.detailData.Id) {
+                    $scope.loadOptionDependentData($scope.detailData.Id);
+                }
             }).catch(function (error) {
                 console.error('載入基礎資料失敗:', error);
                 showApiError("載入基礎資料失敗", error);
+            }).finally(function () {
+                $scope.isOptionDataLoading = false;
             });
         };
         // 載入明細資料（僅載入基本資料）
@@ -174,6 +194,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
         };
         // 更新入倉與出倉時間
         $scope.updateSignInOutTime = function () {
+            $scope.isSignInOutTimeLoading = true;
             $http.post(Router.action('SeaClearance', 'UpdateSignInOutTime'), { id: $scope.detailData.Id })
                 .then(function (response) {
                 if (hasApiError(response)) {
@@ -192,6 +213,8 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 .catch(function (error) {
                 console.error('更新入倉與出倉時間失敗:', error);
                 showApiError("更新入倉與出倉時間失敗", error);
+            }).finally(function () {
+                $scope.isSignInOutTimeLoading = false;
             });
         };
         // 載入完整資料（包含所有相關資料）
@@ -203,8 +226,6 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                     return;
                 }
                 var detailId = detailData.Id;
-                $scope.loadDetailApprovalCategories(detailId);
-                $scope.loadDetailAuthorizationForms(detailId);
                 $scope.loadRemarks(detailId);
                 // 更新入倉與出倉時間
                 $scope.updateSignInOutTime();
@@ -214,6 +235,9 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 $scope.loadProcessor(detailId);
                 // 載入 CPT 關貿資料
                 $scope.loadCptData();
+                if ($scope.isOptionDataLoaded) {
+                    $scope.loadOptionDependentData(detailId);
+                }
             })
                 .catch(function (error) {
                 console.error('載入完整資料失敗:', error);
@@ -264,9 +288,14 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 $scope.isLoadingCptData = false; // 結束載入
             });
         };
+        $scope.loadOptionDependentData = function (detailId) {
+            $scope.loadDetailApprovalCategories(detailId);
+            $scope.loadDetailAuthorizationForms(detailId);
+        };
         // 載入明細的簽審類別
         $scope.loadDetailApprovalCategories = function (detailId) {
-            $http.get(Router.action('SeaClearance', 'GetDetailApprovalCategories'), {
+            $scope.isApprovalCategoriesLoading = true;
+            return $http.get(Router.action('SeaClearance', 'GetDetailApprovalCategories'), {
                 params: { seaClearanceDetailId: detailId }
             }).then(function (response) {
                 var selectedIds = response.data;
@@ -281,12 +310,15 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             }).catch(function (error) {
                 console.error('載入明細簽審類別失敗:', error);
                 showApiError("載入明細簽審類別失敗", error);
+            }).finally(function () {
+                $scope.isApprovalCategoriesLoading = false;
             });
         };
         // 載入明細的授權表單
         $scope.loadDetailAuthorizationForms = function (detailId) {
+            $scope.isAuthorizationFormsLoading = true;
             // 載入收到正本選單
-            $http.get(Router.action('SeaClearance', 'GetDetailAuthorizationForms'), {
+            var receivedOriginalPromise = $http.get(Router.action('SeaClearance', 'GetDetailAuthorizationForms'), {
                 params: { seaClearanceDetailId: detailId, type: 1 }
             }).then(function (response) {
                 var selectedIds = response.data;
@@ -303,7 +335,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 showApiError("載入收到正本選單失敗", error);
             });
             // 載入寄文件選單
-            $http.get(Router.action('SeaClearance', 'GetDetailAuthorizationForms'), {
+            var documentDeliveryPromise = $http.get(Router.action('SeaClearance', 'GetDetailAuthorizationForms'), {
                 params: { seaClearanceDetailId: detailId, type: 2 }
             }).then(function (response) {
                 var selectedIds = response.data;
@@ -318,6 +350,10 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             }).catch(function (error) {
                 console.error('載入寄文件選單失敗:', error);
                 showApiError("載入寄文件選單失敗", error);
+            });
+            return $q.all([receivedOriginalPromise, documentDeliveryPromise])
+                .finally(function () {
+                $scope.isAuthorizationFormsLoading = false;
             });
         };
         // 載入授權表單歷史記錄
@@ -343,20 +379,22 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
         };
         // 取得報驗公司名稱
         $scope.getCustomsBrokerName = function (customsBrokerId) {
+            var detailBrokerName = $scope.detailData ? $scope.detailData.CustomsBrokerName : '';
             if (!customsBrokerId)
-                return '';
+                return detailBrokerName || '';
             var broker = $scope.customsBrokerOptions.find(function (b) {
                 return b.Value == customsBrokerId;
             });
-            return broker ? broker.Text : '';
+            return broker ? broker.Text : (detailBrokerName || '');
         };
         $scope.getCustomsBrokerageName = function (customsBrokerageId) {
+            var detailBrokerageName = $scope.detailData ? $scope.detailData.CustomsBrokerageName : '';
             if (!customsBrokerageId)
-                return '';
+                return detailBrokerageName || '';
             var brokerage = $scope.customsBrokerageOptions.find(function (item) {
                 return parseInt(String(item.Value), 10) === parseInt(String(customsBrokerageId), 10);
             });
-            return brokerage ? brokerage.Text : '';
+            return brokerage ? brokerage.Text : (detailBrokerageName || '');
         };
         // 開啟日期彈出視窗
         $scope.openDatePopup = function (fieldName) {
@@ -364,7 +402,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
         };
         // 編輯欄位
         $scope.editField = function (fieldName) {
-            if ($scope.isEditLocked(fieldName) || $scope.editMode[fieldName]) {
+            if (isFieldWaitingForData(fieldName) || $scope.isEditLocked(fieldName) || $scope.editMode[fieldName]) {
                 return;
             }
             $scope.currentEditField = fieldName;
@@ -420,6 +458,9 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
         };
         // 顯示簽審類別 Modal
         $scope.showApprovalCategoryModal = function () {
+            if (!$scope.isOptionDataLoaded || $scope.isApprovalCategoriesLoading) {
+                return;
+            }
             // 初始化暫存值
             $scope.tempValues.ApprovalCategories = {};
             $scope.selectedCategories.forEach(function (category) {
@@ -430,6 +471,9 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
         };
         // 顯示授權表單 Modal
         $scope.showAuthorizationFormModal = function (type) {
+            if (!$scope.isOptionDataLoaded || $scope.isAuthorizationFormsLoading) {
+                return;
+            }
             $scope.currentAuthFormType = type;
             // 初始化暫存值
             $scope.tempValues.AuthorizationForms = {};
@@ -747,11 +791,10 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 showApiError("載入編輯紀錄失敗", error);
             });
         };
-        // 初始化
-        $scope.loadInitialData();
         // 載入負責人
         $scope.loadProcessor = function (detailId) {
-            $http.get(Router.action('SeaClearance', 'GetProcessor'), {
+            $scope.isProcessorLoading = true;
+            return $http.get(Router.action('SeaClearance', 'GetProcessor'), {
                 params: { seaClearanceDetailId: detailId }
             }).then(function (response) {
                 if (hasApiError(response)) {
@@ -767,6 +810,8 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 console.error('載入負責人失敗:', error);
                 $scope.processor = '';
                 showApiError("載入負責人失敗", error);
+            }).finally(function () {
+                $scope.isProcessorLoading = false;
             });
         };
         // 載入當前步驟
@@ -852,6 +897,9 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
         };
         // 顯示步驟詳細 Modal
         $scope.showStepDetailModal = function () {
+            if ($scope.isAvailableStepsLoading) {
+                return;
+            }
             console.log('開啟步驟詳細 Modal');
             console.log('原始 tempValues.selectedStepId:', $scope.tempValues.selectedStepId, '類型:', typeof $scope.tempValues.selectedStepId);
             // 確保 selectedStepId 是有效的數字
@@ -981,7 +1029,8 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
         // ==================== 步驟跳轉規則相關功能 ====================
         // 載入可用步驟（基於跳轉規則）
         $scope.loadAvailableSteps = function (stepId) {
-            $http.get(Router.action('SeaClearance', 'GetAvailableSteps'), {
+            $scope.isAvailableStepsLoading = true;
+            return $http.get(Router.action('SeaClearance', 'GetAvailableSteps'), {
                 params: {
                     stepId: stepId
                 }
@@ -1000,6 +1049,8 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             }).catch(function (error) {
                 console.error('載入可用步驟失敗:', error);
                 showApiError("載入可用步驟失敗", error);
+            }).finally(function () {
+                $scope.isAvailableStepsLoading = false;
             });
         };
         // 處理鍵盤事件
@@ -1088,6 +1139,9 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
         };
         // 顯示異常狀態詳細 Modal
         $scope.showAbnormalStateDetailModal = function () {
+            if (!$scope.isOptionDataLoaded) {
+                return;
+            }
             console.log('開啟異常狀態詳細 Modal');
             console.log('原始 tempValues.selectedAbnormalStateId:', $scope.tempValues.selectedAbnormalStateId, '類型:', typeof $scope.tempValues.selectedAbnormalStateId);
             // 確保 selectedAbnormalStateId 是有效的數字
@@ -1192,7 +1246,8 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
         // ==================== 備註相關功能 ====================
         // 載入備註記錄
         $scope.loadRemarks = function (detailId) {
-            $http.get(Router.action('SeaClearance', 'GetSeaClearanceRemarks'), {
+            $scope.isRemarksLoading = true;
+            return $http.get(Router.action('SeaClearance', 'GetSeaClearanceRemarks'), {
                 params: { seaClearanceDetailId: detailId }
             }).then(function (response) {
                 if (hasApiError(response) || !Array.isArray(response.data)) {
@@ -1205,6 +1260,8 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
             }).catch(function (error) {
                 console.error('載入備註記錄失敗:', error);
                 showApiError("載入備註記錄失敗", error);
+            }).finally(function () {
+                $scope.isRemarksLoading = false;
             });
         };
         // 新增備註
@@ -1390,4 +1447,7 @@ app.controller('SeaClearanceDetailController', ['$scope', '$http', '$filter', fu
                 $scope.isUpdatingImportDate = false;
             });
         };
+        // 初始化：明細資料優先顯示，選項資料背景載入後再補齊相關區塊。
+        $scope.loadData();
+        $scope.loadInitialData();
     }]);

@@ -40,7 +40,12 @@
                 <td class="tabletitle">報單傳輸日</td>
                 <td>{{detailData.ProDateTime | customDate}}</td>
                 <td class="tabletitle">負責人</td>
-                <td>{{processor}}</td>
+                <td>
+                    <span ng-if="isProcessorLoading" class="inline-loading" title="載入中">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </span>
+                    <span ng-if="!isProcessorLoading">{{processor}}</span>
+                </td>
             </tr>
             <tr>
                 <td class="tabletitle">原單是否上傳</td>
@@ -52,7 +57,10 @@
                 <td>
                     <div class="editable-field-container">
                         <span class="editable-field" ng-if="!editMode.Post_Entry">{{detailData.SeaOrderOriginals[0].Post_Entry}}</span>
-                        <div ng-if="editMode.Post_Entry">
+                        <span ng-if="!isOptionDataLoaded && !editMode.Post_Entry" class="inline-loading" title="載入報關方式選項">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
+                        <div ng-if="editMode.Post_Entry && isOptionDataLoaded">
                             <select class="form-control" ng-model="tempValues.Post_Entry" ng-keydown="handleSelectKeyDown($event, 'Post_Entry')">
                                 <option value="">請選擇報關方式</option>
                                 <option ng-repeat="option in postEntryOptions" ng-value="option.Value">{{option.Text}}</option>
@@ -62,7 +70,7 @@
                                 <button class="btn-cancel" ng-click="cancelEdit('Post_Entry')">取消</button>
                             </div>
                         </div>
-                        <button class="edit-btn" ng-if="!editMode.Post_Entry" ng-click="editField('Post_Entry')" ng-disabled="isEditLocked('Post_Entry')" ng-class="{'is-disabled': isEditLocked('Post_Entry')}">
+                        <button class="edit-btn" ng-if="!editMode.Post_Entry && isOptionDataLoaded" ng-click="editField('Post_Entry')" ng-disabled="isEditLocked('Post_Entry')" ng-class="{'is-disabled': isEditLocked('Post_Entry')}">
                             <i class="fas fa-edit"></i> 編輯
                         </button>
                     </div>
@@ -71,7 +79,10 @@
                 <td>
                     <div class="editable-field-container">
                         <span class="editable-field" ng-if="!editMode.CustomsBroker">{{getCustomsBrokerName(detailData.CustomsBrokerId)}}</span>
-                        <div ng-if="editMode.CustomsBroker">
+                        <span ng-if="!isOptionDataLoaded && !editMode.CustomsBroker" class="inline-loading" title="載入報驗公司選項">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
+                        <div ng-if="editMode.CustomsBroker && isOptionDataLoaded">
                             <select class="form-control" ng-model="tempValues.CustomsBrokerId" ng-keydown="handleSelectKeyDown($event, 'CustomsBroker')">
                                 <option value="">請選擇報驗公司</option>
                                 <option ng-repeat="broker in customsBrokerOptions" ng-value="broker.Value">{{broker.Text}}</option>
@@ -81,7 +92,7 @@
                                 <button class="btn-cancel" ng-click="cancelEdit('CustomsBroker')">取消</button>
                             </div>
                         </div>
-                        <button class="edit-btn" ng-if="!editMode.CustomsBroker" ng-click="editField('CustomsBroker')" ng-disabled="isEditLocked('CustomsBroker')" ng-class="{'is-disabled': isEditLocked('CustomsBroker')}">
+                        <button class="edit-btn" ng-if="!editMode.CustomsBroker && isOptionDataLoaded" ng-click="editField('CustomsBroker')" ng-disabled="isEditLocked('CustomsBroker')" ng-class="{'is-disabled': isEditLocked('CustomsBroker')}">
                             <i class="fas fa-edit"></i> 編輯
                         </button>
                     </div>
@@ -98,9 +109,12 @@
                 <td>
                     <div class="editable-field-container">
                         <div class="selected-categories-display">
+                            <span ng-if="!isOptionDataLoaded || isApprovalCategoriesLoading" class="inline-loading" title="載入簽審類別">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
                             <p ng-repeat="category in selectedCategories" class="category-tag">{{category.CategoryName}}</p>
                         </div>
-                        <button class="edit-btn" ng-click="showApprovalCategoryModal()" ng-disabled="isAnyEditing()" ng-class="{'is-disabled': isAnyEditing()}">
+                        <button class="edit-btn" ng-if="isOptionDataLoaded && !isApprovalCategoriesLoading" ng-click="showApprovalCategoryModal()" ng-disabled="isAnyEditing()" ng-class="{'is-disabled': isAnyEditing()}">
                             <i class="fas fa-edit"></i> 編輯
                         </button>
                     </div>
@@ -155,8 +169,11 @@
                     <div class="editable-field-container">
                         <div ng-if="!editMode.SignInTime">
                             <span ng-if="detailData.SignInTime">{{detailData.SignInTime | customDate}}</span>
+                            <span ng-if="isSignInOutTimeLoading" class="inline-loading" title="更新入倉日期">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
                         </div>
-                        <div ng-if="editMode.SignInTime" class="date-edit-container">
+                        <div ng-if="editMode.SignInTime && !isSignInOutTimeLoading" class="date-edit-container">
                             <div class="datepicker-container">
                                 <input type="text"
                                        class="datepicker-input"
@@ -173,7 +190,7 @@
                                 <button class="date-btn-cancel" ng-click="cancelEdit('SignInTime')">取消</button>
                             </div>
                         </div>
-                        <button class="edit-btn" ng-if="!editMode.SignInTime" ng-click="editField('SignInTime')" ng-disabled="isEditLocked('SignInTime')" ng-class="{'is-disabled': isEditLocked('SignInTime')}">
+                        <button class="edit-btn" ng-if="!editMode.SignInTime && !isSignInOutTimeLoading" ng-click="editField('SignInTime')" ng-disabled="isEditLocked('SignInTime')" ng-class="{'is-disabled': isEditLocked('SignInTime')}">
                             <i class="fas fa-edit"></i> 編輯
                         </button>
                     </div>
@@ -199,9 +216,12 @@
                 <td class="tabletitle">收到正本選單</td>
                 <td>
                     <div class="editable-field-container">
-                        <button class="edit-btn" ng-click="showAuthorizationFormModal(1)" ng-disabled="isAnyEditing()" ng-class="{'is-disabled': isAnyEditing()}">
+                        <button class="edit-btn" ng-if="isOptionDataLoaded && !isAuthorizationFormsLoading" ng-click="showAuthorizationFormModal(1)" ng-disabled="isAnyEditing()" ng-class="{'is-disabled': isAnyEditing()}">
                             <i class="fas fa-edit"></i> 編輯
                         </button>
+                        <span ng-if="!isOptionDataLoaded || isAuthorizationFormsLoading" class="inline-loading" title="載入收到正本選單">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
                     </div>
                 </td>
             </tr>
@@ -211,8 +231,11 @@
                     <div class="editable-field-container">
                         <div ng-if="!editMode.SignOutTime">
                             <span ng-if="detailData.SignOutTime">{{detailData.SignOutTime | customDate}}</span>
+                            <span ng-if="isSignInOutTimeLoading" class="inline-loading" title="更新出倉日期">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
                         </div>
-                        <div ng-if="editMode.SignOutTime" class="date-edit-container">
+                        <div ng-if="editMode.SignOutTime && !isSignInOutTimeLoading" class="date-edit-container">
                             <div class="datepicker-container">
                                 <input type="text"
                                        class="datepicker-input"
@@ -229,7 +252,7 @@
                                 <button class="date-btn-cancel" ng-click="cancelEdit('SignOutTime')">取消</button>
                             </div>
                         </div>
-                        <button class="edit-btn" ng-if="!editMode.SignOutTime" ng-click="editField('SignOutTime')" ng-disabled="isEditLocked('SignOutTime')" ng-class="{'is-disabled': isEditLocked('SignOutTime')}">
+                        <button class="edit-btn" ng-if="!editMode.SignOutTime && !isSignInOutTimeLoading" ng-click="editField('SignOutTime')" ng-disabled="isEditLocked('SignOutTime')" ng-class="{'is-disabled': isEditLocked('SignOutTime')}">
                             <i class="fas fa-edit"></i> 編輯
                         </button>
                     </div>
@@ -289,9 +312,12 @@
                 <td class="tabletitle">寄文件選單</td>
                 <td>
                     <div class="editable-field-container">
-                        <button class="edit-btn" ng-click="showAuthorizationFormModal(2)" ng-disabled="isAnyEditing()" ng-class="{'is-disabled': isAnyEditing()}">
+                        <button class="edit-btn" ng-if="isOptionDataLoaded && !isAuthorizationFormsLoading" ng-click="showAuthorizationFormModal(2)" ng-disabled="isAnyEditing()" ng-class="{'is-disabled': isAnyEditing()}">
                             <i class="fas fa-edit"></i> 編輯
                         </button>
+                        <span ng-if="!isOptionDataLoaded || isAuthorizationFormsLoading" class="inline-loading" title="載入寄文件選單">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
                     </div>
                 </td>
             </tr>
@@ -369,7 +395,10 @@
                 <td>
                     <div class="editable-field-container">
                         <span class="editable-field" ng-if="!editMode.CustomsBrokerage">{{getCustomsBrokerageName(detailData.CustomsBrokerageId) || '無'}}</span>
-                        <div ng-if="editMode.CustomsBrokerage">
+                        <span ng-if="!isOptionDataLoaded && !editMode.CustomsBrokerage" class="inline-loading" title="載入代理報驗選項">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
+                        <div ng-if="editMode.CustomsBrokerage && isOptionDataLoaded">
                             <select class="form-control"
                                     ng-model="tempValues.CustomsBrokerageId"
                                     ng-options="brokerage.Value as brokerage.Text for brokerage in customsBrokerageOptions"
@@ -381,7 +410,7 @@
                                 <button class="btn-cancel" ng-click="cancelEdit('CustomsBrokerage')">取消</button>
                             </div>
                         </div>
-                        <button class="edit-btn" ng-if="!editMode.CustomsBrokerage" ng-click="editField('CustomsBrokerage')" ng-disabled="isEditLocked('CustomsBrokerage')" ng-class="{'is-disabled': isEditLocked('CustomsBrokerage')}">
+                        <button class="edit-btn" ng-if="!editMode.CustomsBrokerage && isOptionDataLoaded" ng-click="editField('CustomsBrokerage')" ng-disabled="isEditLocked('CustomsBrokerage')" ng-class="{'is-disabled': isEditLocked('CustomsBrokerage')}">
                             <i class="fas fa-edit"></i> 編輯
                         </button>
                     </div>
@@ -413,7 +442,10 @@
                 <td colspan="3">
                     <div class="step-management-container">
                         <div class="step-selection">
-                            <div class="form-group">
+                            <span ng-if="isAvailableStepsLoading" class="inline-loading" title="載入步驟">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
+                            <div class="form-group" ng-if="!isAvailableStepsLoading">
                                 <select class="form-control"
                                         ng-model="tempValues.selectedStepId"
                                         ng-options="step.Id as step.StepName for step in stepOptions"
@@ -422,8 +454,9 @@
                             </div>
                             <button type="button"
                                     class="btn btn-primary btn-sm step-confirm-btn"
+                                    ng-if="!isAvailableStepsLoading"
                                     ng-click="showStepDetailModal()"
-                                    ng-disabled="!tempValues.selectedStepId">
+                                    ng-disabled="!tempValues.selectedStepId || isAvailableStepsLoading">
                                 <i class="fas fa-check"></i> 詳細
                             </button>
                             <button type="button"
@@ -441,7 +474,10 @@
                 <td colspan="3">
                     <div class="step-management-container">
                         <div class="step-selection">
-                            <div class="form-group">
+                            <span ng-if="!isOptionDataLoaded" class="inline-loading" title="載入異常狀態">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
+                            <div class="form-group" ng-if="isOptionDataLoaded">
                                 <select class="form-control"
                                         ng-model="tempValues.selectedAbnormalStateId"
                                         ng-options="abnormalState.Id as abnormalState.AbnormalStateName for abnormalState in abnormalStateOptions"
@@ -451,8 +487,9 @@
                             </div>
                             <button type="button"
                                     class="btn btn-primary btn-sm step-confirm-btn"
+                                    ng-if="isOptionDataLoaded"
                                     ng-click="showAbnormalStateDetailModal()"
-                                    ng-disabled="!tempValues.selectedAbnormalStateId">
+                                    ng-disabled="!tempValues.selectedAbnormalStateId || isOptionDataLoading">
                                 <i class="fas fa-check"></i> 詳細
                             </button>
                             <button type="button"
@@ -503,7 +540,10 @@
                         </div>
 
                         <!-- 無備註時的提示 -->
-                        <div ng-if="remarks.length === 0" class="no-remarks-message">
+                        <div ng-if="isRemarksLoading" class="no-remarks-message">
+                            <i class="fas fa-spinner fa-spin"></i> 載入備註中
+                        </div>
+                        <div ng-if="!isRemarksLoading && remarks.length === 0" class="no-remarks-message">
                             <i class="fas fa-info-circle"></i> 目前沒有備註記錄
                         </div>
                     </div>
@@ -946,3 +986,6 @@
     </div>
 </div>
 
+@section scripts {
+    @Scripts.Render("~/bundles/seaClearanceDetail")
+}

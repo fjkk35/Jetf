@@ -22,6 +22,15 @@ namespace JETFTAX
             bundles.Add(new ScriptBundle("~/bundles/bootstrap").Include(
                       "~/Scripts/bootstrap.js"));
 
+            bundles.Add(new ScriptBundle("~/bundles/angularDetailCore").Include(
+                        "~/Scripts/lib/angular/angular.min.js",
+                        "~/Scripts/lib/angular/ui-bootstrap-tpls.min.js",
+                        "~/Scripts/lib/angular/angular-locale_zh-cn.js",
+                        "~/Scripts/lib/moment/moment.min.js",
+                        "~/Scripts/lib/moment/zh-tw.min.js",
+                        "~/Scripts/common/angular-filters.js"
+                        ));
+
             // Angular.js bundle
             bundles.Add(new ScriptBundle("~/bundles/angular").Include(
                         "~/Scripts/lib/angular/angular.min.js",
@@ -45,6 +54,10 @@ namespace JETFTAX
                             true
                         )
                 );
+
+            bundles.Add(new ScriptBundle("~/bundles/seaClearanceDetail").Include(
+                        "~/Scripts/ng-controllers/SeaClearance/SeaClearanceDetail.js"
+                        ));
 
             bundles.Add(new StyleBundle("~/Content/css").Include(
                       "~/Content/bootstrap.css",

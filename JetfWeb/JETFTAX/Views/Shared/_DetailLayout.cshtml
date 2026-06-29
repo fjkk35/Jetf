@@ -37,7 +37,9 @@
 
     @Scripts.Render(RouteJs.RouteJsHandler.HandlerUrl)
 
-    @Scripts.Render("~/bundles/angular")
+    @Scripts.Render("~/bundles/angularDetailCore")
+
+    @RenderSection("scripts", required: false)
 
 </body>
 </html>
