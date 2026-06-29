@@ -655,6 +655,7 @@ namespace Service.Services.Ftz
             // 建立樣式
             var headerStyle = NpoiStyle.CreateHeaderStyle(workbook, 12, true);
             var dataStyle = NpoiStyle.CreateDataStyle(workbook);
+            var numberStyle = NpoiStyle.CreateNumberStyle(workbook);
 
             // 先把上傳資料整理成實際需要補到未進倉明細的未收單資料，供兩個頁籤共用。
             var uploadRowsByMwb = BuildMainUploadRowsByMwb(uploadRows);
@@ -675,7 +676,7 @@ namespace Service.Services.Ftz
             var headers = new List<string>
               {
                   "主號","客戶名稱","航班", "申報", "進倉","未進倉件","未收單B6F",
-                  "併袋", "進倉袋", "未進倉袋", "未進倉小計","未進倉申報袋號","錯誤訊息"
+                                    "併袋", "進倉袋", "未進倉袋", "未進倉小計"
               };
 
             //取得所有派件公司，加入表頭
@@ -695,6 +696,7 @@ namespace Service.Services.Ftz
                 .Distinct()
                 .ToList();
             headers.AddRange(unreceivedTransNames.Select(x => x));
+            headers.Add("錯誤訊息");
 
             IRow headerRow = sheet.CreateRow(0);
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
@@ -714,16 +716,14 @@ namespace Service.Services.Ftz
                 NpoiCell.CreateCell(dataRow, column++, item.Mwb ?? "", dataStyle);
                 NpoiCell.CreateCell(dataRow, column++, item.Customer ?? "", dataStyle);
                 NpoiCell.CreateCell(dataRow, column++, item.FlightNumber ?? "", dataStyle);
-                NpoiCell.CreateCell(dataRow, column++, item.HwbPiece ?? "", dataStyle);
-                NpoiCell.CreateCell(dataRow, column++, item.HwbGciPiece ?? "", dataStyle);
-                NpoiCell.CreateIntCell(dataRow, column++, item.NotGciPiece, dataStyle);
-                NpoiCell.CreateIntCell(dataRow, column++, item.UnreceivedB6FCount, dataStyle);
-                NpoiCell.CreateCell(dataRow, column++, item.ExpBagCount ?? "", dataStyle);
-                NpoiCell.CreateCell(dataRow, column++, item.ExpBagGciCount ?? "", dataStyle);
-                NpoiCell.CreateIntCell(dataRow, column++, item.NotGciBag, dataStyle);
-                NpoiCell.CreateIntCell(dataRow, column++, item.NotGciTotal, dataStyle);
-                NpoiCell.CreateCell(dataRow, column++, item.NotGciPieceExpBagNo ?? "", dataStyle);
-                NpoiCell.CreateCell(dataRow, column++, item.ErrorMessage ?? "", dataStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.HwbPiece ?? "", numberStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.HwbGciPiece ?? "", numberStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.NotGciPiece, numberStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.UnreceivedB6FCount, numberStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.ExpBagCount ?? "", numberStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.ExpBagGciCount ?? "", numberStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.NotGciBag, numberStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.NotGciTotal, numberStyle);
 
                 //派件公司
                 foreach (var transName in transNames)
@@ -742,20 +742,22 @@ namespace Service.Services.Ftz
 
                     var totalCount = bagnosCount + trackingnoCount + bagnoCount;
 
-                    NpoiCell.CreateIntCell(dataRow, column++, totalCount, dataStyle);
+                    NpoiCell.CreateIntCell(dataRow, column++, totalCount, numberStyle);
                 }
 
                 List<FtzMainUploadExcelRow> unreceivedRows;
                 var unreceivedCount = unreceivedUploadRowsByMainItem.TryGetValue(item, out unreceivedRows)
                     ? unreceivedRows.Count
                     : 0;
-                NpoiCell.CreateIntCell(dataRow, column++, unreceivedCount, dataStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, unreceivedCount, numberStyle);
 
                 foreach (var transName in unreceivedTransNames)
                 {
                     var unreceivedTransNameCount = unreceivedRows?.Count(x => x.TransName == transName) ?? 0;
-                    NpoiCell.CreateIntCell(dataRow, column++, unreceivedTransNameCount, dataStyle);
+                    NpoiCell.CreateIntCell(dataRow, column++, unreceivedTransNameCount, numberStyle);
                 }
+
+                NpoiCell.CreateCell(dataRow, column++, item.ErrorMessage ?? "", dataStyle);
             }
 
             // ========== 第二個頁籤：未進倉明細 ==========
@@ -907,16 +909,64 @@ namespace Service.Services.Ftz
                     }
                 }
 
-                unreceivedRowsByMainItem[mainItem] = mainUploadRows
+                var candidateUnreceivedRows = mainUploadRows
                     .Where(uploadRow =>
                     {
                         var bagNo = string.IsNullOrWhiteSpace(uploadRow.BagNo) ? string.Empty : uploadRow.BagNo.Trim();
                         return !string.IsNullOrWhiteSpace(bagNo) && !knownHwbs.Contains(bagNo);
                     })
                     .ToList();
+
+                unreceivedRowsByMainItem[mainItem] = FilterInvalidUnreceivedMultiPieceRows(candidateUnreceivedRows);
             }
 
             return unreceivedRowsByMainItem;
+        }
+
+        /// <summary>
+        /// 未收單補列時，若一分號多件主分號沒有出現在同批未收單分號中，整筆資料不顯示。
+        /// </summary>
+        private List<FtzMainUploadExcelRow> FilterInvalidUnreceivedMultiPieceRows(List<FtzMainUploadExcelRow> uploadRows)
+        {
+            var rows = uploadRows ?? new List<FtzMainUploadExcelRow>();
+            if (!rows.Any())
+            {
+                return rows;
+            }
+
+            var bagNos = new HashSet<string>(
+                rows
+                    .Select(row => string.IsNullOrWhiteSpace(row?.BagNo) ? string.Empty : row.BagNo.Trim())
+                    .Where(bagNo => !string.IsNullOrWhiteSpace(bagNo)),
+                StringComparer.OrdinalIgnoreCase);
+
+            if (!bagNos.Any())
+            {
+                return rows;
+            }
+
+            return rows
+                .Where(row =>
+                {
+                    var oneHwbMultiPieceHwb = string.IsNullOrWhiteSpace(row?.OneHwbMultiPieceHwb)
+                        ? string.Empty
+                        : row.OneHwbMultiPieceHwb.Trim();
+
+                    if (string.IsNullOrWhiteSpace(oneHwbMultiPieceHwb))
+                    {
+                        return true;
+                    }
+
+                    var relatedBagNos = oneHwbMultiPieceHwb
+                        .Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(bagNo => bagNo.Trim())
+                        .Where(bagNo => !string.IsNullOrWhiteSpace(bagNo))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    return !relatedBagNos.Any() || relatedBagNos.All(bagNos.Contains);
+                })
+                .ToList();
         }
 
         /// <summary>
