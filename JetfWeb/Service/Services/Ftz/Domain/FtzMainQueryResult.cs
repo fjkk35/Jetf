@@ -114,6 +114,11 @@ namespace Service.Services.Ftz.Domain
         /// </summary>
         public string Hwb { get; set; }
 
+        /// <summary>
+        /// 併袋
+        /// </summary>
+        public string ExpBagNo { get; set; }
+
         //public string Container { get; set; }
 
         //[JsonPropertyName("error_percent")]
@@ -178,7 +183,7 @@ namespace Service.Services.Ftz.Domain
 
         //public string ExpAmount { get; set; }
         //public string ExpBag { get; set; }
-        //public string ExpBagNo { get; set; }
+
         //public string ExpCount { get; set; }
         //public string ExpPic { get; set; }
         //public string ExpWeight { get; set; }

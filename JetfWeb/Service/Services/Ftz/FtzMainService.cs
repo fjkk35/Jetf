@@ -882,6 +882,7 @@ namespace Service.Services.Ftz
                 }
 
                 var knownHwbs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var knownBagNos = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
                 if (mainItem.NotGciDetails != null)
                 {
@@ -906,6 +907,13 @@ namespace Service.Services.Ftz
                         {
                             knownHwbs.Add(rawHwb);
                         }
+
+                        // 主號查詢結果已有併袋袋號時，上傳同袋號不列為未收單。
+                        var rawExpBagNo = string.IsNullOrWhiteSpace(rawRow.ExpBagNo) ? string.Empty : rawRow.ExpBagNo.Trim();
+                        if (!string.IsNullOrWhiteSpace(rawExpBagNo))
+                        {
+                            knownBagNos.Add(rawExpBagNo);
+                        }
                     }
                 }
 
@@ -913,7 +921,9 @@ namespace Service.Services.Ftz
                     .Where(uploadRow =>
                     {
                         var bagNo = string.IsNullOrWhiteSpace(uploadRow.BagNo) ? string.Empty : uploadRow.BagNo.Trim();
-                        return !string.IsNullOrWhiteSpace(bagNo) && !knownHwbs.Contains(bagNo);
+                        return !string.IsNullOrWhiteSpace(bagNo) &&
+                            !knownHwbs.Contains(bagNo) &&
+                            !knownBagNos.Contains(bagNo);
                     })
                     .ToList();
 
