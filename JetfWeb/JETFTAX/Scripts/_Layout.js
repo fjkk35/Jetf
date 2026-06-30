@@ -127,7 +127,6 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'ScanCargoDetails', text: '掃貨上車交接派件公司明細表', url: '~/CCLWork/ScanCargoDetails', auth: ['ScanCargoDetails'] },
                 { id: 'ScanCargoCustomerDetails', text: '掃貨上車交接客戶派件公司明細表', url: '~/ScanCargoCustomer/ScanCargoCustomerDetails', auth: ['ScanCargoCustomerDetails'] },
                 { id: 'ScanCargoCustomerDiff', text: '刷槍作業差異表', url: '~/ScanCargoCustomerDiff/Index', auth: ['ScanCargoCustomerDetails'] },
-                { id: 'DeliveryAssistant', text: '派送助理', url: '~/DeliveryAssistant/Index', },
                 { id: 'UploadExportFlight', text: '上傳空運出口航班及出入倉時間', url: '~/ExportClearance/UploadExportFlight', auth: ['UploadEtlExportFlight'] },
                 { id: 'TransferBagReport', text: '接駁袋數統計表', url: '~/TransferBagReport/Index' }
             ]
@@ -175,6 +174,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
         },
         {
             id: 'jetft', title: '捷穩通', icon: 'fas fa-fw fa-truck-loading', children: [
+                { id: 'DeliveryAssistant', text: '派送助理', url: '~/DeliveryAssistant/Index', },
                 { id: 'SjlBatchImport', text: '捷利托運資料上傳', url: '~/SjlBatchImport/Index', auth: ['SjlBatchImport'] },
                 { id: 'SjlBatchImportSearch', text: '捷利托運資料查詢', url: '~/SjlBatchImport/Search', auth: ['SjlBatchImport'] },
                 { id: 'SjlBilling', text: '捷利帳單', url: '~/SjlBilling/Index', auth: ['SjlBilling'] },

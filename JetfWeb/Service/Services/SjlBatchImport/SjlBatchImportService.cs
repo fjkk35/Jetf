@@ -42,9 +42,52 @@ namespace Service.Services.SjlBatchImport
         /// </summary>
         public ResponseModel Upload(string filePath)
         {
+            return Upload(new Dictionary<string, string>
+            {
+                { filePath, Path.GetFileName(filePath) }
+            });
+        }
+
+        /// <summary>
+        /// 上傳多個捷利托運資料 Excel 檔案。
+        /// </summary>
+        public ResponseModel Upload(IDictionary<string, string> filePathMap)
+        {
             try
             {
-                var uploadRows = ReadExcelFile(filePath);
+                if (filePathMap == null || !filePathMap.Any())
+                {
+                    return new ResponseModel("未選擇檔案");
+                }
+
+                var fileCount = filePathMap.Count;
+                var uploadRows = new List<SjlShippingDataUploadModel>();
+                var emptyFileNames = new List<string>();
+                foreach (var filePathItem in filePathMap)
+                {
+                    List<SjlShippingDataUploadModel> fileRows;
+                    try
+                    {
+                        fileRows = ReadExcelFile(filePathItem.Key, filePathItem.Value);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new Exception($"{filePathItem.Value}：{ex.Message}", ex);
+                    }
+
+                    if (fileRows.Count == 0)
+                    {
+                        emptyFileNames.Add(filePathItem.Value);
+                    }
+
+                    uploadRows.AddRange(fileRows);
+                }
+
+                if (emptyFileNames.Any())
+                {
+                    return new ResponseModel($"Excel 檔案中沒有資料：{string.Join("、", emptyFileNames)}");
+                }
+
                 if (uploadRows.Count == 0)
                 {
                     return new ResponseModel("Excel 檔案中沒有資料");
@@ -64,6 +107,7 @@ namespace Service.Services.SjlBatchImport
                         {
                             count = 0,
                             failCount = failList.Count,
+                            fileCount = fileCount,
                             data = failList,
                             message = failMessage
                         }
@@ -72,7 +116,7 @@ namespace Service.Services.SjlBatchImport
 
                 SaveUploadRows(uploadRows);
 
-                var successMessage = $"成功上傳 {uploadRows.Count} 筆資料";
+                var successMessage = $"成功上傳 {uploadRows.Count} 筆資料（共 {fileCount} 個檔案）";
                 return new ResponseModel
                 {
                     status = Status.success,
@@ -81,6 +125,7 @@ namespace Service.Services.SjlBatchImport
                     {
                         count = uploadRows.Count,
                         failCount = 0,
+                        fileCount = fileCount,
                         data = new List<SjlShippingDataUploadModel>(),
                         message = successMessage
                     }
@@ -273,7 +318,7 @@ VALUES
         /// <summary>
         /// 讀取 Excel 檔案。
         /// </summary>
-        private List<SjlShippingDataUploadModel> ReadExcelFile(string filePath)
+        private List<SjlShippingDataUploadModel> ReadExcelFile(string filePath, string fileName)
         {
             var result = new List<SjlShippingDataUploadModel>();
 
@@ -299,6 +344,7 @@ VALUES
 
                     var model = new SjlShippingDataUploadModel
                     {
+                        FileName = fileName,
                         RowNo = i + 1,
                         JetfSerial = GetCellValue(row, headerMap, "運送編號"),
                         BagNumber = GetCellValue(row, headerMap, "單據編號"),
@@ -398,16 +444,18 @@ VALUES
                 }
             }
 
-            var duplicateJetfSerials = uploadRows
+            var duplicateJetfSerialMap = uploadRows
                 .Where(x => !string.IsNullOrWhiteSpace(x.JetfSerial))
                 .GroupBy(x => x.JetfSerial.Trim(), StringComparer.OrdinalIgnoreCase)
                 .Where(g => g.Count() > 1)
-                .Select(g => g.Key)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                .ToDictionary(
+                    g => g.Key,
+                    g => string.Join("、", g.Select(x => $"{x.FileName} 第{x.RowNo}列").Distinct()),
+                    StringComparer.OrdinalIgnoreCase);
 
-            foreach (var item in uploadRows.Where(x => !string.IsNullOrWhiteSpace(x.JetfSerial) && duplicateJetfSerials.Contains(x.JetfSerial.Trim())))
+            foreach (var item in uploadRows.Where(x => !string.IsNullOrWhiteSpace(x.JetfSerial) && duplicateJetfSerialMap.ContainsKey(x.JetfSerial.Trim())))
             {
-                AddValidationError(item, "運送編號", "Excel 內資料重複");
+                AddValidationError(item, "運送編號", $"本次上傳檔案內資料重複（{duplicateJetfSerialMap[item.JetfSerial.Trim()]}）");
             }
 
             foreach (var item in uploadRows.Where(x => x.UploadStatus != "失敗"))

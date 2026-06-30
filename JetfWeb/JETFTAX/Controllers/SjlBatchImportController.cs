@@ -2,6 +2,7 @@
 using Service.Models;
 using Service.Services.SjlBatchImport;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Web;
 using System.Web.Mvc;
@@ -36,31 +37,53 @@ namespace JETFTAX.Controllers
         /// </summary>
         [HttpPost]
         [UserAuthorize(Authority.SjlBatchImport)]
-        public JsonResult Upload(HttpPostedFileBase file)
+        public JsonResult Upload(HttpPostedFileBase[] files)
         {
             ResponseModel resopnseModel = new ResponseModel();
             try
             {
-                if (file == null || file.ContentLength == 0)
+                var uploadFiles = GetUploadFiles(files);
+                var selectedFileCount = GetSelectedFileCount();
+                if (selectedFileCount.HasValue && selectedFileCount.Value != uploadFiles.Count)
+                {
+                    resopnseModel.status = Status.error;
+                    resopnseModel.msg = $"本次選擇 {selectedFileCount.Value} 個檔案，但後端僅收到 {uploadFiles.Count} 個檔案，請重新選擇檔案後再上傳";
+                    return Json(resopnseModel);
+                }
+
+                if (uploadFiles.Count == 0)
                 {
                     resopnseModel.status = Status.error;
                     resopnseModel.msg = "未選擇檔案";
                     return Json(resopnseModel);
                 }
 
-                var fileType = Path.GetExtension(file.FileName);
-                if (fileType != ".xlsx")
+                foreach (var file in uploadFiles)
                 {
-                    resopnseModel.status = Status.error;
-                    resopnseModel.msg = "副檔名需為 xlsx";
-                    return Json(resopnseModel);
+                    var fileType = Path.GetExtension(file.FileName);
+                    if (!string.Equals(fileType, ".xlsx", StringComparison.OrdinalIgnoreCase))
+                    {
+                        resopnseModel.status = Status.error;
+                        resopnseModel.msg = "副檔名需為 xlsx";
+                        return Json(resopnseModel);
+                    }
                 }
 
-                var fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now:yyyyMMddHHmmss}{Path.GetExtension(file.FileName)}";
-                var filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
-                file.SaveAs(filePath);
+                var uploadFolder = Server.MapPath("~/UploadFIle");
+                Directory.CreateDirectory(uploadFolder);
 
-                resopnseModel = _sjlBatchImportService.Upload(filePath);
+                var savedFiles = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var uploadTime = DateTime.Now;
+                for (var i = 0; i < uploadFiles.Count; i++)
+                {
+                    var file = uploadFiles[i];
+                    var fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{uploadTime:yyyyMMddHHmmssfff}_{i + 1}{Path.GetExtension(file.FileName)}";
+                    var filePath = Path.Combine(uploadFolder, fileName);
+                    file.SaveAs(filePath);
+                    savedFiles.Add(filePath, Path.GetFileName(file.FileName));
+                }
+
+                resopnseModel = _sjlBatchImportService.Upload(savedFiles);
             }
             catch (Exception ex)
             {
@@ -69,6 +92,46 @@ namespace JETFTAX.Controllers
             }
 
             return Json(resopnseModel);
+        }
+
+        private List<HttpPostedFileBase> GetUploadFiles(HttpPostedFileBase[] boundFiles)
+        {
+            var boundFileList = new List<HttpPostedFileBase>();
+            if (boundFiles != null)
+            {
+                foreach (var file in boundFiles)
+                {
+                    if (file != null && file.ContentLength > 0)
+                    {
+                        boundFileList.Add(file);
+                    }
+                }
+            }
+
+            var requestFileList = new List<HttpPostedFileBase>();
+            for (var i = 0; i < Request.Files.Count; i++)
+            {
+                var file = Request.Files[i];
+                if (file != null && file.ContentLength > 0)
+                {
+                    requestFileList.Add(file);
+                }
+            }
+
+            return requestFileList.Count >= boundFileList.Count
+                ? requestFileList
+                : boundFileList;
+        }
+
+        private int? GetSelectedFileCount()
+        {
+            int fileCount;
+            if (int.TryParse(Request.Form["fileCount"], out fileCount) && fileCount > 0)
+            {
+                return fileCount;
+            }
+
+            return null;
         }
 
         [HttpPost]

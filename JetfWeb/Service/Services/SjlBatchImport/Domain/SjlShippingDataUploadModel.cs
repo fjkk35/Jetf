@@ -1,124 +1,129 @@
-using System;
+ï»¿using System;
 
 namespace Service.Services.SjlBatchImport.Domain
 {
     /// <summary>
-    /// ±¶§Q¦«¹B¸ê®Æ¤W¶Ç¸ê®Æ¦C¡C
+    /// æ·åˆ©æ‰˜é‹è³‡æ–™ä¸Šå‚³è³‡æ–™åˆ—ã€‚
     /// </summary>
     public class SjlShippingDataUploadModel
     {
         /// <summary>
-        /// Excel ¦C¸¹¡C
+        /// æª”æ¡ˆåç¨±ã€‚
+        /// </summary>
+        public string FileName { get; set; }
+
+        /// <summary>
+        /// Excel åˆ—è™Ÿã€‚
         /// </summary>
         public int RowNo { get; set; }
 
         /// <summary>
-        /// ¹B°e½s¸¹¡C
+        /// é‹é€ç·¨è™Ÿã€‚
         /// </summary>
         public string JetfSerial { get; set; }
 
         /// <summary>
-        /// ³æ¾Ú½s¸¹¡C
+        /// å–®æ“šç·¨è™Ÿã€‚
         /// </summary>
         public string BagNumber { get; set; }
 
         /// <summary>
-        /// ½s¸¹¡C
+        /// ç·¨è™Ÿã€‚
         /// </summary>
         public string Seq { get; set; }
 
         /// <summary>
-        /// ¦¬¥ó¤H¡C
+        /// æ”¶ä»¶äººã€‚
         /// </summary>
         public string Importer { get; set; }
 
         /// <summary>
-        /// ¬£°e¤é­ì©l¤å¦r¡C
+        /// æ´¾é€æ—¥åŸå§‹æ–‡å­—ã€‚
         /// </summary>
         public string DeliveryDateText { get; set; }
 
         /// <summary>
-        /// ¬£°e¤é¡C
+        /// æ´¾é€æ—¥ã€‚
         /// </summary>
         public DateTime? DeliveryDate { get; set; }
 
         /// <summary>
-        /// ¨ä¥L¶O¥Î­ì©l¤å¦r¡C
+        /// å…¶ä»–è²»ç”¨åŸå§‹æ–‡å­—ã€‚
         /// </summary>
         public string OtherFeeText { get; set; }
 
         /// <summary>
-        /// ¨ä¥L¶O¥Î¡C
+        /// å…¶ä»–è²»ç”¨ã€‚
         /// </summary>
         public decimal? OtherFee { get; set; }
 
         /// <summary>
-        /// ¥N¦¬­ì©l¤å¦r¡C
+        /// ä»£æ”¶åŸå§‹æ–‡å­—ã€‚
         /// </summary>
         public string CodText { get; set; }
 
         /// <summary>
-        /// ¥N¦¬¡C
+        /// ä»£æ”¶ã€‚
         /// </summary>
         public decimal? Cod { get; set; }
 
         /// <summary>
-        /// ¦a§}¡C
+        /// åœ°å€ã€‚
         /// </summary>
         public string ImporterAddr { get; set; }
 
         /// <summary>
-        /// «~¦W¡C
+        /// å“åã€‚
         /// </summary>
         public string ItemName { get; set; }
 
         /// <summary>
-        /// ¥ó¼Æ­ì©l¤å¦r¡C
+        /// ä»¶æ•¸åŸå§‹æ–‡å­—ã€‚
         /// </summary>
         public string QtyText { get; set; }
 
         /// <summary>
-        /// ¥ó¼Æ¡C
+        /// ä»¶æ•¸ã€‚
         /// </summary>
         public int? Qty { get; set; }
 
         /// <summary>
-        /// §÷¿n­ì©l¤å¦r¡C
+        /// æç©åŸå§‹æ–‡å­—ã€‚
         /// </summary>
         public string VolumeText { get; set; }
 
         /// <summary>
-        /// §÷¿n¡C
+        /// æç©ã€‚
         /// </summary>
         public decimal? Volume { get; set; }
 
         /// <summary>
-        /// ­«¶q­ì©l¤å¦r¡C
+        /// é‡é‡åŸå§‹æ–‡å­—ã€‚
         /// </summary>
         public string GwText { get; set; }
 
         /// <summary>
-        /// ­«¶q¡C
+        /// é‡é‡ã€‚
         /// </summary>
         public decimal? Gw { get; set; }
 
         /// <summary>
-        /// ¦¬¥ó¤H¹q¸Ü¡C
+        /// æ”¶ä»¶äººé›»è©±ã€‚
         /// </summary>
         public string ImporterPhone { get; set; }
 
         /// <summary>
-        /// ¤W¶Çª¬ºA¡C
+        /// ä¸Šå‚³ç‹€æ…‹ã€‚
         /// </summary>
         public string UploadStatus { get; set; }
 
         /// <summary>
-        /// ¥¢±ÑÄæ¦ì¦WºÙ¡C
+        /// å¤±æ•—æ¬„ä½åç¨±ã€‚
         /// </summary>
         public string FailFieldName { get; set; }
 
         /// <summary>
-        /// ¥¢±Ñ­ì¦]¡C
+        /// å¤±æ•—åŸå› ã€‚
         /// </summary>
         public string FailReason { get; set; }
     }

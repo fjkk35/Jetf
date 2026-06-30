@@ -5,9 +5,9 @@
 
     $scope.uploadFile = function () {
         var fileInput = document.getElementById('fileInput');
-        var file = fileInput.files[0];
+        var files = fileInput.files;
 
-        if (!file) {
+        if (!files || files.length === 0) {
             swal({
                 title: '錯誤',
                 text: '請選擇檔案',
@@ -16,14 +16,16 @@
             return;
         }
 
-        var fileExtension = file.name.split('.').pop().toLowerCase();
-        if (fileExtension !== 'xlsx') {
-            swal({
-                title: '錯誤',
-                text: '副檔名需為 xlsx',
-                icon: 'error'
-            });
-            return;
+        for (var i = 0; i < files.length; i++) {
+            var fileExtension = files[i].name.split('.').pop().toLowerCase();
+            if (fileExtension !== 'xlsx') {
+                swal({
+                    title: '錯誤',
+                    text: '副檔名需為 xlsx',
+                    icon: 'error'
+                });
+                return;
+            }
         }
 
         $scope.uploading = true;
@@ -31,7 +33,10 @@
         $scope.uploadFailData = [];
 
         var formData = new FormData();
-        formData.append('file', file);
+        formData.append('fileCount', files.length);
+        for (var j = 0; j < files.length; j++) {
+            formData.append('files', files[j]);
+        }
 
         $.ajax({
             type: 'POST',

@@ -11,8 +11,8 @@
         <div class="card bg-light rounded p-4 mb-4" style="border:none;">
             <div class="row">
                 <div class="col-lg-12" style="margin-bottom:0.5rem;">
-                    <label>選擇 Excel 檔案</label>
-                    <input type="file" id="fileInput" accept=".xlsx" class="form-control" />
+                    <label>選擇 Excel 檔案（可複選）</label>
+                    <input type="file" id="fileInput" accept=".xlsx" class="form-control" multiple />
                 </div>
                 <div class="col-lg-12" style="margin:0.5rem 0;">
                     <a href='~/Download/DownloadExample?filePath=@AppDomain.CurrentDomain.BaseDirectory\Download\捷利托運資料上傳_範例.xlsx&fileName=捷利托運資料上傳_範例.xlsx' target='_blank'>下載範例</a>
@@ -39,6 +39,7 @@
                 <table class="table table-bordered table-hover">
                     <thead>
                         <tr>
+                            <th>檔案名稱</th>
                             <th>Excel列號</th>
                             <th>失敗欄位</th>
                             <th>失敗原因</th>
@@ -59,6 +60,7 @@
                     </thead>
                     <tbody>
                         <tr ng-repeat="item in uploadFailData" class="table-danger">
+                            <td>{{ item.FileName }}</td>
                             <td>{{ item.RowNo }}</td>
                             <td>{{ item.FailFieldName }}</td>
                             <td>{{ item.FailReason }}</td>
