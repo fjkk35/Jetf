@@ -57,6 +57,8 @@ namespace Service.Services.ShipmentInboundPick
                         SeqNo = x.SeqNo,
                         LocationCode = x.LocationCode,
                         ProcessType = (ShipmentInboundProcessType)(x.ProcessType ?? 0),
+                        TransNo = x.TransNo,
+                        TransName = x.TransName,
                         ProcessTime = x.ProcessTime,
                         ProcessImporter = x.ProcessImporter,
                         ProcessImporterPhone = x.ProcessImporterPhone,
@@ -77,12 +79,12 @@ namespace Service.Services.ShipmentInboundPick
                     })
                     .ToList();
 
-                FillCustomerNames(data);
+                FillCustomerAndTransNames(data);
                 return data;
             }
         }
 
-        private void FillCustomerNames(List<ShipmentInboundPickModel> data)
+        private void FillCustomerAndTransNames(List<ShipmentInboundPickModel> data)
         {
             var airCustCodes = data.Where(x => x.DataType == "空運" && !string.IsNullOrWhiteSpace(x.CustCode))
                                    .Select(x => x.CustCode)
@@ -94,8 +96,14 @@ namespace Service.Services.ShipmentInboundPick
                                    .Distinct()
                                    .ToList();
 
+            var airTransNos = data.Where(x => x.DataType == "空運" && !string.IsNullOrWhiteSpace(x.TransNo))
+                                  .Select(x => x.TransNo)
+                                  .Distinct()
+                                  .ToList();
+
             var airCustNames = GetAirCustomerNames(airCustCodes);
             var seaCustNames = GetSeaCustomerNames(seaCustCodes);
+            var airTransNames = GetAirTransNames(airTransNos);
 
             foreach (var item in data)
             {
@@ -109,6 +117,11 @@ namespace Service.Services.ShipmentInboundPick
                     {
                         item.CustName = seaCustNames[item.CustCode];
                     }
+                }
+
+                if (item.DataType == "空運" && !string.IsNullOrWhiteSpace(item.TransNo) && airTransNames.ContainsKey(item.TransNo))
+                {
+                    item.TransName = airTransNames[item.TransNo];
                 }
             }
         }
@@ -147,7 +160,7 @@ namespace Service.Services.ShipmentInboundPick
             ISheet sheet = workbook.CreateSheet("撿貨明細");
 
             IRow headerRow = sheet.CreateRow(0);
-            var headers = new List<string> { "單號", "客戶", "流水號", "儲位", "處理方式", "重出派件公司", "備註", "客服處理時間" };
+            var headers = new List<string> { "單號", "客戶", "流水號", "儲位", "處理方式", "派件公司", "重出派件公司", "備註", "客服處理時間" };
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
             int rowIndex = 1;
@@ -159,9 +172,10 @@ namespace Service.Services.ShipmentInboundPick
                 NpoiCell.CreateCell(dataRow, 2, item.SeqNo, dataStyle);
                 NpoiCell.CreateCell(dataRow, 3, item.LocationCode, dataStyle);
                 NpoiCell.CreateCell(dataRow, 4, item.ProcessTypeName, dataStyle);
-                NpoiCell.CreateCell(dataRow, 5, item.ProcessTransName, dataStyle);
-                NpoiCell.CreateCell(dataRow, 6, item.Remark, dataStyle);
-                NpoiCell.CreateDateTimeCell(dataRow, 7, item.ProcessTime, dateTimeStyle);
+                NpoiCell.CreateCell(dataRow, 5, item.TransName, dataStyle);
+                NpoiCell.CreateCell(dataRow, 6, item.ProcessTransName, dataStyle);
+                NpoiCell.CreateCell(dataRow, 7, item.Remark, dataStyle);
+                NpoiCell.CreateDateTimeCell(dataRow, 8, item.ProcessTime, dateTimeStyle);
                 rowIndex++;
             }
 
@@ -184,7 +198,7 @@ namespace Service.Services.ShipmentInboundPick
             IRow headerRow = sheet.CreateRow(0);
             var headers = new List<string>
             {
-                "單號", "客戶", "流水號", "儲位", "處理方式", "收件人", "電話", "稅金", "預計自取日期", "車牌號碼", "備註", "客服處理時間"
+                "單號", "客戶", "流水號", "儲位", "處理方式", "派件公司", "收件人", "電話", "稅金", "預計自取日期", "車牌號碼", "備註", "客服處理時間"
             };
             NpoiCell.CreateHeaderCells(headerRow, headers, headerStyle);
 
@@ -197,13 +211,14 @@ namespace Service.Services.ShipmentInboundPick
                 NpoiCell.CreateCell(dataRow, 2, item.SeqNo, dataStyle);
                 NpoiCell.CreateCell(dataRow, 3, item.LocationCode, dataStyle);
                 NpoiCell.CreateCell(dataRow, 4, item.ProcessTypeName, dataStyle);
-                NpoiCell.CreateCell(dataRow, 5, item.ProcessImporter, dataStyle);
-                NpoiCell.CreateCell(dataRow, 6, item.ProcessImporterPhone, dataStyle);
-                NpoiCell.CreateIntCell(dataRow, 7, item.Tax, dataStyle);
-                NpoiCell.CreateDateTimeCell(dataRow, 8, item.PickupTime, dateStyle);
-                NpoiCell.CreateCell(dataRow, 9, item.CarNo, dataStyle);
-                NpoiCell.CreateCell(dataRow, 10, item.Remark, dataStyle);
-                NpoiCell.CreateDateTimeCell(dataRow, 11, item.ProcessTime, dateTimeStyle);
+                NpoiCell.CreateCell(dataRow, 5, item.TransName, dataStyle);
+                NpoiCell.CreateCell(dataRow, 6, item.ProcessImporter, dataStyle);
+                NpoiCell.CreateCell(dataRow, 7, item.ProcessImporterPhone, dataStyle);
+                NpoiCell.CreateIntCell(dataRow, 8, item.Tax, dataStyle);
+                NpoiCell.CreateDateTimeCell(dataRow, 9, item.PickupTime, dateStyle);
+                NpoiCell.CreateCell(dataRow, 10, item.CarNo, dataStyle);
+                NpoiCell.CreateCell(dataRow, 11, item.Remark, dataStyle);
+                NpoiCell.CreateDateTimeCell(dataRow, 12, item.ProcessTime, dateTimeStyle);
                 rowIndex++;
             }
 
