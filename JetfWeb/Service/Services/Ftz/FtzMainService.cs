@@ -588,7 +588,7 @@ namespace Service.Services.Ftz
                 throw new Exception("找不到 Excel 頁籤：主號2");
             }
 
-            var requiredHeaders = new[] { "主號", "總件數" };
+            var requiredHeaders = new[] { "主號", "總件數", "傳輸時間" };
             var headerInfo = FindUploadHeader(sheet, requiredHeaders);
             var headerMap = headerInfo.Item2;
             var missingHeaders = requiredHeaders.Where(header => !headerMap.ContainsKey(header)).ToList();
@@ -609,6 +609,8 @@ namespace Service.Services.Ftz
 
                 var mwb = row.GetCellData(headerMap["主號"]);
                 var totalPiece = row.GetCellData(headerMap["總件數"]);
+                var transmissionTime = row.GetCellData(headerMap["傳輸時間"]);
+
 
                 if (string.IsNullOrWhiteSpace(mwb))
                 {
@@ -618,7 +620,9 @@ namespace Service.Services.Ftz
                 summaryRows.Add(new FtzMainUploadSummaryRow
                 {
                     Mwb = mwb.Trim(),
-                    TotalPiece = (totalPiece ?? "").Trim()
+                    TotalPiece = (totalPiece ?? "").Trim(),
+                    TransmissionTime = (transmissionTime ?? "").Trim(),
+
                 });
             }
 
@@ -714,21 +718,51 @@ namespace Service.Services.Ftz
                 .GroupBy(row => row.Mwb.Trim(), StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(
                     group => group.Key,
-                    group =>
-                    {
-                        var values = group
-                            .Select(row => row.TotalPiece ?? "")
-                            .Where(value => !string.IsNullOrWhiteSpace(value))
-                            .ToList();
-
-                        if (values.Count <= 1)
-                        {
-                            return values.FirstOrDefault() ?? "";
-                        }
-
-                        return values.Sum(ParseInt).ToString(CultureInfo.InvariantCulture);
-                    },
+                    group => group
+                        .OrderByDescending(row => ParseUploadTransmissionTime(row.TransmissionTime))
+                        .Select(row => row.TotalPiece ?? "")
+                        .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "",
                     StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 解析主號2 頁籤的傳輸時間。
+        /// </summary>
+        private DateTime ParseUploadTransmissionTime(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return DateTime.MinValue;
+            }
+
+            var formats = new[]
+            {
+                "yyyy-MM-dd HH:mm:ss",
+                "yyyy/MM/dd HH:mm:ss",
+                "yyyy/M/d H:mm:ss",
+                "yyyy-MM-dd HH:mm",
+                "yyyy/MM/dd HH:mm",
+                "yyyy/M/d H:mm",
+                "yyyy-MM-dd",
+                "yyyy/MM/dd",
+                "yyyy/M/d",
+                "yyyyMMddHHmmss",
+                "yyyyMMdd"
+            };
+
+            DateTime result;
+            var trimmedValue = value.Trim();
+            if (DateTime.TryParseExact(trimmedValue, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out result))
+            {
+                return result;
+            }
+
+            if (DateTime.TryParse(trimmedValue, CultureInfo.CurrentCulture, DateTimeStyles.None, out result))
+            {
+                return result;
+            }
+
+            return DateTime.MinValue;
         }
 
         /// <summary>
