@@ -557,9 +557,11 @@
     <Compile Include="Services\Ftz\Domain\FtzBagQueryRequest.cs" />
     <Compile Include="Services\Ftz\Domain\FtzBagQueryResult.cs" />
     <Compile Include="Services\Ftz\Domain\FtzLoginRequest.cs" />
+    <Compile Include="Services\Ftz\Domain\FtzMainUploadExcelData.cs" />
     <Compile Include="Services\Ftz\Domain\FtzMainQueryRequest.cs" />
     <Compile Include="Services\Ftz\Domain\FtzMainQueryResult.cs" />
     <Compile Include="Services\Ftz\Domain\FtzMainUploadExcelRow.cs" />
+    <Compile Include="Services\Ftz\Domain\FtzMainUploadSummaryRow.cs" />
     <Compile Include="Services\Ftz\Domain\FtzMainQueryViewModel.cs" />
     <Compile Include="Services\Ftz\Domain\FtzNoGciQueryResult.cs" />
     <Compile Include="Services\Ftz\Domain\FtzPlinkErrorRow.cs" />

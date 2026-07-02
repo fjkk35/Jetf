@@ -1,7 +1,7 @@
 namespace Service.Services.Ftz.Domain
 {
     /// <summary>
-    /// 主號查詢上傳 Excel 的明細列資料。
+    /// FTZ 主號查詢上傳 Excel 的明細頁籤資料列。
     /// </summary>
     public class FtzMainUploadExcelRow
     {
@@ -11,7 +11,7 @@ namespace Service.Services.Ftz.Domain
         public string Mwb { get; set; }
 
         /// <summary>
-        /// 袋號。
+        /// 袋號或分號。
         /// </summary>
         public string BagNo { get; set; }
 
@@ -21,7 +21,7 @@ namespace Service.Services.Ftz.Domain
         public string ReceiptMark { get; set; }
 
         /// <summary>
-        /// 1分號多件之分號。
+        /// 一分號多件的分號清單。
         /// </summary>
         public string OneHwbMultiPieceHwb { get; set; }
 

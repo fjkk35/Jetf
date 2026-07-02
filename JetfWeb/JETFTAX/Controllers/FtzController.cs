@@ -115,14 +115,14 @@ namespace JETFTAX.Controllers
         {
             try
             {
-                List<FtzMainUploadExcelRow> uploadRows = null;
+                FtzMainUploadExcelData uploadData = null;
 
                 if (uploadFile != null && uploadFile.ContentLength > 0)
                 {
-                    uploadRows = _ftzService.ReadMainUploadRows(uploadFile.InputStream);
+                    uploadData = _ftzService.ReadMainUploadData(uploadFile.InputStream);
                 }
 
-                var workbook = await _ftzService.ExportMainExcel(request, uploadRows);
+                var workbook = await _ftzService.ExportMainExcel(request, uploadData);
 
                 string handle = Guid.NewGuid().ToString();
                 string fileName = $"Ftz主號查詢結果_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
