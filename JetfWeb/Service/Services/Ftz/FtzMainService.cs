@@ -21,6 +21,11 @@ namespace Service.Services.Ftz
     public partial class FtzService
     {
         /// <summary>
+        /// 查不到派件公司時，匯出統計要歸到這個固定欄位。
+        /// </summary>
+        private const string NoTransName = "無派件公司";
+
+        /// <summary>
         /// 主號查詢
         /// </summary>
         public async Task<ResponseModel> MainQueryAsync(FtzMainQueryRequest request, List<FtzMainUploadExcelRow> uploadRows = null)
@@ -855,17 +860,16 @@ namespace Service.Services.Ftz
                   "申報", "進倉","未進倉件", "併袋", "進倉袋", "未進倉袋", "未收單件數", "未收單B6F"
               };
 
-            //取得所有派件公司，加入表頭
+            // 取得未進倉明細出現過的所有派件公司，空白派件公司統一歸到「無派件公司」欄位。
             var notGciTransNames = results.Where(r => r.NotGciDetails != null)
                             .SelectMany(r => r.NotGciDetails)
-                            .Where(r => !string.IsNullOrWhiteSpace(r.TransName))
-                            .Select(r => r.TransName)
+                            .Select(r => NormalizeTransName(r.TransName))
                             .Distinct(StringComparer.OrdinalIgnoreCase)
                             .ToList();
 
+            // 未收單補列也要納入派件公司欄位，查無派件公司同樣歸到「無派件公司」。
             var unreceivedTransNames = unreceivedUploadRows
-                .Where(x => !string.IsNullOrWhiteSpace(x.TransName))
-                .Select(x => x.TransName)
+                .Select(x => NormalizeTransName(x.TransName))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -919,7 +923,7 @@ namespace Service.Services.Ftz
                 NpoiCell.CreateIntCell(dataRow, column++, unreceivedCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.UnreceivedB6FCount, numberStyle);
 
-                //派件公司
+                // 派件公司統計：未進倉明細用「申報」加總，未收單補列每筆算 1。
                 foreach (var transName in transNames)
                 {
                     var totalCount = GetNotGciTransNameCount(item, transName) +
@@ -974,7 +978,7 @@ namespace Service.Services.Ftz
                         NpoiCell.CreateCell(detailDataRow, 10, "", dataStyle); // 一分號多件
                         NpoiCell.CreateCell(detailDataRow, 11, "", dataStyle); // 錯單類別
                         NpoiCell.CreateCell(detailDataRow, 12, "", dataStyle); // 錯單單號
-                        NpoiCell.CreateCell(detailDataRow, 13, detail.TransName ?? "", dataStyle);
+                        NpoiCell.CreateCell(detailDataRow, 13, NormalizeTransName(detail.TransName), dataStyle);
                         NpoiCell.CreateCell(detailDataRow, 14, GetAirDetainStatus(airDetainStatusLookup, detail.hwb), dataStyle);
                         detailRowIndex++;
                     }
@@ -1021,7 +1025,7 @@ namespace Service.Services.Ftz
                         var errorRow = errorIndex < errorRows.Count ? errorRows[errorIndex] : null;
                         NpoiCell.CreateCell(detailDataRow, 11, errorRow?.Reason ?? "", dataStyle);
                         NpoiCell.CreateCell(detailDataRow, 12, errorRow?.Hawb ?? "", dataStyle);
-                        NpoiCell.CreateCell(detailDataRow, 13, uploadRow.TransName ?? "", dataStyle);
+                        NpoiCell.CreateCell(detailDataRow, 13, NormalizeTransName(uploadRow.TransName), dataStyle);
                         NpoiCell.CreateCell(detailDataRow, 14, status, dataStyle);
                         detailRowIndex++;
                     }
@@ -1034,39 +1038,14 @@ namespace Service.Services.Ftz
         }
 
         /// <summary>
-        /// 計算未進倉明細中指定派件公司的件袋數。
+        /// 計算未進倉明細中指定派件公司的申報件數。
         /// </summary>
         private int GetNotGciTransNameCount(FtzMainQueryViewModel item, string transName)
         {
-            var details = item?.NotGciDetails ?? new List<Row>();
-
-            //一分號多件
-            var bagnosCount = details
-                .Where(r => !string.IsNullOrEmpty(r.realTotBag) &&
-                    string.IsNullOrEmpty(r.expBagNo) &&
-                    IsSameTransName(r.TransName, transName))
-                .Select(r => r.realTotBagCount)
-                .Sum();
-
-            //件數
-            var trackingnoCount = details
-                .Count(r => string.IsNullOrEmpty(r.realTotBag) &&
-                    string.IsNullOrEmpty(r.expBagNo) &&
-                    IsSameTransName(r.TransName, transName));
-
-            //袋數
-            var bagnoCount = details
-                .Where(r => !string.IsNullOrEmpty(r.expBagNo) &&
-                    IsSameTransName(r.TransName, transName))
-                .Select(r => new
-                {
-                    r.expBagNo,
-                    TransName = (r.TransName ?? "").Trim()
-                })
-                .Distinct()
-                .Count();
-
-            return bagnosCount + trackingnoCount + bagnoCount;
+            // 派件公司欄位數量以明細頁「申報」欄位為準，不再用件/袋/一分號多件分開計算。
+            return (item?.NotGciDetails ?? new List<Row>())
+                .Where(r => IsSameTransName(r.TransName, transName))
+                .Sum(r => ParseInt(r.piece));
         }
 
         /// <summary>
@@ -1075,9 +1054,19 @@ namespace Service.Services.Ftz
         private bool IsSameTransName(string source, string target)
         {
             return string.Equals(
-                (source ?? "").Trim(),
-                (target ?? "").Trim(),
+                NormalizeTransName(source),
+                NormalizeTransName(target),
                 StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 取得派件公司欄位名稱，查無派件公司時歸到固定欄位。
+        /// </summary>
+        private string NormalizeTransName(string transName)
+        {
+            return string.IsNullOrWhiteSpace(transName)
+                ? NoTransName
+                : transName.Trim();
         }
 
         /// <summary>
