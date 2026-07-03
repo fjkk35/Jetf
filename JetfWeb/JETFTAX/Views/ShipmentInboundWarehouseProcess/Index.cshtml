@@ -67,6 +67,7 @@
                                 <tr>
                                     <th>序號</th>
                                     <th>單號</th>
+                                    <th>出庫日期</th>
                                     <th>處理狀態</th>
                                     <th>處理時間</th>
                                     <th>處理人員</th>
@@ -74,20 +75,25 @@
                             </thead>
                             <tbody>
                                 <tr ng-if="data.length === 0">
-                                    <td colspan="5" class="text-center">查無資料</td>
+                                    <td colspan="6" class="text-center">查無資料</td>
                                 </tr>
                                 <tr ng-repeat="item in data">
                                     <td>{{$index + 1}}</td>
                                     <td>{{item.TrackingNo}}</td>
+                                    <td>{{item.OutboundDate | customDate}}</td>
                                     <td>
                                         <button ng-if="item.WarehouseProcessType" 
                                                 class="btn btn-sm btn-info" 
-                                                ng-click="openProcessTypeModal(item)">
+                                                ng-click="openProcessTypeModal(item)"
+                                                ng-disabled="!isItemEditable(item)"
+                                                title="{{isItemEditable(item) ? '修改處理狀態' : '已有出庫日期，不可修改'}}">
                                             {{item.WarehouseProcessTypeName}}
                                         </button>
                                         <button ng-if="!item.WarehouseProcessType" 
                                                 class="btn btn-sm btn-secondary" 
-                                                ng-click="openProcessTypeModal(item)">
+                                                ng-click="openProcessTypeModal(item)"
+                                                ng-disabled="!isItemEditable(item)"
+                                                title="{{isItemEditable(item) ? '修改處理狀態' : '已有出庫日期，不可修改'}}">
                                             未設定
                                         </button>
                                     </td>

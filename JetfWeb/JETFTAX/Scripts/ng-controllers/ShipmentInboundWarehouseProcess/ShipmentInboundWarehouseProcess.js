@@ -191,8 +191,21 @@
             });
     };
 
+    $scope.isItemEditable = function (item) {
+        return item && !item.OutboundDate;
+    };
+
     // 開啟處理狀態 Modal
     $scope.openProcessTypeModal = function (item) {
+        if (!$scope.isItemEditable(item)) {
+            swal({
+                title: "提醒",
+                text: "已有出庫日期，不可修改倉庫處理狀態",
+                icon: "warning"
+            });
+            return;
+        }
+
         $scope.currentItem = item;
         $scope.modalTitle = '修改處理狀態';
 
@@ -206,6 +219,15 @@
 
     // 儲存處理狀態
     $scope.saveProcessType = function () {
+        if (!$scope.isItemEditable($scope.currentItem)) {
+            swal({
+                title: "提醒",
+                text: "已有出庫日期，不可修改倉庫處理狀態",
+                icon: "warning"
+            });
+            return;
+        }
+
         // 驗證處理狀態必選
         if (!$scope.processTypeForm.warehouseProcessType || $scope.processTypeForm.warehouseProcessType === '') {
             swal({

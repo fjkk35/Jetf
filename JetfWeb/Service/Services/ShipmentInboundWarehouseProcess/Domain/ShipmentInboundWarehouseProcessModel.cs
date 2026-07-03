@@ -1,41 +1,46 @@
-using Service.EnumTax;
+ï»¿using Service.EnumTax;
 using Service.Extensions;
 using System;
 
 namespace Service.Services.ShipmentInboundWarehouseProcess.Domain
 {
     /// <summary>
-    /// ­Ü®w³B²zª¬ºA¼Ò«¬
+    /// å€‰åº«è™•ç†ç‹€æ…‹æ¨¡å‹
     /// </summary>
     public class ShipmentInboundWarehouseProcessModel
     {
         /// <summary>
-        /// ¥DÁä Id
+        /// ä¸»éµ Id
         /// </summary>
         public int Id { get; set; }
 
         /// <summary>
-        /// ³æ¸¹
+        /// å–®è™Ÿ
         /// </summary>
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// ³B²zª¬ºA
+        /// è™•ç†ç‹€æ…‹
         /// </summary>
         public WarehouseProcessType? WarehouseProcessType { get; set; }
 
         /// <summary>
-        /// ³B²zª¬ºA¦WºÙ
+        /// è™•ç†ç‹€æ…‹åç¨±
         /// </summary>
         public string WarehouseProcessTypeName => WarehouseProcessType?.ToDescription();
 
         /// <summary>
-        /// ³B²z®É¶¡
+        /// è™•ç†æ™‚é–“
         /// </summary>
         public DateTime? WarehouseProcessTime { get; set; }
 
         /// <summary>
-        /// ³B²z¤H­û
+        /// å‡ºåº«æ—¥æœŸ
+        /// </summary>
+        public DateTime? OutboundDate { get; set; }
+
+        /// <summary>
+        /// è™•ç†äººå“¡
         /// </summary>
         public string WarehouseProcessOpe { get; set; }
     }

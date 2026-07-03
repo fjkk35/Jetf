@@ -1,4 +1,4 @@
-using NPOI.SS.UserModel;
+﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.EnumTax;
 using Service.Extensions;
@@ -33,6 +33,8 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
                 return JetfDb.ShipmentInbounds
                     .AsNoTracking()
                     .Where(x => x.TrackingNo == request.TrackingNo)
+                    .OrderBy(x => x.OutboundDate.HasValue)
+                    .ThenByDescending(x => x.Id)
                     .Select(x => new ShipmentInboundWarehouseProcessModel
                     {
                         Id = x.Id,
@@ -41,7 +43,8 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
                             ? (WarehouseProcessType?)x.WarehouseProcessType.Value
                             : null,
                         WarehouseProcessTime = x.WarehouseProcessTime,
-                        WarehouseProcessOpe = x.WarehouseProcessOpe
+                        WarehouseProcessOpe = x.WarehouseProcessOpe,
+                        OutboundDate = x.OutboundDate
                     })
                     .ToList();
             }
@@ -66,7 +69,7 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
                             throw new Exception("查無此資料");
                         }
 
-                        if (existing.OutboundTime != null)
+                        if (existing.OutboundDate.HasValue)
                         {
                             throw new Exception("已有出庫日期，更新倉庫處理狀態失敗");
                         }
@@ -123,11 +126,15 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
 
             var userId = GetUserId();
 
-            var trackingNos = rows.Select(x => x.TrackingNo).Distinct().ToList();
+            var trackingNos = rows
+                .Select(x => x.TrackingNo.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
             {
                 var existingData = JetfDb.ShipmentInbounds
-                    .Where(x => trackingNos.Contains(x.TrackingNo))
-                    .ToDictionary(x => x.TrackingNo, x => x);
+                    .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
+                    .ToList()
+                    .ToDictionary(x => x.TrackingNo, x => x, StringComparer.OrdinalIgnoreCase);
 
                 using (var tx = JetfDb.Database.BeginTransaction())
                 {
@@ -136,24 +143,27 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
                         foreach (var row in rows)
                         {
                             var newProcessType = row.WarehouseProcessTypeText.ToEnumValueByDescription<WarehouseProcessType>();
+                            var trackingNo = row.TrackingNo.Trim();
 
-                            if (existingData.ContainsKey(row.TrackingNo))
+                            if (!existingData.ContainsKey(trackingNo))
                             {
-                                var existing = existingData[row.TrackingNo];
-                                var oldWarehouseProcessType = existing.WarehouseProcessType;
-                                var shipmentInboundId = existing.Id;
-
-                                existing.WarehouseProcessType = (byte)newProcessType.Value;
-                                existing.WarehouseProcessTime = DateTime.Now;
-                                existing.WarehouseProcessOpe = userId;
-
-                                InsertWarehouseProcessTypeHistory(
-                                    JetfDb,
-                                    shipmentInboundId,
-                                    oldWarehouseProcessType,
-                                    (byte)newProcessType.Value,
-                                    userId);
+                                throw new Exception($"單號 {trackingNo} 已有出庫日期，更新倉庫處理狀態失敗");
                             }
+
+                            var existing = existingData[trackingNo];
+                            var oldWarehouseProcessType = existing.WarehouseProcessType;
+                            var shipmentInboundId = existing.Id;
+
+                            existing.WarehouseProcessType = (byte)newProcessType.Value;
+                            existing.WarehouseProcessTime = DateTime.Now;
+                            existing.WarehouseProcessOpe = userId;
+
+                            InsertWarehouseProcessTypeHistory(
+                                JetfDb,
+                                shipmentInboundId,
+                                oldWarehouseProcessType,
+                                (byte)newProcessType.Value,
+                                userId);
                         }
 
                         JetfDb.SaveChanges();
@@ -265,9 +275,15 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
                     var existing = JetfDb.ShipmentInbounds
                         .AsNoTracking()
                         .Where(x => trackingNos.Contains(x.TrackingNo))
-                        .Select(x => x.TrackingNo)
+                        .Select(x => new
+                        {
+                            x.TrackingNo,
+                            x.OutboundDate
+                        })
                         .ToList();
-                    var existingSet = new HashSet<string>(existing, StringComparer.OrdinalIgnoreCase);
+                    var existingGroups = existing
+                        .GroupBy(x => x.TrackingNo, StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(x => x.Key, x => x.ToList(), StringComparer.OrdinalIgnoreCase);
 
                     foreach (var row in rows)
                     {
@@ -276,7 +292,8 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
                             continue;
                         }
 
-                        if (!existingSet.Contains(row.TrackingNo.Trim()))
+                        var trackingNo = row.TrackingNo.Trim();
+                        if (!existingGroups.ContainsKey(trackingNo))
                         {
                             errors.Add(new ShipmentInboundWarehouseProcessBatchUploadErrorModel
                             {
@@ -284,6 +301,34 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
                                 TrackingNo = row.TrackingNo,
                                 WarehouseProcessTypeText = row.WarehouseProcessTypeText,
                                 Reason = "單號查無資料"
+                            });
+                            continue;
+                        }
+
+                        var editableRows = existingGroups[trackingNo]
+                            .Where(x => !x.OutboundDate.HasValue)
+                            .ToList();
+
+                        if (editableRows.Count == 0)
+                        {
+                            errors.Add(new ShipmentInboundWarehouseProcessBatchUploadErrorModel
+                            {
+                                RowNo = row.RowNo,
+                                TrackingNo = row.TrackingNo,
+                                WarehouseProcessTypeText = row.WarehouseProcessTypeText,
+                                Reason = "單號已有出庫日期，不可修改倉庫處理狀態"
+                            });
+                            continue;
+                        }
+
+                        if (editableRows.Count > 1)
+                        {
+                            errors.Add(new ShipmentInboundWarehouseProcessBatchUploadErrorModel
+                            {
+                                RowNo = row.RowNo,
+                                TrackingNo = row.TrackingNo,
+                                WarehouseProcessTypeText = row.WarehouseProcessTypeText,
+                                Reason = "單號有多筆未出庫資料，無法批量更新"
                             });
                         }
                     }
