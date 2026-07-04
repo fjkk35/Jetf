@@ -1,5 +1,5 @@
-@{
-    ViewBag.Title = "³fªp©ú²Ó";
+ï»¿@{
+    ViewBag.Title = "è²¨æ³æ˜ç´°";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -7,23 +7,23 @@
 
 <div ng-app="mainApp" ng-controller="SearchCargoDetailController">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <span class="headtype">³fªp©ú²Ó</span>
+        <span class="headtype">è²¨æ³æ˜ç´°</span>
         <button class="btn btn-info btn-sm" ng-click="showLogCargoStatus()">
-            <i class="fa fa-history"></i> ¬d¸ß¬ö¿ı
+            <i class="fa fa-history"></i> æŸ¥è©¢ç´€éŒ„
         </button>
     </div>
     <hr />
 
-    <!-- ¸ü¤J¤¤ -->
+    <!-- è¼‰å…¥ä¸­ -->
     <div ng-if="loading" class="loading-container">
-        <div class="loader loader-bar" data-rounded data-text="¸ü¤J¤¤"></div>
+        <div class="loader loader-bar" data-rounded data-text="è¼‰å…¥ä¸­"></div>
     </div>
 
-    <!-- ©ú²Ó¤º®e -->
+    <!-- æ˜ç´°å…§å®¹ -->
     <div ng-if="!loading && detailData" class="detail-container">
-        <!-- °ò¥»¸ê®Æ -->
+        <!-- åŸºæœ¬è³‡æ–™ -->
         <div class="detail-section">
-            <h5 class="section-title">°ò¥»¸ê®Æ</h5>
+            <h5 class="section-title">åŸºæœ¬è³‡æ–™</h5>
             <table class="detail-table">
                 <colgroup>
                     <col style="width: 10%;">
@@ -35,25 +35,25 @@
                 </colgroup>
                 <tbody>
                     <tr>
-                        <td class="label">¨ì´ä¤é</td>
+                        <td class="label">åˆ°æ¸¯æ—¥</td>
                         <td>{{detailData.ETA | customDate}}</td>
-                        <td class="label">¤ò­«</td>
+                        <td class="label">æ¯›é‡</td>
                         <td>{{detailData.GW}}</td>
-                        <td class="label">¥ó¼Æ</td>
+                        <td class="label">ä»¶æ•¸</td>
                         <td>{{detailData.PIECE}}</td>
                     </tr>
                     <tr>
-                        <td class="label">¥X­Ü¤é´Á</td>
+                        <td class="label">å‡ºå€‰æ—¥æœŸ</td>
                         <td>{{detailData.Out_Datetime | customDate}}</td>
-                        <td class="label">­ÜÀxÃş«¬</td>
+                        <td class="label">å€‰å„²é¡å‹</td>
                         <td>{{detailData.Source}}</td>
-                        <td class="label">³øÃöÃş«¬</td>
+                        <td class="label">å ±é—œé¡å‹</td>
                         <td>{{detailData.Type}}</td>
                     </tr>
                     <tr>
-                        <td class="label">¥D´£³æ¸¹</td>
+                        <td class="label">ä¸»æå–®è™Ÿ</td>
                         <td>{{detailData.Main_Number}}</td>
-                        <td class="label">²MÃö³U¸¹</td>
+                        <td class="label">æ¸…é—œè¢‹è™Ÿ</td>
                         <td>
                             <a href="javascript:void(0);"
                                ng-click="showBagNumberDetail()"
@@ -63,27 +63,27 @@
                             <button class="btn btn-info btn-sm"
                                     ng-click="showShenzhenCargoDetail()"
                                     style="margin-left: 10px;">
-                                ³t¬£·s»¼³f¸¹
+                                é€Ÿæ´¾æ–°éè²¨è™Ÿ
                             </button>
                         </td>
-                        <td class="label">µ|³æ¸¹½X</td>
+                        <td class="label">ç¨…å–®è™Ÿç¢¼</td>
                         <td>
                             <span ng-repeat="taxNumber in detailData.TaxNumberList">
                                 <a target="_blank" ng-href="~/Cargo/GetTaxNumberPdf?taxNumber={{taxNumber}}">{{taxNumber}}</a>
-                                <span ng-if="!$last">¡B</span>
+                                <span ng-if="!$last">ã€</span>
                             </span>
                         </td>
                     </tr>
                     <tr>
-                        <td class="label">«È¤á¦WºÙ</td>
+                        <td class="label">å®¢æˆ¶åç¨±</td>
                         <td>{{detailData.Cust_Name}}</td>
-                        <td class="label">¬£¥ó¤½¥q</td>
+                        <td class="label">æ´¾ä»¶å…¬å¸</td>
                         <td>{{detailData.Trans_Name}}</td>
-                        <td class="label">ª«¬y³f¸¹</td>
+                        <td class="label">ç‰©æµè²¨è™Ÿ</td>
                         <td><a target="_blank" ng-href="~/Cargo/CargoSignReceipt?cargoNumber={{detailData.Deliveryno}}">{{detailData.Deliveryno}}</a></td>
                     </tr>
                     <tr>
-                        <td class="label">¤À´£³æ¸¹</td>
+                        <td class="label">åˆ†æå–®è™Ÿ</td>
                         <td>
                             <a href="javascript:void(0);"
                                ng-click="showTrackingNoDetail()"
@@ -91,18 +91,18 @@
                                 {{detailData.Dlv_Inv}}
                             </a>
                         </td>
-                        <td class="label">¬£¥ó¤½¥q(·s)</td>
+                        <td class="label">æ´¾ä»¶å…¬å¸(æ–°)</td>
                         <td>{{detailData.Trans_Name_New}}</td>
-                        <td class="label">§Àµ{³æ¸¹</td>
+                        <td class="label">å°¾ç¨‹å–®è™Ÿ</td>
                         <td>{{detailData.Express_No}}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <!-- ­ì©l¥Ó³ø¤H¸ê®Æ -->
+        <!-- åŸå§‹ç”³å ±äººè³‡æ–™ -->
         <div class="detail-section">
-            <h5 class="section-title">­ì©l¥Ó³ø¤H¸ê®Æ</h5>
+            <h5 class="section-title">åŸå§‹ç”³å ±äººè³‡æ–™</h5>
             <table class="detail-table">
                 <colgroup>
                     <col style="width: 10%;">
@@ -114,23 +114,23 @@
                 </colgroup>
                 <tbody>
                     <tr>
-                        <td class="label">¥Ó³ø¤H</td>
+                        <td class="label">ç”³å ±äºº</td>
                         <td>{{detailData.Recipient}}</td>
-                        <td class="label">¥Ó³ø¤H¹q¸Ü</td>
+                        <td class="label">ç”³å ±äººé›»è©±</td>
                         <td>{{detailData.Recphone}}</td>
-                        <td class="label">¥Ó³ø¤H¦a§}</td>
+                        <td class="label">ç”³å ±äººåœ°å€</td>
                         <td>{{detailData.Recaddress}}</td>
                     </tr>
                     <tr>
-                        <td class="label">«È¤á¥~½c¸¹</td>
+                        <td class="label">å®¢æˆ¶å¤–ç®±è™Ÿ</td>
                         <td>{{detailData.Field_X}}</td>
-                        <td class="label">«È¤á­q³æ¸¹</td>
+                        <td class="label">å®¢æˆ¶è¨‚å–®è™Ÿ</td>
                         <td>{{detailData.Order_No}}</td>
-                        <td class="label">¨ì¥I´Ú</td>
+                        <td class="label">åˆ°ä»˜æ¬¾</td>
                         <td>{{detailData.CC}}</td>
                     </tr>
                     <tr>
-                        <td class="label">ª¬ºA</td>
+                        <td class="label">ç‹€æ…‹</td>
                         <td>{{detailData.Status}}</td>
 
                     </tr>
@@ -138,9 +138,9 @@
             </table>
         </div>
 
-        <!-- ¹ê»Ú¥Ó³ø¤H¸ê®Æ -->
+        <!-- å¯¦éš›ç”³å ±äººè³‡æ–™ -->
         <div class="detail-section">
-            <h5 class="section-title">¹ê»Ú¥Ó³ø¤H¸ê®Æ</h5>
+            <h5 class="section-title">å¯¦éš›ç”³å ±äººè³‡æ–™</h5>
             <table class="detail-table">
                 <colgroup>
                     <col style="width: 20%;">
@@ -150,19 +150,19 @@
                 </colgroup>
                 <tbody>
                     <tr>
-                        <td class="label">¥Ó³ø¤H</td>
+                        <td class="label">ç”³å ±äºº</td>
                         <td>{{detailData.ActualDeclarant}}</td>
-                        <td class="label">¥Ó³ø¤H¹q¸Ü</td>
+                        <td class="label">ç”³å ±äººé›»è©±</td>
                         <td>{{detailData.ActualDeclarantPhone}}</td>
                     </tr>
                     <tr>
-                        <td class="label">¥Ó³ø«~¦W</td>
+                        <td class="label">ç”³å ±å“å</td>
                         <td>
                             <div ng-if="!detailData.ActualItemNameList || detailData.ActualItemNameList.length == 0">
-                                µL¥Ó³ø«~¦W
+                                ç„¡ç”³å ±å“å
                             </div>
                             <div ng-if="detailData.ActualItemNameList && detailData.ActualItemNameList.length > 0">
-                                <!-- ¥uÅã¥Ü²Ä¤@µ§ -->
+                                <!-- åªé¡¯ç¤ºç¬¬ä¸€ç­† -->
                                 <div ng-if="!showAllItems">
                                     <div>
                                         <span>{{detailData.ActualItemNameList[0]}}</span>
@@ -171,10 +171,10 @@
                                        ng-if="detailData.ActualItemNameList.length > 1"
                                        ng-click="toggleShowAllItems()"
                                        style="color: #007bff; margin-top: 10px; display: inline-block; text-decoration: underline; ">
-                                        Åã¥Ü§ó¦h (¦@ {{detailData.ActualItemNameList.length}} µ§)
+                                        é¡¯ç¤ºæ›´å¤š (å…± {{detailData.ActualItemNameList.length}} ç­†)
                                     </a>
                                 </div>
-                                <!-- Åã¥Ü©Ò¦³«~¦W -->
+                                <!-- é¡¯ç¤ºæ‰€æœ‰å“å -->
                                 <div ng-if="showAllItems">
                                     <div ng-repeat="item in detailData.ActualItemNameList track by $index" style="margin-bottom: 5px;">
                                         <span>{{$index+1}}.{{item}}</span>
@@ -182,21 +182,21 @@
                                     <a href="javascript:void(0);"
                                        ng-click="toggleShowAllItems()"
                                        style="color: #007bff; margin-top: 10px; display: inline-block; text-decoration: underline;">
-                                        ¦¬¦X
+                                        æ”¶åˆ
                                     </a>
                                 </div>
                             </div>
                         </td>
-                        <td class="label">¥Ó³øª÷ÃB</td>
+                        <td class="label">ç”³å ±é‡‘é¡</td>
                         <td colspan="3" style="text-align: right;">{{detailData.ActualInvoiceAmount | number:2}}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <!-- ²MÃö¶i«× -->
+        <!-- æ¸…é—œé€²åº¦ -->
         <div class="detail-section">
-            <h5 class="section-title">²MÃö¶i«×</h5>
+            <h5 class="section-title">æ¸…é—œé€²åº¦</h5>
             <table class="detail-table">
                 <colgroup>
                     <col style="width: 10%;">
@@ -208,31 +208,31 @@
                 </colgroup>
                 <tbody>
                     <tr>
-                        <td class="label">¤J­Ü®É¶¡</td>
+                        <td class="label">å…¥å€‰æ™‚é–“</td>
                         <td>{{detailData.In_Datetime | customDateTime}}</td>
-                        <td class="label">¥X­Ü®É¶¡</td>
+                        <td class="label">å‡ºå€‰æ™‚é–“</td>
                         <td>{{detailData.Out_Datetime | customDateTime}}</td>
                     </tr>
                     <tr>
-                        <td class="label">±½³f¤W¨®</td>
+                        <td class="label">æƒè²¨ä¸Šè»Š</td>
                         <td>{{detailData.ScanCargoUploadTime | customDateTime}}</td>
-                        <td class="label">±½Åª¤u¸¹</td>
+                        <td class="label">æƒè®€å·¥è™Ÿ</td>
                         <td>{{detailData.ScanCargoUploadOpe}}</td>
-                        <td class="label">¿ù³æÃş§O</td>
+                        <td class="label">éŒ¯å–®é¡åˆ¥</td>
                         <td colspan="3">{{detailData.ErrorReason}}</td>
                     </tr>
                     <tr>
-                        <td class="label">±µ»é¤½¥q</td>
+                        <td class="label">æ¥é§å…¬å¸</td>
                         <td>{{detailData.ScanCargoTransName}}</td>
-                        <td class="label">Âd¸¹¨®¸¹</td>
+                        <td class="label">æ«ƒè™Ÿè»Šè™Ÿ</td>
                         <td>{{detailData.ScanCargoCarNo}}</td>
                 </tbody>
             </table>
         </div>
 
-        <!-- µ|ª÷¸ê®Æ -->
+        <!-- ç¨…é‡‘è³‡æ–™ -->
         <div class="detail-section">
-            <h5 class="section-title">µ|ª÷Ãş§O¡G{{detailData.Include_Tax}}</h5>
+            <h5 class="section-title">ç¨…é‡‘é¡åˆ¥ï¼š{{detailData.Include_Tax}}</h5>
             <table class="detail-table">
                 <colgroup>
                     <col style="width: 10%;">
@@ -244,64 +244,92 @@
                 </colgroup>
                 <tbody>
                     <tr>
-                        <td class="label">µ|ª÷1</td>
+                        <td class="label">ç¨…é‡‘1</td>
                         <td style="text-align: right;">{{detailData.Tax1 | number}}</td>
-                        <td class="label">µ|ª÷2</td>
+                        <td class="label">ç¨…é‡‘2</td>
                         <td style="text-align: right;">{{detailData.Tax2 | number}}</td>
-                        <td class="label">µ|ª÷¦X­p</td>
+                        <td class="label">ç¨…é‡‘åˆè¨ˆ</td>
                         <td style="text-align: right;">{{detailData.TotalTax | number}}</td>
                     </tr>
                     <tr>
-                        <td class="label">³øÃö¶O</td>
+                        <td class="label">å ±é—œè²»</td>
                         <td style="text-align: right;">{{detailData.CCFee | number}}</td>
-                        <td class="label">¥N¦¬¤âÄò¶O</td>
+                        <td class="label">ä»£æ”¶æ‰‹çºŒè²»</td>
                         <td style="text-align: right;">{{detailData.Fee | number}}</td>
-                        <td class="label">¨ì¥I´Ú</td>
+                        <td class="label">åˆ°ä»˜æ¬¾</td>
                         <td style="text-align: right;">{{detailData.Cod | number}}</td>
                     </tr>
                     <tr>
-                        <td class="label">¸ò¬£°e¦¬µ|ª÷</td>
+                        <td class="label">è·Ÿæ´¾é€æ”¶ç¨…é‡‘</td>
                         <td style="text-align: right;">{{detailData.TransCod | number}}</td>
-                        <td class="label">¸ò¼t°Ó¦¬µ|ª÷</td>
+                        <td class="label">è·Ÿå» å•†æ”¶ç¨…é‡‘</td>
                         <td style="text-align: right;">{{detailData.CustomerCod | number}}</td>
                     </tr>
                     <tr>
-                        <td class="label">ª«¬y¥N¦¬´Ú</td>
+                        <td class="label">ç‰©æµä»£æ”¶æ¬¾</td>
                         <td style="text-align: right;">{{detailData.To_Dlv_Cod | number}}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <!-- ³B¸m»¡©ú -->
+        <!-- å›æ¬¾é€²åº¦ -->
+        <div class="detail-section">
+            <h5 class="section-title">å›æ¬¾é€²åº¦</h5>
+            <table class="detail-table">
+                <colgroup>
+                    <col style="width: 10%;">
+                    <col style="width: 20%;">
+                    <col style="width: 10%;">
+                    <col style="width: 25%;">
+                    <col style="width: 10%;">
+                    <col style="width: 25%;">
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <td class="label">å›æ¬¾æ—¥æœŸ</td>
+                        <td>{{detailData.ReconciliationInvoiceProgress.PaymentDate | customDate}}</td>
+                        <td class="label">ç™¼ç¥¨é¡åˆ¥</td>
+                        <td>{{detailData.ReconciliationInvoiceProgress.Type}}</td>
+                        <td class="label">ç™¼ç¥¨é–‹ç«‹æ—¥æœŸ</td>
+                        <td>{{detailData.ReconciliationInvoiceProgress.Date | customDate}}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">ç™¼ç¥¨è™Ÿç¢¼</td>
+                        <td>{{detailData.ReconciliationInvoiceProgress.Invoice}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <!-- è™•ç½®èªªæ˜ -->
         <div class="detail-section">
             <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                <h5 style="margin: 0;">³B¸m»¡©ú</h5>
+                <h5 style="margin: 0;">è™•ç½®èªªæ˜</h5>
                 <div>
                     <button class="btn btn-primary btn-sm" ng-click="showAddProcessDialog()">
-                        <i class="fas fa-plus"></i> ·s¼W
+                        <i class="fas fa-plus"></i> æ–°å¢
                     </button>
                     <button class="btn btn-success btn-sm" ng-click="finishProcess()">
-                        <i class="fa fa-check"></i> ³B¸m»¡©úµ²®×
+                        <i class="fa fa-check"></i> è™•ç½®èªªæ˜çµæ¡ˆ
                     </button>
                 </div>
             </div>
             <table class="table table-striped table-bordered" style="margin-top: 10px;">
                 <thead>
                     <tr>
-                        <th style="width: 10%;">¤ÀÃş</th>
-                        <th style="width: 30%;">³B¸m»¡©ú</th>
-                        <th style="width: 12%;">ÀÉ®×</th>
-                        <th style="width: 8%;">¤H­û</th>
-                        <th style="width: 13%;">®É¶¡</th>
-                        <th style="width: 5%;">µ²®×</th>
-                        <th style="width: 10%;">µ²®×¤H­û</th>
-                        <th style="width: 7%;">¾Ş§@</th>
+                        <th style="width: 10%;">åˆ†é¡</th>
+                        <th style="width: 30%;">è™•ç½®èªªæ˜</th>
+                        <th style="width: 12%;">æª”æ¡ˆ</th>
+                        <th style="width: 8%;">äººå“¡</th>
+                        <th style="width: 13%;">æ™‚é–“</th>
+                        <th style="width: 5%;">çµæ¡ˆ</th>
+                        <th style="width: 10%;">çµæ¡ˆäººå“¡</th>
+                        <th style="width: 7%;">æ“ä½œ</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr ng-if="!processList || processList.length == 0">
-                        <td colspan="8" style="text-align: center;">µL³B¸m»¡©ú</td>
+                        <td colspan="8" style="text-align: center;">ç„¡è™•ç½®èªªæ˜</td>
                     </tr>
                     <tr ng-repeat="item in processList">
                         <td>{{item.PROCESS_TYPE}}</td>
@@ -318,7 +346,7 @@
                         <td>
                             <button class="btn btn-danger btn-sm"
                                     ng-click="deleteProcess(item.ID)"
-                                    title="§R°£">
+                                    title="åˆªé™¤">
                                 <i class="fa fa-trash"></i>
                             </button>
                         </td>
@@ -327,19 +355,19 @@
             </table>
         </div>
 
-        <!-- °t°e¶i«× -->
+        <!-- é…é€é€²åº¦ -->
         <div class="detail-section">
-            <h5 class="section-title">°t°e¶i«×</h5>
+            <h5 class="section-title">é…é€é€²åº¦</h5>
             <table class="status-table">
                 <thead>
                     <tr>
-                        <th style="width: 30%;">®É¶¡</th>
-                        <th style="width: 70%;">ª¬ºA</th>
+                        <th style="width: 30%;">æ™‚é–“</th>
+                        <th style="width: 70%;">ç‹€æ…‹</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr ng-if="!detailData.CargoStatusList || detailData.CargoStatusList.length == 0">
-                        <td colspan="2" style="text-align: center;">µL°t°e¶i«×</td>
+                        <td colspan="2" style="text-align: center;">ç„¡é…é€é€²åº¦</td>
                     </tr>
                     <tr ng-repeat="status in detailData.CargoStatusList">
                         <td>{{status.Time}}</td>
@@ -349,77 +377,77 @@
             </table>
         </div>
 
-        <!-- ¾Ş§@«ö¶s -->
+        <!-- æ“ä½œæŒ‰éˆ• -->
         <div class="button-section">
             <button class="btn btn-secondary" ng-click="closeWindow()">
-                <i class="fas fa-times"></i> Ãö³¬
+                <i class="fas fa-times"></i> é—œé–‰
             </button>
         </div>
     </div>
 
-    <!-- ·s¼W³B¸m»¡©ú Modal -->
+    <!-- æ–°å¢è™•ç½®èªªæ˜ Modal -->
     <div class="modal fade" id="processModal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
                     <h4 class="modal-title">{{modalTitle}}</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Ãö³¬">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="é—œé–‰">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
                     <form name="processForm" novalidate>
                         <div class="form-group">
-                            <label for="processType" class="form-label required">¤ÀÃş</label>
+                            <label for="processType" class="form-label required">åˆ†é¡</label>
                             <select class="form-control"
                                     id="processType"
                                     name="processType"
                                     ng-model="processData.type"
                                     required>
-                                <option value="1">³fªp</option>
-                                <option value="2">°h¹B</option>
-                                <option value="3">¿ù³æ¤½¥q¦W¸q¦¬³æ</option>
-                                <option value="4">²{³õÂà¥X</option>
-                                <option value="5">¤½¥q¦W¸q¤£¦^¿µ</option>
+                                <option value="1">è²¨æ³</option>
+                                <option value="2">é€€é‹</option>
+                                <option value="3">éŒ¯å–®å…¬å¸åç¾©æ”¶å–®</option>
+                                <option value="4">ç¾å ´è½‰å‡º</option>
+                                <option value="5">å…¬å¸åç¾©ä¸å›è‰™</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="processRemark" class="form-label required">³B¸m»¡©ú</label>
+                            <label for="processRemark" class="form-label required">è™•ç½®èªªæ˜</label>
                             <textarea class="form-control"
                                       id="processRemark"
                                       name="processRemark"
                                       ng-model="processData.remark"
                                       required
                                       rows="4"
-                                      placeholder="½Ğ¿é¤J³B¸m»¡©ú"></textarea>
+                                      placeholder="è«‹è¼¸å…¥è™•ç½®èªªæ˜"></textarea>
                             <div ng-show="processForm.processRemark.$invalid && processForm.processRemark.$touched" class="text-danger">
-                                <small ng-show="processForm.processRemark.$error.required">³B¸m»¡©ú¬°¥²¶ñ</small>
+                                <small ng-show="processForm.processRemark.$error.required">è™•ç½®èªªæ˜ç‚ºå¿…å¡«</small>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="processFile" class="form-label">ªş¥ó</label>
+                            <label for="processFile" class="form-label">é™„ä»¶</label>
                             <input type="file"
                                    class="form-control-file"
                                    id="processFile"
                                    name="processFile"
                                    onchange="angular.element(this).scope().onFileSelect(this)" />
                             <small class="form-text text-muted" ng-if="processData.file">
-                                ¤w¿ï¾Ü: {{processData.file.name}}
+                                å·²é¸æ“‡: {{processData.file.name}}
                             </small>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">¨ú®ø</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">å–æ¶ˆ</button>
                     <button type="button"
                             class="btn btn-primary"
                             ng-click="saveProcess()"
                             ng-disabled="processForm.$invalid || saving">
                         <span ng-show="saving">
-                            <i class="fa fa-spinner fa-spin"></i> Àx¦s¤¤...
+                            <i class="fa fa-spinner fa-spin"></i> å„²å­˜ä¸­...
                         </span>
                         <span ng-hide="saving">
-                            <i class="fa fa-save"></i> Àx¦s
+                            <i class="fa fa-save"></i> å„²å­˜
                         </span>
                     </button>
                 </div>
@@ -427,13 +455,13 @@
         </div>
     </div>
 
-    <!-- ¬d¸ß¬ö¿ı Modal -->
+    <!-- æŸ¥è©¢ç´€éŒ„ Modal -->
     <div class="modal fade" id="logModal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title">¬d¸ß¬ö¿ı</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Ãö³¬">
+                    <h4 class="modal-title">æŸ¥è©¢ç´€éŒ„</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="é—œé–‰">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -441,15 +469,15 @@
                     <table class="table table-striped table-bordered">
                         <thead>
                             <tr>
-                                <th style="width: 25%;">³f¸¹</th>
-                                <th style="width: 30%;">¬d¸ß®É¶¡</th>
-                                <th style="width: 20%;">¬d¸ß¤H­û</th>
-                                <th style="width: 25%;">¬d¸ßIP</th>
+                                <th style="width: 25%;">è²¨è™Ÿ</th>
+                                <th style="width: 30%;">æŸ¥è©¢æ™‚é–“</th>
+                                <th style="width: 20%;">æŸ¥è©¢äººå“¡</th>
+                                <th style="width: 25%;">æŸ¥è©¢IP</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr ng-if="!logList || logList.length == 0">
-                                <td colspan="4" style="text-align: center;">µL¬d¸ß¬ö¿ı</td>
+                                <td colspan="4" style="text-align: center;">ç„¡æŸ¥è©¢ç´€éŒ„</td>
                             </tr>
                             <tr ng-repeat="log in logList">
                                 <td>{{log.Dlv_Inv}}</td>
@@ -461,19 +489,19 @@
                     </table>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Ãö³¬</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">é—œé–‰</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ³qÃö³U¸¹©ú²Ó Modal -->
+    <!-- é€šé—œè¢‹è™Ÿæ˜ç´° Modal -->
     <div class="modal fade" id="bagNumberModal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title">³qÃö³U¸¹©ú²Ó</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Ãö³¬">
+                    <h4 class="modal-title">é€šé—œè¢‹è™Ÿæ˜ç´°</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="é—œé–‰">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -481,15 +509,15 @@
                     <table class="table table-striped table-bordered">
                         <thead>
                             <tr>
-                                <th style="width: 25%;">³qÃö³U¸¹</th>
-                                <th style="width: 25%;">³U¸¹</th>
-                                <th style="width: 25%;">¶i­Ü®É¶¡</th>
-                                <th style="width: 25%;">¥X­Ü®É¶¡</th>
+                                <th style="width: 25%;">é€šé—œè¢‹è™Ÿ</th>
+                                <th style="width: 25%;">è¢‹è™Ÿ</th>
+                                <th style="width: 25%;">é€²å€‰æ™‚é–“</th>
+                                <th style="width: 25%;">å‡ºå€‰æ™‚é–“</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr ng-if="!bagNumberList || bagNumberList.length == 0">
-                                <td colspan="4" style="text-align: center;">µL³qÃö³U¸¹©ú²Ó</td>
+                                <td colspan="4" style="text-align: center;">ç„¡é€šé—œè¢‹è™Ÿæ˜ç´°</td>
                             </tr>
                             <tr ng-repeat="item in bagNumberList">
                                 <td>{{item.TARGET_CODE}}</td>
@@ -501,19 +529,19 @@
                     </table>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Ãö³¬</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">é—œé–‰</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ³qÃö¤À´£³æ¸¹©ú²Ó Modal -->
+    <!-- é€šé—œåˆ†æå–®è™Ÿæ˜ç´° Modal -->
     <div class="modal fade" id="trackingNoModal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title">³qÃö¤À´£³æ¸¹©ú²Ó</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Ãö³¬">
+                    <h4 class="modal-title">é€šé—œåˆ†æå–®è™Ÿæ˜ç´°</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="é—œé–‰">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -521,15 +549,15 @@
                     <table class="table table-striped table-bordered">
                         <thead>
                             <tr>
-                                <th style="width: 25%;">³qÃö¤À´£³æ¸¹</th>
-                                <th style="width: 25%;">¤À´£³æ¸¹</th>
-                                <th style="width: 25%;">¶i­Ü®É¶¡</th>
-                                <th style="width: 25%;">¥X­Ü®É¶¡</th>
+                                <th style="width: 25%;">é€šé—œåˆ†æå–®è™Ÿ</th>
+                                <th style="width: 25%;">åˆ†æå–®è™Ÿ</th>
+                                <th style="width: 25%;">é€²å€‰æ™‚é–“</th>
+                                <th style="width: 25%;">å‡ºå€‰æ™‚é–“</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr ng-if="!trackingNoList || trackingNoList.length == 0">
-                                <td colspan="4" style="text-align: center;">µL³qÃö¤À´£³æ¸¹©ú²Ó</td>
+                                <td colspan="4" style="text-align: center;">ç„¡é€šé—œåˆ†æå–®è™Ÿæ˜ç´°</td>
                             </tr>
                             <tr ng-repeat="item in trackingNoList">
                                 <td>{{item.TARGET_CODE}}</td>
@@ -541,19 +569,19 @@
                     </table>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Ãö³¬</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">é—œé–‰</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ³t¬£·s»¼³f¸¹ Modal -->
+    <!-- é€Ÿæ´¾æ–°éè²¨è™Ÿ Modal -->
     <div class="modal fade" id="shenzhenCargoModal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title">³t¬£·s»¼³f¸¹</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Ãö³¬">
+                    <h4 class="modal-title">é€Ÿæ´¾æ–°éè²¨è™Ÿ</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="é—œé–‰">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -561,13 +589,13 @@
                     <table class="table table-striped table-bordered">
                         <thead>
                             <tr>
-                                <th style="width: 50%;">¤À´£³æ¸¹</th>
-                                <th style="width: 50%;">ª«¬y³f¸¹</th>
+                                <th style="width: 50%;">åˆ†æå–®è™Ÿ</th>
+                                <th style="width: 50%;">ç‰©æµè²¨è™Ÿ</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr ng-if="!shenzhenCargoList || shenzhenCargoList.length == 0">
-                                <td colspan="2" style="text-align: center;">µL³t¬£·s»¼³f¸¹¸ê®Æ</td>
+                                <td colspan="2" style="text-align: center;">ç„¡é€Ÿæ´¾æ–°éè²¨è™Ÿè³‡æ–™</td>
                             </tr>
                             <tr ng-repeat="item in shenzhenCargoList">
                                 <td>{{item.TrackingNo}}</td>
@@ -577,7 +605,7 @@
                     </table>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Ãö³¬</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">é—œé–‰</button>
                 </div>
             </div>
         </div>

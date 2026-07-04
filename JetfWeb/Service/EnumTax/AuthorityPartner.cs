@@ -51,6 +51,10 @@ namespace Service.EnumTax
         [Sort(90)]
         Jetft,
 
+        [Description("代收銷帳作業")]
+        [Sort(95)]
+        Reconciliation,
+
         [Description("發送訊息")]
         [Sort(100)]
         Send,

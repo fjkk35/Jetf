@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Service.Services.SearchCargo.Domain
 {
     /// <summary>
-    /// ³fªp©ú²Ó¦^À³
+    /// è²¨æ³æ˜ç´°å›æ‡‰
     /// </summary>
     public class CargoDetailResponse
     {
@@ -17,87 +17,87 @@ namespace Service.Services.SearchCargo.Domain
         public string Id { get; set; }
 
         /// <summary>
-        /// ¹w­p¨ì´ä¤é
+        /// é è¨ˆåˆ°æ¸¯æ—¥
         /// </summary>
         public DateTime? ETA { get; set; }
 
         /// <summary>
-        /// ¤ò­«
+        /// æ¯›é‡
         /// </summary>
         public string GW { get; set; }
 
         /// <summary>
-        /// ¥ó¼Æ
+        /// ä»¶æ•¸
         /// </summary>
         public string PIECE { get; set; }
 
         /// <summary>
-        /// ­ÜÀxÃş«¬
+        /// å€‰å„²é¡å‹
         /// </summary>
         public string Source { get; set; }
 
         /// <summary>
-        /// ²MÃöÃş«¬
+        /// æ¸…é—œé¡å‹
         /// </summary>
         public string Type { get; set; }
 
         /// <summary>
-        /// ¥D´£³æ¸¹
+        /// ä¸»æå–®è™Ÿ
         /// </summary>
         public string Main_Number { get; set; }
 
         /// <summary>
-        /// ²MÃö³U¸¹
+        /// æ¸…é—œè¢‹è™Ÿ
         /// </summary>
         public string Bag_Number { get; set; }
 
         /// <summary>
-        /// µ|³æ½s¸¹
+        /// ç¨…å–®ç·¨è™Ÿ
         /// </summary>
         public string Tax_Number { get; set; }
 
         /// <summary>
-        /// «È¤á¥N¸¹
+        /// å®¢æˆ¶ä»£è™Ÿ
         /// </summary>
         public string Cust_Id { get; set; }
 
         /// <summary>
-        /// «È¤á¦WºÙ
+        /// å®¢æˆ¶åç¨±
         /// </summary>
         public string Cust_Name { get; set; }
 
         /// <summary>
-        /// ¬£¥ó¤½¥q
+        /// æ´¾ä»¶å…¬å¸
         /// </summary>
         public string Trans_Name { get; set; }
 
         /// <summary>
-        /// ¬£¥ó¤½¥q(·s)
+        /// æ´¾ä»¶å…¬å¸(æ–°)
         /// </summary>
         public string Trans_Name_New { get; set; }
 
         /// <summary>
-        /// ¤À´£³æ¸¹
+        /// åˆ†æå–®è™Ÿ
         /// </summary>
         public string Dlv_Inv { get; set; }
 
         /// <summary>
-        /// ª«¬y³f¸¹
+        /// ç‰©æµè²¨è™Ÿ
         /// </summary>
         public string Deliveryno { get; set; }
 
         /// <summary>
-        /// ¦¬¥ó¤H
+        /// æ”¶ä»¶äºº
         /// </summary>
         public string Recipient { get; set; }
 
         /// <summary>
-        /// ¦¬¥ó¤H¹q¸Ü
+        /// æ”¶ä»¶äººé›»è©±
         /// </summary>
         public string Recphone { get; set; }
 
         /// <summary>
-        /// ¦¬¥ó¤H¦a§}
+        /// æ”¶ä»¶äººåœ°å€
         /// </summary>
         public string Recaddress { get; set; }
 
@@ -107,155 +107,160 @@ namespace Service.Services.SearchCargo.Domain
         public string CC { get; set; }
 
         /// <summary>
-        /// «È¤á¥~½c¸¹
+        /// å®¢æˆ¶å¤–ç®±è™Ÿ
         /// </summary>
         public string Field_X { get; set; }
 
         /// <summary>
-        /// ¤J­Ü®É¶¡
+        /// å…¥å€‰æ™‚é–“
         /// </summary>
         public DateTime? In_Datetime { get; set; }
 
         /// <summary>
-        /// ¥X­Ü®É¶¡
+        /// å‡ºå€‰æ™‚é–“
         /// </summary>
         public DateTime? Out_Datetime { get; set; }
 
         /// <summary>
-        /// §tµ|»ù
+        /// å«ç¨…åƒ¹
         /// </summary>
         public string Include_Tax { get; set; }
 
         /// <summary>
-        /// Ãöµ|
+        /// é—œç¨…
         /// </summary>
         public string Tax1 { get; set; }
 
         /// <summary>
-        /// Àç·~µ|
+        /// ç‡Ÿæ¥­ç¨…
         /// </summary>
         public string Tax2 { get; set; }
 
         /// <summary>
-        /// Á`µ|ª÷
+        /// ç¸½ç¨…é‡‘
         /// </summary>
         public string TotalTax { get; set; }
 
         /// <summary>
-        /// «H¥Î¥d¤âÄò¶O
+        /// ä¿¡ç”¨å¡æ‰‹çºŒè²»
         /// </summary>
         public string CCFee { get; set; }
 
         /// <summary>
-        /// ³B²z¶O
+        /// è™•ç†è²»
         /// </summary>
         public string Fee { get; set; }
 
         /// <summary>
-        /// ¥N¦¬³f´Ú
+        /// ä»£æ”¶è²¨æ¬¾
         /// </summary>
         public string Cod { get; set; }
 
         /// <summary>
-        /// ¬£¥ó¥N¦¬³f´Ú
+        /// æ´¾ä»¶ä»£æ”¶è²¨æ¬¾
         /// </summary>
         public string To_Dlv_Cod { get; set; }
 
         /// <summary>
-        /// «È¤á¥N¦¬³f´Ú
+        /// å®¢æˆ¶ä»£æ”¶è²¨æ¬¾
         /// </summary>
         public string CustomerCod { get; set; }
 
         /// <summary>
-        /// ¬£°e¥N¦¬³f´Ú
+        /// æ´¾é€ä»£æ”¶è²¨æ¬¾
         /// </summary>
         public string TransCod { get; set; }
 
         /// <summary>
-        /// «È¤á­q³æ¸¹
+        /// å›æ¬¾é€²åº¦è³‡æ–™ã€‚
+        /// </summary>
+        public ReconciliationInvoiceProgressModel ReconciliationInvoiceProgress { get; set; }
+
+        /// <summary>
+        /// å®¢æˆ¶è¨‚å–®è™Ÿ
         /// </summary>
         public string Order_No { get; set; }
 
         /// <summary>
-        /// §Àµ{³æ¸¹
+        /// å°¾ç¨‹å–®è™Ÿ
         /// </summary>
         public string Express_No { get; set; }
 
         /// <summary>
-        /// ¤À´£³æ¸¹(­ì©l)
+        /// åˆ†æå–®è™Ÿ(åŸå§‹)
         /// </summary>
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// µ|³æ½s¸¹¦Cªí
+        /// ç¨…å–®ç·¨è™Ÿåˆ—è¡¨
         /// </summary>
         public List<string> TaxNumberList { get; set; }
 
         /// <summary>
-        /// ±½³f¤W¨®®É¶¡
+        /// æƒè²¨ä¸Šè»Šæ™‚é–“
         /// </summary>
         public string ScanCargoUploadTime { get; set; }
 
         /// <summary>
-        /// ±½³f¤W¨®¤H­û
+        /// æƒè²¨ä¸Šè»Šäººå“¡
         /// </summary>
         public string ScanCargoUploadOpe { get; set; }
 
         /// <summary>
-        /// ±½³f¬£°e¤½¥q
+        /// æƒè²¨æ´¾é€å…¬å¸
         /// </summary>
         public string ScanCargoTransName { get; set; }
 
         /// <summary>
-        /// ¨®¸¹
+        /// è»Šè™Ÿ
         /// </summary>
         public string ScanCargoCarNo { get; set; }
 
         /// <summary>
-        /// ¿ù³æ­ì¦]
+        /// éŒ¯å–®åŸå› 
         /// </summary>
         public string ErrorReason { get; set; }
 
         public string Status { get; set; }
 
         /// <summary>
-        /// °t°e¶i«×¦Cªí
+        /// é…é€é€²åº¦åˆ—è¡¨
         /// </summary>
         public List<CargoStatusItem> CargoStatusList { get; set; }
 
         /// <summary>
-        /// ¹ê»Ú¥Ó³ø¤H
+        /// å¯¦éš›ç”³å ±äºº
         /// </summary>
         public string ActualDeclarant { get; set; }
 
         /// <summary>
-        /// ¹ê»Ú¥Ó³ø¤H¹q¸Ü
+        /// å¯¦éš›ç”³å ±äººé›»è©±
         /// </summary>
         public string ActualDeclarantPhone { get; set; }
 
         /// <summary>
-        /// ¹ê»Ú¥Ó³ø«~¦W¦Cªí
+        /// å¯¦éš›ç”³å ±å“ååˆ—è¡¨
         /// </summary>
         public List<string> ActualItemNameList { get; set; }
 
         /// <summary>
-        /// ¹ê»Ú¥Ó³øª÷ÃB
+        /// å¯¦éš›ç”³å ±é‡‘é¡
         /// </summary>
         public decimal ActualInvoiceAmount { get; set; }
     }
 
     /// <summary>
-    /// °t°e¶i«×¶µ¥Ø
+    /// é…é€é€²åº¦é …ç›®
     /// </summary>
     public class CargoStatusItem
     {
         /// <summary>
-        /// ®É¶¡
+        /// æ™‚é–“
         /// </summary>
         public string Time { get; set; }
 
         /// <summary>
-        /// ª¬ºA
+        /// ç‹€æ…‹
         /// </summary>
         public string Status { get; set; }
     }

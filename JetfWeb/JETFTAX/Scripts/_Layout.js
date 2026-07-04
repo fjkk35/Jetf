@@ -181,6 +181,11 @@ mainApp.controller('LayoutController', function ($scope, $http) {
             ]
         },
         {
+            id: 'reconciliation', title: '代收銷帳作業', icon: 'fas fa-fw fa-file-invoice', children: [
+                { id: 'ReconciliationUploadInvoice', text: '代收銷帳上傳發票', url: '~/ReconciliationInvoice/UploadInvoice', auth: ['ReconciliationUploadInvoice'] },
+            ]
+        },
+        {
             id: 'send', title: '發送訊息', icon: 'fas fa-fw fa-paper-plane', partner: 'Send', children: [
                 { id: 'ErrorOrderSend', text: '錯單發送簡訊', url: '~/ErrorOrderSend/Index', auth: ['ErrorOrderSend'] },
                 { id: 'ErrorOrderSendDetail', text: '錯單發送明細', url: '~/ErrorOrderSendDetail/Index' },

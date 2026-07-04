@@ -137,5 +137,7 @@ namespace Service.Data
         public DbSet<UserAuthorityGroupEntity> UserAuthorityGroups { get; set; }
 
         public DbSet<UserMasterEntity> UserMasters { get; set; }
+
+        public DbSet<ReconciliationInvoiceEntity> ReconciliationInvoices { get; set; }
     }
 }

@@ -537,5 +537,10 @@ namespace Service.EnumTax
         /// Coupang回報表單
         /// </summary>
         CoupangReportForm,
+
+        /// <summary>
+        /// 代收銷帳上傳發票
+        /// </summary>
+        ReconciliationUploadInvoice,
     }
 }

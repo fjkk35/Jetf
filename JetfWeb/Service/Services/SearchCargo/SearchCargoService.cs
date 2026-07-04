@@ -250,6 +250,27 @@ namespace Service.Services.SearchCargo
                 detail.TransCod = feeMaster.TransCod.ToString();
             }
 
+            // 取得回款進度
+            var deliveryNo = detail.Deliveryno?.Trim();
+            if (!string.IsNullOrWhiteSpace(deliveryNo))
+            {
+                var reconciliationInvoice = JetfDb.ReconciliationInvoices
+                    .AsNoTracking()
+                    .Where(x => !string.IsNullOrEmpty(x.DlvInv) && x.DlvInv.Trim() == deliveryNo)
+                    .OrderByDescending(x => x.UpdatedTime ?? x.CreatedTime)
+                    .FirstOrDefault();
+
+                if (reconciliationInvoice != null)
+                {
+                    detail.ReconciliationInvoiceProgress = new ReconciliationInvoiceProgressModel
+                    {
+                        PaymentDate = null,
+                        Type = reconciliationInvoice.Type,
+                        Date = reconciliationInvoice.Date,
+                        Invoice = reconciliationInvoice.Invoice
+                    };
+                }
+            }
             // 取得稅單編號
             var taxNumbers = GetTaxNumber(data.ORIGINAL, detail.Bag_Number, detail.Dlv_Inv);
             detail.TaxNumberList = taxNumbers.Select(x => x.TAX_NUMBER).ToList();

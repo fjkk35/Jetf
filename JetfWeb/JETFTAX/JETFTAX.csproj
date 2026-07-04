@@ -378,6 +378,7 @@
     <Compile Include="Controllers\SeaShenzhenOriginalController.cs" />
     <Compile Include="Controllers\SeaShenzhenOriginalQueryController.cs" />
     <Compile Include="Controllers\SeaShenzhenTaxController.cs" />
+    <Compile Include="Controllers\ReconciliationInvoiceController.cs" />
     <Compile Include="Controllers\SjlBillingController.cs" />
     <Compile Include="Controllers\StepController.cs" />
     <Compile Include="Controllers\TactController.cs" />
@@ -886,6 +887,7 @@
     <Content Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginal.js" />
     <Content Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginalQuery.js" />
     <Content Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenTax.js" />
+    <Content Include="Scripts\ng-controllers\ReconciliationInvoice\UploadInvoice.js" />
     <Content Include="Scripts\ng-controllers\SjlBilling\SjlBilling.js" />
     <Content Include="Scripts\ng-controllers\Tact\Tact.js" />
     <Content Include="Scripts\ng-controllers\WorkDayArea\WorkDayArea.js" />
@@ -2679,6 +2681,7 @@
     <Content Include="Download\批量上傳退件原因_範例.xlsx" />
     <Content Include="Download\貨件出庫取消批量上傳_範例.xlsx" />
     <Content Include="Download\捷利托運資料上傳_範例.xlsx" />
+    <Content Include="Download\上傳發票_範例.xlsx" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
@@ -2947,6 +2950,7 @@
     <Content Include="Views\ApprovalCategory\Index.cshtml" />
     <Content Include="Views\AuthorizationForm\Index.cshtml" />
     <Content Include="Views\SeaClearanceCustomer\Index.cshtml" />
+    <Content Include="Views\ReconciliationInvoice\UploadInvoice.cshtml" />
     <Content Include="Views\Step\Index.cshtml" />
     <Content Include="Views\Shared\_DetailLayout.cshtml" />
     <Content Include="Views\UnpackingStatistics\Index.cshtml" />
@@ -3029,6 +3033,7 @@
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginal.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginalQuery.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenTax.ts" />
+    <TypeScriptCompile Include="Scripts\ng-controllers\ReconciliationInvoice\UploadInvoice.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SjlBatchImport\SjlBatchImportSearch.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SjlBilling\SjlBilling.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\Download\DownloadEtlNew.ts" />
