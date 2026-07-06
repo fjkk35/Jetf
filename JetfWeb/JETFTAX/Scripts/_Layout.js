@@ -183,6 +183,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
         {
             id: 'reconciliation', title: '代收銷帳作業', icon: 'fas fa-fw fa-file-invoice', children: [
                 { id: 'ReconciliationUploadInvoice', text: '代收銷帳上傳發票', url: '~/ReconciliationInvoice/UploadInvoice', auth: ['ReconciliationUploadInvoice'] },
+                { id: 'ReconciliationAir', text: '代收銷帳上傳空快', url: '~/ReconciliationAir/UploadAir', auth: ['ReconciliationAir'] },
             ]
         },
         {

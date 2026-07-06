@@ -139,5 +139,7 @@ namespace Service.Data
         public DbSet<UserMasterEntity> UserMasters { get; set; }
 
         public DbSet<ReconciliationInvoiceEntity> ReconciliationInvoices { get; set; }
+
+        public DbSet<ReconciliationAirEntity> ReconciliationAirs { get; set; }
     }
 }

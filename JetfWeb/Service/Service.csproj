@@ -307,6 +307,7 @@
     <Compile Include="Data\Models\Jetf\ShipmentInboundLocationHistoryEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundProcessStageEntity.cs" />
     <Compile Include="Data\Models\Jetf\ReconciliationInvoiceEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ReconciliationAirEntity.cs" />
     <Compile Include="Data\Models\Jetf\TelegramGroupEntity.cs" />
     <Compile Include="Data\Models\Jetf\StepConditionEntity.cs" />
     <Compile Include="Data\Models\Jetf\StepDetailEntity.cs" />
@@ -654,6 +655,9 @@
     <Compile Include="Services\ReconciliationInvoice\Domain\ReconciliationInvoiceUploadResult.cs" />
     <Compile Include="Services\ReconciliationInvoice\Domain\ReconciliationInvoiceUploadRow.cs" />
     <Compile Include="Services\ReconciliationInvoice\ReconciliationInvoiceService.cs" />
+    <Compile Include="Services\ReconciliationAir\Domain\ReconciliationAirUploadRow.cs" />
+    <Compile Include="Services\ReconciliationAir\Domain\ReconciliationAirUploadResult.cs" />
+    <Compile Include="Services\ReconciliationAir\ReconciliationAirService.cs" />
     <Compile Include="Services\SeaTransRecord\SeaTransRecordService.cs" />
     <Compile Include="Services\SeaUnboxingRecord\SeaUnboxingRecordService.cs" />
     <Compile Include="Services\SeaUnreceivedOrder\SeaUnreceivedOrderService.cs" />
