@@ -706,9 +706,11 @@ namespace Service.Services
             //空運
             else if (source == "3")
             {
-                sb.Append("select  DATADATE,SOURCE,TYPE,a.customer as CUST_ID,a.dlv_com as TRANS_NO,a.ARRIVAL,b.CUSTOMER as CUST_NAME,CLEARANCE_NUMBER,BAG_NUMBER,DLV_INV,MAIN_NUMBER,TAX_NUMBER,IN_DATETIME,OUT_DATETIME,TAX_BASE,TAX1,TAX2,a.RECIPIENT,a.RECPHONE,TRANS_NAME,COD,a.INCLUDE_TAX,a.FEE,a.TAX_PAYER,a.TRACKINGNO,c.RECID as IMPORTER_ID,c.RECIPIENT as IMPORTER,a.CUSTOMER_COD,a.TRANS_COD,a.TAX_RECID from jetf.dbo.FEE_MASTER a ");
+                sb.Append("select  DATADATE,SOURCE,a.TYPE,a.customer as CUST_ID,a.dlv_com as TRANS_NO,a.ARRIVAL,b.CUSTOMER as CUST_NAME,CLEARANCE_NUMBER,BAG_NUMBER,DLV_INV,MAIN_NUMBER,TAX_NUMBER,IN_DATETIME,OUT_DATETIME,TAX_BASE,TAX1,TAX2,a.RECIPIENT,a.RECPHONE,TRANS_NAME,COD,a.INCLUDE_TAX,a.FEE,a.TAX_PAYER,a.TRACKINGNO,c.RECID as IMPORTER_ID,c.RECIPIENT as IMPORTER,a.CUSTOMER_COD,a.TRANS_COD,a.TAX_RECID,r.TrackingNo as ReconciliationAirTrackingNo,r.Recipient as ReconciliationAirRecipient,r.TaxRecId as ReconciliationAirTaxRecId from jetf.dbo.FEE_MASTER a ");
                 sb.Append("left join jetf.dbo.customer_master b on [jetf].[dbo].[PadLeft]('0',a.customer,5)=b.CUST_ID and a.dlv_com=b.TRANS_NO and b.TRAN_TYPE='空運' ");
                 sb.Append("left join (select distinct TRACKINGNO,RECID,RECIPIENT from DATA_CENTER.dbo.MAKELIST) c on a.TRACKINGNO = c.TRACKINGNO ");
+                // 只取出空運銷帳資料，明細欄位是否覆寫在後續程式邏輯判斷。
+                sb.Append("left join jetf.dbo.ReconciliationAir r on a.TRACKINGNO = r.TrackingNo ");
                 sb.Append("where DATADATE between @sDate and @eDate and SOURCE_TYPE='3' ");
             }
 
@@ -733,6 +735,7 @@ namespace Service.Services
 
             foreach (DataRow row in dt.Rows)
             {
+                bool hasReconciliationAir = source == "3" && !string.IsNullOrWhiteSpace(row["ReconciliationAirTrackingNo"].ToString());
                 DataRow dr = dt_New.NewRow();
                 dr["DATADATE"] = row["DATADATE"];
                 dr["SOURCE"] = row["SOURCE"];
@@ -750,7 +753,12 @@ namespace Service.Services
                 dr["TAX_BASE"] = row["TAX_BASE"];
                 dr["TAX1"] = row["TAX1"];
                 dr["TAX2"] = row["TAX2"];
-                if (row["TAX_PAYER"].ToString() == "")
+                // 空運若有對應分號，下載明細的納稅義務人改以 ReconciliationAir 為準。
+                if (hasReconciliationAir)
+                {
+                    dr["RECIPIENT"] = row["ReconciliationAirRecipient"];
+                }
+                else if (row["TAX_PAYER"].ToString() == "")
                 {
                     dr["RECIPIENT"] = row["RECIPIENT"];
                 }
@@ -768,7 +776,7 @@ namespace Service.Services
                 dr["ARRIVAL"] = row["ARRIVAL"];
                 dr["CUSTOMER_COD"] = row["CUSTOMER_COD"];
                 dr["TRANS_COD"] = row["TRANS_COD"];
-                dr["TAX_RECID"] = row["TAX_RECID"];
+                dr["TAX_RECID"] = hasReconciliationAir ? row["ReconciliationAirTaxRecId"] : row["TAX_RECID"];
                 dt_New.Rows.Add(dr);
             }
 
