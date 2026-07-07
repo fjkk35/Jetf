@@ -35,6 +35,8 @@ interface ReconciliationUploadAirScope extends ng.IScope {
     } | null;
     uploadData: ReconciliationUploadAirRow[];
     uploadSummary: ReconciliationUploadAirResult | null;
+    getAcceptedExtensions: () => string;
+    getAllowedExtensionText: () => string;
     uploadFile: () => void;
 }
 
@@ -48,11 +50,33 @@ mainApp.controller('ReconciliationUploadAirController', ['$scope', '$http', func
         }
     }
 
+    function getAllowedExtensions(type: string): string[] {
+        return type === 'TACT'
+            ? ['csv']
+            : ['xls', 'xlsx'];
+    }
+
+    function getAllowedExtensionText(type: string): string {
+        return getAllowedExtensions(type).join('、');
+    }
+
     $scope.selectedType = 'FTZ';
     $scope.uploading = false;
     $scope.uploadResult = null;
     $scope.uploadData = [];
     $scope.uploadSummary = null;
+    $scope.getAcceptedExtensions = function (): string {
+        return $scope.selectedType === 'TACT'
+            ? '.csv'
+            : '.xls,.xlsx';
+    };
+    $scope.getAllowedExtensionText = function (): string {
+        return getAllowedExtensionText($scope.selectedType);
+    };
+
+    $scope.$watch('selectedType', function (): void {
+        clearSelectedFile(document.getElementById('uploadAirFileInput') as HTMLInputElement);
+    });
 
     $scope.uploadFile = function (): void {
         var fileInput = document.getElementById('uploadAirFileInput') as HTMLInputElement;
@@ -70,11 +94,11 @@ mainApp.controller('ReconciliationUploadAirController', ['$scope', '$http', func
         }
 
         var fileExtension = file.name.split('.').pop().toLowerCase();
-        if (fileExtension !== 'xlsx') {
+        if (getAllowedExtensions($scope.selectedType).indexOf(fileExtension) < 0) {
             clearSelectedFile(fileInput);
             swal({
                 title: '錯誤',
-                text: '副檔名需為 xlsx',
+                text: $scope.selectedType + ' 上傳檔案副檔名需為 ' + getAllowedExtensionText($scope.selectedType),
                 icon: 'error'
             });
             return;

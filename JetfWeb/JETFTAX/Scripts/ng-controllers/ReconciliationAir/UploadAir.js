@@ -4,11 +4,30 @@ mainApp.controller('ReconciliationUploadAirController', ['$scope', '$http', func
                 fileInput.value = '';
             }
         }
+        function getAllowedExtensions(type) {
+            return type === 'TACT'
+                ? ['csv']
+                : ['xls', 'xlsx'];
+        }
+        function getAllowedExtensionText(type) {
+            return getAllowedExtensions(type).join('、');
+        }
         $scope.selectedType = 'FTZ';
         $scope.uploading = false;
         $scope.uploadResult = null;
         $scope.uploadData = [];
         $scope.uploadSummary = null;
+        $scope.getAcceptedExtensions = function () {
+            return $scope.selectedType === 'TACT'
+                ? '.csv'
+                : '.xls,.xlsx';
+        };
+        $scope.getAllowedExtensionText = function () {
+            return getAllowedExtensionText($scope.selectedType);
+        };
+        $scope.$watch('selectedType', function () {
+            clearSelectedFile(document.getElementById('uploadAirFileInput'));
+        });
         $scope.uploadFile = function () {
             var fileInput = document.getElementById('uploadAirFileInput');
             var file = fileInput && fileInput.files && fileInput.files.length > 0
@@ -23,11 +42,11 @@ mainApp.controller('ReconciliationUploadAirController', ['$scope', '$http', func
                 return;
             }
             var fileExtension = file.name.split('.').pop().toLowerCase();
-            if (fileExtension !== 'xlsx') {
+            if (getAllowedExtensions($scope.selectedType).indexOf(fileExtension) < 0) {
                 clearSelectedFile(fileInput);
                 swal({
                     title: '錯誤',
-                    text: '副檔名需為 xlsx',
+                    text: $scope.selectedType + ' 上傳檔案副檔名需為 ' + getAllowedExtensionText($scope.selectedType),
                     icon: 'error'
                 });
                 return;

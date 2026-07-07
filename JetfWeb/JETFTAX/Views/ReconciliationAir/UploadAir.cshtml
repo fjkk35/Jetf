@@ -16,9 +16,9 @@
 
     <div class="containertype">
         <div class="form-group row">
-            <label class="col-lg-1 col-md-3 col-sm-12 control-label" style="padding-top:7px;">選擇 Excel 檔案</label>
+            <label class="col-lg-1 col-md-3 col-sm-12 control-label" style="padding-top:7px;">選擇檔案</label>
             <div class="col-lg-6 col-md-7 col-sm-12" style="margin-bottom:0.5rem;">
-                <input type="file" id="uploadAirFileInput" accept=".xlsx" class="form-control" />
+                <input type="file" id="uploadAirFileInput" ng-attr-accept="{{ getAcceptedExtensions() }}" class="form-control" />
             </div>
         </div>
 

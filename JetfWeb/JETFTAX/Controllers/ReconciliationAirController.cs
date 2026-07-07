@@ -60,10 +60,10 @@ namespace JETFTAX.Controllers
                 }
 
                 var fileType = Path.GetExtension(file.FileName);
-                if (!string.Equals(fileType, ".xlsx", StringComparison.OrdinalIgnoreCase))
+                if (!IsAllowedUploadFileType(type, fileType))
                 {
                     responseModel.status = Status.error;
-                    responseModel.msg = "副檔名需為 xlsx";
+                    responseModel.msg = GetUploadFileTypeErrorMessage(type);
                     return Json(responseModel);
                 }
 
@@ -87,6 +87,48 @@ namespace JETFTAX.Controllers
             }
 
             return Json(responseModel);
+        }
+
+        /// <summary>
+        /// 判斷上傳檔案副檔名是否符合資料來源。
+        /// </summary>
+        /// <param name="type">資料來源類型。</param>
+        /// <param name="fileType">副檔名。</param>
+        /// <returns>是否允許上傳。</returns>
+        private static bool IsAllowedUploadFileType(string type, string fileType)
+        {
+            if (string.Equals(type, "TACT", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Equals(fileType, ".csv", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (string.Equals(type, "FTZ", StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Equals(fileType, ".xls", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(fileType, ".xlsx", StringComparison.OrdinalIgnoreCase);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 取得上傳檔案副檔名錯誤訊息。
+        /// </summary>
+        /// <param name="type">資料來源類型。</param>
+        /// <returns>錯誤訊息。</returns>
+        private static string GetUploadFileTypeErrorMessage(string type)
+        {
+            if (string.Equals(type, "TACT", StringComparison.OrdinalIgnoreCase))
+            {
+                return "TACT-華儲上傳檔案副檔名需為 csv";
+            }
+
+            if (string.Equals(type, "FTZ", StringComparison.OrdinalIgnoreCase))
+            {
+                return "FTZ-遠雄上傳檔案副檔名需為 xls 或 xlsx";
+            }
+
+            return "資料來源需為 FTZ 或 TACT";
         }
     }
 }
