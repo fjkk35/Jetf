@@ -414,7 +414,7 @@ namespace Service.Services.Ftz
             {
                 // 取得當前時間
                 var now = DateTime.Now;
-                var d1Date = now.AddDays(-1); // now - 1天
+                var d1Date = now.AddDays(-30); // now - 30天
 
                 // 格式化參數
                 string d1 = d1Date.ToString("yyyyMMdd");
@@ -1042,9 +1042,19 @@ namespace Service.Services.Ftz
         /// </summary>
         private int GetNotGciTransNameCount(FtzMainQueryViewModel item, string transName)
         {
-            // 派件公司欄位數量以明細頁「申報」欄位為準，不再用件/袋/一分號多件分開計算。
+            // 派件公司欄位數量以明細頁「申報」欄位為準；同報單號碼重複時只取第一筆。
+            // 未收單沒有報單號碼，就使用分號「申報」= 1 計算
             return (item?.NotGciDetails ?? new List<Row>())
                 .Where(r => IsSameTransName(r.TransName, transName))
+                .Select(row => new
+                {
+                    Row = row,
+                    Key = string.IsNullOrWhiteSpace(row.declNo)
+                        ? (row.hwb ?? "").Trim()
+                        : row.declNo.Trim()
+                })
+                .GroupBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(x => x.First().Row)
                 .Sum(r => ParseInt(r.piece));
         }
 
