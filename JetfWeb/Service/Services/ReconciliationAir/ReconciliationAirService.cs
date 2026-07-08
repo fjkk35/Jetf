@@ -490,7 +490,24 @@ namespace Service.Services.ReconciliationAir
             row.TaxBaseText = row.TaxBaseText?.Trim() ?? string.Empty;
             row.TaxText = row.TaxText?.Trim() ?? string.Empty;
             row.FailReason = row.FailReason?.Trim() ?? string.Empty;
+
+            if (IsTact(row.Type))
+            {
+                row.MainNumber = RemoveSingleQuotes(row.MainNumber);
+                row.TrackingNo = RemoveSingleQuotes(row.TrackingNo);
+            }
+
             return row;
+        }
+
+        /// <summary>
+        /// 移除單號中的單引號。
+        /// </summary>
+        /// <param name="value">單號文字。</param>
+        /// <returns>移除單引號後的單號文字。</returns>
+        private static string RemoveSingleQuotes(string value)
+        {
+            return (value ?? string.Empty).Replace("'", string.Empty).Trim();
         }
 
         /// <summary>
