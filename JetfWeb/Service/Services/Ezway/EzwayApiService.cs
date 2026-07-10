@@ -547,10 +547,15 @@ namespace Service.Services.Ezway
                             var apiResponse = await SendAsync<List<EzwayQueryResult>>(httpClient, requestMessage);
                             if (!IsApiSuccess(apiResponse))
                             {
-                                return new ResponseModel($"第 {batchIndex + 1} 批整批查詢失敗：{apiResponse?.Msg ?? "Ezway 整批查詢失敗"}");
+                                if (!IsNoDataResponse(apiResponse))
+                                {
+                                    return new ResponseModel($"第 {batchIndex + 1} 批整批查詢失敗：{apiResponse?.Msg ?? "Ezway 整批查詢失敗"}");
+                                }
                             }
-
-                            results.AddRange(apiResponse.Data ?? new List<EzwayQueryResult>());
+                            else
+                            {
+                                results.AddRange(apiResponse.Data ?? new List<EzwayQueryResult>());
+                            }
                         }
 
                         if (batchIndex < batchedHawbNumbers.Count - 1)
