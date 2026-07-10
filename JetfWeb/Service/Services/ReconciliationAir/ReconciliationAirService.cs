@@ -495,6 +495,7 @@ namespace Service.Services.ReconciliationAir
             {
                 row.MainNumber = RemoveSingleQuotes(row.MainNumber);
                 row.TrackingNo = RemoveSingleQuotes(row.TrackingNo);
+                row.TaxRecId = RemoveSingleQuotes(row.TaxRecId);
             }
 
             return row;
