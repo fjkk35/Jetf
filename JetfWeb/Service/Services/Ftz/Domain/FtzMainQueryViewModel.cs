@@ -72,6 +72,41 @@ namespace Service.Services.Ftz.Domain
         public int NotGciTotal { get; set; }
 
         /// <summary>
+        /// 收單件數。
+        /// </summary>
+        public int ReceivedPieceCount { get; set; }
+
+        /// <summary>
+        /// 排除 ZZZA 後的未收單件數。
+        /// </summary>
+        public int UnreceivedCount { get; set; }
+
+        /// <summary>
+        /// ZZZA 總筆數。
+        /// </summary>
+        public int ZzzaCount { get; set; }
+
+        /// <summary>
+        /// ZZZA 收單筆數。
+        /// </summary>
+        public int ZzzaReceivedCount { get; set; }
+
+        /// <summary>
+        /// ZZZA 未收單筆數。
+        /// </summary>
+        public int ZzzaUnreceivedCount { get; set; }
+
+        /// <summary>
+        /// 排除 ZZZA 後的派件公司件數。
+        /// </summary>
+        public Dictionary<string, int> TransNameCounts { get; set; } = new Dictionary<string, int>();
+
+        /// <summary>
+        /// 需要補列到未進倉明細的未收單資料。
+        /// </summary>
+        public List<FtzMainUploadExcelRow> UnreceivedRows { get; set; } = new List<FtzMainUploadExcelRow>();
+
+        /// <summary>
         /// 未收單B6F筆數
         /// </summary>
         public int UnreceivedB6FCount { get; set; }

@@ -49,6 +49,9 @@ namespace Service.Services.Ftz.Domain
         /// <summary>備註</summary>
         public string remarks { get; set; }
 
+        /// <summary>上傳明細的 ZZZA 註記</summary>
+        public string ZzzaRemark { get; set; }
+
         /// <summary>一分號多件</summary>
         public string realTotBag { get; set; }
 

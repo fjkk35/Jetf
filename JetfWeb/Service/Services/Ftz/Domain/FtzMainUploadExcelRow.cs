@@ -26,6 +26,11 @@ namespace Service.Services.Ftz.Domain
         public string OneHwbMultiPieceHwb { get; set; }
 
         /// <summary>
+        /// 備註；目前僅保留 ZZZA 註記。
+        /// </summary>
+        public string Remark { get; set; }
+
+        /// <summary>
         /// 派件公司。
         /// </summary>
         public string TransName { get; set; }

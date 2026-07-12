@@ -26,6 +26,11 @@ namespace Service.Services.Ftz
         private const string NoTransName = "無派件公司";
 
         /// <summary>
+        /// 上傳明細中需要另外統計的備註值。
+        /// </summary>
+        private const string ZzzaRemark = "ZZZA";
+
+        /// <summary>
         /// 主號查詢
         /// </summary>
         public async Task<ResponseModel> MainQueryAsync(FtzMainQueryRequest request, List<FtzMainUploadExcelRow> uploadRows = null)
@@ -84,6 +89,7 @@ namespace Service.Services.Ftz
 
                 //取得派件公司
                 GetTransName(results);
+                CalculateMainUploadStatistics(results, uploadRows);
                 SetUnreceivedB6FCounts(results, uploadRows);
 
                 return new ResponseModel
@@ -536,7 +542,7 @@ namespace Service.Services.Ftz
             // 先定位表頭，之後才能依欄名讀取主號、袋號與收單註記。
             var headerInfo = FindMainUploadHeader(sheet);
             var headerMap = headerInfo.Item2;
-            var requiredHeaders = new[] { "袋號", "主號", "分艙單收單註記", "1分號多件之分號" };
+            var requiredHeaders = new[] { "袋號", "主號", "分艙單收單註記", "1分號多件之分號", "備註" };
             var missingHeaders = requiredHeaders.Where(header => !headerMap.ContainsKey(header)).ToList();
 
             if (missingHeaders.Any())
@@ -557,6 +563,7 @@ namespace Service.Services.Ftz
                 var mwb = row.GetCellData(headerMap["主號"]);
                 var receiptMark = row.GetCellData(headerMap["分艙單收單註記"]);
                 var oneHwbMultiPieceHwb = row.GetCellData(headerMap["1分號多件之分號"]);
+                var remark = row.GetCellData(headerMap["備註"]);
 
                 // 只有收單註記為 X 的資料，才需要納入後續未收單比對。
                 if (!string.Equals(receiptMark, "X", StringComparison.OrdinalIgnoreCase))
@@ -575,7 +582,8 @@ namespace Service.Services.Ftz
                     BagNo = bagNo.Trim(),
                     Mwb = mwb.Trim(),
                     ReceiptMark = receiptMark.Trim(),
-                    OneHwbMultiPieceHwb = (oneHwbMultiPieceHwb ?? "").Trim()
+                    OneHwbMultiPieceHwb = (oneHwbMultiPieceHwb ?? "").Trim(),
+                    Remark = IsZzzaRemark(remark) ? ZzzaRemark : ""
                 });
             }
 
@@ -641,7 +649,7 @@ namespace Service.Services.Ftz
         /// <returns>表頭列索引與欄位對照。</returns>
         private Tuple<int, Dictionary<string, int>> FindMainUploadHeader(ISheet sheet)
         {
-            var requiredHeaders = new[] { "袋號", "主號", "分艙單收單註記", "1分號多件之分號" };
+            var requiredHeaders = new[] { "袋號", "主號", "分艙單收單註記", "1分號多件之分號", "備註" };
             return FindUploadHeader(sheet, requiredHeaders);
         }
 
@@ -708,9 +716,162 @@ namespace Service.Services.Ftz
                     group => group.Key,
                     group => group
                         .GroupBy(row => row.BagNo.Trim(), StringComparer.OrdinalIgnoreCase)
-                        .Select(rowGroup => rowGroup.First())
+                        .Select(rowGroup => rowGroup
+                            .OrderByDescending(IsZzzaUploadRow)
+                            .First())
                         .ToList(),
                     StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 判斷上傳明細的備註是否為 ZZZA。
+        /// </summary>
+        private bool IsZzzaRemark(string remark)
+        {
+            return string.Equals(
+                (remark ?? "").Trim(),
+                ZzzaRemark,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 判斷上傳明細是否有 ZZZA 註記。
+        /// </summary>
+        private bool IsZzzaUploadRow(FtzMainUploadExcelRow row)
+        {
+            return row != null && IsZzzaRemark(row.Remark);
+        }
+
+        /// <summary>
+        /// 取得指定主號已收單且仍未進倉的 ZZZA 上傳明細。
+        /// </summary>
+        private List<FtzMainUploadExcelRow> GetZzzaReceivedUploadRows(
+            FtzMainQueryViewModel mainItem,
+            Dictionary<string, List<FtzMainUploadExcelRow>> uploadRowsByMwb)
+        {
+            if (mainItem == null || mainItem.NotGciDetails == null || uploadRowsByMwb == null)
+            {
+                return new List<FtzMainUploadExcelRow>();
+            }
+
+            var mwb = (mainItem.Mwb ?? "").Trim();
+            List<FtzMainUploadExcelRow> mainUploadRows;
+            if (string.IsNullOrWhiteSpace(mwb) || !uploadRowsByMwb.TryGetValue(mwb, out mainUploadRows))
+            {
+                return new List<FtzMainUploadExcelRow>();
+            }
+
+            var notGciTrackingNos = new HashSet<string>(
+                mainItem.NotGciDetails
+                    .SelectMany(row => new[] { row.hwb, row.expBagNo })
+                    .Where(value => !string.IsNullOrWhiteSpace(value))
+                    .Select(value => value.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+
+            return mainUploadRows
+                .Where(IsZzzaUploadRow)
+                .Where(row => notGciTrackingNos.Contains((row.BagNo ?? "").Trim()))
+                .ToList();
+        }
+
+        /// <summary>
+        /// 取得未進倉明細對應的 ZZZA 顯示值。
+        /// </summary>
+        private string GetZzzaRemark(Row detail, IEnumerable<FtzMainUploadExcelRow> zzzaReceivedRows)
+        {
+            if (detail == null)
+            {
+                return "";
+            }
+
+            var hwb = (detail.hwb ?? "").Trim();
+            var expBagNo = (detail.expBagNo ?? "").Trim();
+            var hasZzza = (zzzaReceivedRows ?? Enumerable.Empty<FtzMainUploadExcelRow>())
+                .Where(IsZzzaUploadRow)
+                .Select(row => (row.BagNo ?? "").Trim())
+                .Any(bagNo =>
+                    (!string.IsNullOrWhiteSpace(hwb) && string.Equals(bagNo, hwb, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(expBagNo) && string.Equals(bagNo, expBagNo, StringComparison.OrdinalIgnoreCase)));
+
+            return hasZzza ? ZzzaRemark : "";
+        }
+
+        /// <summary>
+        /// 套用主號上傳明細的未收單與 ZZZA 統計。
+        /// </summary>
+        private void CalculateMainUploadStatistics(
+            List<FtzMainQueryViewModel> results,
+            List<FtzMainUploadExcelRow> uploadRows)
+        {
+            if (results == null)
+            {
+                return;
+            }
+
+            var uploadRowsByMwb = BuildMainUploadRowsByMwb(uploadRows);
+            var unreceivedRowsByMainItem = GetUnreceivedUploadRowsByMainItem(results, uploadRowsByMwb);
+            SetUnreceivedTransName(unreceivedRowsByMainItem.SelectMany(x => x.Value));
+
+            foreach (var item in results)
+            {
+                List<FtzMainUploadExcelRow> unreceivedRows;
+                if (!unreceivedRowsByMainItem.TryGetValue(item, out unreceivedRows))
+                {
+                    unreceivedRows = new List<FtzMainUploadExcelRow>();
+                }
+
+                // 上傳檔標記 ZZZA，且能對應到 FTZ 未進倉明細的資料，視為「ZZZA收單」。
+                var zzzaReceivedRows = GetZzzaReceivedUploadRows(item, uploadRowsByMwb);
+                foreach (var detail in item.NotGciDetails ?? new List<Row>())
+                {
+                    // 先將 ZZZA 註記寫入明細模型，匯出時只需輸出模型值，不再重新比對。
+                    detail.ZzzaRemark = GetZzzaRemark(detail, zzzaReceivedRows);
+                }
+
+                // 上傳檔標記 ZZZA，且未出現在 FTZ 查詢結果的資料，視為「ZZZA未收單」。
+                item.ZzzaReceivedCount = zzzaReceivedRows.Count;
+                item.ZzzaUnreceivedCount = unreceivedRows.Count(IsZzzaUploadRow);
+                item.ZzzaCount = item.ZzzaReceivedCount + item.ZzzaUnreceivedCount;
+
+                // 未收單件數需排除 ZZZA未收單；原始補列資料仍保留供未進倉明細匯出。
+                item.UnreceivedCount = unreceivedRows.Count - item.ZzzaUnreceivedCount;
+                item.UnreceivedRows = unreceivedRows;
+
+                // 收單件數、申報、未進倉件及未進倉小計都不計入 ZZZA收單。
+                item.ReceivedPieceCount =
+                    ParseInt(item.HwbPiece) + ParseInt(item.ExpBagCount) - item.ZzzaReceivedCount;
+                item.HwbPiece = (ParseInt(item.HwbPiece) - item.ZzzaReceivedCount)
+                    .ToString(CultureInfo.InvariantCulture);
+                item.NotGciPiece -= item.ZzzaReceivedCount;
+                item.NotGciTotal -= item.ZzzaReceivedCount;
+
+                // 派件公司統計同樣排除 ZZZA收單及 ZZZA未收單，匯出直接使用此計算結果。
+                item.TransNameCounts = BuildTransNameCounts(item, unreceivedRows);
+            }
+        }
+
+        /// <summary>
+        /// 計算排除 ZZZA 後的派件公司件數。
+        /// </summary>
+        private Dictionary<string, int> BuildTransNameCounts(
+            FtzMainQueryViewModel item,
+            List<FtzMainUploadExcelRow> unreceivedRows)
+        {
+            var transNames = (item.NotGciDetails ?? new List<Row>())
+                .Where(row => string.IsNullOrEmpty(row.ZzzaRemark))
+                .Select(row => NormalizeTransName(row.TransName))
+                .Concat((unreceivedRows ?? new List<FtzMainUploadExcelRow>())
+                    .Where(row => !IsZzzaUploadRow(row))
+                    .Select(row => NormalizeTransName(row.TransName)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return transNames.ToDictionary(
+                transName => transName,
+                transName => GetNotGciTransNameCount(item, transName) +
+                    (unreceivedRows?.Count(row =>
+                        !IsZzzaUploadRow(row) && IsSameTransName(row.TransName, transName)) ?? 0),
+                StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -817,8 +978,11 @@ namespace Service.Services.Ftz
         /// </summary>
         public async Task<IWorkbook> ExportMainExcel(FtzMainQueryRequest request, FtzMainUploadExcelData uploadData = null)
         {
-            // 先查詢資料
-            var queryResult = await MainQueryAsync(request);
+            uploadData = uploadData ?? new FtzMainUploadExcelData();
+            var uploadRows = uploadData.DetailRows ?? new List<FtzMainUploadExcelRow>();
+
+            // 主號查詢階段已完成 ZZZA 統計與扣除，匯出只負責寫入計算完成的資料。
+            var queryResult = await MainQueryAsync(request, uploadRows);
 
             if (queryResult.status != Status.success || queryResult.ReturnObject == null)
             {
@@ -836,16 +1000,12 @@ namespace Service.Services.Ftz
             var numberStyle = NpoiStyle.CreateNumberStyle(workbook);
 
             // 先把上傳資料整理成實際需要補到未進倉明細的未收單資料，供兩個頁籤共用。
-            uploadData = uploadData ?? new FtzMainUploadExcelData();
-            var uploadRows = uploadData.DetailRows ?? new List<FtzMainUploadExcelRow>();
-            var uploadRowsByMwb = BuildMainUploadRowsByMwb(uploadRows);
             var uploadTotalPieceByMwb = BuildMainUploadTotalPieceByMwb(uploadData.SummaryRows);
 
-            var unreceivedUploadRowsByMainItem = GetUnreceivedUploadRowsByMainItem(results, uploadRowsByMwb);
-            var unreceivedUploadRows = unreceivedUploadRowsByMainItem.SelectMany(x => x.Value).ToList();
-            SetUnreceivedTransName(unreceivedUploadRows);
+            var unreceivedUploadRows = results
+                .SelectMany(item => item.UnreceivedRows ?? new List<FtzMainUploadExcelRow>())
+                .ToList();
             var plinkErrorRowsLookup = GetPlinkErrorRowsLookup(unreceivedUploadRows);
-            SetUnreceivedB6FCounts(results, unreceivedUploadRowsByMainItem, plinkErrorRowsLookup);
             var airDetainStatusLookup = GetAirDetainStatusLookup(
                 results,
                 unreceivedUploadRows);
@@ -860,25 +1020,15 @@ namespace Service.Services.Ftz
                   "申報", "進倉","未進倉件", "併袋", "進倉袋", "未進倉袋", "未收單件數", "未收單B6F"
               };
 
-            // 取得未進倉明細出現過的所有派件公司，空白派件公司統一歸到「無派件公司」欄位。
-            var notGciTransNames = results.Where(r => r.NotGciDetails != null)
-                            .SelectMany(r => r.NotGciDetails)
-                            .Select(r => NormalizeTransName(r.TransName))
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .ToList();
-
-            // 未收單補列也要納入派件公司欄位，查無派件公司同樣歸到「無派件公司」。
-            var unreceivedTransNames = unreceivedUploadRows
-                .Select(x => NormalizeTransName(x.TransName))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            var transNames = notGciTransNames
-                .Concat(unreceivedTransNames)
+            var transNames = results
+                .SelectMany(item => item.TransNameCounts?.Keys ?? Enumerable.Empty<string>())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
             headers.AddRange(transNames);
+            headers.Add("ZZZA");
+            headers.Add("ZZZA收單");
+            headers.Add("ZZZA未收單");
             headers.Add("錯誤訊息");
 
             IRow headerRow = sheet.CreateRow(0);
@@ -906,7 +1056,7 @@ namespace Service.Services.Ftz
                     column++,
                     uploadTotalPieceByMwb.TryGetValue(mwb, out uploadTotalPiece) ? uploadTotalPiece : "",
                     numberStyle);
-                NpoiCell.CreateIntCell(dataRow, column++, ParseInt(item.HwbPiece) + ParseInt(item.ExpBagCount), numberStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.ReceivedPieceCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.NotGciTotal, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.HwbPiece ?? "", numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.HwbGciPiece ?? "", numberStyle);
@@ -915,23 +1065,21 @@ namespace Service.Services.Ftz
                 NpoiCell.CreateIntCell(dataRow, column++, item.ExpBagGciCount ?? "", numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.NotGciBag, numberStyle);
 
-                List<FtzMainUploadExcelRow> unreceivedRows;
-                var unreceivedCount = unreceivedUploadRowsByMainItem.TryGetValue(item, out unreceivedRows)
-                    ? unreceivedRows.Count
-                    : 0;
-
-                NpoiCell.CreateIntCell(dataRow, column++, unreceivedCount, numberStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.UnreceivedCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.UnreceivedB6FCount, numberStyle);
 
                 // 派件公司統計：未進倉明細用「申報」加總，未收單補列每筆算 1。
                 foreach (var transName in transNames)
                 {
-                    var totalCount = GetNotGciTransNameCount(item, transName) +
-                        (unreceivedRows?.Count(x => IsSameTransName(x.TransName, transName)) ?? 0);
+                    int totalCount;
+                    item.TransNameCounts.TryGetValue(transName, out totalCount);
 
                     NpoiCell.CreateIntCell(dataRow, column++, totalCount, numberStyle);
                 }
 
+                NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaCount, numberStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaReceivedCount, numberStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaUnreceivedCount, numberStyle);
                 NpoiCell.CreateCell(dataRow, column++, item.ErrorMessage ?? "", dataStyle);
             }
 
@@ -942,7 +1090,7 @@ namespace Service.Services.Ftz
             string[] detailHeaders = new string[]
             {
                 "項次", "提單號碼", "分號", "報單號碼", "袋號",
-                "申報", "進倉", "出倉", "報關類別", "備註", "一分號多件", "錯單類別", "錯單單號", "派件公司", "狀態"
+                "申報", "進倉", "出倉", "報關類別", "備註", "一分號多件", "錯單類別", "錯單單號", "派件公司", "狀態", "ZZZA"
             };
 
             IRow detailHeaderRow = detailSheet.CreateRow(0);
@@ -980,12 +1128,13 @@ namespace Service.Services.Ftz
                         NpoiCell.CreateCell(detailDataRow, 12, "", dataStyle); // 錯單單號
                         NpoiCell.CreateCell(detailDataRow, 13, NormalizeTransName(detail.TransName), dataStyle);
                         NpoiCell.CreateCell(detailDataRow, 14, GetAirDetainStatus(airDetainStatusLookup, detail.hwb), dataStyle);
+                        NpoiCell.CreateCell(detailDataRow, 15, detail.ZzzaRemark ?? "", dataStyle);
                         detailRowIndex++;
                     }
                 }
 
-                List<FtzMainUploadExcelRow> mainUploadRows;
-                if (!unreceivedUploadRowsByMainItem.TryGetValue(mainItem, out mainUploadRows))
+                var mainUploadRows = mainItem.UnreceivedRows ?? new List<FtzMainUploadExcelRow>();
+                if (!mainUploadRows.Any())
                 {
                     continue;
                 }
@@ -1016,10 +1165,12 @@ namespace Service.Services.Ftz
                             NpoiCell.CreateCell(detailDataRow, 8, "", dataStyle);
                             NpoiCell.CreateCell(detailDataRow, 9, "", dataStyle);
                             NpoiCell.CreateCell(detailDataRow, 10, uploadRow.OneHwbMultiPieceHwb ?? "", dataStyle);
+                            NpoiCell.CreateCell(detailDataRow, 15, uploadRow.Remark ?? "", dataStyle);
                         }
                         else
                         {
                             CreateBlankCells(detailDataRow, 0, 10, dataStyle);
+                            NpoiCell.CreateCell(detailDataRow, 15, "", dataStyle);
                         }
 
                         var errorRow = errorIndex < errorRows.Count ? errorRows[errorIndex] : null;
@@ -1031,6 +1182,7 @@ namespace Service.Services.Ftz
                     }
 
                     MergeColumns(detailSheet, startRowIndex, detailRowIndex - 1, 0, 10);
+                    MergeColumns(detailSheet, startRowIndex, detailRowIndex - 1, 15, 15);
                 }
             }
 
@@ -1045,6 +1197,7 @@ namespace Service.Services.Ftz
             // 派件公司欄位數量以明細頁「申報」欄位為準；同報單號碼重複時只取第一筆。
             // 未收單沒有報單號碼，就使用分號「申報」= 1 計算
             return (item?.NotGciDetails ?? new List<Row>())
+                .Where(r => string.IsNullOrEmpty(r.ZzzaRemark))
                 .Where(r => IsSameTransName(r.TransName, transName))
                 .Select(row => new
                 {
@@ -1106,12 +1259,18 @@ namespace Service.Services.Ftz
                     foreach (var detail in mainItem.NotGciDetails)
                     {
                         var hwb = string.IsNullOrWhiteSpace(detail.hwb) ? string.Empty : detail.hwb.Trim();
-                        if (string.IsNullOrWhiteSpace(hwb))
+                        if (!string.IsNullOrWhiteSpace(hwb))
                         {
-                            continue;
+                            knownHwbs.Add(hwb);
                         }
 
-                        knownHwbs.Add(hwb);
+                        var expBagNo = string.IsNullOrWhiteSpace(detail.expBagNo)
+                            ? string.Empty
+                            : detail.expBagNo.Trim();
+                        if (!string.IsNullOrWhiteSpace(expBagNo))
+                        {
+                            knownBagNos.Add(expBagNo);
+                        }
                     }
                 }
 
