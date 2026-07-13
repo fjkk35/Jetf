@@ -1,4 +1,4 @@
-using NPOI.SS.UserModel;
+﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.Data;
 using Service.Models;
@@ -84,7 +84,7 @@ namespace Service.Services.DownloadNoIncludeTax
                     string.Compare(x.DataDate, startDate) >= 0 &&
                     string.Compare(x.DataDate, endDate) <= 0 &&
                     x.SourceType == AirSourceType &&
-                    (x.IncludeTax == "N" || x.DlvCom == "40" || x.DlvCom == "41"))
+                    (x.IncludeTax == "N" || x.DlvCom == "40" || x.DlvCom == "41" || x.DlvCom == "40P" || x.DlvCom == "41P"))
                 .Select(x => new FeeMasterReportRow
                 {
                     Id = x.Id,
