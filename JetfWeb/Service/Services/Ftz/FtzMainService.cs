@@ -775,6 +775,46 @@ namespace Service.Services.Ftz
         }
 
         /// <summary>
+        /// 取得指定主號已出現在查詢資料、且不在未進倉明細的 ZZZA 上傳明細。
+        /// </summary>
+        private List<FtzMainUploadExcelRow> GetZzzaGciUploadRows(
+            FtzMainQueryViewModel mainItem,
+            Dictionary<string, List<FtzMainUploadExcelRow>> uploadRowsByMwb)
+        {
+            if (mainItem == null || mainItem.RawData?.Rows == null || uploadRowsByMwb == null)
+            {
+                return new List<FtzMainUploadExcelRow>();
+            }
+
+            var mwb = (mainItem.Mwb ?? "").Trim();
+            List<FtzMainUploadExcelRow> mainUploadRows;
+            if (string.IsNullOrWhiteSpace(mwb) || !uploadRowsByMwb.TryGetValue(mwb, out mainUploadRows))
+            {
+                return new List<FtzMainUploadExcelRow>();
+            }
+
+            var queryTrackingNos = new HashSet<string>(
+                mainItem.RawData.Rows
+                    .SelectMany(row => new[] { row.Hwb, row.ExpBagNo })
+                    .Where(value => !string.IsNullOrWhiteSpace(value))
+                    .Select(value => value.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+
+            var notGciTrackingNos = new HashSet<string>(
+                (mainItem.NotGciDetails ?? new List<Row>())
+                    .SelectMany(row => new[] { row.hwb, row.expBagNo })
+                    .Where(value => !string.IsNullOrWhiteSpace(value))
+                    .Select(value => value.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+
+            return mainUploadRows
+                .Where(IsZzzaUploadRow)
+                .Where(row => queryTrackingNos.Contains((row.BagNo ?? "").Trim()))
+                .Where(row => !notGciTrackingNos.Contains((row.BagNo ?? "").Trim()))
+                .ToList();
+        }
+
+        /// <summary>
         /// 取得未進倉明細對應的 ZZZA 顯示值。
         /// </summary>
         private string GetZzzaRemark(Row detail, IEnumerable<FtzMainUploadExcelRow> zzzaReceivedRows)
@@ -822,6 +862,8 @@ namespace Service.Services.Ftz
 
                 // 上傳檔標記 ZZZA，且能對應到 FTZ 未進倉明細的資料，視為「ZZZA收單」。
                 var zzzaReceivedRows = GetZzzaReceivedUploadRows(item, uploadRowsByMwb);
+                // 上傳檔標記 ZZZA、有出現在 FTZ 主號查詢資料，且不在未進倉明細，視為「ZZZA進倉」。
+                var zzzaGciRows = GetZzzaGciUploadRows(item, uploadRowsByMwb);
                 foreach (var detail in item.NotGciDetails ?? new List<Row>())
                 {
                     // 先將 ZZZA 註記寫入明細模型，匯出時只需輸出模型值，不再重新比對。
@@ -829,19 +871,25 @@ namespace Service.Services.Ftz
                 }
 
                 // 上傳檔標記 ZZZA，且未出現在 FTZ 查詢結果的資料，視為「ZZZA未收單」。
+                item.ZzzaGciCount = zzzaGciRows.Count;
                 item.ZzzaReceivedCount = zzzaReceivedRows.Count;
                 item.ZzzaUnreceivedCount = unreceivedRows.Count(IsZzzaUploadRow);
-                item.ZzzaCount = item.ZzzaReceivedCount + item.ZzzaUnreceivedCount;
+                item.ZzzaCount = item.ZzzaGciCount + item.ZzzaReceivedCount + item.ZzzaUnreceivedCount;
 
                 // 未收單件數需排除 ZZZA未收單；原始補列資料仍保留供未進倉明細匯出。
                 item.UnreceivedCount = unreceivedRows.Count - item.ZzzaUnreceivedCount;
                 item.UnreceivedRows = unreceivedRows;
 
-                // 收單件數、申報、未進倉件及未進倉小計都不計入 ZZZA收單。
+                // 收單件數與申報不計入 ZZZA進倉、ZZZA收單；進倉不計入 ZZZA進倉。
                 item.ReceivedPieceCount =
-                    ParseInt(item.HwbPiece) + ParseInt(item.ExpBagCount) - item.ZzzaReceivedCount;
-                item.HwbPiece = (ParseInt(item.HwbPiece) - item.ZzzaReceivedCount)
+                    ParseInt(item.HwbPiece) + ParseInt(item.ExpBagCount) -
+                    item.ZzzaGciCount - item.ZzzaReceivedCount;
+                item.HwbPiece = (ParseInt(item.HwbPiece) - item.ZzzaGciCount - item.ZzzaReceivedCount)
                     .ToString(CultureInfo.InvariantCulture);
+                item.HwbGciPiece = (ParseInt(item.HwbGciPiece) - item.ZzzaGciCount)
+                    .ToString(CultureInfo.InvariantCulture);
+
+                // 未進倉件及未進倉小計只需排除仍在未進倉明細內的 ZZZA收單。
                 item.NotGciPiece -= item.ZzzaReceivedCount;
                 item.NotGciTotal -= item.ZzzaReceivedCount;
 
@@ -1027,6 +1075,7 @@ namespace Service.Services.Ftz
 
             headers.AddRange(transNames);
             headers.Add("ZZZA");
+            headers.Add("ZZZA進倉");
             headers.Add("ZZZA收單");
             headers.Add("ZZZA未收單");
             headers.Add("錯誤訊息");
@@ -1078,6 +1127,7 @@ namespace Service.Services.Ftz
                 }
 
                 NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaCount, numberStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaGciCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaReceivedCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaUnreceivedCount, numberStyle);
                 NpoiCell.CreateCell(dataRow, column++, item.ErrorMessage ?? "", dataStyle);

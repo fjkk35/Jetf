@@ -87,6 +87,11 @@ namespace Service.Services.Ftz.Domain
         public int ZzzaCount { get; set; }
 
         /// <summary>
+        /// ZZZA 進倉筆數。
+        /// </summary>
+        public int ZzzaGciCount { get; set; }
+
+        /// <summary>
         /// ZZZA 收單筆數。
         /// </summary>
         public int ZzzaReceivedCount { get; set; }
