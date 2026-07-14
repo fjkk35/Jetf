@@ -6,6 +6,7 @@ using Service.Models;
 using Service.Services.ReconciliationInvoice.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.IO;
 using System.Linq;
 
@@ -42,6 +43,7 @@ namespace Service.Services.ReconciliationInvoice
                 }
 
                 ValidateRows(uploadRows);
+                ValidateFeeMasterRows(uploadRows);
 
                 var failRows = uploadRows
                     .Where(x => !string.IsNullOrWhiteSpace(x.FailReason))
@@ -202,8 +204,13 @@ namespace Service.Services.ReconciliationInvoice
             }
 
             var duplicateGroups = uploadRows
-                .Where(x => !string.IsNullOrWhiteSpace(x.DlvInv))
-                .GroupBy(x => x.DlvInv, StringComparer.OrdinalIgnoreCase)
+                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo)
+                    && !string.IsNullOrWhiteSpace(x.DlvInv))
+                .GroupBy(x => new
+                {
+                    TrackingNo = x.TrackingNo.ToUpperInvariant(),
+                    DlvInv = x.DlvInv.ToUpperInvariant()
+                })
                 .Where(g => g.Count() > 1)
                 .ToList();
 
@@ -211,7 +218,52 @@ namespace Service.Services.ReconciliationInvoice
             {
                 foreach (var row in group)
                 {
-                    AppendFailReason(row, "物流貨號重複");
+                    AppendFailReason(row, "分提單號及物流貨號重複");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 驗證分提單號及物流貨號是否存在於費用主檔。
+        /// </summary>
+        /// <param name="uploadRows">上傳列資料。</param>
+        private void ValidateFeeMasterRows(List<ReconciliationInvoiceUploadRow> uploadRows)
+        {
+            var rowsWithKey = uploadRows
+                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo)
+                    && !string.IsNullOrWhiteSpace(x.DlvInv))
+                .ToList();
+
+            if (!rowsWithKey.Any())
+            {
+                return;
+            }
+
+            var feeMasterRows = JetfDb.FeeMasters
+                .AsNoTracking()
+                .WhereBulkContains(
+                    JetfDb,
+                    rowsWithKey,
+                    x => new { x.TrackingNo, x.DlvInv },
+                    x => new { x.TrackingNo, x.DlvInv });
+
+            var feeMasterKeys = feeMasterRows.ToLookup(x => new
+            {
+                TrackingNo = (x.TrackingNo ?? string.Empty).Trim().ToUpperInvariant(),
+                DlvInv = (x.DlvInv ?? string.Empty).Trim().ToUpperInvariant()
+            });
+
+            foreach (var row in rowsWithKey)
+            {
+                var key = new
+                {
+                    TrackingNo = row.TrackingNo.ToUpperInvariant(),
+                    DlvInv = row.DlvInv.ToUpperInvariant()
+                };
+
+                if (!feeMasterKeys.Contains(key))
+                {
+                    AppendFailReason(row, "稅金檔查無資料（分提單號 + 物流貨號）");
                 }
             }
         }
@@ -246,58 +298,60 @@ namespace Service.Services.ReconciliationInvoice
         {
             var currentUserId = GetUserId() ?? "system";
             var currentTime = DateTime.Now;
-            var dlvInvList = uploadRows
-                .Select(x => x.DlvInv)
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
 
             var existingEntities = JetfDb.ReconciliationInvoices
-                .Where(x => dlvInvList.Contains(x.DlvInv))
+                .WhereBulkContains(
+                    JetfDb,
+                    uploadRows,
+                    x => new { x.TrackingNo, x.DlvInv },
+                    x => new { x.TrackingNo, x.DlvInv });
+
+            var existingKeys = existingEntities.ToLookup(x => new
+            {
+                TrackingNo = (x.TrackingNo ?? string.Empty).Trim().ToUpperInvariant(),
+                DlvInv = (x.DlvInv ?? string.Empty).Trim().ToUpperInvariant()
+            });
+
+            var createdCount = uploadRows.Count(x => !existingKeys.Contains(new
+            {
+                TrackingNo = x.TrackingNo.ToUpperInvariant(),
+                DlvInv = x.DlvInv.ToUpperInvariant()
+            }));
+            var updatedCount = uploadRows.Count - createdCount;
+            var insertEntities = uploadRows
+                .Select(row => new ReconciliationInvoiceEntity
+                {
+                    Type = row.InvoiceType,
+                    Date = row.InvoiceDate.GetValueOrDefault(),
+                    Invoice = row.InvoiceNo,
+                    TrackingNo = row.TrackingNo,
+                    DlvInv = row.DlvInv,
+                    CreatedOpe = currentUserId,
+                    CreatedTime = currentTime
+                })
                 .ToList();
-
-            var existingLookup = existingEntities
-                .Where(x => !string.IsNullOrWhiteSpace(x.DlvInv))
-                .GroupBy(x => x.DlvInv.Trim(), StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
-
-            int createdCount = 0;
-            int updatedCount = 0;
 
             using (var transaction = JetfDb.Database.BeginTransaction())
             {
                 try
                 {
-                    foreach (var row in uploadRows)
+                    var existingIds = existingEntities
+                        .Select(x => x.Id)
+                        .Distinct()
+                        .ToList();
+
+                    if (existingIds.Any())
                     {
-                        if (existingLookup.TryGetValue(row.DlvInv, out ReconciliationInvoiceEntity entity))
-                        {
-                            entity.Type = row.InvoiceType;
-                            entity.Date = row.InvoiceDate.GetValueOrDefault();
-                            entity.Invoice = row.InvoiceNo;
-                            entity.TrackingNo = row.TrackingNo;
-                            entity.DlvInv = row.DlvInv;
-                            entity.UpdatedOpe = currentUserId;
-                            entity.UpdatedTime = currentTime;
-                            updatedCount++;
-                            continue;
-                        }
-
-                        JetfDb.ReconciliationInvoices.Add(new ReconciliationInvoiceEntity
-                        {
-                            Type = row.InvoiceType,
-                            Date = row.InvoiceDate.GetValueOrDefault(),
-                            Invoice = row.InvoiceNo,
-                            TrackingNo = row.TrackingNo,
-                            DlvInv = row.DlvInv,
-                            CreatedOpe = currentUserId,
-                            CreatedTime = currentTime
-                        });
-
-                        createdCount++;
+                        JetfDb.DeleteByColumnValues<ReconciliationInvoiceEntity, int>(
+                            existingIds,
+                            x => x.Id);
                     }
 
-                    JetfDb.SaveChanges();
+                    if (insertEntities.Any())
+                    {
+                        JetfDb.BulkInsert(insertEntities);
+                    }
+
                     transaction.Commit();
                 }
                 catch
@@ -315,5 +369,6 @@ namespace Service.Services.ReconciliationInvoice
                 Message = $"上傳完成，共 {uploadRows.Count} 筆，新增 {createdCount} 筆，更新 {updatedCount} 筆"
             };
         }
+
     }
 }

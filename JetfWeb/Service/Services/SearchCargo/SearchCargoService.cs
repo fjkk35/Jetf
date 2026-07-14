@@ -229,12 +229,8 @@ namespace Service.Services.SearchCargo
                 detail.Type = clearanceInfo.CLEARANCE_TYPE;
             }
 
-            // 取得稅金資料
-            var feeMaster = GetFeeMaster(detail.Deliveryno);
-            if (feeMaster == null)
-            {
-                feeMaster = GetFeeMaster(detail.Dlv_Inv);
-            }
+            // 依分提單號及物流貨號取得同一筆稅金資料。
+            var feeMaster = GetFeeMaster(detail.TrackingNo, detail.Deliveryno);
 
             if (feeMaster != null)
             {
@@ -251,13 +247,17 @@ namespace Service.Services.SearchCargo
             }
 
             // 取得回款進度
+            var trackingNo = detail.TrackingNo?.Trim();
             var deliveryNo = detail.Deliveryno?.Trim();
-            if (!string.IsNullOrWhiteSpace(deliveryNo))
+            if (!string.IsNullOrWhiteSpace(trackingNo)
+                && !string.IsNullOrWhiteSpace(deliveryNo))
             {
                 var reconciliationInvoice = JetfDb.ReconciliationInvoices
                     .AsNoTracking()
-                    .Where(x => !string.IsNullOrEmpty(x.DlvInv) && x.DlvInv.Trim() == deliveryNo)
+                    .Where(x => x.TrackingNo == trackingNo
+                        && x.DlvInv == deliveryNo)
                     .OrderByDescending(x => x.UpdatedTime ?? x.CreatedTime)
+                    .ThenByDescending(x => x.Id)
                     .FirstOrDefault();
 
                 if (reconciliationInvoice != null)
@@ -740,15 +740,32 @@ namespace Service.Services.SearchCargo
         }
 
         /// <summary>
-        /// 取得稅金資料
+        /// 依分提單號及物流貨號取得稅金資料。
         /// </summary>
-        private FeeMasterModel GetFeeMaster(string deliveryNo)
+        /// <param name="trackingNo">分提單號。</param>
+        /// <param name="deliveryNo">物流貨號。</param>
+        /// <returns>稅金資料；找不到相符的複合鍵時回傳 <see langword="null"/>。</returns>
+        private FeeMasterModel GetFeeMaster(string trackingNo, string deliveryNo)
         {
-            string sql = "select * from [jetf].[dbo].[FEE_MASTER] where DLV_INV=@DLV_INV";
+            if (string.IsNullOrWhiteSpace(trackingNo)
+                || string.IsNullOrWhiteSpace(deliveryNo))
+            {
+                return null;
+            }
+
+            const string sql = @"
+                select *
+                from [jetf].[dbo].[FEE_MASTER]
+                where TRACKINGNO = @TRACKINGNO
+                  and DLV_INV = @DLV_INV";
 
             using (var connection = new SqlConnection(conn.ConnectionString))
             {
-                var row = connection.QueryFirstOrDefault(sql, new { DLV_INV = deliveryNo });
+                var row = connection.QueryFirstOrDefault(sql, new
+                {
+                    TRACKINGNO = trackingNo.Trim(),
+                    DLV_INV = deliveryNo.Trim()
+                });
 
                 if (row == null)
                     return null;
@@ -1269,11 +1286,51 @@ order by CRTDATETIME desc";
             }
         }
 
+        /// <summary>
+        /// 依分提單號及物流貨號批次比對 FEE_MASTER，回填貨況清單的稅金作業日。
+        /// </summary>
+        /// <param name="list">貨況清單資料。</param>
         private void ApplyFeeMasterInfo(IEnumerable<CargoQueryRowModel> list)
         {
-            foreach (var item in list ?? Enumerable.Empty<CargoQueryRowModel>())
+            // TRACKINGNO 為分提單號，DELIVERYNO 為物流貨號；任一欄空白皆無法組成有效查詢條件。
+            var cargoRows = (list ?? Enumerable.Empty<CargoQueryRowModel>())
+                .Where(x => !string.IsNullOrWhiteSpace(x.TRACKINGNO)
+                    && !string.IsNullOrWhiteSpace(x.DELIVERYNO))
+                .ToList();
+
+            if (!cargoRows.Any())
             {
-                var feeMaster = GetFeeMaster(item.DELIVERYNO) ?? GetFeeMaster(item.JETF_SERIAL);
+                return;
+            }
+
+            // 使用複合鍵批次查詢，確保 TRACKINGNO 與 DLV_INV 必須同時符合 FEE_MASTER 的同一筆資料。
+            var feeMasterRows = JetfDb.FeeMasters
+                .AsNoTracking()
+                .WhereBulkContains(
+                    JetfDb,
+                    cargoRows,
+                    x => new { x.TrackingNo, x.DlvInv },
+                    x => new
+                    {
+                        TrackingNo = x.TRACKINGNO,
+                        DlvInv = x.DELIVERYNO
+                    });
+
+            var feeMasterLookup = feeMasterRows.ToLookup(x => new
+            {
+                TrackingNo = (x.TrackingNo ?? string.Empty).Trim().ToUpperInvariant(),
+                DlvInv = (x.DlvInv ?? string.Empty).Trim().ToUpperInvariant()
+            });
+
+            // 依相同複合鍵找回稅金資料，避免相同物流貨號但不同分提單號時回填錯誤資料。
+            foreach (var item in cargoRows)
+            {
+                var key = new
+                {
+                    TrackingNo = item.TRACKINGNO.Trim().ToUpperInvariant(),
+                    DlvInv = item.DELIVERYNO.Trim().ToUpperInvariant()
+                };
+                var feeMaster = feeMasterLookup[key].FirstOrDefault();
 
                 if (feeMaster == null)
                 {
