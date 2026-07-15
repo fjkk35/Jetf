@@ -129,7 +129,7 @@ namespace JETFTAX.Controllers
 
             // 直接沿用既有登入 Session 欄位，讓現有授權邏輯無須調整。
             SignInUser(user.Id, user.Name);
-            return Redirect("/SeaTaxUpload/Index");
+            return RedirectToAction("Index", "LoginSuccess");
         }
 
 
@@ -232,8 +232,8 @@ namespace JETFTAX.Controllers
         public class UserAuthorizeAttribute : AuthorizeAttribute
         {
             private readonly Authority[] allowedroles;
-            private string controller = "Cargo";
-            private string action = "SearchCargo";
+            private const string UnauthorizedController = "AccessDenied";
+            private const string UnauthorizedAction = "Index";
             public UserAuthorizeAttribute(params Authority[] roles)
             {
                 this.allowedroles = roles;
@@ -258,31 +258,24 @@ namespace JETFTAX.Controllers
                     }
                 }
 
-                if (!authorize && userAuth != null && userAuth.IndexOf(Authority.SearchCargo.ToString()) < 0 )
-                {
-                    controller = "Home";
-                    action = "Index";
-                }
-
                 return authorize;
             }
 
             protected override void HandleUnauthorizedRequest(AuthorizationContext filterContext)
             {
                 var userId = filterContext?.HttpContext?.Session?["user_id"]?.ToString();
-                var userAuth = filterContext?.HttpContext?.Session?["user_auth"] as List<string>;
-                if (string.IsNullOrWhiteSpace(userId) || userAuth == null)
+                if (string.IsNullOrWhiteSpace(userId))
                 {
                     filterContext.Result = SessionAuthorizeFilter.CreateLoginRequiredResult(filterContext);
                     return;
                 }
 
                 filterContext.Result = new RedirectToRouteResult(
-                   new RouteValueDictionary
-                   {
-                        { "controller", controller },
-                        { "action", action }
-                   });
+                    new RouteValueDictionary
+                    {
+                        { "controller", UnauthorizedController },
+                        { "action", UnauthorizedAction }
+                    });
             }
         }
     }

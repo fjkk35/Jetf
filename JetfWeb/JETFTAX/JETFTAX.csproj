@@ -275,6 +275,7 @@
     <Compile Include="Hubs\MainHub.cs" />
     <Compile Include="Controllers\AbnormalStateController.cs" />
     <Compile Include="Controllers\AccountController.cs" />
+    <Compile Include="Controllers\AccessDeniedController.cs" />
     <Compile Include="Controllers\AccsNewController.cs" />
     <Compile Include="Controllers\AccsShopeeController.cs" />
     <Compile Include="Controllers\EzwayController.cs" />
@@ -337,6 +338,7 @@
     <Compile Include="Controllers\InvoiceController.cs" />
     <Compile Include="Controllers\InvoiceNewController.cs" />
     <Compile Include="Controllers\LineLoginController.cs" />
+    <Compile Include="Controllers\LoginSuccessController.cs" />
     <Compile Include="Controllers\MainTaxSearchController.cs" />
     <Compile Include="Controllers\TaxPortalCustomerController.cs" />
     <Compile Include="Controllers\PdtScanCargoArrivalTimeController.cs" />
@@ -2897,6 +2899,8 @@
     <Content Include="Views\ExportClearance\UploadExportFlight.cshtml" />
     <Content Include="Views\EtlMergeBagNo\Upload.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
+    <Content Include="Views\AccessDenied\Index.cshtml" />
+    <Content Include="Views\LoginSuccess\Index.cshtml" />
     <Content Include="Views\Cargo\DialogCargoTargetBagNumber.cshtml" />
     <Content Include="Views\EtlUnpackingZ\Upload.cshtml" />
     <Content Include="Views\CptTradeVan\Index.cshtml" />

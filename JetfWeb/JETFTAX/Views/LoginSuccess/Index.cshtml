@@ -1,0 +1,20 @@
+﻿@{
+    ViewBag.Title = "登入成功";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var userName = Session["user_name"] as string;
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-xl-6 col-lg-8 col-md-10">
+            <div class="py-5 text-center">
+                <i class="fas fa-check-circle fa-3x text-success mb-4" aria-hidden="true"></i>
+                <h1 class="h3 font-weight-bold text-gray-800 mb-3">登入成功</h1>
+                @if (!string.IsNullOrWhiteSpace(userName))
+                {
+                    <h4 class="text-gray-700 mb-0"><strong>@userName</strong>，您好！</h4>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -20,9 +20,8 @@
                         timer: 2000,
                         showConfirmButton: false, // There won't be any confirm button
                     }).then(function () {
-                        //成功導回首頁
-                        location.href = Router.action('SeaTaxUpload', 'Index');
-                        //location.href = "/Home/Index";
+                        //成功導向不需要角色權限的登入首頁
+                        location.href = Router.action('LoginSuccess', 'Index');
                     });
                 }
                 else {
