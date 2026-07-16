@@ -516,7 +516,13 @@ namespace Service.Services.EtlClearanceDetails
                     row = sheet.CreateRow(irow);
                     row.CreateCell(0).SetCellValue(bagNo);
                     row.CreateCell(1).SetCellValue(r.Ctns);
-                    row.CreateCell(2).SetCellValue(r.BagWeight);
+                    var bagWeight = r.BagWeight;
+                    // 袋重達 70（含）以上時，袋號單第三欄固定輸出 1
+                    if (double.TryParse(bagWeight, out var parsedBagWeight) && parsedBagWeight >= 70)
+                    {
+                        bagWeight = "1";
+                    }
+                    row.CreateCell(2).SetCellValue(bagWeight);
                     row.CreateCell(3).SetCellValue(mainHawbNo);
                     irow++;
                 }
