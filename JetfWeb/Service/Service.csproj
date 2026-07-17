@@ -262,6 +262,7 @@
     <Compile Include="Data\Models\Jetf\CustomerMasterEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterDetailEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterEntity.cs" />
+    <Compile Include="Data\Models\Jetf\FeeMasterCodEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterTestEntity.cs" />
     <Compile Include="Data\Models\Jetf\AbnormalStateEntity.cs" />
     <Compile Include="Data\Models\Jetf\AbnormalStateDetailEntity.cs" />
@@ -609,6 +610,8 @@
     <Compile Include="Services\Job\CainiaoCheckJob\CainiaoCheckJobService.cs" />
     <Compile Include="Services\Job\CainiaoNeedJob\CainiaoNeedJobService.cs" />
     <Compile Include="Services\Job\ComponentJob\ComponentJobService.cs" />
+    <Compile Include="Services\Job\FeeMasterCodJob\FeeMasterCodJobService.cs" />
+    <Compile Include="Services\Job\FeeMasterCodJob\Domain\FeeMasterCodSourceRow.cs" />
     <Compile Include="Services\Job\IncomeJob\IncomeJobService.cs" />
     <Compile Include="Services\Job\IncomeJob\IncomeRateReport.cs" />
     <Compile Include="Services\LineLogin\LineUserProfile.cs" />

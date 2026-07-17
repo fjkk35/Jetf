@@ -7,6 +7,7 @@ using Service.Services;
 using Service.Services.Job.CainiaoCheckJob;
 using Service.Services.Job.CainiaoNeedJob;
 using Service.Services.Job.ComponentJob;
+using Service.Services.Job.FeeMasterCodJob;
 using Service.Services.Job.FtzWebClientJob;
 using Service.Services.Job.IncomeJob;
 using Service.Services.Job.SeaShenzhenHctJob;
@@ -69,6 +70,11 @@ namespace JETFTAX.App_Start
                   service => service.RunComponentJobAsync(),
                  "*/10 * * * *",
                   timeZoneOptions);
+
+            RecurringJob.AddOrUpdate<FeeMasterCodJobService>("稅金到付款資料",
+                service => service.RunFeeMasterCodJobAsync(),
+                Cron.Daily(1, 0),
+                timeZoneOptions);
 
             RecurringJob.AddOrUpdate<IncomeJobService>("營收轉檔",
                   service => service.InsertIncomeReport(), Cron.Daily(08, 30),

@@ -11,6 +11,7 @@ using Service.Services;
 using Service.Services.Job.CainiaoCheckJob;
 using Service.Services.Job.CainiaoNeedJob;
 using Service.Services.Job.ComponentJob;
+using Service.Services.Job.FeeMasterCodJob;
 using Service.Services.Job.FtzWebClientJob;
 using Service.Services.Job.IncomeJob;
 using Service.Services.Job.SeaShenzhenHctJob;
@@ -121,6 +122,7 @@ namespace JETFTAX
             builder.RegisterType(typeof(TelegramBot)).As<TelegramBot>().InstancePerLifetimeScope();
             builder.RegisterType<CainiaoCheckJobService>().AsSelf().InstancePerLifetimeScope();
             builder.RegisterType<ComponentJobService>().AsSelf().InstancePerLifetimeScope();
+            builder.RegisterType<FeeMasterCodJobService>().AsSelf().InstancePerLifetimeScope();
             builder.RegisterType<IncomeJobService>().AsSelf().InstancePerLifetimeScope();
             builder.RegisterType<CainiaoNeedJobService>().AsSelf().InstancePerLifetimeScope();
             builder.RegisterType<TactWebClientJobService>().AsSelf().InstancePerLifetimeScope();
