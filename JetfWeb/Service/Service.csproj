@@ -309,6 +309,8 @@
     <Compile Include="Data\Models\Jetf\ShipmentInboundProcessStageEntity.cs" />
     <Compile Include="Data\Models\Jetf\ReconciliationInvoiceEntity.cs" />
     <Compile Include="Data\Models\Jetf\ReconciliationAirEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ReconciliationCustomerGroupEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ReconciliationCustomerGroupDetailEntity.cs" />
     <Compile Include="Data\Models\Jetf\TelegramGroupEntity.cs" />
     <Compile Include="Data\Models\Jetf\StepConditionEntity.cs" />
     <Compile Include="Data\Models\Jetf\StepDetailEntity.cs" />
@@ -319,6 +321,7 @@
     <Compile Include="EnumTax\AuthorityPartner.cs" />
     <Compile Include="EnumTax\CacheName.cs" />
     <Compile Include="EnumTax\CargoProcessType.cs" />
+    <Compile Include="EnumTax\CustomerType.cs" />
     <Compile Include="EnumTax\CptStatusEnum.cs" />
     <Compile Include="EnumTax\CptTradeVanEnum.cs" />
     <Compile Include="EnumTax\DataTypeEnum.cs" />
@@ -661,6 +664,12 @@
     <Compile Include="Services\ReconciliationAir\Domain\ReconciliationAirUploadRow.cs" />
     <Compile Include="Services\ReconciliationAir\Domain\ReconciliationAirUploadResult.cs" />
     <Compile Include="Services\ReconciliationAir\ReconciliationAirService.cs" />
+    <Compile Include="Services\ReconciliationCustomerGroup\Domain\ReconciliationCustomerGroupListItem.cs" />
+    <Compile Include="Services\ReconciliationCustomerGroup\Domain\ReconciliationCustomerGroupOption.cs" />
+    <Compile Include="Services\ReconciliationCustomerGroup\Domain\ReconciliationCustomerGroupQueryRequest.cs" />
+    <Compile Include="Services\ReconciliationCustomerGroup\Domain\ReconciliationCustomerGroupSaveRequest.cs" />
+    <Compile Include="Services\ReconciliationCustomerGroup\Domain\ReconciliationCustomerOption.cs" />
+    <Compile Include="Services\ReconciliationCustomerGroup\ReconciliationCustomerGroupService.cs" />
     <Compile Include="Services\SeaTransRecord\SeaTransRecordService.cs" />
     <Compile Include="Services\SeaUnboxingRecord\SeaUnboxingRecordService.cs" />
     <Compile Include="Services\SeaUnreceivedOrder\SeaUnreceivedOrderService.cs" />

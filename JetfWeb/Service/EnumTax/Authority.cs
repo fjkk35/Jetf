@@ -547,5 +547,10 @@ namespace Service.EnumTax
         /// 代收銷帳上傳空快
         /// </summary>
         ReconciliationAir,
+
+        /// <summary>
+        /// 代收銷帳客戶群組
+        /// </summary>
+        ReconciliationCustomerGroup,
     }
 }

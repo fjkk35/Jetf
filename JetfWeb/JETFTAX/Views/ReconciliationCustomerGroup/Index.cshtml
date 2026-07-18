@@ -1,0 +1,205 @@
+﻿@{
+    ViewBag.Title = "代收銷帳客戶群組";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid reconciliation-customer-group-page"
+     ng-controller="ReconciliationCustomerGroupController"
+     ng-init="init()">
+    <span class="headtype">代收銷帳客戶群組</span>
+    <hr />
+
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <div class="row align-items-center">
+            <div class="form-group row col-lg-4 mb-0">
+                <label class="col-lg-4 col-form-label text-right">類型</label>
+                <div class="col-lg-8">
+                    <select class="form-control"
+                            ng-model="searchForm.Type"
+                            ng-change="onSearchTypeChange()">
+                        <option value="">全部</option>
+                        <option value="AIR">空運</option>
+                        <option value="SEA">海運</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group row col-lg-4 mb-0">
+                <label class="col-lg-4 col-form-label text-right">客戶群組</label>
+                <div class="col-lg-8">
+                    <select class="form-control" ng-model="searchForm.GroupName">
+                        <option value="">全部</option>
+                        <option ng-repeat="option in groupOptions track by option.Id"
+                                value="{{option.GroupName}}">{{option.GroupName}}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-lg-4 text-right">
+                <button type="button" class="btn btn-primary" ng-click="search()" ng-disabled="loading">
+                    <i class="fa fa-search"></i> 查詢
+                </button>
+                <button type="button" class="btn btn-secondary ml-2" ng-click="clearSearch()" ng-disabled="loading">
+                    <i class="fa fa-eraser"></i> 清除
+                </button>
+                <button type="button" class="btn btn-info ml-2" ng-click="openCreateModal()" ng-disabled="loading">
+                    <i class="fa fa-plus"></i> 新增客戶群組
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div ng-show="loading" class="text-center py-4">
+        <i class="fa fa-spinner fa-spin fa-3x"></i>
+        <p>載入中...</p>
+    </div>
+
+    <div class="table-responsive" ng-show="!loading">
+        <table class="table table-bordered table-striped table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th style="width: 100px;">類型</th>
+                    <th style="width: 180px;">群組名稱</th>
+                    <th>客戶</th>
+                    <th style="width: 90px;">編輯</th>
+                    <th style="width: 90px;">刪除</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-if="rows.length === 0">
+                    <td colspan="5" class="text-center">查無資料</td>
+                </tr>
+                <tr ng-repeat="row in rows track by row.Id">
+                    <td>{{row.TypeName}}</td>
+                    <td>{{row.GroupName}}</td>
+                    <td class="customer-display">{{row.CustomerDisplay}}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-warning btn-sm" ng-click="openEditModal(row.Id)">
+                            <i class="fa fa-edit"></i> 編輯
+                        </button>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-danger btn-sm" ng-click="deleteGroup(row)">
+                            <i class="fa fa-trash"></i> 刪除
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="modal fade" id="reconciliationCustomerGroupModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{modal.form.Id ? '編輯客戶群組' : '新增客戶群組'}}</h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">類型 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <select class="form-control"
+                                    ng-model="modal.form.Type"
+                                    ng-change="onModalTypeChange()"
+                                    ng-disabled="modal.loading || modal.saving">
+                                <option value="">請選擇</option>
+                                <option value="SEA">海運</option>
+                                <option value="AIR">空運</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">群組名稱 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <input type="text"
+                                   maxlength="20"
+                                   class="form-control"
+                                   ng-model="modal.form.GroupName"
+                                   ng-disabled="modal.loading || modal.saving"
+                                   placeholder="最多 20 個字元" />
+                        </div>
+                    </div>
+
+                    <div class="form-group row mb-0">
+                        <label class="col-sm-3 col-form-label">選擇客戶 <span class="text-danger">*</span></label>
+                        <div class="col-sm-9">
+                            <div class="mb-2">
+                                <input type="text"
+                                       class="form-control"
+                                       ng-model="modal.customerKeyword"
+                                       ng-disabled="modal.loading || !modal.form.Type"
+                                       placeholder="輸入客戶代碼或名稱篩選" />
+                            </div>
+
+                            <div ng-show="modal.loading" class="text-center customer-option-panel py-4">
+                                <i class="fa fa-spinner fa-spin fa-2x"></i>
+                                <p class="mb-0">載入客戶中...</p>
+                            </div>
+
+                            <div ng-show="!modal.loading && !modal.form.Type"
+                                 class="customer-option-panel text-center text-muted py-4">
+                                請先選擇類型
+                            </div>
+
+                            <div ng-show="!modal.loading && modal.form.Type" class="customer-option-panel">
+                                <div ng-if="(modal.customers | filter:modal.customerKeyword).length === 0"
+                                     class="text-center text-muted py-3">查無客戶</div>
+                                <div class="custom-control custom-checkbox customer-option"
+                                     ng-repeat="customer in (modal.customers | filter:modal.customerKeyword) track by customer.CustCode">
+                                    <input type="checkbox"
+                                           class="custom-control-input"
+                                           id="reconciliationCustomer_{{$index}}"
+                                           ng-model="customer.IsSelected"
+                                           ng-disabled="customer.IsDisabled || modal.saving" />
+                                    <label class="custom-control-label d-block" for="reconciliationCustomer_{{$index}}">
+                                        <strong>{{customer.CustCode}}</strong>
+                                        <span ng-if="customer.CustName"> - {{customer.CustName}}</span>
+                                        <span class="badge badge-secondary ml-2" ng-if="customer.IsDisabled">
+                                            已加入 {{customer.AssignedGroupName}}
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">已選擇 {{getSelectedCount()}} 位客戶；已加入其他群組的客戶不可重複選取。</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-disabled="modal.saving">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveGroup()" ng-disabled="modal.loading || modal.saving">
+                        <i class="fa" ng-class="{'fa-spinner fa-spin': modal.saving, 'fa-save': !modal.saving}"></i>
+                        {{modal.saving ? '儲存中...' : '確定'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .reconciliation-customer-group-page .customer-display {
+        white-space: pre-line;
+    }
+
+    .reconciliation-customer-group-page .customer-option-panel {
+        max-height: 360px;
+        overflow-y: auto;
+        border: 1px solid #d1d3e2;
+        border-radius: .25rem;
+        background: #fff;
+    }
+
+    .reconciliation-customer-group-page .customer-option {
+        padding-left: 2.5rem;
+        padding-right: 1rem;
+        padding-top: .55rem;
+        padding-bottom: .55rem;
+        border-bottom: 1px solid #eaecf4;
+    }
+
+    .reconciliation-customer-group-page .customer-option:last-child {
+        border-bottom: 0;
+    }
+</style>

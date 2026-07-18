@@ -143,5 +143,9 @@ namespace Service.Data
         public DbSet<ReconciliationInvoiceEntity> ReconciliationInvoices { get; set; }
 
         public DbSet<ReconciliationAirEntity> ReconciliationAirs { get; set; }
+
+        public DbSet<ReconciliationCustomerGroupEntity> ReconciliationCustomerGroups { get; set; }
+
+        public DbSet<ReconciliationCustomerGroupDetailEntity> ReconciliationCustomerGroupDetails { get; set; }
     }
 }
