@@ -87,7 +87,7 @@ WHERE c.DATA_TYPE IS NOT NULL
         }
 
         /// <summary>
-        /// 依系統時間查詢前兩個完整日，依序處理空運及海運到付款資料。
+        /// 依系統時間查詢前兩個完整日，每次只處理一天的空運及海運到付款資料。
         /// 空運主號與追蹤號、海運主號與分提單號已存在時不會再次寫入。
         /// </summary>
         /// <returns>非同步排程工作。</returns>
@@ -98,36 +98,15 @@ WHERE c.DATA_TYPE IS NOT NULL
 
             try
             {
-                var parameters = new
+                for (var dayOffset = 1; dayOffset <= 2; dayOffset++)
                 {
-                    START_TIME = startTime,
-                    END_TIME = endTime
-                };
-
-                var airQueryRows = (await conn.QueryAsync<FeeMasterCodSourceRow>(
-                    AirQuerySql,
-                    parameters,
-                    commandTimeout: CommandTimeoutSeconds)).ToList();
-                var airRows = DeduplicateAirRows(airQueryRows);
-                var airQueryCount = airQueryRows.Count;
-                var airDeduplicatedCount = airRows.Count;
-                var airInsertedCount = await SaveAirRowsAsync(airRows);
-                airQueryRows.Clear();
-                airRows.Clear();
-
-                var seaQueryRows = (await conn.QueryAsync<FeeMasterCodSourceRow>(
-                    SeaQuerySql,
-                    parameters,
-                    commandTimeout: CommandTimeoutSeconds)).ToList();
-                var seaRows = DeduplicateSeaRows(seaQueryRows);
-                var seaQueryCount = seaQueryRows.Count;
-                var seaDeduplicatedCount = seaRows.Count;
-                var seaInsertedCount = await SaveSeaRowsAsync(seaRows);
+                    var currentStartTime = endTime.AddDays(-dayOffset);
+                    var currentEndTime = currentStartTime.AddDays(1);
+                    await ProcessOneDayAsync(currentStartTime, currentEndTime);
+                }
 
                 Logger.Info(
-                    $"{JobName}完成，區間={startTime:yyyy-MM-dd HH:mm:ss}~{endTime:yyyy-MM-dd HH:mm:ss}，" +
-                    $"空運查詢={airQueryCount}，空運去重={airDeduplicatedCount}，空運新增={airInsertedCount}，" +
-                    $"海運查詢={seaQueryCount}，海運去重={seaDeduplicatedCount}，海運新增={seaInsertedCount}");
+                    $"{JobName}全部完成，區間={startTime:yyyy-MM-dd HH:mm:ss}~{endTime:yyyy-MM-dd HH:mm:ss}");
             }
             catch (Exception ex)
             {
@@ -137,6 +116,46 @@ WHERE c.DATA_TYPE IS NOT NULL
                 WriteJobErrorLog(JobName, ex);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// 查詢並寫入單一完整日的空運及海運到付款資料。
+        /// </summary>
+        /// <param name="startTime">當日起始時間（含）。</param>
+        /// <param name="endTime">隔日起始時間（不含）。</param>
+        /// <returns>非同步處理工作。</returns>
+        private async Task ProcessOneDayAsync(DateTime startTime, DateTime endTime)
+        {
+            var parameters = new
+            {
+                START_TIME = startTime,
+                END_TIME = endTime
+            };
+
+            var airQueryRows = (await conn.QueryAsync<FeeMasterCodSourceRow>(
+                AirQuerySql,
+                parameters,
+                commandTimeout: CommandTimeoutSeconds)).ToList();
+            var airRows = DeduplicateAirRows(airQueryRows);
+            var airQueryCount = airQueryRows.Count;
+            var airDeduplicatedCount = airRows.Count;
+            var airInsertedCount = await SaveAirRowsAsync(airRows);
+            airQueryRows.Clear();
+            airRows.Clear();
+
+            var seaQueryRows = (await conn.QueryAsync<FeeMasterCodSourceRow>(
+                SeaQuerySql,
+                parameters,
+                commandTimeout: CommandTimeoutSeconds)).ToList();
+            var seaRows = DeduplicateSeaRows(seaQueryRows);
+            var seaQueryCount = seaQueryRows.Count;
+            var seaDeduplicatedCount = seaRows.Count;
+            var seaInsertedCount = await SaveSeaRowsAsync(seaRows);
+
+            Logger.Info(
+                $"{JobName}單日完成，區間={startTime:yyyy-MM-dd HH:mm:ss}~{endTime:yyyy-MM-dd HH:mm:ss}，" +
+                $"空運查詢={airQueryCount}，空運去重={airDeduplicatedCount}，空運新增={airInsertedCount}，" +
+                $"海運查詢={seaQueryCount}，海運去重={seaDeduplicatedCount}，海運新增={seaInsertedCount}");
         }
 
         /// <summary>
