@@ -305,5 +305,11 @@ namespace Service.Data
         /// </summary>
         [Column("TAX_RECID")]
         public string TaxRecId { get; set; }
+
+        /// <summary>
+        /// 費用主檔明細。
+        /// </summary>
+        [InverseProperty(nameof(FeeMasterDetailEntity.FeeMaster))]
+        public System.Collections.Generic.ICollection<FeeMasterDetailEntity> Details { get; set; }
     }
 }

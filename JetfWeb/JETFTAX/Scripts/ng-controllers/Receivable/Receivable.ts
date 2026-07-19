@@ -1,0 +1,447 @@
+﻿// <reference path="../../types/global.d.ts" />
+
+interface ReceivableRow {
+    Id: number;
+    PostingDate: string;
+    Source: string;
+    Type: string;
+    CustomerCode: string;
+    CustomerName: string;
+    OutDateTime: string;
+    TrackingNo: string;
+    DlvInv: string;
+    TaxNumber: string;
+    CodSubtotal: number;
+    ReceivedAmount: number;
+    UnreceivedAmount: number;
+    CustomerCod: number;
+    TransCod: number;
+    JetfPayment: string;
+    Ccfee: number;
+    RedispatchFreight: string;
+    Cod: number;
+    Fee: number;
+    UnreceivedReason: string;
+}
+
+interface ReceivableQueryResponse {
+    TotalCount: number;
+    Data: ReceivableRow[];
+}
+
+interface ReceivableCustomerOption {
+    Type: string;
+    CustCode: string;
+    CustName: string;
+}
+
+interface ReceivableCustomerGroupOption {
+    Id: number;
+    Type: string;
+    GroupName: string;
+    CustCodes: string[];
+}
+
+interface ReceivableCustomerSelectionOptions {
+    SeaCustomers: ReceivableCustomerOption[];
+    AirCustomers: ReceivableCustomerOption[];
+    Groups: ReceivableCustomerGroupOption[];
+}
+
+interface ReceivableSelectionMap {
+    [custCode: string]: boolean;
+}
+
+interface ReceivableScope extends ng.IScope {
+    searchForm: {
+        outDateStart: Date | null;
+        outDateEnd: Date | null;
+        status: string;
+        collectionType: string;
+    };
+    dateOptions: any;
+    startDatePopup: { opened: boolean };
+    endDatePopup: { opened: boolean };
+    rows: ReceivableRow[];
+    loading: boolean;
+    exporting: boolean;
+    isSearched: boolean;
+    currentPage: number;
+    pageSize: string;
+    totalCount: number;
+    totalPages: number;
+    recordsInfo: string;
+    selectedCustomerMap: ReceivableSelectionMap;
+    customerDisplayText: string;
+    customerDisplayFullText: string;
+    customerKeyword: string;
+    customerOptionsLoading: boolean;
+    customerOptions: ReceivableCustomerSelectionOptions;
+    init: () => void;
+    openStartDatePopup: () => void;
+    openEndDatePopup: () => void;
+    search: () => void;
+    clearSearch: () => void;
+    changePageSize: () => void;
+    goToPage: (page: number) => void;
+    previousPage: () => void;
+    nextPage: () => void;
+    getPageNumbers: () => number[];
+    openCustomerModal: () => void;
+    selectGroup: (group: ReceivableCustomerGroupOption) => void;
+    selectAllCustomers: (type: string) => void;
+    clearCustomers: (type: string) => void;
+    onCustomerSelectionChanged: () => void;
+    getModalSelectedCount: () => number;
+    exportExcel: () => void;
+}
+
+mainApp.controller('ReceivableController', ['$scope', '$http', function (
+    $scope: ReceivableScope,
+    $http: ng.IHttpService
+) {
+    function redirectIfNeeded(response: ApiResponse): boolean {
+        if (response && response.Redirect) {
+            window.location.href = Router.action('Account', 'Login');
+            return true;
+        }
+
+        return false;
+    }
+
+    function showError(message: string): void {
+        swal({ title: message, icon: 'error' });
+    }
+
+    function parseNullableNumber(value: string): number | null {
+        return value ? parseInt(value, 10) : null;
+    }
+
+    function today(): Date {
+        var value = new Date();
+        value.setHours(0, 0, 0, 0);
+        return value;
+    }
+
+    function formatDate(value: Date | null): string | null {
+        return value ? moment(value).format('YYYY-MM-DD') : null;
+    }
+
+    function validateDates(): boolean {
+        if (!$scope.searchForm.outDateStart || !$scope.searchForm.outDateEnd) {
+            showError('日期為必填，請選擇開始日期與結束日期');
+            return false;
+        }
+
+        if (moment($scope.searchForm.outDateStart).isAfter($scope.searchForm.outDateEnd, 'day')) {
+            showError('開始日期不可晚於結束日期');
+            return false;
+        }
+
+        return true;
+    }
+
+    function selectedCodes(selectionMap: ReceivableSelectionMap): string[] {
+        var codes: string[] = [];
+        angular.forEach(selectionMap, function (selected: boolean, code: string): void {
+            if (selected) {
+                codes.push(code);
+            }
+        });
+        return codes.sort();
+    }
+
+    function buildRequest(includePaging: boolean): any {
+        var codes = selectedCodes($scope.selectedCustomerMap);
+        var request: any = {
+            OutDateStart: formatDate($scope.searchForm.outDateStart),
+            OutDateEnd: formatDate($scope.searchForm.outDateEnd),
+            CustomerCodes: codes.length ? codes : null,
+            Status: parseNullableNumber($scope.searchForm.status),
+            CollectionType: parseNullableNumber($scope.searchForm.collectionType)
+        };
+
+        if (includePaging) {
+            request.Page = $scope.currentPage;
+            request.PageSize = parseInt($scope.pageSize, 10);
+        }
+
+        return request;
+    }
+
+    function getAllCustomers(): ReceivableCustomerOption[] {
+        return ($scope.customerOptions.SeaCustomers || [])
+            .concat($scope.customerOptions.AirCustomers || []);
+    }
+
+    function getCustomersByType(type: string): ReceivableCustomerOption[] {
+        return type === 'AIR'
+            ? ($scope.customerOptions.AirCustomers || [])
+            : ($scope.customerOptions.SeaCustomers || []);
+    }
+
+    function updateCustomerDisplay(): void {
+        var codes = selectedCodes($scope.selectedCustomerMap);
+        if (!codes.length) {
+            $scope.customerDisplayText = '全部客戶';
+            $scope.customerDisplayFullText = '全部客戶';
+            return;
+        }
+
+        var names: { [custCode: string]: string } = {};
+        getAllCustomers().forEach(function (customer): void {
+            if (!names[customer.CustCode]) {
+                names[customer.CustCode] = customer.CustName;
+            }
+        });
+        var descriptions = codes.map(function (code): string {
+            return names[code] ? code + ' - ' + names[code] : code;
+        });
+
+        $scope.customerDisplayText = '已選擇 ' + codes.length + ' 位客戶';
+        $scope.customerDisplayFullText = descriptions.join('、');
+    }
+
+    function updateRecordsInfo(): void {
+        if ($scope.totalCount === 0) {
+            $scope.recordsInfo = '共 0 筆';
+            return;
+        }
+
+        var pageSize = parseInt($scope.pageSize, 10);
+        var start = ($scope.currentPage - 1) * pageSize + 1;
+        var end = Math.min($scope.currentPage * pageSize, $scope.totalCount);
+        $scope.recordsInfo = '顯示 ' + start + ' 至 ' + end + ' 筆，共 ' + $scope.totalCount + ' 筆';
+    }
+
+    function loadCustomerOptions(): void {
+        $scope.customerOptionsLoading = true;
+        $http.get(Router.action('Receivable', 'GetCustomerSelectionOptions'))
+            .then(function (response: ng.IHttpResponse<ApiResponse<ReceivableCustomerSelectionOptions>>): void {
+                if (redirectIfNeeded(response.data)) {
+                    return;
+                }
+
+                if (response.data.status === 'error' || !response.data.ReturnObject) {
+                    showError(response.data.msg || '載入客戶資料失敗');
+                    return;
+                }
+
+                $scope.customerOptions = response.data.ReturnObject;
+                updateCustomerDisplay();
+            }).catch(function (): void {
+                showError('載入客戶資料失敗，請稍後再試');
+            }).finally(function (): void {
+                $scope.customerOptionsLoading = false;
+            });
+    }
+
+    function loadData(): void {
+        $scope.loading = true;
+        $http.post(Router.action('Receivable', 'Search'), buildRequest(true))
+            .then(function (response: ng.IHttpResponse<ApiResponse<ReceivableQueryResponse>>): void {
+                if (redirectIfNeeded(response.data)) {
+                    return;
+                }
+
+                if (response.data.status === 'error' || !response.data.ReturnObject) {
+                    showError(response.data.msg || '查詢失敗');
+                    return;
+                }
+
+                var result = response.data.ReturnObject;
+                $scope.rows = result.Data || [];
+                $scope.totalCount = result.TotalCount || 0;
+                $scope.totalPages = Math.ceil(
+                    $scope.totalCount / parseInt($scope.pageSize, 10)) || 0;
+                $scope.isSearched = true;
+                updateRecordsInfo();
+
+                if ($scope.totalPages > 0 && $scope.currentPage > $scope.totalPages) {
+                    $scope.currentPage = $scope.totalPages;
+                    loadData();
+                }
+            }).catch(function (): void {
+                showError('查詢失敗，請稍後再試');
+            }).finally(function (): void {
+                $scope.loading = false;
+            });
+    }
+
+    $scope.searchForm = {
+        outDateStart: today(),
+        outDateEnd: today(),
+        status: '',
+        collectionType: ''
+    };
+    $scope.dateOptions = {
+        startingDay: 1,
+        showWeeks: false
+    };
+    $scope.startDatePopup = { opened: false };
+    $scope.endDatePopup = { opened: false };
+    $scope.rows = [];
+    $scope.loading = false;
+    $scope.exporting = false;
+    $scope.isSearched = false;
+    $scope.currentPage = 1;
+    $scope.pageSize = '20';
+    $scope.totalCount = 0;
+    $scope.totalPages = 0;
+    $scope.recordsInfo = '';
+    $scope.selectedCustomerMap = {};
+    $scope.customerDisplayText = '全部客戶';
+    $scope.customerDisplayFullText = '全部客戶';
+    $scope.customerKeyword = '';
+    $scope.customerOptionsLoading = false;
+    $scope.customerOptions = {
+        SeaCustomers: [],
+        AirCustomers: [],
+        Groups: []
+    };
+
+    $scope.init = function (): void {
+        angular.element('#Receivable').addClass('active');
+        loadCustomerOptions();
+        loadData();
+    };
+
+    $scope.openStartDatePopup = function (): void {
+        $scope.startDatePopup.opened = true;
+    };
+
+    $scope.openEndDatePopup = function (): void {
+        $scope.endDatePopup.opened = true;
+    };
+
+    $scope.search = function (): void {
+        if (!validateDates()) {
+            return;
+        }
+
+        $scope.currentPage = 1;
+        loadData();
+    };
+
+    $scope.clearSearch = function (): void {
+        $scope.searchForm = {
+            outDateStart: today(),
+            outDateEnd: today(),
+            status: '',
+            collectionType: ''
+        };
+        $scope.selectedCustomerMap = {};
+        updateCustomerDisplay();
+        $scope.currentPage = 1;
+        loadData();
+    };
+
+    $scope.changePageSize = function (): void {
+        $scope.currentPage = 1;
+        loadData();
+    };
+
+    $scope.goToPage = function (page: number): void {
+        if (page < 1 || page > $scope.totalPages || page === $scope.currentPage) {
+            return;
+        }
+
+        $scope.currentPage = page;
+        loadData();
+    };
+
+    $scope.previousPage = function (): void {
+        $scope.goToPage($scope.currentPage - 1);
+    };
+
+    $scope.nextPage = function (): void {
+        $scope.goToPage($scope.currentPage + 1);
+    };
+
+    $scope.getPageNumbers = function (): number[] {
+        var pages: number[] = [];
+        var maxVisible = 10;
+        var start = Math.max(1, $scope.currentPage - Math.floor(maxVisible / 2));
+        var end = Math.min($scope.totalPages, start + maxVisible - 1);
+        if (end - start < maxVisible - 1) {
+            start = Math.max(1, end - maxVisible + 1);
+        }
+
+        for (var page = start; page <= end; page++) {
+            pages.push(page);
+        }
+
+        return pages;
+    };
+
+    $scope.openCustomerModal = function (): void {
+        $scope.customerKeyword = '';
+        $('#receivableCustomerModal').modal('show');
+    };
+
+    $scope.selectGroup = function (group: ReceivableCustomerGroupOption): void {
+        (group.CustCodes || []).forEach(function (code): void {
+            $scope.selectedCustomerMap[code] = true;
+        });
+        updateCustomerDisplay();
+    };
+
+    $scope.selectAllCustomers = function (type: string): void {
+        getCustomersByType(type).forEach(function (customer): void {
+            $scope.selectedCustomerMap[customer.CustCode] = true;
+        });
+        updateCustomerDisplay();
+    };
+
+    $scope.clearCustomers = function (type: string): void {
+        getCustomersByType(type).forEach(function (customer): void {
+            delete $scope.selectedCustomerMap[customer.CustCode];
+        });
+        updateCustomerDisplay();
+    };
+
+    $scope.onCustomerSelectionChanged = function (): void {
+        updateCustomerDisplay();
+    };
+
+    $scope.getModalSelectedCount = function (): number {
+        return selectedCodes($scope.selectedCustomerMap).length;
+    };
+
+    $scope.exportExcel = function (): void {
+        if (!validateDates()) {
+            return;
+        }
+
+        var request = buildRequest(false);
+        $scope.exporting = true;
+        $http.post(Router.action('Receivable', 'ExportExcel'), request)
+            .then(function (response: ng.IHttpResponse<any>): void {
+                var data = response.data || {};
+                if (redirectIfNeeded(data)) {
+                    return;
+                }
+
+                if (data.msg) {
+                    showError(data.msg);
+                    return;
+                }
+
+                if (data.fileGuid && data.fileName) {
+                    var downloadUrl = Router.action('Download', 'DownloadFile')
+                        + '?fileGuid=' + data.fileGuid
+                        + '&fileName=' + encodeURIComponent(data.fileName);
+                    var link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = data.fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            }).catch(function (): void {
+                showError('下載失敗，請稍後再試');
+            }).finally(function (): void {
+                $scope.exporting = false;
+            });
+    };
+}]);

@@ -552,5 +552,10 @@ namespace Service.EnumTax
         /// 代收銷帳客戶群組
         /// </summary>
         ReconciliationCustomerGroup,
+
+        /// <summary>
+        /// 應收未收明細
+        /// </summary>
+        Receivable,
     }
 }

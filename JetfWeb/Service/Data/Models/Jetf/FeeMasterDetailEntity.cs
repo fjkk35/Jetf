@@ -21,6 +21,7 @@ namespace Service.Data
         /// 對應費用主檔識別碼。
         /// </summary>
         [Column("FEE_MASTER_ID")]
+        [ForeignKey(nameof(FeeMaster))]
         public int FeeMasterId { get; set; }
 
         /// <summary>
@@ -136,5 +137,34 @@ namespace Service.Data
         /// </summary>
         [Column("CUSTOMER_COD")]
         public int? CustomerCod { get; set; }
+
+        /// <summary>
+        /// 已向客戶收回的代收金額。
+        /// </summary>
+        [Column("RECEIVED_CUSTOMER_COD")]
+        public int? ReceivedCustomerCod { get; set; }
+
+        /// <summary>
+        /// 向客戶收回代收金額的時間。
+        /// </summary>
+        [Column("RECEIVED_CUSTOMER_COD_TIME")]
+        public System.DateTime? ReceivedCustomerCodTime { get; set; }
+
+        /// <summary>
+        /// 已向派件公司收回的代收金額。
+        /// </summary>
+        [Column("RECEIVED_TRANS_COD")]
+        public int? ReceivedTransCod { get; set; }
+
+        /// <summary>
+        /// 向派件公司收回代收金額的時間。
+        /// </summary>
+        [Column("RECEIVED_TRANS_COD_TIME")]
+        public System.DateTime? ReceivedTransCodTime { get; set; }
+
+        /// <summary>
+        /// 對應的費用主檔。
+        /// </summary>
+        public FeeMasterEntity FeeMaster { get; set; }
     }
 }

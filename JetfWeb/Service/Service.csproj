@@ -322,6 +322,8 @@
     <Compile Include="EnumTax\CacheName.cs" />
     <Compile Include="EnumTax\CargoProcessType.cs" />
     <Compile Include="EnumTax\CustomerType.cs" />
+    <Compile Include="EnumTax\ReceivableCollectionType.cs" />
+    <Compile Include="EnumTax\ReceivableStatus.cs" />
     <Compile Include="EnumTax\CptStatusEnum.cs" />
     <Compile Include="EnumTax\CptTradeVanEnum.cs" />
     <Compile Include="EnumTax\DataTypeEnum.cs" />
@@ -670,6 +672,14 @@
     <Compile Include="Services\ReconciliationCustomerGroup\Domain\ReconciliationCustomerGroupSaveRequest.cs" />
     <Compile Include="Services\ReconciliationCustomerGroup\Domain\ReconciliationCustomerOption.cs" />
     <Compile Include="Services\ReconciliationCustomerGroup\ReconciliationCustomerGroupService.cs" />
+    <Compile Include="Services\Receivable\Domain\ReceivableCustomerGroupOption.cs" />
+    <Compile Include="Services\Receivable\Domain\ReceivableCustomerOption.cs" />
+    <Compile Include="Services\Receivable\Domain\ReceivableCustomerSelectionOptions.cs" />
+    <Compile Include="Services\Receivable\Domain\ReceivableDataRow.cs" />
+    <Compile Include="Services\Receivable\Domain\ReceivableListItem.cs" />
+    <Compile Include="Services\Receivable\Domain\ReceivableQueryRequest.cs" />
+    <Compile Include="Services\Receivable\Domain\ReceivableQueryResponse.cs" />
+    <Compile Include="Services\Receivable\ReceivableService.cs" />
     <Compile Include="Services\SeaTransRecord\SeaTransRecordService.cs" />
     <Compile Include="Services\SeaUnboxingRecord\SeaUnboxingRecordService.cs" />
     <Compile Include="Services\SeaUnreceivedOrder\SeaUnreceivedOrderService.cs" />

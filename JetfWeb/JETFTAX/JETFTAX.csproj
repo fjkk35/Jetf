@@ -383,6 +383,7 @@
     <Compile Include="Controllers\ReconciliationInvoiceController.cs" />
     <Compile Include="Controllers\ReconciliationAirController.cs" />
     <Compile Include="Controllers\ReconciliationCustomerGroupController.cs" />
+    <Compile Include="Controllers\ReceivableController.cs" />
     <Compile Include="Controllers\SjlBillingController.cs" />
     <Compile Include="Controllers\StepController.cs" />
     <Compile Include="Controllers\TactController.cs" />
@@ -894,6 +895,7 @@
     <Content Include="Scripts\ng-controllers\ReconciliationInvoice\UploadInvoice.js" />
     <Content Include="Scripts\ng-controllers\ReconciliationAir\UploadAir.js" />
     <Content Include="Scripts\ng-controllers\ReconciliationCustomerGroup\ReconciliationCustomerGroup.js" />
+    <Content Include="Scripts\ng-controllers\Receivable\Receivable.js" />
     <Content Include="Scripts\ng-controllers\SjlBilling\SjlBilling.js" />
     <Content Include="Scripts\ng-controllers\Tact\Tact.js" />
     <Content Include="Scripts\ng-controllers\WorkDayArea\WorkDayArea.js" />
@@ -2961,6 +2963,7 @@
     <Content Include="Views\ReconciliationInvoice\UploadInvoice.cshtml" />
     <Content Include="Views\ReconciliationAir\UploadAir.cshtml" />
     <Content Include="Views\ReconciliationCustomerGroup\Index.cshtml" />
+    <Content Include="Views\Receivable\Index.cshtml" />
     <Content Include="Views\Step\Index.cshtml" />
     <Content Include="Views\Shared\_DetailLayout.cshtml" />
     <Content Include="Views\UnpackingStatistics\Index.cshtml" />
@@ -3046,6 +3049,7 @@
     <TypeScriptCompile Include="Scripts\ng-controllers\ReconciliationInvoice\UploadInvoice.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ReconciliationAir\UploadAir.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ReconciliationCustomerGroup\ReconciliationCustomerGroup.ts" />
+    <TypeScriptCompile Include="Scripts\ng-controllers\Receivable\Receivable.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SjlBatchImport\SjlBatchImportSearch.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SjlBilling\SjlBilling.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\Download\DownloadEtlNew.ts" />
