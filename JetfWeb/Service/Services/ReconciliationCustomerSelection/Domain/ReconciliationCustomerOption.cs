@@ -1,9 +1,9 @@
-namespace Service.Services.Receivable.Domain
+namespace Service.Services.ReconciliationCustomerSelection.Domain
 {
     /// <summary>
-    /// 應收未收明細的可選客戶。
+    /// 代收銷帳作業的可選客戶。
     /// </summary>
-    public sealed class ReceivableCustomerOption
+    public sealed class ReconciliationCustomerOption
     {
         /// <summary>
         /// 客戶類型 SEA 或 AIR。

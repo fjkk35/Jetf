@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 
-namespace Service.Services.Receivable.Domain
+namespace Service.Services.ReconciliationCustomerSelection.Domain
 {
     /// <summary>
-    /// 應收未收明細的客戶群組選項。
+    /// 代收銷帳作業的客戶群組選項。
     /// </summary>
-    public sealed class ReceivableCustomerGroupOption
+    public sealed class ReconciliationCustomerGroupOption
     {
         /// <summary>
         /// 群組識別碼。

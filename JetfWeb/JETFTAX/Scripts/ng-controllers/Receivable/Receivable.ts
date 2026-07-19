@@ -29,25 +29,6 @@ interface ReceivableQueryResponse {
     Data: ReceivableRow[];
 }
 
-interface ReceivableCustomerOption {
-    Type: string;
-    CustCode: string;
-    CustName: string;
-}
-
-interface ReceivableCustomerGroupOption {
-    Id: number;
-    Type: string;
-    GroupName: string;
-    CustCodes: string[];
-}
-
-interface ReceivableCustomerSelectionOptions {
-    SeaCustomers: ReceivableCustomerOption[];
-    AirCustomers: ReceivableCustomerOption[];
-    Groups: ReceivableCustomerGroupOption[];
-}
-
 interface ReceivableSelectionMap {
     [custCode: string]: boolean;
 }
@@ -72,11 +53,6 @@ interface ReceivableScope extends ng.IScope {
     totalPages: number;
     recordsInfo: string;
     selectedCustomerMap: ReceivableSelectionMap;
-    customerDisplayText: string;
-    customerDisplayFullText: string;
-    customerKeyword: string;
-    customerOptionsLoading: boolean;
-    customerOptions: ReceivableCustomerSelectionOptions;
     init: () => void;
     openStartDatePopup: () => void;
     openEndDatePopup: () => void;
@@ -87,12 +63,6 @@ interface ReceivableScope extends ng.IScope {
     previousPage: () => void;
     nextPage: () => void;
     getPageNumbers: () => number[];
-    openCustomerModal: () => void;
-    selectGroup: (group: ReceivableCustomerGroupOption) => void;
-    selectAllCustomers: (type: string) => void;
-    clearCustomers: (type: string) => void;
-    onCustomerSelectionChanged: () => void;
-    getModalSelectedCount: () => number;
     exportExcel: () => void;
 }
 
@@ -169,39 +139,6 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
         return request;
     }
 
-    function getAllCustomers(): ReceivableCustomerOption[] {
-        return ($scope.customerOptions.SeaCustomers || [])
-            .concat($scope.customerOptions.AirCustomers || []);
-    }
-
-    function getCustomersByType(type: string): ReceivableCustomerOption[] {
-        return type === 'AIR'
-            ? ($scope.customerOptions.AirCustomers || [])
-            : ($scope.customerOptions.SeaCustomers || []);
-    }
-
-    function updateCustomerDisplay(): void {
-        var codes = selectedCodes($scope.selectedCustomerMap);
-        if (!codes.length) {
-            $scope.customerDisplayText = '全部客戶';
-            $scope.customerDisplayFullText = '全部客戶';
-            return;
-        }
-
-        var names: { [custCode: string]: string } = {};
-        getAllCustomers().forEach(function (customer): void {
-            if (!names[customer.CustCode]) {
-                names[customer.CustCode] = customer.CustName;
-            }
-        });
-        var descriptions = codes.map(function (code): string {
-            return names[code] ? code + ' - ' + names[code] : code;
-        });
-
-        $scope.customerDisplayText = '已選擇 ' + codes.length + ' 位客戶';
-        $scope.customerDisplayFullText = descriptions.join('、');
-    }
-
     function updateRecordsInfo(): void {
         if ($scope.totalCount === 0) {
             $scope.recordsInfo = '共 0 筆';
@@ -212,28 +149,6 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
         var start = ($scope.currentPage - 1) * pageSize + 1;
         var end = Math.min($scope.currentPage * pageSize, $scope.totalCount);
         $scope.recordsInfo = '顯示 ' + start + ' 至 ' + end + ' 筆，共 ' + $scope.totalCount + ' 筆';
-    }
-
-    function loadCustomerOptions(): void {
-        $scope.customerOptionsLoading = true;
-        $http.get(Router.action('Receivable', 'GetCustomerSelectionOptions'))
-            .then(function (response: ng.IHttpResponse<ApiResponse<ReceivableCustomerSelectionOptions>>): void {
-                if (redirectIfNeeded(response.data)) {
-                    return;
-                }
-
-                if (response.data.status === 'error' || !response.data.ReturnObject) {
-                    showError(response.data.msg || '載入客戶資料失敗');
-                    return;
-                }
-
-                $scope.customerOptions = response.data.ReturnObject;
-                updateCustomerDisplay();
-            }).catch(function (): void {
-                showError('載入客戶資料失敗，請稍後再試');
-            }).finally(function (): void {
-                $scope.customerOptionsLoading = false;
-            });
     }
 
     function loadData(): void {
@@ -290,20 +205,9 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
     $scope.totalPages = 0;
     $scope.recordsInfo = '';
     $scope.selectedCustomerMap = {};
-    $scope.customerDisplayText = '全部客戶';
-    $scope.customerDisplayFullText = '全部客戶';
-    $scope.customerKeyword = '';
-    $scope.customerOptionsLoading = false;
-    $scope.customerOptions = {
-        SeaCustomers: [],
-        AirCustomers: [],
-        Groups: []
-    };
 
     $scope.init = function (): void {
         angular.element('#Receivable').addClass('active');
-        loadCustomerOptions();
-        loadData();
     };
 
     $scope.openStartDatePopup = function (): void {
@@ -331,7 +235,6 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
             collectionType: ''
         };
         $scope.selectedCustomerMap = {};
-        updateCustomerDisplay();
         $scope.currentPage = 1;
         loadData();
     };
@@ -372,40 +275,6 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
         }
 
         return pages;
-    };
-
-    $scope.openCustomerModal = function (): void {
-        $scope.customerKeyword = '';
-        $('#receivableCustomerModal').modal('show');
-    };
-
-    $scope.selectGroup = function (group: ReceivableCustomerGroupOption): void {
-        (group.CustCodes || []).forEach(function (code): void {
-            $scope.selectedCustomerMap[code] = true;
-        });
-        updateCustomerDisplay();
-    };
-
-    $scope.selectAllCustomers = function (type: string): void {
-        getCustomersByType(type).forEach(function (customer): void {
-            $scope.selectedCustomerMap[customer.CustCode] = true;
-        });
-        updateCustomerDisplay();
-    };
-
-    $scope.clearCustomers = function (type: string): void {
-        getCustomersByType(type).forEach(function (customer): void {
-            delete $scope.selectedCustomerMap[customer.CustCode];
-        });
-        updateCustomerDisplay();
-    };
-
-    $scope.onCustomerSelectionChanged = function (): void {
-        updateCustomerDisplay();
-    };
-
-    $scope.getModalSelectedCount = function (): number {
-        return selectedCodes($scope.selectedCustomerMap).length;
     };
 
     $scope.exportExcel = function (): void {

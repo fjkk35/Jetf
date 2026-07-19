@@ -151,6 +151,13 @@ namespace Service.Data
         public System.DateTime? ReceivedCustomerCodTime { get; set; }
 
         /// <summary>
+        /// 客戶銷帳操作人員。
+        /// </summary>
+        [StringLength(10)]
+        [Column("RECEIVED_CUSTOMER_COD_USERID")]
+        public string ReceivedCustomerCodUserId { get; set; }
+
+        /// <summary>
         /// 已向派件公司收回的代收金額。
         /// </summary>
         [Column("RECEIVED_TRANS_COD")]
@@ -161,6 +168,13 @@ namespace Service.Data
         /// </summary>
         [Column("RECEIVED_TRANS_COD_TIME")]
         public System.DateTime? ReceivedTransCodTime { get; set; }
+
+        /// <summary>
+        /// 派件銷帳操作人員。
+        /// </summary>
+        [StringLength(10)]
+        [Column("RECEIVED_TRANS_COD_USERID")]
+        public string ReceivedTransCodUserId { get; set; }
 
         /// <summary>
         /// 對應的費用主檔。

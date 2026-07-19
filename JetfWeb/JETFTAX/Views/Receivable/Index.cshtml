@@ -49,14 +49,11 @@
             <div class="form-group row col-xl-3 col-lg-6 mb-3">
                 <label class="col-sm-3 col-form-label text-right">客戶</label>
                 <div class="col-sm-9">
-                    <button type="button"
-                            class="btn btn-outline-secondary btn-block text-left customer-select-button"
-                            ng-click="openCustomerModal()"
-                            ng-disabled="customerOptionsLoading"
-                            title="{{customerDisplayFullText}}">
-                        <i class="fa" ng-class="customerOptionsLoading ? 'fa-spinner fa-spin' : 'fa-users'"></i>
-                        {{customerOptionsLoading ? '載入客戶中...' : customerDisplayText}}
-                    </button>
+                    <reconciliation-customer-selector
+                        options-url="@Url.Action("GetCustomerSelectionOptions", "Receivable")"
+                        selected-customer-map="selectedCustomerMap"
+                        disabled="loading">
+                    </reconciliation-customer-selector>
                 </div>
             </div>
 
@@ -206,133 +203,9 @@
         </nav>
     </div>
 
-    <div class="modal fade" id="receivableCustomerModal" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-xl" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">客戶</h5>
-                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row mb-3">
-                        <div class="col-md-8">
-                            <input type="text"
-                                   class="form-control"
-                                   ng-model="customerKeyword"
-                                   placeholder="輸入客戶代碼或名稱篩選" />
-                        </div>
-                        <div class="col-md-4 text-right align-self-center">
-                            已選擇 {{getModalSelectedCount()}} 位客戶
-                        </div>
-                    </div>
-
-                    <div ng-show="customerOptionsLoading" class="text-center py-5">
-                        <i class="fa fa-spinner fa-spin fa-3x"></i>
-                        <p>載入客戶中...</p>
-                    </div>
-
-                    <div class="row" ng-show="!customerOptionsLoading">
-                        <div class="col-lg-6 mb-3 mb-lg-0">
-                            <div class="customer-type-panel">
-                                <div class="customer-type-header d-flex align-items-center justify-content-between">
-                                    <strong>海運</strong>
-                                    <div>
-                                        <button type="button"
-                                                class="btn btn-outline-primary btn-sm"
-                                                ng-click="selectAllCustomers('SEA')">全選</button>
-                                        <button type="button"
-                                                class="btn btn-outline-secondary btn-sm ml-1"
-                                                ng-click="clearCustomers('SEA')">清除</button>
-                                    </div>
-                                </div>
-                                <div class="customer-group-area">
-                                    <span class="text-muted mr-2">客戶群組：</span>
-                                    <button type="button"
-                                            class="btn btn-outline-primary btn-sm mr-2 mb-1"
-                                            ng-repeat="group in (customerOptions.Groups | filter:{Type:'SEA'}:true) track by group.Id"
-                                            ng-click="selectGroup(group)"
-                                            title="選取此群組的全部客戶">
-                                        {{group.GroupName}}
-                                    </button>
-                                    <span class="text-muted"
-                                          ng-if="(customerOptions.Groups | filter:{Type:'SEA'}:true).length === 0">無群組</span>
-                                </div>
-                                <div class="customer-list">
-                                    <div class="text-center text-muted py-3"
-                                         ng-if="(customerOptions.SeaCustomers | filter:customerKeyword).length === 0">查無客戶</div>
-                                    <div class="custom-control custom-checkbox customer-option"
-                                         ng-repeat="customer in (customerOptions.SeaCustomers | filter:customerKeyword) track by customer.CustCode">
-                                        <input type="checkbox"
-                                               class="custom-control-input"
-                                               id="receivableSeaCustomer_{{$index}}"
-                                               ng-model="selectedCustomerMap[customer.CustCode]"
-                                               ng-change="onCustomerSelectionChanged()" />
-                                        <label class="custom-control-label d-block" for="receivableSeaCustomer_{{$index}}">
-                                            <strong>{{customer.CustCode}}</strong>
-                                            <span ng-if="customer.CustName"> - {{customer.CustName}}</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-6">
-                            <div class="customer-type-panel">
-                                <div class="customer-type-header d-flex align-items-center justify-content-between">
-                                    <strong>空運</strong>
-                                    <div>
-                                        <button type="button"
-                                                class="btn btn-outline-primary btn-sm"
-                                                ng-click="selectAllCustomers('AIR')">全選</button>
-                                        <button type="button"
-                                                class="btn btn-outline-secondary btn-sm ml-1"
-                                                ng-click="clearCustomers('AIR')">清除</button>
-                                    </div>
-                                </div>
-                                <div class="customer-group-area">
-                                    <span class="text-muted mr-2">客戶群組：</span>
-                                    <button type="button"
-                                            class="btn btn-outline-info btn-sm mr-2 mb-1"
-                                            ng-repeat="group in (customerOptions.Groups | filter:{Type:'AIR'}:true) track by group.Id"
-                                            ng-click="selectGroup(group)"
-                                            title="選取此群組的全部客戶">
-                                        {{group.GroupName}}
-                                    </button>
-                                    <span class="text-muted"
-                                          ng-if="(customerOptions.Groups | filter:{Type:'AIR'}:true).length === 0">無群組</span>
-                                </div>
-                                <div class="customer-list">
-                                    <div class="text-center text-muted py-3"
-                                         ng-if="(customerOptions.AirCustomers | filter:customerKeyword).length === 0">查無客戶</div>
-                                    <div class="custom-control custom-checkbox customer-option"
-                                         ng-repeat="customer in (customerOptions.AirCustomers | filter:customerKeyword) track by customer.CustCode">
-                                        <input type="checkbox"
-                                               class="custom-control-input"
-                                               id="receivableAirCustomer_{{$index}}"
-                                               ng-model="selectedCustomerMap[customer.CustCode]"
-                                               ng-change="onCustomerSelectionChanged()" />
-                                        <label class="custom-control-label d-block" for="receivableAirCustomer_{{$index}}">
-                                            <strong>{{customer.CustCode}}</strong>
-                                            <span ng-if="customer.CustName"> - {{customer.CustName}}</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <style>
-    .receivable-page .customer-select-button {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
     .receivable-page .receivable-table {
         min-width: 2450px;
         white-space: nowrap;
@@ -341,41 +214,6 @@
     .receivable-page .receivable-table th,
     .receivable-page .receivable-table td {
         vertical-align: middle;
-    }
-
-    .receivable-page .customer-type-panel {
-        border: 1px solid #d9dee7;
-        border-radius: 4px;
-        overflow: hidden;
-    }
-
-    .receivable-page .customer-type-header {
-        padding: 10px 14px;
-        background: #f2f4f8;
-        border-bottom: 1px solid #d9dee7;
-    }
-
-    .receivable-page .customer-group-area {
-        min-height: 48px;
-        padding: 9px 14px;
-        border-bottom: 1px solid #d9dee7;
-    }
-
-    .receivable-page .customer-list {
-        height: 390px;
-        overflow-y: auto;
-        padding: 8px 14px;
-    }
-
-    .receivable-page .customer-option {
-        min-height: 42px;
-        padding-top: 9px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid #edf0f5;
-    }
-
-    .receivable-page .customer-option:last-child {
-        border-bottom: 0;
     }
 
     @@media (max-width: 767.98px) {

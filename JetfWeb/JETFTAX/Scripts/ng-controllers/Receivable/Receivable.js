@@ -56,34 +56,6 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
             }
             return request;
         }
-        function getAllCustomers() {
-            return ($scope.customerOptions.SeaCustomers || [])
-                .concat($scope.customerOptions.AirCustomers || []);
-        }
-        function getCustomersByType(type) {
-            return type === 'AIR'
-                ? ($scope.customerOptions.AirCustomers || [])
-                : ($scope.customerOptions.SeaCustomers || []);
-        }
-        function updateCustomerDisplay() {
-            var codes = selectedCodes($scope.selectedCustomerMap);
-            if (!codes.length) {
-                $scope.customerDisplayText = '全部客戶';
-                $scope.customerDisplayFullText = '全部客戶';
-                return;
-            }
-            var names = {};
-            getAllCustomers().forEach(function (customer) {
-                if (!names[customer.CustCode]) {
-                    names[customer.CustCode] = customer.CustName;
-                }
-            });
-            var descriptions = codes.map(function (code) {
-                return names[code] ? code + ' - ' + names[code] : code;
-            });
-            $scope.customerDisplayText = '已選擇 ' + codes.length + ' 位客戶';
-            $scope.customerDisplayFullText = descriptions.join('、');
-        }
         function updateRecordsInfo() {
             if ($scope.totalCount === 0) {
                 $scope.recordsInfo = '共 0 筆';
@@ -93,25 +65,6 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
             var start = ($scope.currentPage - 1) * pageSize + 1;
             var end = Math.min($scope.currentPage * pageSize, $scope.totalCount);
             $scope.recordsInfo = '顯示 ' + start + ' 至 ' + end + ' 筆，共 ' + $scope.totalCount + ' 筆';
-        }
-        function loadCustomerOptions() {
-            $scope.customerOptionsLoading = true;
-            $http.get(Router.action('Receivable', 'GetCustomerSelectionOptions'))
-                .then(function (response) {
-                if (redirectIfNeeded(response.data)) {
-                    return;
-                }
-                if (response.data.status === 'error' || !response.data.ReturnObject) {
-                    showError(response.data.msg || '載入客戶資料失敗');
-                    return;
-                }
-                $scope.customerOptions = response.data.ReturnObject;
-                updateCustomerDisplay();
-            }).catch(function () {
-                showError('載入客戶資料失敗，請稍後再試');
-            }).finally(function () {
-                $scope.customerOptionsLoading = false;
-            });
         }
         function loadData() {
             $scope.loading = true;
@@ -162,19 +115,8 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
         $scope.totalPages = 0;
         $scope.recordsInfo = '';
         $scope.selectedCustomerMap = {};
-        $scope.customerDisplayText = '全部客戶';
-        $scope.customerDisplayFullText = '全部客戶';
-        $scope.customerKeyword = '';
-        $scope.customerOptionsLoading = false;
-        $scope.customerOptions = {
-            SeaCustomers: [],
-            AirCustomers: [],
-            Groups: []
-        };
         $scope.init = function () {
             angular.element('#Receivable').addClass('active');
-            loadCustomerOptions();
-            loadData();
         };
         $scope.openStartDatePopup = function () {
             $scope.startDatePopup.opened = true;
@@ -197,7 +139,6 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
                 collectionType: ''
             };
             $scope.selectedCustomerMap = {};
-            updateCustomerDisplay();
             $scope.currentPage = 1;
             loadData();
         };
@@ -230,34 +171,6 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
                 pages.push(page);
             }
             return pages;
-        };
-        $scope.openCustomerModal = function () {
-            $scope.customerKeyword = '';
-            $('#receivableCustomerModal').modal('show');
-        };
-        $scope.selectGroup = function (group) {
-            (group.CustCodes || []).forEach(function (code) {
-                $scope.selectedCustomerMap[code] = true;
-            });
-            updateCustomerDisplay();
-        };
-        $scope.selectAllCustomers = function (type) {
-            getCustomersByType(type).forEach(function (customer) {
-                $scope.selectedCustomerMap[customer.CustCode] = true;
-            });
-            updateCustomerDisplay();
-        };
-        $scope.clearCustomers = function (type) {
-            getCustomersByType(type).forEach(function (customer) {
-                delete $scope.selectedCustomerMap[customer.CustCode];
-            });
-            updateCustomerDisplay();
-        };
-        $scope.onCustomerSelectionChanged = function () {
-            updateCustomerDisplay();
-        };
-        $scope.getModalSelectedCount = function () {
-            return selectedCodes($scope.selectedCustomerMap).length;
         };
         $scope.exportExcel = function () {
             if (!validateDates()) {

@@ -557,5 +557,10 @@ namespace Service.EnumTax
         /// 應收未收明細
         /// </summary>
         Receivable,
+
+        /// <summary>
+        /// 客戶銷帳
+        /// </summary>
+        ReconciliationCustomer,
     }
 }
