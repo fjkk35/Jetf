@@ -3,6 +3,7 @@ using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.EnumTax;
 using Service.Models;
+using Service.Models.DownloadEtlNew;
 using Service.Services;
 using Service.Services.DownloadEtlNew;
 using System;
@@ -124,7 +125,7 @@ namespace JETFTAX.Controllers
 
                     if (reportResult.status == Status.success)
                     {
-                        var workbook = GetEtlWorkbook(reportResult.Rows);
+                        var workbook = GetEtlWorkbook(reportResult.Rows, false);
                         fileName = fileName.Replace("票", string.Format("{0}票", reportResult.Rows.Count));
 
                         using (var fileStream = new MemoryStream())
@@ -148,7 +149,7 @@ namespace JETFTAX.Controllers
         {
             var reportResult = _downloadEtlNewService.GetEtlReport(vm.date, vm.timeBetween, vm.sTime, vm.eTime, vm.company, string.Empty);
             var dataDate = Convert.ToDateTime(vm.date).ToString("yyyyMMdd");
-            var workbook = GetEtlWorkbook(reportResult.Rows);
+            var workbook = GetEtlWorkbook(reportResult.Rows, true);
             var handle = Guid.NewGuid().ToString();
             var fileName = string.Format("{0}-空運-無客戶-{1}票.xlsx", dataDate, reportResult.Rows.Count);
 
@@ -208,7 +209,13 @@ namespace JETFTAX.Controllers
             return Json(new { fileGuid = handle, fileName, msg = reportResult.msg }, JsonRequestBehavior.AllowGet);
         }
 
-        private IWorkbook GetEtlWorkbook(IReadOnlyList<DownloadEtlNewReportItem> rows)
+        /// <summary>
+        /// 建立空運代收報表活頁簿。
+        /// </summary>
+        /// <param name="rows">報表資料列。</param>
+        /// <param name="includeMainNumber">是否在最後一欄加入主號。</param>
+        /// <returns>空運代收報表活頁簿。</returns>
+        private IWorkbook GetEtlWorkbook(IReadOnlyList<DownloadEtlNewReportItem> rows, bool includeMainNumber)
         {
             var workbook = new XSSFWorkbook();
             var sheet = workbook.CreateSheet("報表");
@@ -221,6 +228,10 @@ namespace JETFTAX.Controllers
             row.CreateCell(5).SetCellValue("電話");
             row.CreateCell(6).SetCellValue("派件公司");
             row.CreateCell(7).SetCellValue("稅金類別");
+            if (includeMainNumber)
+            {
+                row.CreateCell(8).SetCellValue("主號");
+            }
 
             sheet.SetColumnWidth(0, 3000);
             sheet.SetColumnWidth(1, 6000);
@@ -230,6 +241,10 @@ namespace JETFTAX.Controllers
             sheet.SetColumnWidth(5, 6000);
             sheet.SetColumnWidth(6, 6000);
             sheet.SetColumnWidth(7, 6000);
+            if (includeMainNumber)
+            {
+                sheet.SetColumnWidth(8, 6000);
+            }
 
             for (var i = 0; i < rows.Count; i++)
             {
@@ -243,6 +258,10 @@ namespace JETFTAX.Controllers
                 row.CreateCell(5).SetCellValue(item.RecPhone ?? string.Empty);
                 row.CreateCell(6).SetCellValue(item.TransName ?? string.Empty);
                 row.CreateCell(7).SetCellValue(_globalService.GetTaxType(item.IncludeTax ?? string.Empty));
+                if (includeMainNumber)
+                {
+                    row.CreateCell(8).SetCellValue(item.MainNumber ?? string.Empty);
+                }
             }
 
             return workbook;

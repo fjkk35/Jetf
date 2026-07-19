@@ -2,6 +2,7 @@
 using NLog;
 using Service.Data;
 using Service.Models;
+using Service.Models.DownloadEtlNew;
 using Service.Services.SeaTaxUpload;
 using System;
 using System.Collections.Generic;
@@ -148,6 +149,7 @@ namespace Service.Services.DownloadEtlNew
                         x.IncludeTax,
                         x.Customer,
                         x.DlvCom,
+                        x.MainNumber,
                         x.OutDateTime
                     })
                     .ToList()
@@ -166,6 +168,7 @@ namespace Service.Services.DownloadEtlNew
                         IncludeTax = x.IncludeTax,
                         Customer = x.Customer,
                         TransNo = x.DlvCom,
+                        MainNumber = x.MainNumber,
                         OutDateTime = x.OutDateTime,
                         TransName = x.DlvCom
                     })

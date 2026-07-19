@@ -1,7 +1,7 @@
 using Service.Models;
 using System.Collections.Generic;
 
-namespace Service.Services.DownloadEtlNew
+namespace Service.Models.DownloadEtlNew
 {
     /// <summary>
     /// 表示 DownloadEtlNew 報表查詢結果。

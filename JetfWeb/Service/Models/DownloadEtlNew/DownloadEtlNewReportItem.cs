@@ -1,6 +1,6 @@
 using System;
 
-namespace Service.Services.DownloadEtlNew
+namespace Service.Models.DownloadEtlNew
 {
     /// <summary>
     /// 表示空運物流代收報表單筆列資料。
@@ -86,5 +86,10 @@ namespace Service.Services.DownloadEtlNew
         /// 取得或設定公司名稱。
         /// </summary>
         public string Company { get; set; }
+
+        /// <summary>
+        /// 取得或設定主號。
+        /// </summary>
+        public string MainNumber { get; set; }
     }
 }

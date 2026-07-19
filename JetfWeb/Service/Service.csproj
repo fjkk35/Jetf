@@ -393,6 +393,8 @@
     <Compile Include="Models\CustomerTaxCalculate\CustomerTaxCalculateModel.cs" />
     <Compile Include="Models\CustomerTaxSetting\CustomerTaxSettingModel.cs" />
     <Compile Include="Models\CustomsBroker\CustomsBrokerModel.cs" />
+    <Compile Include="Models\DownloadEtlNew\DownloadEtlNewReportItem.cs" />
+    <Compile Include="Models\DownloadEtlNew\DownloadEtlNewReportResult.cs" />
     <Compile Include="Models\DownloadSeaNew\DownloadSeaNewExportResult.cs" />
     <Compile Include="Models\DownloadSeaNew\DownloadSeaNewReportItem.cs" />
     <Compile Include="Models\DownloadSeaNew\DownloadSeaNewReportResult.cs" />
@@ -832,8 +834,6 @@
     <Compile Include="Services\UnpackingStatistics\UnpackingStatisticsService.cs" />
     <Compile Include="Services\DownloadEtlNew\ClearanceLookupRow.cs" />
     <Compile Include="Services\DownloadEtlNew\CombinedRow.cs" />
-    <Compile Include="Services\DownloadEtlNew\DownloadEtlNewReportItem.cs" />
-    <Compile Include="Services\DownloadEtlNew\DownloadEtlNewReportResult.cs" />
     <Compile Include="Services\DownloadEtlNew\DownloadEtlNewService.cs" />
     <Compile Include="Services\DownloadEtlNew\FeeMasterDraft.cs" />
     <Compile Include="Services\DownloadEtlNew\OriginalListLookupRow.cs" />
