@@ -71,10 +71,10 @@ namespace JETFTAX.App_Start
                  "*/10 * * * *",
                   timeZoneOptions);
 
-            RecurringJob.AddOrUpdate<FeeMasterCodJobService>("稅金到付款資料",
-                service => service.RunFeeMasterCodJobAsync(),
-                Cron.Daily(1, 0),
-                timeZoneOptions);
+            //RecurringJob.AddOrUpdate<FeeMasterCodJobService>("稅金到付款資料",
+            //    service => service.RunFeeMasterCodJobAsync(),
+            //    Cron.Daily(1, 0),
+            //    timeZoneOptions);
 
             RecurringJob.AddOrUpdate<IncomeJobService>("營收轉檔",
                   service => service.InsertIncomeReport(), Cron.Daily(08, 30),
