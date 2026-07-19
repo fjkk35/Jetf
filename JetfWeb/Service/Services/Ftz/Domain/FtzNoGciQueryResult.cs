@@ -52,6 +52,9 @@ namespace Service.Services.Ftz.Domain
         /// <summary>上傳明細的 ZZZA 註記</summary>
         public string ZzzaRemark { get; set; }
 
+        /// <summary>AIR_DETAIN 狀態</summary>
+        public string Status { get; set; }
+
         /// <summary>一分號多件</summary>
         public string realTotBag { get; set; }
 

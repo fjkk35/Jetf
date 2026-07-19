@@ -82,6 +82,11 @@ namespace Service.Services.Ftz.Domain
         public int UnreceivedCount { get; set; }
 
         /// <summary>
+        /// 未收單且狀態為 G類無ID 的筆數。
+        /// </summary>
+        public int GTypeNoIdCount { get; set; }
+
+        /// <summary>
         /// ZZZA 總筆數。
         /// </summary>
         public int ZzzaCount { get; set; }

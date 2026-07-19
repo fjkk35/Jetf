@@ -31,6 +31,11 @@ namespace Service.Services.Ftz.Domain
         public string Remark { get; set; }
 
         /// <summary>
+        /// AIR_DETAIN 狀態。
+        /// </summary>
+        public string Status { get; set; }
+
+        /// <summary>
         /// 派件公司。
         /// </summary>
         public string TransName { get; set; }

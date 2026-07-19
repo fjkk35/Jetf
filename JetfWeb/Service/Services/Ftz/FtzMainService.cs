@@ -31,6 +31,11 @@ namespace Service.Services.Ftz
         private const string ZzzaRemark = "ZZZA";
 
         /// <summary>
+        /// AIR_DETAIN 的 G 類無 ID 顯示文字。
+        /// </summary>
+        private const string GTypeNoIdStatus = "G類無ID";
+
+        /// <summary>
         /// 主號查詢
         /// </summary>
         public async Task<ResponseModel> MainQueryAsync(FtzMainQueryRequest request, List<FtzMainUploadExcelRow> uploadRows = null)
@@ -850,7 +855,9 @@ namespace Service.Services.Ftz
 
             var uploadRowsByMwb = BuildMainUploadRowsByMwb(uploadRows);
             var unreceivedRowsByMainItem = GetUnreceivedUploadRowsByMainItem(results, uploadRowsByMwb);
-            SetUnreceivedTransName(unreceivedRowsByMainItem.SelectMany(x => x.Value));
+            var allUnreceivedRows = unreceivedRowsByMainItem.SelectMany(x => x.Value).ToList();
+            SetUnreceivedTransName(allUnreceivedRows);
+            var airDetainStatusLookup = GetAirDetainStatusLookup(results, allUnreceivedRows);
 
             foreach (var item in results)
             {
@@ -868,6 +875,12 @@ namespace Service.Services.Ftz
                 {
                     // 先將 ZZZA 註記寫入明細模型，匯出時只需輸出模型值，不再重新比對。
                     detail.ZzzaRemark = GetZzzaRemark(detail, zzzaReceivedRows);
+                    detail.Status = GetAirDetainStatus(airDetainStatusLookup, detail.hwb);
+                }
+
+                foreach (var unreceivedRow in unreceivedRows)
+                {
+                    unreceivedRow.Status = GetAirDetainStatus(airDetainStatusLookup, unreceivedRow.BagNo);
                 }
 
                 // 上傳檔標記 ZZZA，且未出現在 FTZ 查詢結果的資料，視為「ZZZA未收單」。
@@ -879,6 +892,10 @@ namespace Service.Services.Ftz
                 // 未收單件數需排除 ZZZA未收單；原始補列資料仍保留供未進倉明細匯出。
                 item.UnreceivedCount = unreceivedRows.Count - item.ZzzaUnreceivedCount;
                 item.UnreceivedRows = unreceivedRows;
+
+                // G類無ID只計算未收單補列資料，不包含原本已收單的未進倉明細。
+                item.GTypeNoIdCount = unreceivedRows.Count(row =>
+                    string.Equals(row.Status, GTypeNoIdStatus, StringComparison.OrdinalIgnoreCase));
 
                 // 收單件數與申報不計入 ZZZA進倉、ZZZA收單；進倉不計入 ZZZA進倉。
                 item.ReceivedPieceCount =
@@ -1054,10 +1071,6 @@ namespace Service.Services.Ftz
                 .SelectMany(item => item.UnreceivedRows ?? new List<FtzMainUploadExcelRow>())
                 .ToList();
             var plinkErrorRowsLookup = GetPlinkErrorRowsLookup(unreceivedUploadRows);
-            var airDetainStatusLookup = GetAirDetainStatusLookup(
-                results,
-                unreceivedUploadRows);
-
             // ========== 第一個頁籤：主號查詢結果 ==========
             ISheet sheet = workbook.CreateSheet("Ftz主號查詢結果");
 
@@ -1074,6 +1087,7 @@ namespace Service.Services.Ftz
                 .ToList();
 
             headers.AddRange(transNames);
+            headers.Add("G類無ID");
             headers.Add("ZZZA");
             headers.Add("ZZZA進倉");
             headers.Add("ZZZA收單");
@@ -1126,6 +1140,7 @@ namespace Service.Services.Ftz
                     NpoiCell.CreateIntCell(dataRow, column++, totalCount, numberStyle);
                 }
 
+                NpoiCell.CreateIntCell(dataRow, column++, item.GTypeNoIdCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaGciCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaReceivedCount, numberStyle);
@@ -1177,7 +1192,7 @@ namespace Service.Services.Ftz
                         NpoiCell.CreateCell(detailDataRow, 11, "", dataStyle); // 錯單類別
                         NpoiCell.CreateCell(detailDataRow, 12, "", dataStyle); // 錯單單號
                         NpoiCell.CreateCell(detailDataRow, 13, NormalizeTransName(detail.TransName), dataStyle);
-                        NpoiCell.CreateCell(detailDataRow, 14, GetAirDetainStatus(airDetainStatusLookup, detail.hwb), dataStyle);
+                        NpoiCell.CreateCell(detailDataRow, 14, detail.Status ?? "", dataStyle);
                         NpoiCell.CreateCell(detailDataRow, 15, detail.ZzzaRemark ?? "", dataStyle);
                         detailRowIndex++;
                     }
@@ -1195,7 +1210,6 @@ namespace Service.Services.Ftz
                     var errorRows = GetPlinkErrorRows(plinkErrorRowsLookup, uploadRow.BagNo);
                     var errorRowCount = Math.Max(errorRows.Count, 1);
                     var startRowIndex = detailRowIndex;
-                    var status = GetAirDetainStatus(airDetainStatusLookup, uploadRow.BagNo);
                     var displayItemNo = itemNo++;
 
                     for (int errorIndex = 0; errorIndex < errorRowCount; errorIndex++)
@@ -1227,7 +1241,7 @@ namespace Service.Services.Ftz
                         NpoiCell.CreateCell(detailDataRow, 11, errorRow?.Reason ?? "", dataStyle);
                         NpoiCell.CreateCell(detailDataRow, 12, errorRow?.Hawb ?? "", dataStyle);
                         NpoiCell.CreateCell(detailDataRow, 13, NormalizeTransName(uploadRow.TransName), dataStyle);
-                        NpoiCell.CreateCell(detailDataRow, 14, status, dataStyle);
+                        NpoiCell.CreateCell(detailDataRow, 14, uploadRow.Status ?? "", dataStyle);
                         detailRowIndex++;
                     }
 
