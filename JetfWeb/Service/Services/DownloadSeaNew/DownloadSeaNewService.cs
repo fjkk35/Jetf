@@ -2,6 +2,7 @@ using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.Data;
 using Service.Models;
+using Service.Models.DownloadSeaNew;
 using Service.Services;
 using System;
 using System.Collections.Generic;
@@ -165,7 +166,7 @@ namespace Service.Services.DownloadSeaNew
         {
             var workbook = fileType == SeaExportFileType.SpecialD || fileType == SeaExportFileType.SpecialC
                 ? GetSeaSpecialWorkbook(rows)
-                : GetSeaWorkbook(rows);
+                : GetSeaWorkbook(rows, fileType == SeaExportFileType.Error);
 
             using (var fileStream = new MemoryStream())
             {
@@ -178,8 +179,9 @@ namespace Service.Services.DownloadSeaNew
         /// 建立海運一般檔 workbook。
         /// </summary>
         /// <param name="rows">報表資料列。</param>
+        /// <param name="includeMainNumber">是否在最後一欄加入主號。</param>
         /// <returns>workbook。</returns>
-        private IWorkbook GetSeaWorkbook(IReadOnlyList<DownloadSeaNewReportItem> rows)
+        private IWorkbook GetSeaWorkbook(IReadOnlyList<DownloadSeaNewReportItem> rows, bool includeMainNumber)
         {
             var workbook = new XSSFWorkbook();
             var sheet = workbook.CreateSheet("報表");
@@ -194,8 +196,13 @@ namespace Service.Services.DownloadSeaNew
             row.CreateCell(7).SetCellValue("備註");
             row.CreateCell(8).SetCellValue("派件公司");
             row.CreateCell(9).SetCellValue("稅金類別");
+            if (includeMainNumber)
+            {
+                row.CreateCell(10).SetCellValue("主號");
+            }
 
-            for (var column = 0; column <= 9; column++)
+            var lastColumnIndex = includeMainNumber ? 10 : 9;
+            for (var column = 0; column <= lastColumnIndex; column++)
             {
                 sheet.SetColumnWidth(column, 6000);
             }
@@ -216,6 +223,10 @@ namespace Service.Services.DownloadSeaNew
                 row.CreateCell(7).SetCellValue(GetRemark(item));
                 row.CreateCell(8).SetCellValue(item.DlvCom ?? string.Empty);
                 row.CreateCell(9).SetCellValue(_globalService.GetTaxType(item.IncludeTax ?? string.Empty));
+                if (includeMainNumber)
+                {
+                    row.CreateCell(10).SetCellValue(item.MainNumber ?? string.Empty);
+                }
             }
 
             return workbook;
@@ -369,7 +380,8 @@ namespace Service.Services.DownloadSeaNew
                 IncludeTax = entity.IncludeTax ?? string.Empty,
                 Combine = entity.Combine ?? string.Empty,
                 Type = entity.Type ?? string.Empty,
-                DlvCom = entity.DlvCom ?? string.Empty
+                DlvCom = entity.DlvCom ?? string.Empty,
+                MainNumber = entity.MainNumber ?? string.Empty
             };
         }
 
@@ -633,105 +645,4 @@ namespace Service.Services.DownloadSeaNew
         }
     }
 
-    /// <summary>
-    /// 海運下載匯出結果。
-    /// </summary>
-    
-    public sealed class DownloadSeaNewExportResult
-    {
-        /// <summary>
-        /// 初始化海運下載匯出結果。
-        /// </summary>
-        public DownloadSeaNewExportResult()
-        {
-            status = Status.success;
-            FileName = string.Empty;
-            Rows = new List<DownloadSeaNewReportItem>();
-        }
-
-        /// <summary>
-        /// 執行狀態。
-        /// </summary>
-        public string status { get; set; }
-
-        /// <summary>
-        /// 執行訊息。
-        /// </summary>
-        public string msg { get; set; } = string.Empty;
-
-        /// <summary>
-        /// 匯出檔名。
-        /// </summary>
-        public string FileName { get; set; }
-
-        /// <summary>
-        /// 匯出檔案內容。
-        /// </summary>
-        public byte[] FileBytes { get; set; }
-
-        /// <summary>
-        /// 匯出資料列。
-        /// </summary>
-        public List<DownloadSeaNewReportItem> Rows { get; set; }
-    }
-
-    /// <summary>
-    /// 海運下載報表結果。
-    /// </summary>
-    public sealed class DownloadSeaNewReportResult
-    {
-        /// <summary>
-        /// 初始化海運下載報表結果。
-        /// </summary>
-        public DownloadSeaNewReportResult()
-        {
-            status = Status.success;
-            Rows = new List<DownloadSeaNewReportItem>();
-        }
-
-        /// <summary>
-        /// 執行狀態。
-        /// </summary>
-        public string status { get; set; }
-
-        /// <summary>
-        /// 執行訊息。
-        /// </summary>
-        public string msg { get; set; } = string.Empty;
-
-        /// <summary>
-        /// 報表資料列。
-        /// </summary>
-        public List<DownloadSeaNewReportItem> Rows { get; set; }
-    }
-
-    /// <summary>
-    /// 海運下載報表資料列。
-    /// </summary>
-    public sealed class DownloadSeaNewReportItem
-    {
-        public string CustomerName { get; set; }
-
-        public string TrackingNo { get; set; }
-
-        public string DlvInv { get; set; }
-
-        public int Tax1 { get; set; }
-
-        public int Tax2 { get; set; }
-
-        public int ToDlvCod { get; set; }
-
-        public string Recipient { get; set; }
-
-        public string RecPhone { get; set; }
-
-        public string IncludeTax { get; set; }
-
-        public string Combine { get; set; }
-
-        public string Type { get; set; }
-
-        public string DlvCom { get; set; }
-    }
 }

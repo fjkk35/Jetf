@@ -1,6 +1,7 @@
 using JETFTAX.Models;
 using Service.EnumTax;
 using Service.Models;
+using Service.Models.DownloadSeaNew;
 using Service.Services.DownloadSeaNew;
 using System;
 using System.Web.Mvc;
