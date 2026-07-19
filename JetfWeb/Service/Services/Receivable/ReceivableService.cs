@@ -75,7 +75,12 @@ namespace Service.Services.Receivable
                     .OrderByDescending(x => x.FeeMaster.OutDateTime)
                     .ThenByDescending(x => x.Id))
                 .ToList();
-            var workbook = CreateExcelWorkbook(BuildListItems(rows));
+            var data = BuildListItems(rows);
+
+            // 先取得本次匯出客戶所屬的群組，後續依群組或個別客戶建立頁籤。
+            var customerGroupNames = GetCustomerGroupNames(
+                data.Select(x => x.CustomerCode));
+            var workbook = CreateExcelWorkbook(data, customerGroupNames);
 
             using (var stream = new MemoryStream())
             {
@@ -224,6 +229,44 @@ namespace Service.Services.Receivable
         }
 
         /// <summary>
+        /// 取得客戶代號所屬的客戶群組名稱。
+        /// </summary>
+        /// <param name="customerCodes">匯出資料包含的客戶代號。</param>
+        /// <returns>以客戶代號為鍵、群組名稱為值的對照表。</returns>
+        private Dictionary<string, string> GetCustomerGroupNames(IEnumerable<string> customerCodes)
+        {
+            var codes = customerCodes
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (!codes.Any())
+            {
+                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            return JetfDb.ReconciliationCustomerGroupDetails
+                .AsNoTracking()
+                // 僅查詢本次匯出資料包含的客戶，避免載入不需要的群組明細。
+                .Where(x => codes.Contains(x.CustCode))
+                // 透過 Navigation Property 取得群組名稱，不需手動撰寫 join。
+                .Select(x => new
+                {
+                    x.CustCode,
+                    x.CustomerGroup.GroupName
+                })
+                .ToList()
+                .Where(x => !string.IsNullOrWhiteSpace(x.CustCode) &&
+                            !string.IsNullOrWhiteSpace(x.GroupName))
+                .GroupBy(x => x.CustCode.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.First().GroupName.Trim(),
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
         /// 將客戶名稱加入目標字典，已存在的客戶代號不覆蓋。
         /// </summary>
         /// <param name="target">合併後的客戶名稱字典。</param>
@@ -287,11 +330,13 @@ namespace Service.Services.Receivable
         /// 建立應收未收明細 Excel 活頁簿。
         /// </summary>
         /// <param name="data">要匯出的應收未收明細。</param>
+        /// <param name="customerGroupNames">客戶代號與群組名稱對照表。</param>
         /// <returns>完成欄位、資料及格式設定的 Excel 活頁簿。</returns>
-        private static IWorkbook CreateExcelWorkbook(List<ReceivableListItem> data)
+        private static IWorkbook CreateExcelWorkbook(
+            List<ReceivableListItem> data,
+            IDictionary<string, string> customerGroupNames)
         {
             IWorkbook workbook = new XSSFWorkbook();
-            var sheet = workbook.CreateSheet("應收未收明細");
             var headerStyle = NpoiStyle.CreateHeaderStyle(workbook);
             var dataStyle = NpoiStyle.CreateDataStyle(workbook);
             var numberStyle = NpoiStyle.CreateNumberStyle(workbook);
@@ -303,6 +348,80 @@ namespace Service.Services.Receivable
                 "手續費", "未回收原因"
             };
 
+            var usedSheetNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var sheetGroups = data
+                .GroupBy(item =>
+                {
+                    string groupName;
+
+                    // 已加入群組的客戶共用群組鍵；未加入群組的客戶仍以代號區分，避免同名客戶被合併。
+                    return customerGroupNames.TryGetValue(
+                        item.CustomerCode ?? string.Empty,
+                        out groupName)
+                        ? $"GROUP:{groupName}"
+                        : $"CUSTOMER:{item.CustomerCode ?? string.Empty}";
+                })
+                .OrderBy(group => group.Key)
+                .ToList();
+
+            foreach (var group in sheetGroups)
+            {
+                var firstItem = group.First();
+                string groupName;
+
+                // 群組資料使用群組名稱作為頁籤名稱，未分組資料使用轉換後的客戶中文名稱。
+                var sheetName = customerGroupNames.TryGetValue(
+                    firstItem.CustomerCode ?? string.Empty,
+                    out groupName)
+                    ? groupName
+                    : firstItem.CustomerName;
+
+                CreateExcelSheet(
+                    workbook,
+                    CreateUniqueSheetName(sheetName, usedSheetNames),
+                    group.ToList(),
+                    headers,
+                    headerStyle,
+                    dataStyle,
+                    numberStyle);
+            }
+
+            if (!sheetGroups.Any())
+            {
+                // NPOI 活頁簿至少需要一個頁籤，查無資料時建立空白頁籤。
+                CreateExcelSheet(
+                    workbook,
+                    "無資料",
+                    new List<ReceivableListItem>(),
+                    headers,
+                    headerStyle,
+                    dataStyle,
+                    numberStyle);
+            }
+
+            return workbook;
+        }
+
+        /// <summary>
+        /// 建立單一客戶或客戶群組的 Excel 頁籤。
+        /// </summary>
+        /// <param name="workbook">Excel 活頁簿。</param>
+        /// <param name="sheetName">頁籤名稱。</param>
+        /// <param name="data">頁籤內的應收未收明細。</param>
+        /// <param name="headers">欄位標題。</param>
+        /// <param name="headerStyle">標題儲存格樣式。</param>
+        /// <param name="dataStyle">一般資料儲存格樣式。</param>
+        /// <param name="numberStyle">金額儲存格樣式。</param>
+        private static void CreateExcelSheet(
+            IWorkbook workbook,
+            string sheetName,
+            IReadOnlyList<ReceivableListItem> data,
+            string[] headers,
+            ICellStyle headerStyle,
+            ICellStyle dataStyle,
+            ICellStyle numberStyle)
+        {
+            var sheet = workbook.CreateSheet(sheetName);
             NpoiCell.CreateHeaderCells(sheet.CreateRow(0), headers, headerStyle);
             for (var index = 0; index < data.Count; index++)
             {
@@ -333,7 +452,37 @@ namespace Service.Services.Receivable
             }
 
             sheet.AutoSizeColumns(headers.Length, scale: 1.2, minWidth: 12);
-            return workbook;
+        }
+
+        /// <summary>
+        /// 產生符合 Excel 限制且不重複的頁籤名稱。
+        /// </summary>
+        /// <param name="value">原始頁籤名稱。</param>
+        /// <param name="usedNames">已使用的頁籤名稱。</param>
+        /// <returns>可安全建立且不重複的頁籤名稱。</returns>
+        private static string CreateUniqueSheetName(string value, ISet<string> usedNames)
+        {
+            var invalidCharacters = new[] { '\\', '/', '?', '*', '[', ']', ':' };
+            var safeName = string.IsNullOrWhiteSpace(value) ? "未指定客戶" : value.Trim();
+
+            // Excel 頁籤不可包含特定符號，且名稱長度不可超過 31 個字元。
+            foreach (var character in invalidCharacters)
+            {
+                safeName = safeName.Replace(character, '_');
+            }
+
+            safeName = safeName.Length > 31 ? safeName.Substring(0, 31) : safeName;
+            var candidate = safeName;
+            var suffix = 1;
+            while (!usedNames.Add(candidate))
+            {
+                var suffixText = $"_{suffix++}";
+                candidate = safeName.Substring(
+                    0,
+                    Math.Min(safeName.Length, 31 - suffixText.Length)) + suffixText;
+            }
+
+            return candidate;
         }
     }
 }
