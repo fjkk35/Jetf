@@ -1,7 +1,7 @@
 mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', function ($scope, $http) {
         $scope.data = [];
-    $scope.taxPaymentOptions = [{ Value: '', Text: '全部' }];
-    $scope.dataTypeOptions = [{ Value: '', Text: '全部' }];
+        $scope.taxPaymentOptions = [{ Value: '', Text: '全部' }];
+        $scope.dataTypeOptions = [{ Value: '', Text: '全部' }];
         $scope.loading = false;
         $scope.isSearched = false;
         $scope.recordsInfo = '';

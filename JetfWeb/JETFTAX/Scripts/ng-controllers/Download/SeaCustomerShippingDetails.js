@@ -115,7 +115,8 @@ mainApp.controller('SeaCustomerShippingDetailsController', ['$scope', '$http', f
                 return;
             }
             $scope.loading = true;
-            $http.post(Router.action('SeaCustomerShippingDetails', 'DownloadExcel'), createRequest()).then(function (response) {
+            $http.post(Router.action('SeaCustomerShippingDetails', 'DownloadExcel'), createRequest())
+                .then(function (response) {
                 var data = response.data || {};
                 if (data.Redirect) {
                     window.location.href = Router.action('Account', 'Login');

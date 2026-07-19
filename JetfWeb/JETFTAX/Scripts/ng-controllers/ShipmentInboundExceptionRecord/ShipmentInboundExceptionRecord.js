@@ -233,7 +233,7 @@ mainApp.controller('ShipmentInboundExceptionRecordController', ['$scope', '$http
         }
         function getAllExceptionReasonValues() {
             var values = [];
-            var reasonList = $scope.exceptionReasonList || [];
+            var reasonList = ($scope.exceptionReasonList || []);
             for (var i = 0; i < reasonList.length; i++) {
                 if (reasonList[i] && reasonList[i].Value) {
                     values.push(reasonList[i].Value);
@@ -244,7 +244,7 @@ mainApp.controller('ShipmentInboundExceptionRecordController', ['$scope', '$http
         function getCommittedExceptionReasonValues() {
             var allValues = getAllExceptionReasonValues();
             var selectedLookup = {};
-            var selectedValues = $scope.searchForm.exceptionReasons || [];
+            var selectedValues = ($scope.searchForm.exceptionReasons || []);
             var normalizedValues = [];
             if ($scope.exceptionReasonSelectAll) {
                 return allValues.slice();
@@ -302,7 +302,7 @@ mainApp.controller('ShipmentInboundExceptionRecordController', ['$scope', '$http
                 return;
             }
             var selectedTexts = [];
-            var reasonList = $scope.exceptionReasonList || [];
+            var reasonList = ($scope.exceptionReasonList || []);
             var selectedLookup = {};
             for (var i = 0; i < selectedValues.length; i++) {
                 selectedLookup[selectedValues[i]] = true;
