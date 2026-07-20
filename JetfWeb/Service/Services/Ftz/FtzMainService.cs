@@ -1078,7 +1078,7 @@ namespace Service.Services.Ftz
             var headers = new List<string>
               {
                   "主號","客戶名稱","航班", "總袋數", "收單件數", "未進倉小計",
-                  "申報", "進倉","未進倉件", "併袋", "進倉袋", "未進倉袋", "未收單件數", "未收單B6F"
+                  "申報", "進倉","未進倉件", "併袋", "進倉袋", "未進倉袋", "未收單件數", "未收單B6F", "G類無ID"
               };
 
             var transNames = results
@@ -1087,7 +1087,6 @@ namespace Service.Services.Ftz
                 .ToList();
 
             headers.AddRange(transNames);
-            headers.Add("G類無ID");
             headers.Add("ZZZA");
             headers.Add("ZZZA進倉");
             headers.Add("ZZZA收單");
@@ -1130,6 +1129,7 @@ namespace Service.Services.Ftz
 
                 NpoiCell.CreateIntCell(dataRow, column++, item.UnreceivedCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.UnreceivedB6FCount, numberStyle);
+                NpoiCell.CreateIntCell(dataRow, column++, item.GTypeNoIdCount, numberStyle);
 
                 // 派件公司統計：未進倉明細用「申報」加總，未收單補列每筆算 1。
                 foreach (var transName in transNames)
@@ -1140,7 +1140,6 @@ namespace Service.Services.Ftz
                     NpoiCell.CreateIntCell(dataRow, column++, totalCount, numberStyle);
                 }
 
-                NpoiCell.CreateIntCell(dataRow, column++, item.GTypeNoIdCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaGciCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaReceivedCount, numberStyle);
