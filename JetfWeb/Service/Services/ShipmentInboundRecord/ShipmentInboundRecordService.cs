@@ -619,6 +619,7 @@ namespace Service.Services.ShipmentInboundRecord
                 "備註",
                 "流水號",
                 "儲位",
+                "尺寸",
                 "重出日期",
                 "重出單號",
                 "到付款",
@@ -671,6 +672,7 @@ namespace Service.Services.ShipmentInboundRecord
                 NpoiCell.CreateCell(row, c++, item.Remark, dataStyle);
                 NpoiCell.CreateCell(row, c++, item.SeqNo, dataStyle);
                 NpoiCell.CreateCell(row, c++, item.LocationCode, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.Size, dataStyle);
 
                 NpoiCell.CreateDateTimeCell(row, c++, item.OutboundDate, dateStyle);
                 NpoiCell.CreateCell(row, c++, item.OutboundTrackingNo, dataStyle);
