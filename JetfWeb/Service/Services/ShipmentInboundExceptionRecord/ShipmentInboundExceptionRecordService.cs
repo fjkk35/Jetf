@@ -405,20 +405,10 @@ namespace Service.Services.ShipmentInboundExceptionRecord
                     continue;
                 }
 
-                // 需求只顯示最新異常原因，因此圖片也優先匯出同一個異常原因的圖片。
-                var itemImages = shipmentImages
-                    .Where(x => x.ExceptionReasonId == item.ExceptionReasonId)
-                    .ToList();
-
-                if (!itemImages.Any())
+                // 圖片匯出不依異常原因篩選，同一貨件的歷史圖片全部匯出。
+                for (int i = 0; i < shipmentImages.Count; i++)
                 {
-                    // 歷史資料可能沒有異常原因 Id，找不到同原因圖片時退回該貨件全部圖片。
-                    itemImages = shipmentImages;
-                }
-
-                for (int i = 0; i < itemImages.Count; i++)
-                {
-                    exportImages.Add(Tuple.Create(item, itemImages[i], i + 1));
+                    exportImages.Add(Tuple.Create(item, shipmentImages[i], i + 1));
                 }
             }
 
