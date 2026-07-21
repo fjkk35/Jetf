@@ -213,9 +213,9 @@ namespace JETFTAX.Controllers
         /// 建立空運代收報表活頁簿。
         /// </summary>
         /// <param name="rows">報表資料列。</param>
-        /// <param name="includeMainNumber">是否在最後一欄加入主號。</param>
+        /// <param name="includeErrorColumns">是否加入無客戶報表專用欄位。</param>
         /// <returns>空運代收報表活頁簿。</returns>
-        private IWorkbook GetEtlWorkbook(IReadOnlyList<DownloadEtlNewReportItem> rows, bool includeMainNumber)
+        private IWorkbook GetEtlWorkbook(IReadOnlyList<DownloadEtlNewReportItem> rows, bool includeErrorColumns)
         {
             var workbook = new XSSFWorkbook();
             var sheet = workbook.CreateSheet("報表");
@@ -228,9 +228,10 @@ namespace JETFTAX.Controllers
             row.CreateCell(5).SetCellValue("電話");
             row.CreateCell(6).SetCellValue("派件公司");
             row.CreateCell(7).SetCellValue("稅金類別");
-            if (includeMainNumber)
+            if (includeErrorColumns)
             {
                 row.CreateCell(8).SetCellValue("主號");
+                row.CreateCell(9).SetCellValue("客戶");
             }
 
             sheet.SetColumnWidth(0, 3000);
@@ -241,9 +242,10 @@ namespace JETFTAX.Controllers
             sheet.SetColumnWidth(5, 6000);
             sheet.SetColumnWidth(6, 6000);
             sheet.SetColumnWidth(7, 6000);
-            if (includeMainNumber)
+            if (includeErrorColumns)
             {
                 sheet.SetColumnWidth(8, 6000);
+                sheet.SetColumnWidth(9, 6000);
             }
 
             for (var i = 0; i < rows.Count; i++)
@@ -258,9 +260,10 @@ namespace JETFTAX.Controllers
                 row.CreateCell(5).SetCellValue(item.RecPhone ?? string.Empty);
                 row.CreateCell(6).SetCellValue(item.TransName ?? string.Empty);
                 row.CreateCell(7).SetCellValue(_globalService.GetTaxType(item.IncludeTax ?? string.Empty));
-                if (includeMainNumber)
+                if (includeErrorColumns)
                 {
                     row.CreateCell(8).SetCellValue(item.MainNumber ?? string.Empty);
+                    row.CreateCell(9).SetCellValue(item.CustomerName ?? string.Empty);
                 }
             }
 
