@@ -179,7 +179,10 @@ namespace Service.Services.DownloadEtlNew
                 if (string.IsNullOrEmpty(includeTax))
                 {
                     // 無客戶資料檔只保留尚未判定 INCLUDE_TAX 的資料。
-                    filteredRows = feeMasters.Where(x => string.IsNullOrEmpty(x.IncludeTax));
+                    var customerNames = GetAirCustomerNames(feeMasters.Select(x => x.Customer));
+                    filteredRows = feeMasters
+                        .Where(x => string.IsNullOrEmpty(x.IncludeTax))
+                        .Select(x => ApplyReportCustomerName(x, customerNames));
                 }
                 else if (includeTax == "D" || includeTax == "C")
                 {
@@ -935,6 +938,22 @@ namespace Service.Services.DownloadEtlNew
             lookup.TryGetValue(BuildCompositeKey(PadCustomerCode(row.Customer), row.TransNo), out var customer);
             row.TransName = customer?.TransName ?? string.Empty;
             row.Company = customer?.Company ?? string.Empty;
+            return row;
+        }
+
+        /// <summary>
+        /// 依空運客戶代號回填客戶中文名稱。
+        /// </summary>
+        /// <param name="row">報表資料列。</param>
+        /// <param name="customerNames">客戶代號與中文名稱對照表。</param>
+        /// <returns>回填客戶中文名稱後的報表資料列。</returns>
+        private static DownloadEtlNewReportItem ApplyReportCustomerName(
+            DownloadEtlNewReportItem row,
+            IReadOnlyDictionary<string, string> customerNames)
+        {
+            var customerCode = NormalizeText(row.Customer);
+            customerNames.TryGetValue(customerCode, out var customerName);
+            row.CustomerName = string.IsNullOrWhiteSpace(customerName) ? customerCode : customerName;
             return row;
         }
 
