@@ -1257,7 +1257,8 @@ namespace Service.Services.Ftz
         /// </summary>
         private int GetNotGciTransNameCount(FtzMainQueryViewModel item, string transName)
         {
-            // 派件公司欄位數量以明細頁「申報」欄位為準；同報單號碼重複時只取第一筆。
+            // 派件公司欄位數量以明細頁「未進倉申報」為準；同報單號碼重複時只取第一筆。
+            // 單筆申報大於 1 時，先扣除進倉件數，再進行派件公司加總。
             // 未收單沒有報單號碼，就使用分號「申報」= 1 計算
             return (item?.NotGciDetails ?? new List<Row>())
                 .Where(r => string.IsNullOrEmpty(r.ZzzaRemark))
@@ -1271,7 +1272,13 @@ namespace Service.Services.Ftz
                 })
                 .GroupBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
                 .Select(x => x.First().Row)
-                .Sum(r => ParseInt(r.piece));
+                .Sum(r =>
+                {
+                    var declaredPiece = ParseInt(r.piece);
+                    return declaredPiece > 1
+                        ? declaredPiece - ParseInt(r.gciPiece)
+                        : declaredPiece;
+                });
         }
 
         /// <summary>
