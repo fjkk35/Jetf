@@ -6,6 +6,8 @@
     $scope.historyData = [];
     $scope.editTrackingNo = '';
     $scope.savingTrackingNo = false;
+    $scope.editSourceType = '';
+    $scope.savingSourceType = false;
     $scope.savingBasicInfo = false;
     $scope.customerOptions = [];
     $scope.transOptions = [];
@@ -190,6 +192,27 @@
         $('#editTrackingNoModal').modal('show');
     };
 
+    $scope.openSourceTypeDialog = function () {
+        if (!$scope.data) {
+            return;
+        }
+
+        $scope.editSourceType = $scope.data.SourceType != null ? $scope.data.SourceType.toString() : '';
+
+        loadSourceTypeList()
+            .then(function () {
+                $('#editSourceTypeModal').modal('show');
+            })
+            .catch(function (error) {
+                console.error('載入貨件來源清單失敗:', error);
+                swal({
+                    title: '載入失敗',
+                    text: (error && error.data && error.data.error) ? error.data.error : '無法載入貨件來源清單，請稍後再試',
+                    icon: 'error'
+                });
+            });
+    };
+
     $scope.onBasicInfoDataTypeChange = function () {
         $scope.basicInfoForm.custCode = '';
         $scope.basicInfoForm.selectedTrans = null;
@@ -331,6 +354,64 @@
             })
             .finally(function () {
                 $scope.savingTrackingNo = false;
+            });
+    };
+
+    $scope.saveSourceType = function () {
+        if ($scope.editSourceType === '' || $scope.editSourceType === null || typeof $scope.editSourceType === 'undefined') {
+            swal({
+                title: '錯誤',
+                text: '請選擇貨件來源',
+                icon: 'error'
+            });
+            return;
+        }
+
+        var id = getQueryParam('id');
+        if (!id) {
+            swal({
+                title: '錯誤',
+                text: '缺少必要參數',
+                icon: 'error'
+            });
+            return;
+        }
+
+        $scope.savingSourceType = true;
+
+        $http.post(Router.action('ShipmentInboundRecord', 'UpdateSourceType'), {
+            Id: parseInt(id, 10),
+            SourceType: parseInt($scope.editSourceType, 10)
+        })
+            .then(function (response) {
+                if (response.data.error) {
+                    swal({
+                        title: '錯誤',
+                        text: response.data.error,
+                        icon: 'error'
+                    });
+                    return;
+                }
+
+                swal({
+                    title: '成功',
+                    text: '貨件來源更新成功',
+                    icon: 'success'
+                }).then(function () {
+                    $('#editSourceTypeModal').modal('hide');
+                    $scope.loadDetail();
+                });
+            })
+            .catch(function (error) {
+                console.error('更新貨件來源失敗:', error);
+                swal({
+                    title: '錯誤',
+                    text: '更新貨件來源失敗，請稍後再試',
+                    icon: 'error'
+                });
+            })
+            .finally(function () {
+                $scope.savingSourceType = false;
             });
     };
 

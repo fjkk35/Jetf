@@ -240,6 +240,41 @@
         padding: 0;
         line-height: 1;
     }
+
+    .basic-info-form {
+        max-width: 520px;
+    }
+
+    .basic-info-form .form-group {
+        display: flex;
+        align-items: center;
+    }
+
+    .basic-info-form .form-group > label {
+        flex: 0 0 100px;
+        margin-bottom: 0;
+        padding-right: 15px;
+        text-align: right;
+    }
+
+    .basic-info-form .form-control {
+        flex: 1 1 auto;
+        width: 100%;
+        min-width: 0;
+    }
+
+    @@media (max-width: 575.98px) {
+        .basic-info-form .form-group {
+            display: block;
+        }
+
+        .basic-info-form .form-group > label {
+            display: block;
+            margin-bottom: 5px;
+            padding-right: 0;
+            text-align: left;
+        }
+    }
 </style>
 
 <div ng-controller="ShipmentInboundRecordDetailController" class="container-fluid">
@@ -346,8 +381,14 @@
                         <div class="detail-col">
                             <div class="detail-row">
                                 <div class="detail-label">貨件來源：</div>
-                                <div class="detail-value">
+                                <div class="detail-value tracking-no-wrap">
                                     <span class="badge badge-custom badge-secondary">{{data.SourceTypeName}}</span>
+                                    <button type="button"
+                                            class="tracking-no-edit-btn"
+                                            ng-click="openSourceTypeDialog()"
+                                            title="修改貨件來源">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -714,6 +755,36 @@
         </div>
     </div>
 
+    <div class="modal fade" id="editSourceTypeModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">修改貨件來源</h5>
+                    <button type="button" class="close" data-dismiss="modal" ng-disabled="savingSourceType">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-0">
+                        <label>貨件來源</label>
+                        <select class="form-control"
+                                ng-model="editSourceType"
+                                ng-options="item.Value as item.Text for item in sourceTypeList">
+                            <option value="">請選擇</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" ng-disabled="savingSourceType">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveSourceType()" ng-disabled="savingSourceType">
+                        <i class="fa fa-spinner fa-spin" ng-show="savingSourceType"></i>
+                        {{savingSourceType ? '儲存中...' : '確定'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="editBasicInfoModal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -723,7 +794,7 @@
                         <span>&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body basic-info-form">
                     <div class="form-group">
                         <label>進口方式</label>
                         <select class="form-control"

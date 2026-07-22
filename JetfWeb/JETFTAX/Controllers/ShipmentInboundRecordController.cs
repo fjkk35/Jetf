@@ -323,6 +323,26 @@ namespace JETFTAX.Controllers
         }
 
         /// <summary>
+        /// 更新貨件來源。
+        /// </summary>
+        /// <param name="request">更新請求。</param>
+        /// <returns>更新結果。</returns>
+        [HttpPost]
+        [UserAuthorize(Authority.ShipmentInboundRecord)]
+        public JsonResult UpdateSourceType(UpdateSourceTypeRequest request)
+        {
+            try
+            {
+                _shipmentInboundRecordService.UpdateSourceType(request);
+                return Json(new { success = true }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        /// <summary>
         /// 更新不明貨件的基本資料。
         /// </summary>
         /// <param name="request">更新請求。</param>

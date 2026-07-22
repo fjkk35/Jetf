@@ -1152,6 +1152,59 @@ namespace Service.Services.ShipmentInboundRecord
         }
 
         /// <summary>
+        /// 更新貨件來源，並寫入編輯紀錄。
+        /// </summary>
+        /// <param name="request">更新請求。</param>
+        public void UpdateSourceType(UpdateSourceTypeRequest request)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            if (request.Id <= 0)
+            {
+                throw new ArgumentException("Id 不可為空");
+            }
+
+            if (!request.SourceType.HasValue
+                || !Enum.IsDefined(typeof(ShipmentInboundSourceType), request.SourceType.Value))
+            {
+                throw new ArgumentException("請選擇正確的貨件來源");
+            }
+
+            var entity = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == request.Id);
+            if (entity == null)
+            {
+                throw new ArgumentException("查無資料");
+            }
+
+            var newSourceType = request.SourceType.Value;
+            if (entity.SourceType == newSourceType)
+            {
+                return;
+            }
+
+            var oldSourceTypeText = entity.SourceType.HasValue
+                ? ((ShipmentInboundSourceType)entity.SourceType.Value).ToDescription()
+                : string.Empty;
+            var newSourceTypeText = ((ShipmentInboundSourceType)newSourceType).ToDescription();
+
+            AddShipmentInboundEditHistoryIfChanged(
+                JetfDb,
+                entity.Id,
+                "貨件來源",
+                oldSourceTypeText,
+                newSourceTypeText,
+                DateTime.Now,
+                GetUserId(),
+                true);
+
+            entity.SourceType = newSourceType;
+            JetfDb.SaveChanges();
+        }
+
+        /// <summary>
         /// 取得編輯歷史記錄
         /// </summary>
         public List<ShipmentInboundEditHistoryModel> GetEditHistory(int shipmentInboundId)
