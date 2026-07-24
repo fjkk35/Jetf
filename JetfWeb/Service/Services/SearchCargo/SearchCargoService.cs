@@ -847,8 +847,8 @@ namespace Service.Services.SearchCargo
             // 空運用dlv_Inv查詢
             if (original?.ToUpper() == "ETL")
             {
-                sql = "SELECT distinct TAX_NUMBER FROM [DATA_CENTER].[dbo].[CLEARANCE_TAX] where MERGE_NUMBER=@MERGE_NUMBER and BAG_NUMBER=@BAG_NUMBER";
-                parameters = new { MERGE_NUMBER = dlv_Inv, BAG_NUMBER = bagNumber };
+                sql = "SELECT distinct TAX_NUMBER FROM [DATA_CENTER].[dbo].[CLEARANCE_TAX] where MERGE_NUMBER=@MERGE_NUMBER";
+                parameters = new { MERGE_NUMBER = dlv_Inv };
             }
             else
             {
