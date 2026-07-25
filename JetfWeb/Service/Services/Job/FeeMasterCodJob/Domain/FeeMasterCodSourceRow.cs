@@ -18,9 +18,14 @@ namespace Service.Services.Job.FeeMasterCodJob.Domain
         public string MainNumber { get; set; }
 
         /// <summary>
+        /// 客戶代碼。
+        /// </summary>
+        public string Customer { get; set; }
+
+        /// <summary>
         /// 空運袋號或海運分提單號。
         /// </summary>
-        public string BagNo { get; set; }
+        public string BagNumber { get; set; }
 
         /// <summary>
         /// 空運追蹤號；海運與分提單號相同。
@@ -30,7 +35,7 @@ namespace Service.Services.Job.FeeMasterCodJob.Domain
         /// <summary>
         /// 空運配送單號或海運物流貨號。
         /// </summary>
-        public string JetfSerial { get; set; }
+        public string DlvInv { get; set; }
 
         /// <summary>
         /// 到付款金額。

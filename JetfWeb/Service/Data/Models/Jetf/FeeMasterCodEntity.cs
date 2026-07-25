@@ -16,7 +16,7 @@ namespace Service.Data
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column("ID")]
-        public long Id { get; set; }
+        public int Id { get; set; }
 
         /// <summary>
         /// 資料來源類型，AIR 表示空運，SEA 表示海運。
@@ -43,12 +43,19 @@ namespace Service.Data
         public string MainNumber { get; set; }
 
         /// <summary>
+        /// 客戶代碼。
+        /// </summary>
+        [StringLength(20)]
+        [Column("CUSTOMER")]
+        public string Customer { get; set; }
+
+        /// <summary>
         /// 空運袋號或海運分提單號。
         /// </summary>
         [Required]
         [StringLength(100)]
-        [Column("BAGNO")]
-        public string BagNo { get; set; }
+        [Column("BAG_NUMBER")]
+        public string BagNumber { get; set; }
 
         /// <summary>
         /// 空運追蹤號；海運與袋號相同。
@@ -61,8 +68,8 @@ namespace Service.Data
         /// 空運配送單號或海運物流貨號。
         /// </summary>
         [StringLength(100)]
-        [Column("JETF_SERIAL")]
-        public string JetfSerial { get; set; }
+        [Column("DLV_INV")]
+        public string DlvInv { get; set; }
 
         /// <summary>
         /// 到付款金額。
@@ -81,5 +88,17 @@ namespace Service.Data
         /// </summary>
         [Column("CREATED_TIME")]
         public DateTime CreatedTime { get; set; }
+
+        /// <summary>
+        /// 對應的物流銷帳紀錄識別碼。
+        /// </summary>
+        [Column("ReconciliationLogisticsId")]
+        [ForeignKey(nameof(ReconciliationLogistics))]
+        public int? ReconciliationLogisticsId { get; set; }
+
+        /// <summary>
+        /// 對應的物流銷帳紀錄。
+        /// </summary>
+        public ReconciliationLogisticsEntity ReconciliationLogistics { get; set; }
     }
 }

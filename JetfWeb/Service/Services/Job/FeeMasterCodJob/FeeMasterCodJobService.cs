@@ -22,59 +22,6 @@ namespace Service.Services.Job.FeeMasterCodJob
         private const int BatchSize = 500;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
-        private const string AirQuerySql = @"
-SELECT LOWER(c.DATA_TYPE) AS DataType,
-       o.MAINNUMBER AS MainNumber,
-       o.BAGNO AS BagNo,
-       o.TRACKINGNO AS TrackingNo,
-       o.DELIVERYNO AS JetfSerial,
-       o.CC AS Cc,
-       c.SIGN_OUT_TIME AS SignOutTime
-FROM DATA_CENTER.dbo.CLEARANCE_INFO AS c
-INNER JOIN DATA_CENTER.dbo.ORIGINALLIST AS o
-    ON c.MAIN_NUMBER = o.MAINNUMBER
-   AND c.BAG_NUMBER = o.BAGNO
-WHERE c.DATA_TYPE IN ('tact', 'ftz')
-  AND c.SIGN_OUT_TIME >= @START_TIME
-  AND c.SIGN_OUT_TIME < @END_TIME
-  AND o.CC > 0
-
-UNION ALL
-
-SELECT LOWER(c.DATA_TYPE) AS DataType,
-       o.MAINNUMBER AS MainNumber,
-       o.BAGNO AS BagNo,
-       o.TRACKINGNO AS TrackingNo,
-       o.DELIVERYNO AS JetfSerial,
-       o.CC AS Cc,
-       c.SIGN_OUT_TIME AS SignOutTime
-FROM DATA_CENTER.dbo.CLEARANCE_INFO AS c
-INNER JOIN DATA_CENTER.dbo.ORIGINALLIST AS o
-    ON c.MAIN_NUMBER = o.MAINNUMBER
-   AND c.MERGE_NUMBER = o.TRACKINGUB
-WHERE c.DATA_TYPE IN ('tact', 'ftz')
-  AND c.SIGN_OUT_TIME >= @START_TIME
-  AND c.SIGN_OUT_TIME < @END_TIME
-  AND o.CC > 0;";
-
-        private const string SeaQuerySql = @"
-SELECT LOWER(c.DATA_TYPE) AS DataType,
-       sea.MAINNUMBER AS MainNumber,
-       sea.BL_NO AS BagNo,
-       sea.BL_NO AS TrackingNo,
-       sea.JETF_SERIAL AS JetfSerial,
-       CONVERT(decimal(18, 2), sea.CC) AS Cc,
-       c.SIGN_OUT_TIME AS SignOutTime
-FROM DATA_CENTER.dbo.CLEARANCE_INFO AS c
-INNER JOIN DATA_CENTER.dbo.SEA_ORDER_ORIGINAL AS sea
-    ON c.MAIN_NUMBER = sea.MAINNUMBER
-   AND c.BAG_NUMBER = sea.BL_NO
-WHERE c.DATA_TYPE IS NOT NULL
-  AND c.DATA_TYPE NOT IN ('tact', 'ftz')
-  AND c.SIGN_OUT_TIME >= @START_TIME
-  AND c.SIGN_OUT_TIME < @END_TIME
-  AND sea.CC > 0;";
-
         /// <summary>
         /// 初始化 FEE_MASTER_COD 到付款資料彙整排程。
         /// </summary>
@@ -88,6 +35,7 @@ WHERE c.DATA_TYPE IS NOT NULL
 
         /// <summary>
         /// 依系統時間查詢前兩個完整日，每次只處理一天的空運及海運到付款資料。
+        /// 已存在 CLEARANCE_TAX 的資料不會寫入。
         /// 空運主號與追蹤號、海運主號與分提單號已存在時不會再次寫入。
         /// </summary>
         /// <returns>非同步排程工作。</returns>
@@ -126,16 +74,7 @@ WHERE c.DATA_TYPE IS NOT NULL
         /// <returns>非同步處理工作。</returns>
         private async Task ProcessOneDayAsync(DateTime startTime, DateTime endTime)
         {
-            var parameters = new
-            {
-                START_TIME = startTime,
-                END_TIME = endTime
-            };
-
-            var airQueryRows = (await conn.QueryAsync<FeeMasterCodSourceRow>(
-                AirQuerySql,
-                parameters,
-                commandTimeout: CommandTimeoutSeconds)).ToList();
+            var airQueryRows = await QueryAirRowsAsync(startTime, endTime);
             var airRows = DeduplicateAirRows(airQueryRows);
             var airQueryCount = airQueryRows.Count;
             var airDeduplicatedCount = airRows.Count;
@@ -143,10 +82,7 @@ WHERE c.DATA_TYPE IS NOT NULL
             airQueryRows.Clear();
             airRows.Clear();
 
-            var seaQueryRows = (await conn.QueryAsync<FeeMasterCodSourceRow>(
-                SeaQuerySql,
-                parameters,
-                commandTimeout: CommandTimeoutSeconds)).ToList();
+            var seaQueryRows = await QuerySeaRowsAsync(startTime, endTime);
             var seaRows = DeduplicateSeaRows(seaQueryRows);
             var seaQueryCount = seaQueryRows.Count;
             var seaDeduplicatedCount = seaRows.Count;
@@ -156,6 +92,133 @@ WHERE c.DATA_TYPE IS NOT NULL
                 $"{JobName}單日完成，區間={startTime:yyyy-MM-dd HH:mm:ss}~{endTime:yyyy-MM-dd HH:mm:ss}，" +
                 $"空運查詢={airQueryCount}，空運去重={airDeduplicatedCount}，空運新增={airInsertedCount}，" +
                 $"海運查詢={seaQueryCount}，海運去重={seaDeduplicatedCount}，海運新增={seaInsertedCount}");
+        }
+
+        /// <summary>
+        /// 查詢指定時間區間內尚無稅金資料的空運到付款資料。
+        /// </summary>
+        /// <param name="startTime">當日起始時間（含）。</param>
+        /// <param name="endTime">隔日起始時間（不含）。</param>
+        /// <returns>空運來源資料。</returns>
+        private async Task<List<FeeMasterCodSourceRow>> QueryAirRowsAsync(DateTime startTime, DateTime endTime)
+        {
+            const string sql = @"
+SELECT c.DATA_TYPE AS DataType,
+       o.MAINNUMBER AS MainNumber,
+       o.DESPATCHNO AS Customer,
+       o.BAGNO AS BagNumber,
+       o.TRACKINGNO AS TrackingNo,
+       o.DELIVERYNO AS DlvInv,
+       o.CC AS Cc,
+       c.SIGN_OUT_TIME AS SignOutTime
+FROM DATA_CENTER.dbo.CLEARANCE_INFO AS c
+INNER JOIN DATA_CENTER.dbo.ORIGINALLIST AS o
+    ON c.MAIN_NUMBER = o.MAINNUMBER
+   AND c.BAG_NUMBER = o.BAGNO
+WHERE c.DATA_TYPE IN ('tact', 'ftz')
+  AND c.SIGN_OUT_TIME >= @START_TIME
+  AND c.SIGN_OUT_TIME < @END_TIME
+  AND o.CC > 0
+  AND NOT EXISTS
+      (
+          SELECT 1
+          FROM DATA_CENTER.dbo.CLEARANCE_TAX AS tax
+          WHERE tax.MAIN_NUMBER = o.MAINNUMBER
+            AND tax.BAG_NUMBER = o.BAGNO
+      )
+  AND NOT EXISTS
+      (
+          SELECT 1
+          FROM DATA_CENTER.dbo.CLEARANCE_TAX AS tax
+          WHERE tax.MAIN_NUMBER = o.MAINNUMBER
+            AND tax.BAG_NUMBER = o.TRACKINGUB
+      )
+
+UNION ALL
+
+SELECT c.DATA_TYPE AS DataType,
+       o.MAINNUMBER AS MainNumber,
+       o.DESPATCHNO AS Customer,
+       o.BAGNO AS BagNumber,
+       o.TRACKINGNO AS TrackingNo,
+       o.DELIVERYNO AS DlvInv,
+       o.CC AS Cc,
+       c.SIGN_OUT_TIME AS SignOutTime
+FROM DATA_CENTER.dbo.CLEARANCE_INFO AS c
+INNER JOIN DATA_CENTER.dbo.ORIGINALLIST AS o
+    ON c.MAIN_NUMBER = o.MAINNUMBER
+   AND c.MERGE_NUMBER = o.TRACKINGUB
+WHERE c.DATA_TYPE IN ('tact', 'ftz')
+  AND c.SIGN_OUT_TIME >= @START_TIME
+  AND c.SIGN_OUT_TIME < @END_TIME
+  AND o.CC > 0
+  AND NOT EXISTS
+      (
+          SELECT 1
+          FROM DATA_CENTER.dbo.CLEARANCE_TAX AS tax
+          WHERE tax.MAIN_NUMBER = o.MAINNUMBER
+            AND tax.BAG_NUMBER = o.BAGNO
+      )
+  AND NOT EXISTS
+      (
+          SELECT 1
+          FROM DATA_CENTER.dbo.CLEARANCE_TAX AS tax
+          WHERE tax.MAIN_NUMBER = o.MAINNUMBER
+            AND tax.BAG_NUMBER = o.TRACKINGUB
+      );";
+
+            return (await conn.QueryAsync<FeeMasterCodSourceRow>(
+                sql,
+                new
+                {
+                    START_TIME = startTime,
+                    END_TIME = endTime
+                },
+                commandTimeout: CommandTimeoutSeconds)).ToList();
+        }
+
+        /// <summary>
+        /// 查詢指定時間區間內尚無稅金資料的海運到付款資料。
+        /// </summary>
+        /// <param name="startTime">當日起始時間（含）。</param>
+        /// <param name="endTime">隔日起始時間（不含）。</param>
+        /// <returns>海運來源資料。</returns>
+        private async Task<List<FeeMasterCodSourceRow>> QuerySeaRowsAsync(DateTime startTime, DateTime endTime)
+        {
+            const string sql = @"
+SELECT c.DATA_TYPE AS DataType,
+       sea.MAINNUMBER AS MainNumber,
+       sea.DESPATCH_NAME AS Customer,
+       sea.BL_NO AS BagNumber,
+       sea.BL_NO AS TrackingNo,
+       sea.JETF_SERIAL AS DlvInv,
+       sea.CC AS Cc,
+       c.SIGN_OUT_TIME AS SignOutTime
+FROM DATA_CENTER.dbo.CLEARANCE_INFO AS c
+INNER JOIN DATA_CENTER.dbo.SEA_ORDER_ORIGINAL AS sea
+    ON c.MAIN_NUMBER = sea.MAINNUMBER
+   AND c.BAG_NUMBER = sea.BL_NO
+WHERE c.DATA_TYPE IS NOT NULL
+  AND c.DATA_TYPE NOT IN ('tact', 'ftz')
+  AND c.SIGN_OUT_TIME >= @START_TIME
+  AND c.SIGN_OUT_TIME < @END_TIME
+  AND sea.CC > 0
+  AND NOT EXISTS
+      (
+          SELECT 1
+          FROM DATA_CENTER.dbo.CLEARANCE_TAX AS tax
+          WHERE tax.MAIN_NUMBER = sea.MAINNUMBER
+            AND tax.BAG_NUMBER = sea.BL_NO
+      );";
+
+            return (await conn.QueryAsync<FeeMasterCodSourceRow>(
+                sql,
+                new
+                {
+                    START_TIME = startTime,
+                    END_TIME = endTime
+                },
+                commandTimeout: CommandTimeoutSeconds)).ToList();
         }
 
         /// <summary>
@@ -181,7 +244,7 @@ WHERE c.DATA_TYPE IS NOT NULL
             return DeduplicateRows(
                 rows,
                 IsValidSeaRow,
-                x => BuildKey(x.MainNumber, x.BagNo));
+                x => BuildKey(x.MainNumber, x.BagNumber));
         }
 
         /// <summary>
@@ -240,7 +303,7 @@ WHERE c.DATA_TYPE IS NOT NULL
         {
             var existingKeys = await LoadExistingSeaKeysAsync(rows);
             var entities = rows
-                .Where(x => !existingKeys.Contains(BuildKey(x.MainNumber, x.BagNo)))
+                .Where(x => !existingKeys.Contains(BuildKey(x.MainNumber, x.BagNumber)))
                 .Select(x => CreateEntity(SeaSourceType, x))
                 .ToList();
 
@@ -304,13 +367,13 @@ WHERE c.DATA_TYPE IS NOT NULL
                     .Select(x => new
                     {
                         x.MainNumber,
-                        x.BagNo
+                        x.BagNumber
                     })
                     .ToListAsync();
 
                 foreach (var existingRow in existingRows)
                 {
-                    result.Add(BuildKey(existingRow.MainNumber, existingRow.BagNo));
+                    result.Add(BuildKey(existingRow.MainNumber, existingRow.BagNumber));
                 }
             }
 
@@ -353,9 +416,10 @@ WHERE c.DATA_TYPE IS NOT NULL
                 SourceType = sourceType,
                 DataType = row.DataType,
                 MainNumber = row.MainNumber,
-                BagNo = row.BagNo,
+                Customer = row.Customer,
+                BagNumber = row.BagNumber,
                 TrackingNo = row.TrackingNo,
-                JetfSerial = row.JetfSerial,
+                DlvInv = row.DlvInv,
                 Cc = row.Cc,
                 SignOutTime = row.SignOutTime,
                 CreatedTime = DateTime.Now
@@ -375,13 +439,13 @@ WHERE c.DATA_TYPE IS NOT NULL
                 return candidate.SignOutTime > current.SignOutTime;
             }
 
-            var bagComparison = StringComparer.OrdinalIgnoreCase.Compare(candidate.BagNo, current.BagNo);
+            var bagComparison = StringComparer.OrdinalIgnoreCase.Compare(candidate.BagNumber, current.BagNumber);
             if (bagComparison != 0)
             {
                 return bagComparison < 0;
             }
 
-            var serialComparison = StringComparer.OrdinalIgnoreCase.Compare(candidate.JetfSerial, current.JetfSerial);
+            var serialComparison = StringComparer.OrdinalIgnoreCase.Compare(candidate.DlvInv, current.DlvInv);
             if (serialComparison != 0)
             {
                 return serialComparison < 0;
@@ -399,7 +463,7 @@ WHERE c.DATA_TYPE IS NOT NULL
         {
             return row != null
                 && !string.IsNullOrWhiteSpace(row.MainNumber)
-                && !string.IsNullOrWhiteSpace(row.BagNo)
+                && !string.IsNullOrWhiteSpace(row.BagNumber)
                 && !string.IsNullOrWhiteSpace(row.TrackingNo)
                 && row.Cc > 0;
         }
@@ -413,7 +477,7 @@ WHERE c.DATA_TYPE IS NOT NULL
         {
             return row != null
                 && !string.IsNullOrWhiteSpace(row.MainNumber)
-                && !string.IsNullOrWhiteSpace(row.BagNo)
+                && !string.IsNullOrWhiteSpace(row.BagNumber)
                 && row.Cc > 0;
         }
 
