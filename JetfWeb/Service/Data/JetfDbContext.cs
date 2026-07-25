@@ -147,5 +147,7 @@ namespace Service.Data
         public DbSet<ReconciliationCustomerGroupEntity> ReconciliationCustomerGroups { get; set; }
 
         public DbSet<ReconciliationCustomerGroupDetailEntity> ReconciliationCustomerGroupDetails { get; set; }
+
+        public DbSet<ReconciliationLogisticsEntity> ReconciliationLogistics { get; set; }
     }
 }

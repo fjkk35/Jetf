@@ -68,9 +68,9 @@ namespace Service.Services.Receivable.Domain
         public int CustomerCod { get; set; }
 
         /// <summary>
-        /// 跟派件收金額。
+        /// 應向物流公司收取的金額文字。
         /// </summary>
-        public int TransCod { get; set; }
+        public string ToDlvCod { get; set; }
 
         /// <summary>
         /// 已向廠商收回金額。
@@ -78,8 +78,8 @@ namespace Service.Services.Receivable.Domain
         public int ReceivedCustomerCod { get; set; }
 
         /// <summary>
-        /// 已向派件公司收回金額。
+        /// 已向物流公司收回應收金額。
         /// </summary>
-        public int ReceivedTransCod { get; set; }
+        public int ReceivedToDlvCod { get; set; }
     }
 }

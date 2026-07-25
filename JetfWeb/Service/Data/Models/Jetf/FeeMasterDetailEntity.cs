@@ -158,27 +158,39 @@ namespace Service.Data
         public string ReceivedCustomerCodUserId { get; set; }
 
         /// <summary>
-        /// 已向派件公司收回的代收金額。
+        /// 已向物流公司收回的應收金額。
         /// </summary>
-        [Column("RECEIVED_TRANS_COD")]
-        public int? ReceivedTransCod { get; set; }
+        [Column("RECEIVED_TO_DLV_COD")]
+        public int? ReceivedToDlvCod { get; set; }
 
         /// <summary>
-        /// 向派件公司收回代收金額的時間。
+        /// 向物流公司收回應收金額的時間。
         /// </summary>
-        [Column("RECEIVED_TRANS_COD_TIME")]
-        public System.DateTime? ReceivedTransCodTime { get; set; }
+        [Column("RECEIVED_TO_DLV_COD_TIME")]
+        public System.DateTime? ReceivedToDlvCodTime { get; set; }
 
         /// <summary>
-        /// 派件銷帳操作人員。
+        /// 物流銷帳操作人員。
         /// </summary>
         [StringLength(10)]
-        [Column("RECEIVED_TRANS_COD_USERID")]
-        public string ReceivedTransCodUserId { get; set; }
+        [Column("RECEIVED_TO_DLV_COD_USERID")]
+        public string ReceivedToDlvCodUserId { get; set; }
+
+        /// <summary>
+        /// 對應的物流銷帳紀錄識別碼。
+        /// </summary>
+        [Column("ReconciliationLogisticsId")]
+        [ForeignKey(nameof(ReconciliationLogistics))]
+        public int? ReconciliationLogisticsId { get; set; }
 
         /// <summary>
         /// 對應的費用主檔。
         /// </summary>
         public FeeMasterEntity FeeMaster { get; set; }
+
+        /// <summary>
+        /// 對應的物流銷帳紀錄。
+        /// </summary>
+        public ReconciliationLogisticsEntity ReconciliationLogistics { get; set; }
     }
 }

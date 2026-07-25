@@ -562,5 +562,10 @@ namespace Service.EnumTax
         /// 客戶銷帳
         /// </summary>
         ReconciliationCustomer,
+
+        /// <summary>
+        /// 物流銷帳
+        /// </summary>
+        ReconciliationLogistics,
     }
 }

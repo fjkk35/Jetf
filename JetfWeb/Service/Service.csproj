@@ -311,6 +311,7 @@
     <Compile Include="Data\Models\Jetf\ReconciliationAirEntity.cs" />
     <Compile Include="Data\Models\Jetf\ReconciliationCustomerGroupEntity.cs" />
     <Compile Include="Data\Models\Jetf\ReconciliationCustomerGroupDetailEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ReconciliationLogisticsEntity.cs" />
     <Compile Include="Data\Models\Jetf\TelegramGroupEntity.cs" />
     <Compile Include="Data\Models\Jetf\StepConditionEntity.cs" />
     <Compile Include="Data\Models\Jetf\StepDetailEntity.cs" />
@@ -322,6 +323,8 @@
     <Compile Include="EnumTax\CacheName.cs" />
     <Compile Include="EnumTax\CargoProcessType.cs" />
     <Compile Include="EnumTax\CustomerType.cs" />
+    <Compile Include="EnumTax\ReconciliationLogisticsCompany.cs" />
+    <Compile Include="EnumTax\ReconciliationLogisticsResultStatus.cs" />
     <Compile Include="EnumTax\ReceivableCollectionType.cs" />
     <Compile Include="EnumTax\ReceivableStatus.cs" />
     <Compile Include="EnumTax\CptStatusEnum.cs" />
@@ -686,6 +689,14 @@
     <Compile Include="Services\ReconciliationCustomer\Domain\ReconciliationCustomerQueryRequest.cs" />
     <Compile Include="Services\ReconciliationCustomer\Domain\ReconciliationCustomerQueryResult.cs" />
     <Compile Include="Services\ReconciliationCustomer\ReconciliationCustomerService.cs" />
+    <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsFeeMasterMatch.cs" />
+    <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsListItem.cs" />
+    <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsQueryRequest.cs" />
+    <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsQueryResponse.cs" />
+    <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsResultItem.cs" />
+    <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsUploadResult.cs" />
+    <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsUploadRow.cs" />
+    <Compile Include="Services\ReconciliationLogistics\ReconciliationLogisticsService.cs" />
     <Compile Include="Services\Receivable\Domain\ReceivableDataRow.cs" />
     <Compile Include="Services\Receivable\Domain\ReceivableListItem.cs" />
     <Compile Include="Services\Receivable\Domain\ReceivableQueryRequest.cs" />

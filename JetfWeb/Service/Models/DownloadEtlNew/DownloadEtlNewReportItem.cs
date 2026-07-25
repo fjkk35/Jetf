@@ -78,6 +78,11 @@ namespace Service.Models.DownloadEtlNew
         public string Customer { get; set; }
 
         /// <summary>
+        /// 取得或設定客戶中文名稱。
+        /// </summary>
+        public string CustomerName { get; set; }
+
+        /// <summary>
         /// 取得或設定物流代碼。
         /// </summary>
         public string TransNo { get; set; }

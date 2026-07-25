@@ -1,4 +1,4 @@
-using NPOI.SS.UserModel;
+﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.Data;
 using Service.EnumTax;
@@ -136,13 +136,14 @@ namespace Service.Services.Receivable
                     x => x.FeeMaster.OutDateTime.HasValue && x.FeeMaster.OutDateTime < endDateExclusive.Value)
                 .WhereIf(customerCodes.Any(), x => customerCodes.Contains(x.FeeMaster.Customer))
                 .WhereIf(request?.Status == ReceivableStatus.Received,
-                    x => x.ReceivedCustomerCodTime.HasValue || x.ReceivedTransCodTime.HasValue)
+                    x => x.ReceivedCustomerCodTime.HasValue || x.ReceivedToDlvCodTime.HasValue)
                 .WhereIf(request?.Status == ReceivableStatus.Unreceived,
-                    x => !x.ReceivedCustomerCodTime.HasValue && !x.ReceivedTransCodTime.HasValue)
+                    x => !x.ReceivedCustomerCodTime.HasValue && !x.ReceivedToDlvCodTime.HasValue)
                 .WhereIf(request?.CollectionType == ReceivableCollectionType.Customer,
                     x => (x.CustomerCod ?? 0) > 0)
                 .WhereIf(request?.CollectionType == ReceivableCollectionType.Trans,
-                    x => (x.TransCod ?? 0) > 0);
+                    x => !string.IsNullOrEmpty(x.ToDlvCod) &&
+                         x.ToDlvCod != "0");
 
             return query;
         }
@@ -169,9 +170,9 @@ namespace Service.Services.Receivable
                 Cod = x.Cod ?? 0,
                 Fee = x.Fee ?? 0,
                 CustomerCod = x.CustomerCod ?? 0,
-                TransCod = x.TransCod ?? 0,
+                ToDlvCod = x.ToDlvCod,
                 ReceivedCustomerCod = x.ReceivedCustomerCod ?? 0,
-                ReceivedTransCod = x.ReceivedTransCod ?? 0
+                ReceivedToDlvCod = x.ReceivedToDlvCod ?? 0
             });
         }
 
@@ -194,8 +195,9 @@ namespace Service.Services.Receivable
 
             return rows.Select(row =>
             {
-                var codSubtotal = row.Cod + row.Fee + row.CustomerCod + row.TransCod;
-                var receivedAmount = row.ReceivedCustomerCod + row.ReceivedTransCod;
+                var toDlvCod = row.ToDlvCod.ToInt();
+                var codSubtotal = row.CustomerCod + toDlvCod;
+                var receivedAmount = row.ReceivedCustomerCod + row.ReceivedToDlvCod;
                 string customerName;
                 customerNames.TryGetValue(row.CustomerCode ?? string.Empty, out customerName);
 
@@ -217,7 +219,7 @@ namespace Service.Services.Receivable
                     ReceivedAmount = receivedAmount,
                     UnreceivedAmount = codSubtotal - receivedAmount,
                     CustomerCod = row.CustomerCod,
-                    TransCod = row.TransCod,
+                    ToDlvCod = toDlvCod,
                     JetfPayment = string.Empty,
                     Ccfee = row.Ccfee,
                     RedispatchFreight = string.Empty,
@@ -442,7 +444,7 @@ namespace Service.Services.Receivable
                 NpoiCell.CreateIntCell(row, column++, item.ReceivedAmount, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.UnreceivedAmount, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.CustomerCod, numberStyle);
-                NpoiCell.CreateIntCell(row, column++, item.TransCod, numberStyle);
+                NpoiCell.CreateIntCell(row, column++, item.ToDlvCod, numberStyle);
                 NpoiCell.CreateCell(row, column++, item.JetfPayment, dataStyle);
                 NpoiCell.CreateIntCell(row, column++, item.Ccfee, numberStyle);
                 NpoiCell.CreateCell(row, column++, item.RedispatchFreight, dataStyle);

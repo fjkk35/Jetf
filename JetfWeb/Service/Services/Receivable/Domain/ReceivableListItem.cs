@@ -78,7 +78,7 @@ namespace Service.Services.Receivable.Domain
         /// <summary>
         /// 跟派件收金額。
         /// </summary>
-        public int TransCod { get; set; }
+        public int ToDlvCod { get; set; }
 
         /// <summary>
         /// 捷豐支付，目前保留空白。

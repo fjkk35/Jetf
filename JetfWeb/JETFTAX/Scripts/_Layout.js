@@ -187,6 +187,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'ReconciliationCustomerGroup', text: '代收銷帳客戶群組', url: '~/ReconciliationCustomerGroup/Index', auth: ['ReconciliationCustomerGroup'] },
                 { id: 'Receivable', text: '應收未收明細', url: '~/Receivable/Index', auth: ['Receivable'] },
                 { id: 'ReconciliationCustomer', text: '客戶銷帳', url: '~/ReconciliationCustomer/Index', auth: ['ReconciliationCustomer'] },
+                { id: 'ReconciliationLogistics', text: '物流銷帳', url: '~/ReconciliationLogistics/Index', auth: ['ReconciliationLogistics'] },
               ]
         },
         {

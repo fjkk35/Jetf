@@ -15,7 +15,7 @@ interface ReceivableRow {
     ReceivedAmount: number;
     UnreceivedAmount: number;
     CustomerCod: number;
-    TransCod: number;
+    ToDlvCod: number;
     JetfPayment: string;
     Ccfee: number;
     RedispatchFreight: string;
