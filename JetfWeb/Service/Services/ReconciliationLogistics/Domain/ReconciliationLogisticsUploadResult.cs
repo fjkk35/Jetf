@@ -27,22 +27,22 @@ namespace Service.Services.ReconciliationLogistics.Domain
         public int FailCount { get; set; }
 
         /// <summary>
-        /// 成功比對並更新費用明細的上傳筆數。
+        /// 成功比對並更新費用明細或到付款資料的上傳筆數。
         /// </summary>
         public int UpdatedCount { get; set; }
 
         /// <summary>
-        /// 未比對到費用明細的上傳筆數。
+        /// 未比對到費用明細及到付款資料的上傳筆數。
         /// </summary>
         public int UnmatchedCount { get; set; }
 
         /// <summary>
-        /// 已更新費用明細但仍需追蹤的異常筆數。
+        /// 已更新費用資料但仍需追蹤的異常筆數。
         /// </summary>
         public int ExceptionCount { get; set; }
 
         /// <summary>
-        /// 實際更新的費用明細筆數。
+        /// 實際更新的費用明細及到付款資料筆數。
         /// </summary>
         public int UpdatedDetailCount { get; set; }
 

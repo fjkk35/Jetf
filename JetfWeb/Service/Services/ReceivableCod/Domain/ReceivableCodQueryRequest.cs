@@ -1,22 +1,22 @@
 using Service.EnumTax;
 using System.Collections.Generic;
 
-namespace Service.Services.Receivable.Domain
+namespace Service.Services.ReceivableCod.Domain
 {
     /// <summary>
-    /// 應收未收明細查詢條件。
+    /// 到付款應收未收明細查詢條件。
     /// </summary>
-    public sealed class ReceivableQueryRequest
+    public sealed class ReceivableCodQueryRequest
     {
         /// <summary>
-        /// 出倉日期起日，格式為 yyyy-MM-dd。
+        /// 出倉開始日期，格式為 yyyy-MM-dd。
         /// </summary>
-        public string OutDateStart { get; set; }
+        public string SignOutDateStart { get; set; }
 
         /// <summary>
-        /// 出倉日期迄日，格式為 yyyy-MM-dd。
+        /// 出倉結束日期，格式為 yyyy-MM-dd。
         /// </summary>
-        public string OutDateEnd { get; set; }
+        public string SignOutDateEnd { get; set; }
 
         /// <summary>
         /// 選取的客戶代號。
@@ -34,14 +34,9 @@ namespace Service.Services.Receivable.Domain
         public string DlvInv { get; set; }
 
         /// <summary>
-        /// 回收狀態；未指定代表全部。
+        /// 收回狀態；未指定時查詢全部。
         /// </summary>
         public ReceivableStatus? Status { get; set; }
-
-        /// <summary>
-        /// 收取對象；未指定代表全部。
-        /// </summary>
-        public ReceivableCollectionType? CollectionType { get; set; }
 
         /// <summary>
         /// 頁碼，從 1 開始。

@@ -29,7 +29,7 @@ namespace Service.Services.ReconciliationLogistics.Domain
         public string DlvInv { get; set; }
 
         /// <summary>
-        /// 費用主檔 TO_DLV_COD 應收金額。
+        /// 費用主檔 TO_DLV_COD 或到付款資料 CC 的應收金額。
         /// </summary>
         public int ReceivableAmount { get; set; }
 
@@ -54,7 +54,7 @@ namespace Service.Services.ReconciliationLogistics.Domain
         public string StatusName => Status.ToDescription();
 
         /// <summary>
-        /// 是否已成功更新費用明細。
+        /// 是否已成功更新費用明細或到付款資料。
         /// </summary>
         public bool IsSuccess =>
             Status == ReconciliationLogisticsResultStatus.Matched ||

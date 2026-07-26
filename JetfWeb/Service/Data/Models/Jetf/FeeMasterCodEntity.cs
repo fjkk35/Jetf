@@ -90,6 +90,25 @@ namespace Service.Data
         public DateTime CreatedTime { get; set; }
 
         /// <summary>
+        /// 已向物流公司收回的到付款金額。
+        /// </summary>
+        [Column("RECEIVED_CC")]
+        public int? ReceivedCc { get; set; }
+
+        /// <summary>
+        /// 向物流公司收回到付款金額的時間。
+        /// </summary>
+        [Column("RECEIVED_CC_TIME")]
+        public DateTime? ReceivedCcTime { get; set; }
+
+        /// <summary>
+        /// 到付款銷帳操作人員。
+        /// </summary>
+        [StringLength(10)]
+        [Column("RECEIVED_CC_USERID")]
+        public string ReceivedCcUserId { get; set; }
+
+        /// <summary>
         /// 對應的物流銷帳紀錄識別碼。
         /// </summary>
         [Column("ReconciliationLogisticsId")]

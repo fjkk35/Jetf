@@ -89,6 +89,11 @@ namespace Service.Data
         public bool IsFeeMaster { get; set; }
 
         /// <summary>
+        /// 是否成功更新一筆 FEE_MASTER_COD。
+        /// </summary>
+        public bool IsFeeMasterCod { get; set; }
+
+        /// <summary>
         /// 物流銷帳比對結果狀態；既有未回填狀態的資料為 null。
         /// </summary>
         public ReconciliationLogisticsResultStatus? Status { get; set; }

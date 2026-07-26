@@ -702,6 +702,11 @@
     <Compile Include="Services\Receivable\Domain\ReceivableQueryRequest.cs" />
     <Compile Include="Services\Receivable\Domain\ReceivableQueryResponse.cs" />
     <Compile Include="Services\Receivable\ReceivableService.cs" />
+    <Compile Include="Services\ReceivableCod\Domain\ReceivableCodDataRow.cs" />
+    <Compile Include="Services\ReceivableCod\Domain\ReceivableCodListItem.cs" />
+    <Compile Include="Services\ReceivableCod\Domain\ReceivableCodQueryRequest.cs" />
+    <Compile Include="Services\ReceivableCod\Domain\ReceivableCodQueryResponse.cs" />
+    <Compile Include="Services\ReceivableCod\ReceivableCodService.cs" />
     <Compile Include="Services\SeaTransRecord\SeaTransRecordService.cs" />
     <Compile Include="Services\SeaUnboxingRecord\SeaUnboxingRecordService.cs" />
     <Compile Include="Services\SeaUnreceivedOrder\SeaUnreceivedOrderService.cs" />

@@ -164,7 +164,7 @@ namespace Service.Services.ReconciliationLogistics
         }
 
         /// <summary>
-        /// 上傳物流銷帳檔案，寫入上傳紀錄並更新費用明細。
+        /// 上傳物流銷帳檔案，寫入上傳紀錄並更新費用資料。
         /// </summary>
         /// <param name="stream">上傳檔案串流。</param>
         /// <param name="sourceFileName">原始檔名。</param>
@@ -1450,13 +1450,12 @@ namespace Service.Services.ReconciliationLogistics
                 repaymentDate,
                 currentUserId);
 
-            // IsFeeMaster 代表該筆上傳資料至少成功更新一筆費用明細。
-            var updatedCount = entities.Count(x => x.IsFeeMaster);
+            // 更新 FEE_MASTER_DETAIL 或備援的 FEE_MASTER_COD 都視為成功銷帳。
+            var updatedCount = entities.Count(x => x.IsFeeMaster || x.IsFeeMasterCod);
             var unmatchedCount = entities.Count - updatedCount;
             result.UpdatedCount = updatedCount;
             result.UnmatchedCount = unmatchedCount;
-            result.ExceptionCount = result.Results.Count(
-                x => x.IsSuccess && x.IsException);
+            result.ExceptionCount = result.Results.Count(x => x.IsSuccess && x.IsException);
             return result;
         }
 
@@ -1475,65 +1474,37 @@ namespace Service.Services.ReconciliationLogistics
             string currentUserId)
         {
             // Step 1：先建立每筆上傳資料的預設結果，讓失敗資料也能顯示於畫面及 Excel。
-            var resultByEntity = entities.ToDictionary(
-                x => x,
-                CreateResultItem);
+            var resultByEntity = entities.ToDictionary(x => x, CreateResultItem);
 
-            // Step 2：依上傳格式從費用主檔或明細取得單號對應的 FEE_MASTER_ID。
-            var matchedFeeMasterIds = GetMatchedFeeMasterIds(
-                entities,
-                uploadFormat);
-            var feeMasterIds = matchedFeeMasterIds
-                .Select(x => x.FeeMasterId)
-                .Distinct()
-                .ToList();
-            if (!feeMasterIds.Any())
-            {
-                // 整批皆查無物流貨號時仍保留客戶回款紀錄，但不更新任何費用明細。
-                foreach (var entity in entities)
-                {
-                    entity.Status = resultByEntity[entity].Status;
-                }
-
-                JetfDb.BulkInsert(entities);
-                return new ReconciliationLogisticsUploadResult
-                {
-                    Results = entities.Select(x => resultByEntity[x]).ToList()
-                };
-            }
-
-            // Step 3：依 FEE_MASTER_ID 一次取得費用主檔及同主檔底下的全部費用明細。
-            var feeMasters = GetFeeMasters(feeMasterIds);
-            var feeMasterDetails = GetFeeMasterDetails(feeMasterIds);
-
-            // Step 4：每筆上傳資料直接取第一個符合單號的 FEE_MASTER_ID。
-            Func<ReconciliationLogisticsFeeMasterMatch, string> matchedKeySelector;
+            // Step 2：依上傳格式指定費用資料與物流上傳資料的比對鍵。
+            Func<ReconciliationLogisticsFeeMasterMatch, string> feeMasterKeySelector;
+            Func<FeeMasterCodEntity, string> feeMasterCodKeySelector;
             Func<ReconciliationLogisticsEntity, string> entityKeySelector;
             switch (uploadFormat)
             {
                 // 關貿只使用分提單號比對。
                 case ReconciliationLogisticsUploadFormat.TradeVan:
-                    matchedKeySelector =
-                        x => (x.TrackingNo ?? string.Empty).Trim();
-                    entityKeySelector =
-                        x => (x.TrackingNo ?? string.Empty).Trim();
+                    feeMasterKeySelector = x => (x.TrackingNo ?? string.Empty).Trim();
+                    feeMasterCodKeySelector = x => (x.TrackingNo ?? string.Empty).Trim();
+                    entityKeySelector = x => (x.TrackingNo ?? string.Empty).Trim();
                     break;
                 // 客樂得、大榮、現金及圓通只使用物流貨號比對。
                 case ReconciliationLogisticsUploadFormat.Kelede:
                 case ReconciliationLogisticsUploadFormat.Ktj:
                 case ReconciliationLogisticsUploadFormat.Cash:
                 case ReconciliationLogisticsUploadFormat.Yto:
-                    matchedKeySelector =
-                        x => (x.DlvInv ?? string.Empty).Trim();
-                    entityKeySelector =
-                        x => (x.DlvInv ?? string.Empty).Trim();
+                    feeMasterKeySelector = x => (x.DlvInv ?? string.Empty).Trim();
+                    feeMasterCodKeySelector = x => (x.DlvInv ?? string.Empty).Trim();
+                    entityKeySelector = x => (x.DlvInv ?? string.Empty).Trim();
                     break;
                 // 新竹物流、7-11 及超峰使用分提單號與物流貨號共同比對。
                 case ReconciliationLogisticsUploadFormat.HctCollection:
                 case ReconciliationLogisticsUploadFormat.HctRemittance:
                 case ReconciliationLogisticsUploadFormat.SevenEleven:
                 case ReconciliationLogisticsUploadFormat.TaixinStar:
-                    matchedKeySelector = x =>
+                    feeMasterKeySelector = x =>
+                        $"{(x.TrackingNo ?? string.Empty).Trim()}|{(x.DlvInv ?? string.Empty).Trim()}";
+                    feeMasterCodKeySelector = x =>
                         $"{(x.TrackingNo ?? string.Empty).Trim()}|{(x.DlvInv ?? string.Empty).Trim()}";
                     entityKeySelector = x =>
                         $"{(x.TrackingNo ?? string.Empty).Trim()}|{(x.DlvInv ?? string.Empty).Trim()}";
@@ -1545,101 +1516,167 @@ namespace Service.Services.ReconciliationLogistics
                         "不支援的物流上傳格式");
             }
 
-            var feeMasterIdDictionary = matchedFeeMasterIds
-                .GroupBy(
-                    matchedKeySelector,
-                    StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(
-                    group => group.Key,
-                    group => group.First().FeeMasterId,
-                    StringComparer.OrdinalIgnoreCase);
-
-            var feeMasterById = feeMasters.ToDictionary(x => x.Id);
-            var entityByFeeMasterId = new Dictionary<int, ReconciliationLogisticsEntity>();
-            foreach (var entity in entities)
-            {
-                int feeMasterId;
-                if (!feeMasterIdDictionary.TryGetValue(
-                    entityKeySelector(entity),
-                    out feeMasterId))
-                {
-                    continue;
-                }
-
-                resultByEntity[entity].Status = ReconciliationLogisticsResultStatus.Matched;
-                entityByFeeMasterId.Add(feeMasterId, entity);
-            }
-
-            // Step 5：依費用主檔分組計算應收金額，並將回款依序分配至各筆明細。
+            // Step 3：依上傳格式從費用主檔或明細取得單號對應的 FEE_MASTER_ID。
+            var matchedFeeMasterIds = GetMatchedFeeMasterIds(entities, uploadFormat);
+            var feeMasterIds = matchedFeeMasterIds
+                .Select(x => x.FeeMasterId)
+                .Distinct()
+                .ToList();
             var updatedDetails = new List<FeeMasterDetailEntity>();
-            foreach (var detailGroup in feeMasterDetails.GroupBy(x => x.FeeMasterId))
+            if (feeMasterIds.Any())
             {
-                ReconciliationLogisticsEntity entity;
-                if (!entityByFeeMasterId.TryGetValue(detailGroup.Key, out entity))
+                // Step 4：依 FEE_MASTER_ID 一次取得費用主檔及同主檔底下的全部費用明細。
+                var feeMasters = GetFeeMasters(feeMasterIds);
+                var feeMasterDetails = GetFeeMasterDetails(feeMasterIds);
+                var feeMasterIdDictionary = matchedFeeMasterIds
+                    .GroupBy(feeMasterKeySelector, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group.First().FeeMasterId,
+                        StringComparer.OrdinalIgnoreCase);
+
+                var feeMasterById = feeMasters.ToDictionary(x => x.Id);
+                var entityByFeeMasterId = new Dictionary<int, ReconciliationLogisticsEntity>();
+                foreach (var entity in entities)
                 {
-                    continue;
+                    int feeMasterId;
+                    if (!feeMasterIdDictionary.TryGetValue(entityKeySelector(entity), out feeMasterId))
+                    {
+                        continue;
+                    }
+
+                    resultByEntity[entity].Status = ReconciliationLogisticsResultStatus.Matched;
+                    entityByFeeMasterId.Add(feeMasterId, entity);
                 }
 
-                var resultItem = resultByEntity[entity];
-                var feeMaster = feeMasterById[detailGroup.Key];
-                // 畫面應收金額直接使用費用主檔的 TO_DLV_COD。
-                resultItem.ReceivableAmount = feeMaster.ToDlvCod.ToInt();
-                resultItem.Difference = resultItem.ReceivableAmount - resultItem.RepaymentAmount;
-                entity.DifferenceAmount = resultItem.Difference;
-
-                // 先分配可銷帳金額並收集異動明細，再依差異判斷金額不足或超額。
-                var appliedDetails = ApplyReceivedAmount(
-                    entity,
-                    detailGroup,
-                    repaymentDate,
-                    currentUserId);
-                updatedDetails.AddRange(appliedDetails);
-
-                if (entity.IsFeeMaster && resultItem.Difference < 0)
+                // Step 5：依費用主檔分組計算應收金額，並將回款依序分配至各筆明細。
+                foreach (var detailGroup in feeMasterDetails.GroupBy(x => x.FeeMasterId))
                 {
-                    resultItem.Status =
-                        ReconciliationLogisticsResultStatus.RepaymentExceedsReceivable;
+                    ReconciliationLogisticsEntity entity;
+                    if (!entityByFeeMasterId.TryGetValue(detailGroup.Key, out entity))
+                    {
+                        continue;
+                    }
+
+                    var resultItem = resultByEntity[entity];
+                    var feeMaster = feeMasterById[detailGroup.Key];
+                    // 畫面應收金額直接使用費用主檔的 TO_DLV_COD。
+                    resultItem.ReceivableAmount = feeMaster.ToDlvCod.ToInt();
+                    resultItem.Difference = resultItem.ReceivableAmount - resultItem.RepaymentAmount;
+                    entity.DifferenceAmount = resultItem.Difference;
+
+                    // 先分配可銷帳金額並收集異動明細，再依差異判斷金額不足或超額。
+                    var appliedDetails = ApplyReceivedAmount(entity, detailGroup, repaymentDate, currentUserId);
+                    updatedDetails.AddRange(appliedDetails);
+
+                    if (entity.IsFeeMaster && resultItem.Difference < 0)
+                    {
+                        resultItem.Status = ReconciliationLogisticsResultStatus.RepaymentExceedsReceivable;
+                    }
+                    else if (entity.IsFeeMaster && resultItem.Difference > 0)
+                    {
+                        resultItem.Status = ReconciliationLogisticsResultStatus.RepaymentLessThanReceivable;
+                    }
                 }
-                else if (entity.IsFeeMaster && resultItem.Difference > 0)
+
+                // Step 6：已命中主檔但沒有可銷帳金額的資料標記為失敗，並保留紀錄供後續追蹤。
+                foreach (var entity in entityByFeeMasterId.Values
+                    .Where(x =>
+                        !x.IsFeeMaster &&
+                        resultByEntity[x].Status == ReconciliationLogisticsResultStatus.Matched)
+                    .ToList())
                 {
-                    resultItem.Status =
-                        ReconciliationLogisticsResultStatus.RepaymentLessThanReceivable;
+                    resultByEntity[entity].Status = ReconciliationLogisticsResultStatus.NoReceivableAmount;
                 }
             }
 
-            // Step 6：已命中主檔但沒有可銷帳金額的資料標記為失敗，並保留紀錄供後續追蹤。
-            foreach (var entity in entityByFeeMasterId.Values
-                .Where(x =>
-                    !x.IsFeeMaster &&
-                    resultByEntity[x].Status == ReconciliationLogisticsResultStatus.Matched)
-                .ToList())
+            // Step 7：只有仍查無物流貨號的資料，才改至 FEE_MASTER_COD 進行備援比對。
+            var feeMasterCodCandidates = entities
+                .Where(entity =>
+                    resultByEntity[entity].Status == ReconciliationLogisticsResultStatus.FeeMasterNotFound)
+                .ToList();
+            var updatedFeeMasterCods = new List<FeeMasterCodEntity>();
+            if (feeMasterCodCandidates.Any())
             {
-                resultByEntity[entity].Status = ReconciliationLogisticsResultStatus.NoReceivableAmount;
+                // 依物流公司的單號規則，一次查出尚未銷帳的 FEE_MASTER_COD。
+                var matchedFeeMasterCods = GetMatchedFeeMasterCods(feeMasterCodCandidates, uploadFormat);
+
+                // 同一個比對鍵若有多筆資料，固定取 Id 最小的一筆進行銷帳。
+                var feeMasterCodDictionary = matchedFeeMasterCods
+                    .GroupBy(feeMasterCodKeySelector, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group.OrderBy(x => x.Id).First(),
+                        StringComparer.OrdinalIgnoreCase);
+
+                foreach (var entity in feeMasterCodCandidates)
+                {
+                    FeeMasterCodEntity feeMasterCod;
+                    if (!feeMasterCodDictionary.TryGetValue(entityKeySelector(entity), out feeMasterCod))
+                    {
+                        continue;
+                    }
+
+                    // 使用 FEE_MASTER_COD.CC 計算差異與狀態，並將物流公司回款金額完整寫入。
+                    var resultItem = resultByEntity[entity];
+                    resultItem.ReceivableAmount = decimal.ToInt32(feeMasterCod.Cc);
+                    resultItem.Difference = resultItem.ReceivableAmount - resultItem.RepaymentAmount;
+                    resultItem.Status = ReconciliationLogisticsResultStatus.Matched;
+                    if (resultItem.Difference < 0)
+                    {
+                        resultItem.Status = ReconciliationLogisticsResultStatus.RepaymentExceedsReceivable;
+                    }
+                    else if (resultItem.Difference > 0)
+                    {
+                        resultItem.Status = ReconciliationLogisticsResultStatus.RepaymentLessThanReceivable;
+                    }
+
+                    entity.DifferenceAmount = resultItem.Difference;
+                    entity.IsFeeMasterCod = true;
+
+                    // 保留回款日期、操作人員及物流銷帳關聯，供後續追蹤。
+                    feeMasterCod.ReceivedCc = entity.ReceivedAmount;
+                    feeMasterCod.ReceivedCcTime = repaymentDate;
+                    feeMasterCod.ReceivedCcUserId = currentUserId;
+                    feeMasterCod.ReconciliationLogistics = entity;
+                    updatedFeeMasterCods.Add(feeMasterCod);
+                }
             }
 
-            // Step 7：將比對狀態寫入所有通過欄位驗證的回款紀錄。
+            // Step 8：將最終比對狀態寫入所有通過欄位驗證的回款紀錄。
             foreach (var entity in entities)
             {
                 entity.Status = resultByEntity[entity].Status;
             }
 
-            JetfDb.BulkInsert(
-                entities,
-                options => options.AutoMapOutputDirection = true);
+            // Step 9：批次新增物流銷帳紀錄並回填新增後的 Id。
+            JetfDb.BulkInsert(entities, options => options.AutoMapOutputDirection = true);
 
-            // Step 8：將批次新增後取得的物流銷帳 Id 回填至實際分配回款的費用明細。
+            // Step 10：將物流銷帳 Id 回填至實際更新的費用明細與到付款資料。
             foreach (var detail in updatedDetails)
             {
-                detail.ReconciliationLogisticsId =
-                    detail.ReconciliationLogistics.Id;
+                detail.ReconciliationLogisticsId = detail.ReconciliationLogistics.Id;
             }
 
-            // Step 9：批次更新費用明細，避免 EF 逐筆產生 UPDATE。
-            JetfDb.BulkUpdate(updatedDetails);
+            foreach (var feeMasterCod in updatedFeeMasterCods)
+            {
+                feeMasterCod.ReconciliationLogisticsId = feeMasterCod.ReconciliationLogistics.Id;
+            }
+
+            // Step 11：分別批次更新兩種費用資料，避免 EF 逐筆產生 UPDATE。
+            if (updatedDetails.Any())
+            {
+                JetfDb.BulkUpdate(updatedDetails);
+            }
+
+            if (updatedFeeMasterCods.Any())
+            {
+                JetfDb.BulkUpdate(updatedFeeMasterCods);
+            }
 
             return new ReconciliationLogisticsUploadResult
             {
-                UpdatedDetailCount = updatedDetails.Count,
+                UpdatedDetailCount = updatedDetails.Count + updatedFeeMasterCods.Count,
                 Results = entities.Select(x => resultByEntity[x]).ToList()
             };
         }
@@ -1729,6 +1766,67 @@ namespace Service.Services.ReconciliationLogistics
                             DlvInv = feeMaster.DlvInv
                         })
                         .ToList();
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(uploadFormat),
+                        uploadFormat,
+                        "不支援的物流上傳格式");
+            }
+        }
+
+        /// <summary>
+        /// 依物流公司的單號規則取得尚未銷帳的到付款資料。
+        /// </summary>
+        /// <param name="entities">仍查無物流貨號的物流銷帳資料。</param>
+        /// <param name="uploadFormat">物流上傳格式。</param>
+        /// <returns>符合單號且尚未銷帳的到付款資料。</returns>
+        private List<FeeMasterCodEntity> GetMatchedFeeMasterCods(
+            List<ReconciliationLogisticsEntity> entities,
+            ReconciliationLogisticsUploadFormat uploadFormat)
+        {
+            switch (uploadFormat)
+            {
+                // 關貿只使用分提單號比對。
+                case ReconciliationLogisticsUploadFormat.TradeVan:
+                    return JetfDb.FeeMasterCods
+                        .Where(x => !x.ReconciliationLogisticsId.HasValue)
+                        .WhereBulkContains(
+                            JetfDb,
+                            entities,
+                            feeMasterCod => feeMasterCod.TrackingNo,
+                            entity => entity.TrackingNo);
+                // 客樂得、大榮、現金及圓通只使用物流貨號比對。
+                case ReconciliationLogisticsUploadFormat.Kelede:
+                case ReconciliationLogisticsUploadFormat.Ktj:
+                case ReconciliationLogisticsUploadFormat.Cash:
+                case ReconciliationLogisticsUploadFormat.Yto:
+                    return JetfDb.FeeMasterCods
+                        .Where(x => !x.ReconciliationLogisticsId.HasValue)
+                        .WhereBulkContains(
+                            JetfDb,
+                            entities,
+                            feeMasterCod => feeMasterCod.DlvInv,
+                            entity => entity.DlvInv);
+                // 新竹物流、7-11 及超峰使用分提單號與物流貨號共同比對。
+                case ReconciliationLogisticsUploadFormat.HctCollection:
+                case ReconciliationLogisticsUploadFormat.HctRemittance:
+                case ReconciliationLogisticsUploadFormat.SevenEleven:
+                case ReconciliationLogisticsUploadFormat.TaixinStar:
+                    return JetfDb.FeeMasterCods
+                        .Where(x => !x.ReconciliationLogisticsId.HasValue)
+                        .WhereBulkContains(
+                            JetfDb,
+                            entities,
+                            feeMasterCod => new
+                            {
+                                feeMasterCod.TrackingNo,
+                                feeMasterCod.DlvInv
+                            },
+                            entity => new
+                            {
+                                entity.TrackingNo,
+                                entity.DlvInv
+                            });
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(uploadFormat),

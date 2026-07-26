@@ -1,6 +1,6 @@
 ﻿// <reference path="../../types/global.d.ts" />
 
-interface ReceivableRow {
+interface ReceivableCodRow {
     Id: number;
     PostingDate: string;
     Source: string;
@@ -10,42 +10,32 @@ interface ReceivableRow {
     OutDateTime: string;
     TrackingNo: string;
     DlvInv: string;
-    TaxNumber: string;
-    CodSubtotal: number;
+    ReceivableAmount: number;
     ReceivedAmount: number;
     UnreceivedAmount: number;
-    CustomerCod: number;
-    ToDlvCod: number;
-    JetfPayment: string;
-    Ccfee: number;
-    RedispatchFreight: string;
-    Cod: number;
-    Fee: number;
-    UnreceivedReason: string;
 }
 
-interface ReceivableQueryResponse {
+interface ReceivableCodQueryResponse {
     TotalCount: number;
-    Data: ReceivableRow[];
+    Data: ReceivableCodRow[];
 }
 
-interface ReceivableSelectionMap {
+interface ReceivableCodSelectionMap {
     [custCode: string]: boolean;
 }
 
-interface ReceivableScope extends ng.IScope {
+interface ReceivableCodScope extends ng.IScope {
     searchForm: {
-        outDateStart: Date | null;
-        outDateEnd: Date | null;
+        signOutDateStart: Date | null;
+        signOutDateEnd: Date | null;
         trackingNo: string;
         dlvInv: string;
         status: string;
-        collectionType: string;
     };
     dateOptions: any;
     startDatePopup: { opened: boolean };
     endDatePopup: { opened: boolean };
-    rows: ReceivableRow[];
+    rows: ReceivableCodRow[];
     loading: boolean;
     exporting: boolean;
     isSearched: boolean;
@@ -54,7 +44,7 @@ interface ReceivableScope extends ng.IScope {
     totalCount: number;
     totalPages: number;
     recordsInfo: string;
-    selectedCustomerMap: ReceivableSelectionMap;
+    selectedCustomerMap: ReceivableCodSelectionMap;
     init: () => void;
     openStartDatePopup: () => void;
     openEndDatePopup: () => void;
@@ -68,8 +58,8 @@ interface ReceivableScope extends ng.IScope {
     exportExcel: () => void;
 }
 
-mainApp.controller('ReceivableController', ['$scope', '$http', function (
-    $scope: ReceivableScope,
+mainApp.controller('ReceivableCodController', ['$scope', '$http', function (
+    $scope: ReceivableCodScope,
     $http: ng.IHttpService
 ) {
     function redirectIfNeeded(response: ApiResponse): boolean {
@@ -100,12 +90,13 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
     }
 
     function validateDates(): boolean {
-        if (!$scope.searchForm.outDateStart || !$scope.searchForm.outDateEnd) {
+        if (!$scope.searchForm.signOutDateStart || !$scope.searchForm.signOutDateEnd) {
             showError('日期為必填，請選擇開始日期與結束日期');
             return false;
         }
 
-        if (moment($scope.searchForm.outDateStart).isAfter($scope.searchForm.outDateEnd, 'day')) {
+        if (moment($scope.searchForm.signOutDateStart)
+            .isAfter($scope.searchForm.signOutDateEnd, 'day')) {
             showError('開始日期不可晚於結束日期');
             return false;
         }
@@ -113,9 +104,12 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
         return true;
     }
 
-    function selectedCodes(selectionMap: ReceivableSelectionMap): string[] {
+    function selectedCodes(selectionMap: ReceivableCodSelectionMap): string[] {
         var codes: string[] = [];
-        angular.forEach(selectionMap, function (selected: boolean, code: string): void {
+        angular.forEach(selectionMap, function (
+            selected: boolean,
+            code: string
+        ): void {
             if (selected) {
                 codes.push(code);
             }
@@ -126,13 +120,12 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
     function buildRequest(includePaging: boolean): any {
         var codes = selectedCodes($scope.selectedCustomerMap);
         var request: any = {
-            OutDateStart: formatDate($scope.searchForm.outDateStart),
-            OutDateEnd: formatDate($scope.searchForm.outDateEnd),
+            SignOutDateStart: formatDate($scope.searchForm.signOutDateStart),
+            SignOutDateEnd: formatDate($scope.searchForm.signOutDateEnd),
             CustomerCodes: codes.length ? codes : null,
             TrackingNo: $scope.searchForm.trackingNo,
             DlvInv: $scope.searchForm.dlvInv,
-            Status: parseNullableNumber($scope.searchForm.status),
-            CollectionType: parseNullableNumber($scope.searchForm.collectionType)
+            Status: parseNullableNumber($scope.searchForm.status)
         };
 
         if (includePaging) {
@@ -152,48 +145,52 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
         var pageSize = parseInt($scope.pageSize, 10);
         var start = ($scope.currentPage - 1) * pageSize + 1;
         var end = Math.min($scope.currentPage * pageSize, $scope.totalCount);
-        $scope.recordsInfo = '顯示 ' + start + ' 至 ' + end + ' 筆，共 ' + $scope.totalCount + ' 筆';
+        $scope.recordsInfo = '顯示 ' + start + ' 至 ' + end +
+            ' 筆，共 ' + $scope.totalCount + ' 筆';
     }
 
     function loadData(): void {
         $scope.loading = true;
-        $http.post(Router.action('Receivable', 'Search'), buildRequest(true))
-            .then(function (response: ng.IHttpResponse<ApiResponse<ReceivableQueryResponse>>): void {
-                if (redirectIfNeeded(response.data)) {
-                    return;
-                }
+        $http.post(
+            Router.action('ReceivableCod', 'Search'),
+            buildRequest(true)
+        ).then(function (
+            response: ng.IHttpResponse<ApiResponse<ReceivableCodQueryResponse>>
+        ): void {
+            if (redirectIfNeeded(response.data)) {
+                return;
+            }
 
-                if (response.data.status === 'error' || !response.data.ReturnObject) {
-                    showError(response.data.msg || '查詢失敗');
-                    return;
-                }
+            if (response.data.status === 'error' || !response.data.ReturnObject) {
+                showError(response.data.msg || '查詢失敗');
+                return;
+            }
 
-                var result = response.data.ReturnObject;
-                $scope.rows = result.Data || [];
-                $scope.totalCount = result.TotalCount || 0;
-                $scope.totalPages = Math.ceil(
-                    $scope.totalCount / parseInt($scope.pageSize, 10)) || 0;
-                $scope.isSearched = true;
-                updateRecordsInfo();
+            var result = response.data.ReturnObject;
+            $scope.rows = result.Data || [];
+            $scope.totalCount = result.TotalCount || 0;
+            $scope.totalPages = Math.ceil(
+                $scope.totalCount / parseInt($scope.pageSize, 10)) || 0;
+            $scope.isSearched = true;
+            updateRecordsInfo();
 
-                if ($scope.totalPages > 0 && $scope.currentPage > $scope.totalPages) {
-                    $scope.currentPage = $scope.totalPages;
-                    loadData();
-                }
-            }).catch(function (): void {
-                showError('查詢失敗，請稍後再試');
-            }).finally(function (): void {
-                $scope.loading = false;
-            });
+            if ($scope.totalPages > 0 && $scope.currentPage > $scope.totalPages) {
+                $scope.currentPage = $scope.totalPages;
+                loadData();
+            }
+        }).catch(function (): void {
+            showError('查詢失敗，請稍後再試');
+        }).finally(function (): void {
+            $scope.loading = false;
+        });
     }
 
     $scope.searchForm = {
-        outDateStart: today(),
-        outDateEnd: today(),
+        signOutDateStart: today(),
+        signOutDateEnd: today(),
         trackingNo: '',
         dlvInv: '',
-        status: '',
-        collectionType: ''
+        status: ''
     };
     $scope.dateOptions = {
         startingDay: 1,
@@ -213,7 +210,7 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
     $scope.selectedCustomerMap = {};
 
     $scope.init = function (): void {
-        angular.element('#Receivable').addClass('active');
+        angular.element('#ReceivableCod').addClass('active');
     };
 
     $scope.openStartDatePopup = function (): void {
@@ -235,12 +232,11 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
 
     $scope.clearSearch = function (): void {
         $scope.searchForm = {
-            outDateStart: today(),
-            outDateEnd: today(),
+            signOutDateStart: today(),
+            signOutDateEnd: today(),
             trackingNo: '',
             dlvInv: '',
-            status: '',
-            collectionType: ''
+            status: ''
         };
         $scope.selectedCustomerMap = {};
         $scope.currentPage = 1;
@@ -272,7 +268,9 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
     $scope.getPageNumbers = function (): number[] {
         var pages: number[] = [];
         var maxVisible = 10;
-        var start = Math.max(1, $scope.currentPage - Math.floor(maxVisible / 2));
+        var start = Math.max(
+            1,
+            $scope.currentPage - Math.floor(maxVisible / 2));
         var end = Math.min($scope.totalPages, start + maxVisible - 1);
         if (end - start < maxVisible - 1) {
             start = Math.max(1, end - maxVisible + 1);
@@ -292,7 +290,7 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
 
         var request = buildRequest(false);
         $scope.exporting = true;
-        $http.post(Router.action('Receivable', 'ExportExcel'), request)
+        $http.post(Router.action('ReceivableCod', 'ExportExcel'), request)
             .then(function (response: ng.IHttpResponse<any>): void {
                 var data = response.data || {};
                 if (redirectIfNeeded(data)) {

@@ -1,5 +1,5 @@
 // <reference path="../../types/global.d.ts" />
-mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope, $http) {
+mainApp.controller('ReceivableCodController', ['$scope', '$http', function ($scope, $http) {
         function redirectIfNeeded(response) {
             if (response && response.Redirect) {
                 window.location.href = Router.action('Account', 'Login');
@@ -22,11 +22,12 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
             return value ? moment(value).format('YYYY-MM-DD') : null;
         }
         function validateDates() {
-            if (!$scope.searchForm.outDateStart || !$scope.searchForm.outDateEnd) {
+            if (!$scope.searchForm.signOutDateStart || !$scope.searchForm.signOutDateEnd) {
                 showError('日期為必填，請選擇開始日期與結束日期');
                 return false;
             }
-            if (moment($scope.searchForm.outDateStart).isAfter($scope.searchForm.outDateEnd, 'day')) {
+            if (moment($scope.searchForm.signOutDateStart)
+                .isAfter($scope.searchForm.signOutDateEnd, 'day')) {
                 showError('開始日期不可晚於結束日期');
                 return false;
             }
@@ -44,13 +45,12 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
         function buildRequest(includePaging) {
             var codes = selectedCodes($scope.selectedCustomerMap);
             var request = {
-                OutDateStart: formatDate($scope.searchForm.outDateStart),
-                OutDateEnd: formatDate($scope.searchForm.outDateEnd),
+                SignOutDateStart: formatDate($scope.searchForm.signOutDateStart),
+                SignOutDateEnd: formatDate($scope.searchForm.signOutDateEnd),
                 CustomerCodes: codes.length ? codes : null,
                 TrackingNo: $scope.searchForm.trackingNo,
                 DlvInv: $scope.searchForm.dlvInv,
-                Status: parseNullableNumber($scope.searchForm.status),
-                CollectionType: parseNullableNumber($scope.searchForm.collectionType)
+                Status: parseNullableNumber($scope.searchForm.status)
             };
             if (includePaging) {
                 request.Page = $scope.currentPage;
@@ -66,12 +66,12 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
             var pageSize = parseInt($scope.pageSize, 10);
             var start = ($scope.currentPage - 1) * pageSize + 1;
             var end = Math.min($scope.currentPage * pageSize, $scope.totalCount);
-            $scope.recordsInfo = '顯示 ' + start + ' 至 ' + end + ' 筆，共 ' + $scope.totalCount + ' 筆';
+            $scope.recordsInfo = '顯示 ' + start + ' 至 ' + end +
+                ' 筆，共 ' + $scope.totalCount + ' 筆';
         }
         function loadData() {
             $scope.loading = true;
-            $http.post(Router.action('Receivable', 'Search'), buildRequest(true))
-                .then(function (response) {
+            $http.post(Router.action('ReceivableCod', 'Search'), buildRequest(true)).then(function (response) {
                 if (redirectIfNeeded(response.data)) {
                     return;
                 }
@@ -96,12 +96,11 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
             });
         }
         $scope.searchForm = {
-            outDateStart: today(),
-            outDateEnd: today(),
+            signOutDateStart: today(),
+            signOutDateEnd: today(),
             trackingNo: '',
             dlvInv: '',
-            status: '',
-            collectionType: ''
+            status: ''
         };
         $scope.dateOptions = {
             startingDay: 1,
@@ -120,7 +119,7 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
         $scope.recordsInfo = '';
         $scope.selectedCustomerMap = {};
         $scope.init = function () {
-            angular.element('#Receivable').addClass('active');
+            angular.element('#ReceivableCod').addClass('active');
         };
         $scope.openStartDatePopup = function () {
             $scope.startDatePopup.opened = true;
@@ -137,12 +136,11 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
         };
         $scope.clearSearch = function () {
             $scope.searchForm = {
-                outDateStart: today(),
-                outDateEnd: today(),
+                signOutDateStart: today(),
+                signOutDateEnd: today(),
                 trackingNo: '',
                 dlvInv: '',
-                status: '',
-                collectionType: ''
+                status: ''
             };
             $scope.selectedCustomerMap = {};
             $scope.currentPage = 1;
@@ -184,7 +182,7 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
             }
             var request = buildRequest(false);
             $scope.exporting = true;
-            $http.post(Router.action('Receivable', 'ExportExcel'), request)
+            $http.post(Router.action('ReceivableCod', 'ExportExcel'), request)
                 .then(function (response) {
                 var data = response.data || {};
                 if (redirectIfNeeded(data)) {

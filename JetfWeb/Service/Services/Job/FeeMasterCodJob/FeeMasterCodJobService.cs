@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 using NLog;
 using Service.Data;
 using Service.Services.Job.FeeMasterCodJob.Domain;
@@ -42,11 +42,11 @@ namespace Service.Services.Job.FeeMasterCodJob
         public async Task RunFeeMasterCodJobAsync()
         {
             var endTime = DateTime.Now.Date;
-            var startTime = endTime.AddDays(-2);
+            var startTime = endTime.AddDays(-3);
 
             try
             {
-                for (var dayOffset = 1; dayOffset <= 2; dayOffset++)
+                for (var dayOffset = 1; dayOffset <= 3; dayOffset++)
                 {
                     var currentStartTime = endTime.AddDays(-dayOffset);
                     var currentEndTime = currentStartTime.AddDays(1);

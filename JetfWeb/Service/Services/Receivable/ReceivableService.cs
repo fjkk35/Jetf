@@ -123,6 +123,8 @@ namespace Service.Services.Receivable
                 .Select(x => x.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+            var trackingNo = request?.TrackingNo?.Trim();
+            var dlvInv = request?.DlvInv?.Trim();
 
             ValidateEnum(request?.Status, "狀態");
             ValidateEnum(request?.CollectionType, "區分");
@@ -135,6 +137,11 @@ namespace Service.Services.Receivable
                 .WhereIf(endDateExclusive.HasValue,
                     x => x.FeeMaster.OutDateTime.HasValue && x.FeeMaster.OutDateTime < endDateExclusive.Value)
                 .WhereIf(customerCodes.Any(), x => customerCodes.Contains(x.FeeMaster.Customer))
+                // 有輸入單號時才套用精確比對，避免空白條件影響查詢結果。
+                .WhereIf(!string.IsNullOrWhiteSpace(trackingNo),
+                    x => x.TrackingNo == trackingNo)
+                .WhereIf(!string.IsNullOrWhiteSpace(dlvInv),
+                    x => x.DlvInv == dlvInv)
                 .WhereIf(request?.Status == ReceivableStatus.Received,
                     x => x.ReceivedCustomerCodTime.HasValue || x.ReceivedToDlvCodTime.HasValue)
                 .WhereIf(request?.Status == ReceivableStatus.Unreceived,
