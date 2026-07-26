@@ -84,7 +84,9 @@ namespace Service.Services.ReconciliationCustomer
             }
             using (var transaction = JetfDb.Database.BeginTransaction(IsolationLevel.Serializable))
             {
-                var details = BuildQuery(request.Query).ToList();
+                var details = BuildQuery(request.Query)
+                    .AsNoTracking()
+                    .ToList();
                 if (!details.Any())
                 {
                     throw new InvalidOperationException("目前查詢條件已無可銷帳資料，請重新查詢。");
@@ -105,7 +107,8 @@ namespace Service.Services.ReconciliationCustomer
                     detail.ReceivedCustomerCodUserId = userId;
                 }
 
-                JetfDb.SaveChanges();
+                // 使用暫存表一次批次更新銷帳欄位，避免 EF 為每筆明細個別執行 UPDATE。
+                JetfDb.BulkUpdate(details);
                 transaction.Commit();
 
                 return new ReconciliationCustomerConfirmResult

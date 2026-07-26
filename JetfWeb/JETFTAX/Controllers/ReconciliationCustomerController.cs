@@ -1,8 +1,10 @@
 using Service.EnumTax;
 using Service.Models;
+using Service.Services;
 using Service.Services.ReconciliationCustomer;
 using Service.Services.ReconciliationCustomer.Domain;
 using System;
+using System.Threading;
 using System.Web.Mvc;
 using static JETFTAX.Controllers.AccountController;
 
@@ -14,6 +16,9 @@ namespace JETFTAX.Controllers
     public sealed class ReconciliationCustomerController : Controller
     {
         private readonly ReconciliationCustomerService _service;
+        private static readonly SemaphoreSlim ConfirmSemaphore =
+            new SemaphoreSlim(1, 1);
+        private static string ConfirmExecutingUserId = string.Empty;
 
         /// <summary>
         /// 建立客戶銷帳控制器。
@@ -82,13 +87,28 @@ namespace JETFTAX.Controllers
         [UserAuthorize(Authority.ReconciliationCustomer)]
         public JsonResult Confirm(ReconciliationCustomerConfirmRequest request)
         {
+            var responseModel = new ResponseModel();
+            if (!ConfirmSemaphore.Wait(0))
+            {
+                responseModel.status = Status.error;
+                responseModel.msg =
+                    $"[{ConfirmExecutingUserId}]正在執行客戶銷帳，請等待執行完成後再試";
+                return Json(responseModel);
+            }
+
             try
             {
+                ConfirmExecutingUserId = UserContextService.GetUserId();
                 return Json(new ResponseModel(_service.Confirm(request)));
             }
             catch (Exception ex)
             {
                 return Json(new ResponseModel(ex.Message));
+            }
+            finally
+            {
+                ConfirmExecutingUserId = string.Empty;
+                ConfirmSemaphore.Release();
             }
         }
     }
