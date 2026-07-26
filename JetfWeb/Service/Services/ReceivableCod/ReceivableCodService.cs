@@ -152,7 +152,10 @@ namespace Service.Services.ReceivableCod
             return query.Select(x => new ReceivableCodDataRow
             {
                 Id = x.Id,
-                SourceType = x.SourceType,
+                // SOURCE_TYPE 移除後，依排程相同規則由 DATA_TYPE 區分空運與海運。
+                CustomerType = x.DataType == "tact" || x.DataType == "ftz"
+                    ? "AIR"
+                    : "SEA",
                 DataType = x.DataType,
                 CustomerCode = x.Customer,
                 SignOutTime = x.SignOutTime,
@@ -175,13 +178,13 @@ namespace Service.Services.ReceivableCod
             var seaType = CustomerType.SEA.ToString();
             var airCustomerCodes = rows
                 .Where(x => string.Equals(
-                    x.SourceType,
+                    x.CustomerType,
                     airType,
                     StringComparison.OrdinalIgnoreCase))
                 .Select(x => x.CustomerCode);
             var seaCustomerCodes = rows
                 .Where(x => string.Equals(
-                    x.SourceType,
+                    x.CustomerType,
                     seaType,
                     StringComparison.OrdinalIgnoreCase))
                 .Select(x => x.CustomerCode);
@@ -198,7 +201,7 @@ namespace Service.Services.ReceivableCod
             {
                 string customerName = null;
                 if (string.Equals(
-                    row.SourceType,
+                    row.CustomerType,
                     airType,
                     StringComparison.OrdinalIgnoreCase))
                 {
@@ -207,7 +210,7 @@ namespace Service.Services.ReceivableCod
                         out customerName);
                 }
                 else if (string.Equals(
-                    row.SourceType,
+                    row.CustomerType,
                     seaType,
                     StringComparison.OrdinalIgnoreCase))
                 {
@@ -220,7 +223,7 @@ namespace Service.Services.ReceivableCod
                 {
                     Id = row.Id,
                     PostingDate = row.SignOutTime.ToString("yyyy/MM/dd"),
-                    Source = GetSourceName(row.SourceType),
+                    Source = GetSourceName(row.CustomerType),
                     Type = row.DataType,
                     CustomerCode = row.CustomerCode,
                     CustomerName = string.IsNullOrWhiteSpace(customerName)
@@ -239,14 +242,14 @@ namespace Service.Services.ReceivableCod
         /// <summary>
         /// 將 AIR、SEA 來源代碼轉換為畫面顯示名稱。
         /// </summary>
-        /// <param name="sourceType">來源類型代碼。</param>
+        /// <param name="customerType">客戶類型代碼。</param>
         /// <returns>來源類型顯示名稱。</returns>
-        private static string GetSourceName(string sourceType)
+        private static string GetSourceName(string customerType)
         {
-            CustomerType customerType;
-            return Enum.TryParse(sourceType, true, out customerType)
-                ? customerType.ToDescription()
-                : sourceType;
+            CustomerType parsedCustomerType;
+            return Enum.TryParse(customerType, true, out parsedCustomerType)
+                ? parsedCustomerType.ToDescription()
+                : customerType;
         }
 
         /// <summary>

@@ -19,14 +19,6 @@ namespace Service.Data
         public int Id { get; set; }
 
         /// <summary>
-        /// 資料來源類型，AIR 表示空運，SEA 表示海運。
-        /// </summary>
-        [Required]
-        [StringLength(3)]
-        [Column("SOURCE_TYPE")]
-        public string SourceType { get; set; }
-
-        /// <summary>
         /// 原始清關資料類型。
         /// </summary>
         [Required]

@@ -13,9 +13,9 @@ namespace Service.Services.ReceivableCod.Domain
         public int Id { get; set; }
 
         /// <summary>
-        /// 資料來源類型，值為 AIR 或 SEA。
+        /// 客戶類型，值為 AIR 或 SEA。
         /// </summary>
-        public string SourceType { get; set; }
+        public string CustomerType { get; set; }
 
         /// <summary>
         /// 報關資料類型。

@@ -16,8 +16,6 @@ namespace Service.Services.Job.FeeMasterCodJob
     public sealed class FeeMasterCodJobService : _BaseService
     {
         private const string JobName = "稅金到付款資料";
-        private const string AirSourceType = "AIR";
-        private const string SeaSourceType = "SEA";
         private const int CommandTimeoutSeconds = 600;
         private const int BatchSize = 500;
         private const int ProcessingDays = 3;
@@ -275,7 +273,7 @@ WHERE c.DATA_TYPE IS NOT NULL
             var existingKeys = LoadExistingAirKeys(rows);
             var entities = rows
                 .Where(x => !existingKeys.Contains(BuildKey(x.MainNumber, x.TrackingNo)))
-                .Select(x => CreateEntity(AirSourceType, x))
+                .Select(CreateEntity)
                 .ToList();
 
             return SaveEntities(entities);
@@ -291,7 +289,7 @@ WHERE c.DATA_TYPE IS NOT NULL
             var existingKeys = LoadExistingSeaKeys(rows);
             var entities = rows
                 .Where(x => !existingKeys.Contains(BuildKey(x.MainNumber, x.BagNumber)))
-                .Select(x => CreateEntity(SeaSourceType, x))
+                .Select(CreateEntity)
                 .ToList();
 
             return SaveEntities(entities);
@@ -306,7 +304,7 @@ WHERE c.DATA_TYPE IS NOT NULL
         {
             return JetfDb.FeeMasterCods
                 .AsNoTracking()
-                .Where(x => x.SourceType == AirSourceType)
+                .Where(x => x.DataType == "tact" || x.DataType == "ftz")
                 .WhereBulkContains(
                     JetfDb,
                     rows,
@@ -325,7 +323,7 @@ WHERE c.DATA_TYPE IS NOT NULL
         {
             return JetfDb.FeeMasterCods
                 .AsNoTracking()
-                .Where(x => x.SourceType == SeaSourceType)
+                .Where(x => x.DataType != "tact" && x.DataType != "ftz")
                 .WhereBulkContains(
                     JetfDb,
                     rows,
@@ -361,14 +359,12 @@ WHERE c.DATA_TYPE IS NOT NULL
         /// <summary>
         /// 建立目標表 Entity。
         /// </summary>
-        /// <param name="sourceType">AIR 或 SEA。</param>
         /// <param name="row">來源資料。</param>
         /// <returns>待寫入的 FEE_MASTER_COD Entity。</returns>
-        private static FeeMasterCodEntity CreateEntity(string sourceType, FeeMasterCodSourceRow row)
+        private static FeeMasterCodEntity CreateEntity(FeeMasterCodSourceRow row)
         {
             return new FeeMasterCodEntity
             {
-                SourceType = sourceType,
                 DataType = row.DataType,
                 MainNumber = row.MainNumber,
                 Customer = row.Customer,
