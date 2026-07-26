@@ -235,15 +235,15 @@ namespace Service.Services.SearchCargo
             if (feeMaster != null)
             {
                 detail.Include_Tax = feeMaster.IncludeTax;
-                detail.Tax1 = feeMaster.Tax1.ToString();
-                detail.Tax2 = feeMaster.Tax2.ToString();
-                detail.TotalTax = feeMaster.TotalTax.ToString();
-                detail.CCFee = feeMaster.CcFee.ToString();
-                detail.Fee = feeMaster.Fee.ToString();
-                detail.Cod = feeMaster.Cod.ToString();
-                detail.To_Dlv_Cod = feeMaster.ToDlvCod.ToString();
-                detail.CustomerCod = feeMaster.CustomerCod.ToString();
-                detail.TransCod = feeMaster.TransCod.ToString();
+                detail.Tax1 = (feeMaster.Tax1 ?? 0).ToString();
+                detail.Tax2 = (feeMaster.Tax2 ?? 0).ToString();
+                detail.TotalTax = ((feeMaster.Tax1 ?? 0) + (feeMaster.Tax2 ?? 0)).ToString();
+                detail.CCFee = (feeMaster.Ccfee ?? 0).ToString();
+                detail.Fee = (feeMaster.Fee ?? 0).ToString();
+                detail.Cod = (feeMaster.Cod ?? 0).ToString();
+                detail.To_Dlv_Cod = feeMaster.ToDlvCod.ToInt().ToString();
+                detail.CustomerCod = (feeMaster.CustomerCod ?? 0).ToString();
+                detail.TransCod = (feeMaster.TransCod ?? 0).ToString();
             }
 
             // 取得回款進度
@@ -252,6 +252,17 @@ namespace Service.Services.SearchCargo
             if (!string.IsNullOrWhiteSpace(trackingNo)
                 && !string.IsNullOrWhiteSpace(deliveryNo))
             {
+                //回款日期
+                var repaymentDate = feeMaster == null
+                    ? null
+                    : GetEarliestRepaymentDate(feeMaster.Id);
+
+                // 費用明細沒有物流銷帳關聯且原始到付款大於 0 時，改由到付款彙整資料查找。
+                if (!repaymentDate.HasValue && detail.CC.ToInt() > 0)
+                {
+                    repaymentDate = GetEarliestFeeMasterCodRepaymentDate(deliveryNo);
+                }
+
                 var reconciliationInvoice = JetfDb.ReconciliationInvoices
                     .AsNoTracking()
                     .Where(x => x.TrackingNo == trackingNo
@@ -260,14 +271,14 @@ namespace Service.Services.SearchCargo
                     .ThenByDescending(x => x.Id)
                     .FirstOrDefault();
 
-                if (reconciliationInvoice != null)
+                if (repaymentDate.HasValue || reconciliationInvoice != null)
                 {
                     detail.ReconciliationInvoiceProgress = new ReconciliationInvoiceProgressModel
                     {
-                        PaymentDate = null,
-                        Type = reconciliationInvoice.Type,
-                        Date = reconciliationInvoice.Date,
-                        Invoice = reconciliationInvoice.Invoice
+                        PaymentDate = repaymentDate,
+                        Type = reconciliationInvoice?.Type,
+                        Date = reconciliationInvoice?.Date,
+                        Invoice = reconciliationInvoice?.Invoice
                     };
                 }
             }
@@ -745,7 +756,7 @@ namespace Service.Services.SearchCargo
         /// <param name="trackingNo">分提單號。</param>
         /// <param name="deliveryNo">物流貨號。</param>
         /// <returns>稅金資料；找不到相符的複合鍵時回傳 <see langword="null"/>。</returns>
-        private FeeMasterModel GetFeeMaster(string trackingNo, string deliveryNo)
+        private FeeMasterEntity GetFeeMaster(string trackingNo, string deliveryNo)
         {
             if (string.IsNullOrWhiteSpace(trackingNo)
                 || string.IsNullOrWhiteSpace(deliveryNo))
@@ -753,42 +764,47 @@ namespace Service.Services.SearchCargo
                 return null;
             }
 
-            const string sql = @"
-                select *
-                from [jetf].[dbo].[FEE_MASTER]
-                where TRACKINGNO = @TRACKINGNO
-                  and DLV_INV = @DLV_INV";
+            var normalizedTrackingNo = trackingNo.Trim();
+            var normalizedDeliveryNo = deliveryNo.Trim();
+            return JetfDb.FeeMasters
+                .AsNoTracking()
+                .Where(x =>
+                    x.TrackingNo == normalizedTrackingNo &&
+                    x.DlvInv == normalizedDeliveryNo)
+                .OrderBy(x => x.Id)
+                .FirstOrDefault();
+        }
 
-            using (var connection = new SqlConnection(conn.ConnectionString))
-            {
-                var row = connection.QueryFirstOrDefault(sql, new
-                {
-                    TRACKINGNO = trackingNo.Trim(),
-                    DLV_INV = deliveryNo.Trim()
-                });
+        /// <summary>
+        /// 依費用主檔識別碼取得明細所關聯的最早物流回款日期。
+        /// </summary>
+        /// <param name="feeMasterId">費用主檔識別碼。</param>
+        /// <returns>最早回款日期；尚無物流銷帳資料時回傳 null。</returns>
+        private DateTime? GetEarliestRepaymentDate(int feeMasterId)
+        {
+            return JetfDb.FeeMasterDetails
+                .AsNoTracking()
+                .Where(x =>
+                    x.FeeMasterId == feeMasterId &&
+                    x.ReconciliationLogisticsId.HasValue)
+                .Select(x => (DateTime?)x.ReconciliationLogistics.RepaymentDate)
+                .Min();
+        }
 
-                if (row == null)
-                    return null;
-
-                int tax1, tax2, ccFee, fee, cod, toDlvCod, customerCod, transCod;
-
-                var model = new FeeMasterModel()
-                {
-                    DataDate = row.DATADATE?.ToString(),
-                    IncludeTax = row.INCLUDE_TAX?.ToString(),
-                    Tax1 = Int32.TryParse(row.TAX1?.ToString(), out tax1) ? tax1 : 0,
-                    Tax2 = Int32.TryParse(row.TAX2?.ToString(), out tax2) ? tax2 : 0,
-                    CcFee = Int32.TryParse(row.CCFEE?.ToString(), out ccFee) ? ccFee : 0,
-                    Fee = Int32.TryParse(row.FEE?.ToString(), out fee) ? fee : 0,
-                    Cod = Int32.TryParse(row.COD?.ToString(), out cod) ? cod : 0,
-                    ToDlvCod = Int32.TryParse(row.TO_DLV_COD?.ToString(), out toDlvCod) ? toDlvCod : 0,
-                    CustomerCod = Int32.TryParse(row.CUSTOMER_COD?.ToString(), out customerCod) ? customerCod : 0,
-                    TransCod = Int32.TryParse(row.TRANS_COD?.ToString(), out transCod) ? transCod : 0,
-                };
-
-                model.TotalTax = model.Tax1 + model.Tax2;
-                return model;
-            }
+        /// <summary>
+        /// 依物流貨號取得到付款彙整資料所關聯的最早物流回款日期。
+        /// </summary>
+        /// <param name="deliveryNo">物流貨號。</param>
+        /// <returns>最早回款日期；尚無物流銷帳資料時回傳 null。</returns>
+        private DateTime? GetEarliestFeeMasterCodRepaymentDate(string deliveryNo)
+        {
+            return JetfDb.FeeMasterCods
+                .AsNoTracking()
+                .Where(x =>
+                    x.DlvInv == deliveryNo &&
+                    x.ReconciliationLogisticsId.HasValue)
+                .Select(x => (DateTime?)x.ReconciliationLogistics.RepaymentDate)
+                .Min();
         }
 
         /// <summary>
@@ -1449,24 +1465,6 @@ order by CRTDATETIME desc";
         }
 
         #endregion
-    }
-
-    /// <summary>
-    /// 稅金資料Model
-    /// </summary>
-    internal class FeeMasterModel
-    {
-        public string DataDate { get; set; }
-        public string IncludeTax { get; set; }
-        public int Tax1 { get; set; }
-        public int Tax2 { get; set; }
-        public int TotalTax { get; set; }
-        public int CcFee { get; set; }
-        public int Fee { get; set; }
-        public int Cod { get; set; }
-        public int ToDlvCod { get; set; }
-        public int CustomerCod { get; set; }
-        public int TransCod { get; set; }
     }
 
     /// <summary>
