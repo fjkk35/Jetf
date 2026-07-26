@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Service.Services.Job.FeeMasterCodJob
 {
     /// <summary>
-    /// 將前兩個完整日的空運及海運到付款資料寫入 FEE_MASTER_COD。
+    /// 將前三個完整日的空運及海運到付款資料寫入 FEE_MASTER_COD。
     /// </summary>
     public sealed class FeeMasterCodJobService : _BaseService
     {
@@ -20,6 +20,7 @@ namespace Service.Services.Job.FeeMasterCodJob
         private const string SeaSourceType = "SEA";
         private const int CommandTimeoutSeconds = 600;
         private const int BatchSize = 500;
+        private const int ProcessingDays = 3;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         /// <summary>
@@ -34,35 +35,30 @@ namespace Service.Services.Job.FeeMasterCodJob
         }
 
         /// <summary>
-        /// 依系統時間查詢前兩個完整日，每次只處理一天的空運及海運到付款資料。
+        /// 依系統時間查詢前三個完整日，每次只處理一天的空運及海運到付款資料。
         /// 已存在 CLEARANCE_TAX 的資料不會寫入。
         /// 空運主號與追蹤號、海運主號與分提單號已存在時不會再次寫入。
         /// </summary>
         /// <returns>非同步排程工作。</returns>
         public async Task RunFeeMasterCodJobAsync()
         {
-            var endTime = DateTime.Now.Date;
-            var startTime = endTime.AddDays(-3);
+            var processDate = DateTime.Today.AddDays(-1);
 
             try
             {
-                for (var dayOffset = 1; dayOffset <= 3; dayOffset++)
+                // 從昨天開始逐日往前處理，每完成一天後再往前一天。
+                for (var processedDays = 0; processedDays < ProcessingDays; processedDays++)
                 {
-                    var currentStartTime = endTime.AddDays(-dayOffset);
-                    var currentEndTime = currentStartTime.AddDays(1);
-                    await ProcessOneDayAsync(currentStartTime, currentEndTime);
+                    Logger.Info($"{JobName}開始，處理日期={processDate:yyyy-MM-dd}");
+                    await ProcessOneDayAsync(processDate, processDate.AddDays(1));
+                    Logger.Info($"{JobName}完成，處理日期={processDate:yyyy-MM-dd}");
+                    processDate = processDate.AddDays(-1);
                 }
-
-                Logger.Info(
-                    $"{JobName}全部完成，區間={startTime:yyyy-MM-dd HH:mm:ss}~{endTime:yyyy-MM-dd HH:mm:ss}");
             }
             catch (Exception ex)
             {
-                Logger.Error(
-                    ex,
-                    $"{JobName}失敗，區間={startTime:yyyy-MM-dd HH:mm:ss}~{endTime:yyyy-MM-dd HH:mm:ss}");
+                Logger.Error(ex, $"{JobName}失敗，處理日期={processDate:yyyy-MM-dd}");
                 WriteJobErrorLog(JobName, ex);
-                throw;
             }
         }
 
@@ -76,22 +72,13 @@ namespace Service.Services.Job.FeeMasterCodJob
         {
             var airQueryRows = await QueryAirRowsAsync(startTime, endTime);
             var airRows = DeduplicateAirRows(airQueryRows);
-            var airQueryCount = airQueryRows.Count;
-            var airDeduplicatedCount = airRows.Count;
-            var airInsertedCount = await SaveAirRowsAsync(airRows);
+            SaveAirRows(airRows);
             airQueryRows.Clear();
             airRows.Clear();
 
             var seaQueryRows = await QuerySeaRowsAsync(startTime, endTime);
             var seaRows = DeduplicateSeaRows(seaQueryRows);
-            var seaQueryCount = seaQueryRows.Count;
-            var seaDeduplicatedCount = seaRows.Count;
-            var seaInsertedCount = await SaveSeaRowsAsync(seaRows);
-
-            Logger.Info(
-                $"{JobName}單日完成，區間={startTime:yyyy-MM-dd HH:mm:ss}~{endTime:yyyy-MM-dd HH:mm:ss}，" +
-                $"空運查詢={airQueryCount}，空運去重={airDeduplicatedCount}，空運新增={airInsertedCount}，" +
-                $"海運查詢={seaQueryCount}，海運去重={seaDeduplicatedCount}，海運新增={seaInsertedCount}");
+            SaveSeaRows(seaRows);
         }
 
         /// <summary>
@@ -283,9 +270,9 @@ WHERE c.DATA_TYPE IS NOT NULL
         /// </summary>
         /// <param name="rows">已完成記憶體去重的空運資料。</param>
         /// <returns>實際新增筆數。</returns>
-        private async Task<int> SaveAirRowsAsync(List<FeeMasterCodSourceRow> rows)
+        private int SaveAirRows(List<FeeMasterCodSourceRow> rows)
         {
-            var existingKeys = await LoadExistingAirKeysAsync(rows);
+            var existingKeys = LoadExistingAirKeys(rows);
             var entities = rows
                 .Where(x => !existingKeys.Contains(BuildKey(x.MainNumber, x.TrackingNo)))
                 .Select(x => CreateEntity(AirSourceType, x))
@@ -299,9 +286,9 @@ WHERE c.DATA_TYPE IS NOT NULL
         /// </summary>
         /// <param name="rows">已完成記憶體去重的海運資料。</param>
         /// <returns>實際新增筆數。</returns>
-        private async Task<int> SaveSeaRowsAsync(List<FeeMasterCodSourceRow> rows)
+        private int SaveSeaRows(List<FeeMasterCodSourceRow> rows)
         {
-            var existingKeys = await LoadExistingSeaKeysAsync(rows);
+            var existingKeys = LoadExistingSeaKeys(rows);
             var entities = rows
                 .Where(x => !existingKeys.Contains(BuildKey(x.MainNumber, x.BagNumber)))
                 .Select(x => CreateEntity(SeaSourceType, x))
@@ -311,73 +298,41 @@ WHERE c.DATA_TYPE IS NOT NULL
         }
 
         /// <summary>
-        /// 分批查詢目標表既有的空運主號與追蹤號。
+        /// 批次查詢目標表既有的空運主號與追蹤號。
         /// </summary>
         /// <param name="rows">待比對的空運資料。</param>
         /// <returns>既有空運防重鍵集合。</returns>
-        private async Task<HashSet<string>> LoadExistingAirKeysAsync(IEnumerable<FeeMasterCodSourceRow> rows)
+        private HashSet<string> LoadExistingAirKeys(IEnumerable<FeeMasterCodSourceRow> rows)
         {
-            var result = new HashSet<string>(StringComparer.Ordinal);
-            var mainNumbers = rows
-                .Select(x => x.MainNumber)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            foreach (var batch in Batch(mainNumbers, BatchSize))
-            {
-                var currentBatch = batch.ToList();
-                var existingRows = await JetfDb.FeeMasterCods
-                    .AsNoTracking()
-                    .Where(x => x.SourceType == AirSourceType && currentBatch.Contains(x.MainNumber))
-                    .Select(x => new
-                    {
-                        x.MainNumber,
-                        x.TrackingNo
-                    })
-                    .ToListAsync();
-
-                foreach (var existingRow in existingRows)
-                {
-                    result.Add(BuildKey(existingRow.MainNumber, existingRow.TrackingNo));
-                }
-            }
-
-            return result;
+            return JetfDb.FeeMasterCods
+                .AsNoTracking()
+                .Where(x => x.SourceType == AirSourceType)
+                .WhereBulkContains(
+                    JetfDb,
+                    rows,
+                    entity => new { entity.MainNumber, entity.TrackingNo },
+                    row => new { row.MainNumber, row.TrackingNo })
+                .Select(x => BuildKey(x.MainNumber, x.TrackingNo))
+                .ToHashSet(StringComparer.Ordinal);
         }
 
         /// <summary>
-        /// 分批查詢目標表既有的海運主號與袋號。
+        /// 批次查詢目標表既有的海運主號與袋號。
         /// </summary>
         /// <param name="rows">待比對的海運資料。</param>
         /// <returns>既有海運防重鍵集合。</returns>
-        private async Task<HashSet<string>> LoadExistingSeaKeysAsync(IEnumerable<FeeMasterCodSourceRow> rows)
+        private HashSet<string> LoadExistingSeaKeys(IEnumerable<FeeMasterCodSourceRow> rows)
         {
-            var result = new HashSet<string>(StringComparer.Ordinal);
-            var mainNumbers = rows
-                .Select(x => x.MainNumber)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            foreach (var batch in Batch(mainNumbers, BatchSize))
-            {
-                var currentBatch = batch.ToList();
-                var existingRows = await JetfDb.FeeMasterCods
-                    .AsNoTracking()
-                    .Where(x => x.SourceType == SeaSourceType && currentBatch.Contains(x.MainNumber))
-                    .Select(x => new
-                    {
-                        x.MainNumber,
-                        x.BagNumber
-                    })
-                    .ToListAsync();
-
-                foreach (var existingRow in existingRows)
-                {
-                    result.Add(BuildKey(existingRow.MainNumber, existingRow.BagNumber));
-                }
-            }
-
-            return result;
+            return JetfDb.FeeMasterCods
+                .AsNoTracking()
+                .Where(x => x.SourceType == SeaSourceType)
+                .WhereBulkContains(
+                    JetfDb,
+                    rows,
+                    entity => new { entity.MainNumber, entity.BagNumber },
+                    row => new { row.MainNumber, row.BagNumber })
+                .Select(x => BuildKey(x.MainNumber, x.BagNumber))
+                .ToHashSet(StringComparer.Ordinal);
         }
 
         /// <summary>
@@ -502,33 +457,5 @@ WHERE c.DATA_TYPE IS NOT NULL
             return (value ?? string.Empty).Trim().ToUpperInvariant();
         }
 
-        /// <summary>
-        /// 將資料分割成固定筆數的批次。
-        /// </summary>
-        /// <typeparam name="T">資料型別。</typeparam>
-        /// <param name="source">來源資料。</param>
-        /// <param name="size">每批筆數。</param>
-        /// <returns>批次資料。</returns>
-        private static IEnumerable<IEnumerable<T>> Batch<T>(IEnumerable<T> source, int size)
-        {
-            var batch = new List<T>(size);
-
-            foreach (var item in source)
-            {
-                batch.Add(item);
-                if (batch.Count < size)
-                {
-                    continue;
-                }
-
-                yield return batch;
-                batch = new List<T>(size);
-            }
-
-            if (batch.Count > 0)
-            {
-                yield return batch;
-            }
-        }
     }
 }
