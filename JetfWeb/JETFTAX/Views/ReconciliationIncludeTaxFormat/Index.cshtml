@@ -1,0 +1,182 @@
+﻿@{
+    ViewBag.Title = "包稅客戶格式";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid reconciliation-include-tax-format-page"
+     ng-controller="ReconciliationIncludeTaxFormatController"
+     ng-init="init()">
+    <span class="headtype">包稅客戶格式</span>
+    <hr />
+
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <div class="row align-items-center">
+            <div class="col-lg-8 text-muted">
+                設定包稅客戶 Excel 匯出欄位名稱、資料來源與固定值，欄位可直接拖曳排序。
+            </div>
+            <div class="col-lg-4 text-right">
+                <button type="button" class="btn btn-primary" ng-click="openCreateModal()" ng-disabled="loading">
+                    <i class="fa fa-plus"></i> 新增格式
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div ng-show="loading" class="text-center py-4">
+        <i class="fa fa-spinner fa-spin fa-3x"></i>
+        <p>載入中...</p>
+    </div>
+
+    <div class="table-responsive" ng-show="!loading">
+        <table class="table table-bordered table-striped table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>格式名稱</th>
+                    <th style="width: 160px;">匯出欄位數</th>
+                    <th style="width: 220px;">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-if="formats.length === 0">
+                    <td colspan="3" class="text-center">查無資料</td>
+                </tr>
+                <tr ng-repeat="format in formats track by format.Id">
+                    <td>{{format.FormatName}}</td>
+                    <td class="text-center">{{format.ColumnCount}}</td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-warning btn-sm mr-1" ng-click="openEditModal(format.Id)">
+                            <i class="fa fa-edit"></i> 編輯
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm" ng-click="deleteFormat(format)">
+                            <i class="fa fa-trash"></i> 刪除
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="modal fade" id="reconciliationIncludeTaxFormatModal" tabindex="-1" role="dialog"
+         data-backdrop="true" data-keyboard="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{modal.form.Id ? '編輯包稅客戶格式' : '新增包稅客戶格式'}}</h5>
+                    <button type="button" class="close" ng-click="closeModal()" ng-disabled="modal.saving">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">格式名稱 <span class="text-danger">*</span></label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" maxlength="50"
+                                   ng-model="modal.form.FormatName"
+                                   ng-disabled="modal.loading || modal.saving"
+                                   placeholder="例如：包稅客戶格式一" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Excel 匯出欄位</h6>
+                        <button type="button" class="btn btn-outline-primary btn-sm"
+                                ng-click="addColumn()" ng-disabled="modal.saving">
+                            <i class="fa fa-plus"></i> 新增欄位
+                        </button>
+                    </div>
+
+                    <div class="table-responsive format-column-table-wrap">
+                        <table class="table table-bordered table-sm mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th style="width: 55px;">順序</th>
+                                    <th style="width: 220px;">匯出名稱 <span class="text-danger">*</span></th>
+                                    <th style="width: 180px;">資料來源 <span class="text-danger">*</span></th>
+                                    <th>對應資料欄位／固定值 <span class="text-danger">*</span></th>
+                                    <th style="width: 80px;">移除</th>
+                                </tr>
+                            </thead>
+                            <tbody ui-sortable="modal.sortableOptions" ng-model="modal.form.Columns">
+                                <tr ng-if="modal.form.Columns.length === 0">
+                                    <td colspan="5" class="text-center text-muted">尚未設定匯出欄位</td>
+                                </tr>
+                                <tr ng-repeat="column in modal.form.Columns track by $index" class="sortable-row">
+                                    <td class="text-center drag-handle" title="拖曳排序">
+                                        <i class="fa fa-bars"></i>
+                                        <span>{{$index + 1}}</span>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm" maxlength="50"
+                                               ng-model="column.ColumnName" ng-disabled="modal.saving" />
+                                    </td>
+                                    <td>
+                                        <select class="form-control form-control-sm"
+                                                ng-model="column.SourceType" ng-disabled="modal.saving"
+                                                ng-options="type.value as type.text for type in sourceTypes">
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select ng-if="column.SourceType === 0"
+                                               class="form-control form-control-sm"
+                                                ng-model="column.FieldKey" ng-disabled="modal.saving"
+                                                ng-options="field.Key as field.Name for field in fieldOptions">
+                                            <option value="">請選擇資料欄位</option>
+                                        </select>
+                                        <input ng-if="column.SourceType === 1" type="text"
+                                               class="form-control form-control-sm" maxlength="200"
+                                               ng-model="column.DefaultValue" ng-disabled="modal.saving" />
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-outline-danger btn-sm"
+                                                ng-click="removeColumn($index)" ng-disabled="modal.saving">
+                                            <i class="fa fa-times"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" ng-click="closeModal()" ng-disabled="modal.saving">取消</button>
+                    <button type="button" class="btn btn-primary" ng-click="saveFormat()"
+                            ng-disabled="modal.loading || modal.saving">
+                        <i class="fa" ng-class="{'fa-spinner fa-spin': modal.saving, 'fa-save': !modal.saving}"></i>
+                        {{modal.saving ? '儲存中...' : '儲存'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .reconciliation-include-tax-format-page .format-column-table-wrap {
+        max-height: 460px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+    }
+
+    .reconciliation-include-tax-format-page .sortable-row {
+        cursor: move;
+    }
+
+    .reconciliation-include-tax-format-page .drag-handle {
+        color: #858796;
+        white-space: nowrap;
+    }
+
+    .reconciliation-include-tax-format-page .drag-handle .fa {
+        margin-right: .35rem;
+    }
+
+    .reconciliation-include-tax-format-page .ui-sortable-helper {
+        display: table;
+        background: #fff;
+    }
+
+    .reconciliation-include-tax-format-page .ui-sortable-placeholder {
+        height: 48px;
+        background: #f8f9fc;
+    }
+</style>

@@ -185,6 +185,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'ReconciliationUploadInvoice', text: '代收銷帳上傳發票', url: '~/ReconciliationInvoice/UploadInvoice', auth: ['ReconciliationUploadInvoice'] },
                 { id: 'ReconciliationAir', text: '代收銷帳上傳空快', url: '~/ReconciliationAir/UploadAir', auth: ['ReconciliationAir'] },
                 { id: 'ReconciliationCustomerGroup', text: '代收銷帳客戶群組', url: '~/ReconciliationCustomerGroup/Index', auth: ['ReconciliationCustomerGroup'] },
+                { id: 'ReconciliationIncludeTaxFormat', text: '包稅客戶格式', url: '~/ReconciliationIncludeTaxFormat/Index', auth: ['ReconciliationIncludeTaxFormat'] },
                 { id: 'Receivable', text: '應收未收明細', url: '~/Receivable/Index', auth: ['Receivable'] },
                 { id: 'ReceivableCod', text: '到付款應收未收明細', url: '~/ReceivableCod/Index', auth: ['Receivable'] },
                 { id: 'ReconciliationCustomer', text: '客戶銷帳', url: '~/ReconciliationCustomer/Index', auth: ['ReconciliationCustomer'] },

@@ -148,6 +148,10 @@ namespace Service.Data
 
         public DbSet<ReconciliationCustomerGroupDetailEntity> ReconciliationCustomerGroupDetails { get; set; }
 
+        public DbSet<ReconciliationIncludeTaxFormatEntity> ReconciliationIncludeTaxFormats { get; set; }
+
+        public DbSet<ReconciliationIncludeTaxFormatColumnEntity> ReconciliationIncludeTaxFormatColumns { get; set; }
+
         public DbSet<ReconciliationLogisticsEntity> ReconciliationLogistics { get; set; }
     }
 }
