@@ -23,12 +23,12 @@ namespace Service.Services.ReconciliationLogistics
     {
         private static readonly string[] HctCollectionHeaders =
         {
-            "查貨號碼", "清單編號", "客戶代號", "代收貨款金額"
+            "查貨號碼", "客戶代號", "代收貨款金額"
         };
 
         private static readonly string[] HctRemittanceHeaders =
         {
-            "宅配單號", "出貨單號", "現金金額"
+            "宅配單號", "現金金額"
         };
 
         private static readonly string[] SevenElevenHeaders =
@@ -203,7 +203,7 @@ namespace Service.Services.ReconciliationLogistics
                     return new ResponseModel("檔案中沒有資料");
                 }
 
-                ValidateFileDuplicates(uploadRows, company);
+                ValidateFileDuplicates(uploadRows, company, uploadFormat);
                 using (var transaction = JetfDb.Database.BeginTransaction())
                 {
                     try
@@ -214,7 +214,7 @@ namespace Service.Services.ReconciliationLogistics
                             .ToList();
                         if (validRows.Any())
                         {
-                            ValidateDatabaseDuplicates(validRows, company);
+                            ValidateDatabaseDuplicates(validRows, company, uploadFormat);
                         }
 
                         // 僅將通過欄位、檔案重複及資料庫重複驗證的資料送入銷帳流程。
@@ -652,17 +652,20 @@ namespace Service.Services.ReconciliationLogistics
             var amountText = amountCell?.CellType == CellType.Numeric
                 ? amountCell.NumericCellValue.ToString(CultureInfo.InvariantCulture)
                 : excelRow.GetCellData(amountCellIndex);
+            int trackingNoColumnIndex;
             var row = new ReconciliationLogisticsUploadRow
             {
                 RowNo = rowNo,
                 DlvInv = excelRow.GetCellData(columnIndexes["查貨號碼"]),
-                TrackingNo = excelRow.GetCellData(columnIndexes["清單編號"]),
+                TrackingNo = columnIndexes.TryGetValue("清單編號", out trackingNoColumnIndex)
+                    ? excelRow.GetCellData(trackingNoColumnIndex)
+                    : string.Empty,
                 CustomerCode = excelRow.GetCellData(columnIndexes["客戶代號"]),
                 ReceivedAmountText = amountText,
                 ReceivedAmount = ParseRequiredAmount(amountText, "代收貨款金額", failReasons)
             };
 
-            ValidateRequiredKeys(row, "清單編號", "查貨號碼", failReasons);
+            ValidateRequiredDlvInv(row, "查貨號碼", failReasons);
             if (string.IsNullOrWhiteSpace(row.CustomerCode))
             {
                 failReasons.Add("客戶代號必填");
@@ -706,10 +709,13 @@ namespace Service.Services.ReconciliationLogistics
                 ? amountCell.NumericCellValue.ToString(CultureInfo.InvariantCulture)
                 : excelRow.GetCellData(amountCellIndex);
             int customerCodeColumnIndex;
+            int trackingNoColumnIndex;
             var row = new ReconciliationLogisticsUploadRow
             {
                 RowNo = rowNo,
-                TrackingNo = excelRow.GetCellData(columnIndexes["出貨單號"]),
+                TrackingNo = columnIndexes.TryGetValue("出貨單號", out trackingNoColumnIndex)
+                    ? excelRow.GetCellData(trackingNoColumnIndex)
+                    : string.Empty,
                 DlvInv = excelRow.GetCellData(columnIndexes["宅配單號"]),
                 CustomerCode = columnIndexes.TryGetValue(
                     "客戶別",
@@ -720,7 +726,7 @@ namespace Service.Services.ReconciliationLogistics
                 ReceivedAmount = ParseRequiredAmount(amountText, "現金金額", failReasons)
             };
 
-            ValidateRequiredKeys(row, "出貨單號", "宅配單號", failReasons);
+            ValidateRequiredDlvInv(row, "宅配單號", failReasons);
             row.FailReason = string.Join("；", failReasons);
             return row;
         }
@@ -1259,9 +1265,11 @@ namespace Service.Services.ReconciliationLogistics
         /// </summary>
         /// <param name="uploadRows">上傳資料。</param>
         /// <param name="company">物流公司。</param>
+        /// <param name="uploadFormat">物流上傳格式。</param>
         private static void ValidateFileDuplicates(
             IEnumerable<ReconciliationLogisticsUploadRow> uploadRows,
-            ReconciliationLogisticsCompany company)
+            ReconciliationLogisticsCompany company,
+            ReconciliationLogisticsUploadFormat uploadFormat)
         {
             if (company == ReconciliationLogisticsCompany.TradeVan)
             {
@@ -1281,10 +1289,46 @@ namespace Service.Services.ReconciliationLogistics
                 return;
             }
 
-            if (company == ReconciliationLogisticsCompany.Hct ||
-                company == ReconciliationLogisticsCompany.TaixinStar)
+            if (IsHctUploadFormat(uploadFormat))
             {
-                // 新竹物流及超峰都以「分提單號＋物流貨號」判斷檔案內是否重複。
+                var hctRows = uploadRows
+                    .Where(x => !string.IsNullOrWhiteSpace(x.DlvInv))
+                    .ToList();
+
+                // 有清單編號或出貨單號時，使用「單號＋物流貨號」檢查重複。
+                var duplicateRowsWithTrackingNo = hctRows
+                    .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
+                    .GroupBy(x => new
+                    {
+                        TrackingNo = x.TrackingNo.Trim().ToUpperInvariant(),
+                        DlvInv = x.DlvInv.Trim().ToUpperInvariant()
+                    })
+                    .Where(group => group.Count() > 1)
+                    .SelectMany(group => group);
+                foreach (var row in duplicateRowsWithTrackingNo)
+                {
+                    AppendFailReason(row, "物流貨號在檔案內重複");
+                }
+
+                // 沒有清單編號或出貨單號時，只要檔案內有相同物流貨號即視為重複。
+                var duplicateDlvInvs = hctRows
+                    .GroupBy(x => x.DlvInv.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .Where(group => group.Count() > 1)
+                    .Select(group => group.Key)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                foreach (var row in hctRows.Where(x =>
+                    string.IsNullOrWhiteSpace(x.TrackingNo) &&
+                    duplicateDlvInvs.Contains(x.DlvInv.Trim())))
+                {
+                    AppendFailReason(row, "物流貨號在檔案內重複");
+                }
+
+                return;
+            }
+
+            if (company == ReconciliationLogisticsCompany.TaixinStar)
+            {
+                // 超峰以「分提單號＋物流貨號」判斷檔案內是否重複。
                 var duplicateRows = uploadRows
                     .Where(x => !string.IsNullOrWhiteSpace(x.DlvInv))
                     .GroupBy(x => new
@@ -1294,12 +1338,9 @@ namespace Service.Services.ReconciliationLogistics
                     })
                     .Where(group => group.Count() > 1)
                     .SelectMany(group => group);
-                var duplicateKeyName = company == ReconciliationLogisticsCompany.Hct
-                    ? "清單編號及查貨號碼"
-                    : "订单号及託運單號";
                 foreach (var row in duplicateRows)
                 {
-                    AppendFailReason(row, $"{duplicateKeyName}在檔案內重複");
+                    AppendFailReason(row, "订单号及託運單號在檔案內重複");
                 }
 
                 return;
@@ -1325,9 +1366,11 @@ namespace Service.Services.ReconciliationLogistics
         /// </summary>
         /// <param name="uploadRows">上傳資料。</param>
         /// <param name="company">物流公司。</param>
+        /// <param name="uploadFormat">物流上傳格式。</param>
         private void ValidateDatabaseDuplicates(
             List<ReconciliationLogisticsUploadRow> uploadRows,
-            ReconciliationLogisticsCompany company)
+            ReconciliationLogisticsCompany company,
+            ReconciliationLogisticsUploadFormat uploadFormat)
         {
             if (company == ReconciliationLogisticsCompany.TradeVan)
             {
@@ -1355,8 +1398,56 @@ namespace Service.Services.ReconciliationLogistics
                 return;
             }
 
-            if (company == ReconciliationLogisticsCompany.Hct ||
-                company == ReconciliationLogisticsCompany.TaixinStar)
+            if (IsHctUploadFormat(uploadFormat))
+            {
+                // 先以物流貨號一次取得可能重複的既有資料，再依單號是否有值套用不同規則。
+                var existingRows = JetfDb.ReconciliationLogistics
+                    .AsNoTracking()
+                    .Where(x => x.Company == company)
+                    .WhereBulkContains(
+                        JetfDb,
+                        uploadRows,
+                        entity => entity.DlvInv,
+                        row => row.DlvInv)
+                    .Select(x => new
+                    {
+                        x.TrackingNo,
+                        x.DlvInv
+                    })
+                    .ToList();
+                var existingTrackingNosByDlvInv = existingRows
+                    .GroupBy(
+                        x => (x.DlvInv ?? string.Empty).Trim(),
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group
+                            .Select(x => (x.TrackingNo ?? string.Empty).Trim())
+                            .ToHashSet(StringComparer.OrdinalIgnoreCase),
+                        StringComparer.OrdinalIgnoreCase);
+
+                foreach (var row in uploadRows)
+                {
+                    HashSet<string> existingTrackingNos;
+                    if (!existingTrackingNosByDlvInv.TryGetValue(
+                        (row.DlvInv ?? string.Empty).Trim(),
+                        out existingTrackingNos))
+                    {
+                        continue;
+                    }
+
+                    // 有單號時必須兩個欄位都相同；沒有單號時只檢查物流貨號。
+                    if (string.IsNullOrWhiteSpace(row.TrackingNo) ||
+                        existingTrackingNos.Contains(row.TrackingNo.Trim()))
+                    {
+                        AppendFailReason(row, "物流貨號已上傳過");
+                    }
+                }
+
+                return;
+            }
+
+            if (company == ReconciliationLogisticsCompany.TaixinStar)
             {
                 var existingKeys = JetfDb.ReconciliationLogistics
                     .AsNoTracking()
@@ -1382,10 +1473,7 @@ namespace Service.Services.ReconciliationLogistics
                         DlvInv = (x.DlvInv ?? string.Empty).Trim().ToUpperInvariant()
                     })))
                 {
-                    var duplicateKeyName = company == ReconciliationLogisticsCompany.Hct
-                        ? "清單編號及查貨號碼"
-                        : "订单号及託運單號";
-                    AppendFailReason(row, $"{duplicateKeyName}已上傳過");
+                    AppendFailReason(row, "订单号及託運單號已上傳過");
                 }
 
                 return;
@@ -1488,7 +1576,9 @@ namespace Service.Services.ReconciliationLogistics
                     feeMasterCodKeySelector = x => (x.TrackingNo ?? string.Empty).Trim();
                     entityKeySelector = x => (x.TrackingNo ?? string.Empty).Trim();
                     break;
-                // 客樂得、大榮、現金及圓通只使用物流貨號比對。
+                // 新竹物流、客樂得、大榮、現金及圓通以物流貨號比對。
+                case ReconciliationLogisticsUploadFormat.HctCollection:
+                case ReconciliationLogisticsUploadFormat.HctRemittance:
                 case ReconciliationLogisticsUploadFormat.Kelede:
                 case ReconciliationLogisticsUploadFormat.Ktj:
                 case ReconciliationLogisticsUploadFormat.Cash:
@@ -1497,9 +1587,7 @@ namespace Service.Services.ReconciliationLogistics
                     feeMasterCodKeySelector = x => (x.DlvInv ?? string.Empty).Trim();
                     entityKeySelector = x => (x.DlvInv ?? string.Empty).Trim();
                     break;
-                // 新竹物流、7-11 及超峰使用分提單號與物流貨號共同比對。
-                case ReconciliationLogisticsUploadFormat.HctCollection:
-                case ReconciliationLogisticsUploadFormat.HctRemittance:
+                // 7-11 及超峰使用分提單號與物流貨號共同比對。
                 case ReconciliationLogisticsUploadFormat.SevenEleven:
                 case ReconciliationLogisticsUploadFormat.TaixinStar:
                     feeMasterKeySelector = x =>
@@ -1528,25 +1616,95 @@ namespace Service.Services.ReconciliationLogistics
                 // Step 4：依 FEE_MASTER_ID 一次取得費用主檔及同主檔底下的全部費用明細。
                 var feeMasters = GetFeeMasters(feeMasterIds);
                 var feeMasterDetails = GetFeeMasterDetails(feeMasterIds);
-                var feeMasterIdDictionary = matchedFeeMasterIds
-                    .GroupBy(feeMasterKeySelector, StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(
-                        group => group.Key,
-                        group => group.First().FeeMasterId,
-                        StringComparer.OrdinalIgnoreCase);
-
                 var feeMasterById = feeMasters.ToDictionary(x => x.Id);
                 var entityByFeeMasterId = new Dictionary<int, ReconciliationLogisticsEntity>();
-                foreach (var entity in entities)
+                if (IsHctUploadFormat(uploadFormat))
                 {
-                    int feeMasterId;
-                    if (!feeMasterIdDictionary.TryGetValue(entityKeySelector(entity), out feeMasterId))
-                    {
-                        continue;
-                    }
+                    // 新竹物流先用物流貨號比對；候選資料超過一筆時，再用清單編號或出貨單號縮小範圍。
+                    var feeMasterMatchesByDlvInv = matchedFeeMasterIds
+                        .GroupBy(
+                            x => (x.DlvInv ?? string.Empty).Trim(),
+                            StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(
+                            group => group.Key,
+                            group => group.ToList(),
+                            StringComparer.OrdinalIgnoreCase);
 
-                    resultByEntity[entity].Status = ReconciliationLogisticsResultStatus.Matched;
-                    entityByFeeMasterId.Add(feeMasterId, entity);
+                    // Step 4-1：逐筆從物流貨號索引取得可能對應的費用主檔。
+                    foreach (var entity in entities)
+                    {
+                        List<ReconciliationLogisticsFeeMasterMatch> matches;
+                        if (!feeMasterMatchesByDlvInv.TryGetValue(
+                            (entity.DlvInv ?? string.Empty).Trim(),
+                            out matches))
+                        {
+                            continue;
+                        }
+
+                        // Step 4-2：物流貨號只有一筆時直接建立對應，不再檢查清單編號或出貨單號。
+                        if (matches.Count == 1)
+                        {
+                            var feeMasterId = matches[0].FeeMasterId;
+                            resultByEntity[entity].Status = ReconciliationLogisticsResultStatus.Matched;
+                            entityByFeeMasterId.Add(feeMasterId, entity);
+                            continue;
+                        }
+
+                        // Step 4-3：物流貨號命中多筆時，才使用清單編號或出貨單號縮小範圍。
+                        var trackingNo = entity.TrackingNo?.Trim();
+                        if (string.IsNullOrWhiteSpace(trackingNo))
+                        {
+                            // 沒有輔助單號就無法從多筆候選中確認唯一資料。
+                            resultByEntity[entity].Status =
+                                ReconciliationLogisticsResultStatus.DlvInvDuplicate;
+                            continue;
+                        }
+
+                        var resolvedMatches = matches
+                            .Where(x =>
+                                !string.IsNullOrWhiteSpace(x.TrackingNo) &&
+                                string.Equals(
+                                    x.TrackingNo.Trim(),
+                                    trackingNo,
+                                    StringComparison.OrdinalIgnoreCase))
+                            .ToList();
+
+                        // Step 4-4：輔助單號取得唯一結果時，建立費用主檔與物流銷帳資料的對應。
+                        if (resolvedMatches.Count == 1)
+                        {
+                            var feeMasterId = resolvedMatches[0].FeeMasterId;
+                            resultByEntity[entity].Status = ReconciliationLogisticsResultStatus.Matched;
+                            entityByFeeMasterId.Add(feeMasterId, entity);
+                            continue;
+                        }
+
+                        // Step 4-5：套用輔助單號後仍有多筆，不進行銷帳並標記物流貨號重複。
+                        if (resolvedMatches.Count > 1)
+                        {
+                            resultByEntity[entity].Status =
+                                ReconciliationLogisticsResultStatus.DlvInvDuplicate;
+                        }
+                    }
+                }
+                else
+                {
+                    var feeMasterIdDictionary = matchedFeeMasterIds
+                        .GroupBy(feeMasterKeySelector, StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(
+                            group => group.Key,
+                            group => group.First().FeeMasterId,
+                            StringComparer.OrdinalIgnoreCase);
+                    foreach (var entity in entities)
+                    {
+                        int feeMasterId;
+                        if (!feeMasterIdDictionary.TryGetValue(entityKeySelector(entity), out feeMasterId))
+                        {
+                            continue;
+                        }
+
+                        resultByEntity[entity].Status = ReconciliationLogisticsResultStatus.Matched;
+                        entityByFeeMasterId.Add(feeMasterId, entity);
+                    }
                 }
 
                 // Step 5：依費用主檔分組計算應收金額，並將回款依序分配至各筆明細。
@@ -1601,22 +1759,21 @@ namespace Service.Services.ReconciliationLogistics
                 // 依物流公司的單號規則，一次查出尚未銷帳的 FEE_MASTER_COD。
                 var matchedFeeMasterCods = GetMatchedFeeMasterCods(feeMasterCodCandidates, uploadFormat);
 
-                // 同一個比對鍵若有多筆資料，固定取 Id 最小的一筆進行銷帳。
-                var feeMasterCodDictionary = matchedFeeMasterCods
-                    .GroupBy(feeMasterCodKeySelector, StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(
-                        group => group.Key,
-                        group => group.OrderBy(x => x.Id).First(),
-                        StringComparer.OrdinalIgnoreCase);
+                var feeMasterCodByEntity = IsHctUploadFormat(uploadFormat)
+                    ? MatchHctFeeMasterCodCandidates(
+                        feeMasterCodCandidates,
+                        matchedFeeMasterCods,
+                        resultByEntity)
+                    : MatchFeeMasterCodCandidates(
+                        feeMasterCodCandidates,
+                        matchedFeeMasterCods,
+                        feeMasterCodKeySelector,
+                        entityKeySelector);
 
-                foreach (var entity in feeMasterCodCandidates)
+                foreach (var match in feeMasterCodByEntity)
                 {
-                    FeeMasterCodEntity feeMasterCod;
-                    if (!feeMasterCodDictionary.TryGetValue(entityKeySelector(entity), out feeMasterCod))
-                    {
-                        continue;
-                    }
-
+                    var entity = match.Key;
+                    var feeMasterCod = match.Value;
                     // 使用 FEE_MASTER_COD.CC 計算差異與狀態，並將物流公司回款金額完整寫入。
                     var resultItem = resultByEntity[entity];
                     resultItem.ReceivableAmount = decimal.ToInt32(feeMasterCod.Cc);
@@ -1682,6 +1839,135 @@ namespace Service.Services.ReconciliationLogistics
         }
 
         /// <summary>
+        /// 判斷是否為新竹物流上傳格式。
+        /// </summary>
+        /// <param name="uploadFormat">物流上傳格式。</param>
+        /// <returns>是否為新竹物流格式。</returns>
+        private static bool IsHctUploadFormat(
+            ReconciliationLogisticsUploadFormat uploadFormat)
+        {
+            return uploadFormat == ReconciliationLogisticsUploadFormat.HctCollection ||
+                   uploadFormat == ReconciliationLogisticsUploadFormat.HctRemittance;
+        }
+
+        /// <summary>
+        /// 依新竹物流規則將到付款候選資料對應至物流銷帳資料。
+        /// </summary>
+        /// <param name="entities">尚未比對成功的物流銷帳資料。</param>
+        /// <param name="feeMasterCods">符合物流貨號的到付款候選資料。</param>
+        /// <param name="resultByEntity">各筆物流銷帳資料的處理結果。</param>
+        /// <returns>物流銷帳資料與到付款資料的對應關係。</returns>
+        private static Dictionary<ReconciliationLogisticsEntity, FeeMasterCodEntity>
+            MatchHctFeeMasterCodCandidates(
+                IEnumerable<ReconciliationLogisticsEntity> entities,
+                IEnumerable<FeeMasterCodEntity> feeMasterCods,
+                IDictionary<ReconciliationLogisticsEntity, ReconciliationLogisticsResultItem>
+                    resultByEntity)
+        {
+            // Step 1：依物流貨號建立候選資料索引，避免每筆上傳資料重複掃描全部資料。
+            var feeMasterCodsByDlvInv = feeMasterCods
+                .GroupBy(
+                    x => (x.DlvInv ?? string.Empty).Trim(),
+                    StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.ToList(),
+                    StringComparer.OrdinalIgnoreCase);
+            var matchesByEntity =
+                new Dictionary<ReconciliationLogisticsEntity, FeeMasterCodEntity>();
+
+            // Step 2：逐筆取得相同物流貨號的候選資料。
+            foreach (var entity in entities)
+            {
+                List<FeeMasterCodEntity> dlvInvMatches;
+                if (!feeMasterCodsByDlvInv.TryGetValue(
+                    (entity.DlvInv ?? string.Empty).Trim(),
+                    out dlvInvMatches))
+                {
+                    continue;
+                }
+
+                // Step 3：物流貨號只有一筆時直接建立對應，不再檢查清單編號或出貨單號。
+                if (dlvInvMatches.Count == 1)
+                {
+                    matchesByEntity.Add(entity, dlvInvMatches[0]);
+                    continue;
+                }
+
+                // Step 4：物流貨號命中多筆時，才使用清單編號或出貨單號縮小範圍。
+                var trackingNo = entity.TrackingNo?.Trim();
+                if (string.IsNullOrWhiteSpace(trackingNo))
+                {
+                    // 沒有輔助單號就無法從多筆候選中確認唯一資料。
+                    resultByEntity[entity].Status =
+                        ReconciliationLogisticsResultStatus.DlvInvDuplicate;
+                    continue;
+                }
+
+                var matches = dlvInvMatches
+                    .Where(x =>
+                        !string.IsNullOrWhiteSpace(x.TrackingNo) &&
+                        string.Equals(
+                            x.TrackingNo.Trim(),
+                            trackingNo,
+                            StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                if (matches.Count == 1)
+                {
+                    matchesByEntity.Add(entity, matches[0]);
+                    continue;
+                }
+
+                // Step 5：套用輔助單號後仍有多筆，不進行銷帳並標記物流貨號重複。
+                if (matches.Count > 1)
+                {
+                    resultByEntity[entity].Status =
+                        ReconciliationLogisticsResultStatus.DlvInvDuplicate;
+                }
+            }
+
+            return matchesByEntity;
+        }
+
+        /// <summary>
+        /// 依物流格式的比對鍵將到付款候選資料對應至物流銷帳資料。
+        /// </summary>
+        /// <param name="entities">尚未比對成功的物流銷帳資料。</param>
+        /// <param name="feeMasterCods">符合單號的到付款候選資料。</param>
+        /// <param name="feeMasterCodKeySelector">到付款資料的比對鍵。</param>
+        /// <param name="entityKeySelector">物流銷帳資料的比對鍵。</param>
+        /// <returns>物流銷帳資料與到付款資料的對應關係。</returns>
+        private static Dictionary<ReconciliationLogisticsEntity, FeeMasterCodEntity>
+            MatchFeeMasterCodCandidates(
+                IEnumerable<ReconciliationLogisticsEntity> entities,
+                IEnumerable<FeeMasterCodEntity> feeMasterCods,
+                Func<FeeMasterCodEntity, string> feeMasterCodKeySelector,
+                Func<ReconciliationLogisticsEntity, string> entityKeySelector)
+        {
+            // Step 1：依物流格式的比對鍵建立索引；同鍵多筆時固定取 Id 最小的一筆。
+            var feeMasterCodByKey = feeMasterCods
+                .GroupBy(feeMasterCodKeySelector, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.OrderBy(x => x.Id).First(),
+                    StringComparer.OrdinalIgnoreCase);
+            var matchesByEntity =
+                new Dictionary<ReconciliationLogisticsEntity, FeeMasterCodEntity>();
+
+            // Step 2：將每筆物流銷帳資料對應至符合比對鍵的到付款資料。
+            foreach (var entity in entities)
+            {
+                FeeMasterCodEntity feeMasterCod;
+                if (feeMasterCodByKey.TryGetValue(entityKeySelector(entity), out feeMasterCod))
+                {
+                    matchesByEntity.Add(entity, feeMasterCod);
+                }
+            }
+
+            return matchesByEntity;
+        }
+
+        /// <summary>
         /// 依上傳格式取得單號與已下載費用主檔識別碼的對應資料。
         /// </summary>
         /// <param name="entities">待比對的物流銷帳資料。</param>
@@ -1693,9 +1979,8 @@ namespace Service.Services.ReconciliationLogistics
         {
             switch (uploadFormat)
             {
-                case ReconciliationLogisticsUploadFormat.HctRemittance:
                 case ReconciliationLogisticsUploadFormat.TaixinStar:
-                    // 新竹物流匯款明細及超峰都以兩個單號直接比對費用明細。
+                    // 超峰以兩個單號直接比對費用明細。
                     return JetfDb.FeeMasterDetails
                         .AsNoTracking()
                         .Where(detail => detail.FeeMaster.Download == "1")
@@ -1749,8 +2034,9 @@ namespace Service.Services.ReconciliationLogistics
                         })
                         .ToList();
                 case ReconciliationLogisticsUploadFormat.HctCollection:
+                case ReconciliationLogisticsUploadFormat.HctRemittance:
                 case ReconciliationLogisticsUploadFormat.SevenEleven:
-                    // 原有格式先依主檔物流貨號取得候選資料，再於後續使用兩個單號確認。
+                    // 新竹物流及 7-11 先依主檔物流貨號取得候選資料，再依各自規則確認。
                     return JetfDb.FeeMasters
                         .AsNoTracking()
                         .Where(feeMaster => feeMaster.Download == "1")
@@ -1795,7 +2081,9 @@ namespace Service.Services.ReconciliationLogistics
                             entities,
                             feeMasterCod => feeMasterCod.TrackingNo,
                             entity => entity.TrackingNo);
-                // 客樂得、大榮、現金及圓通只使用物流貨號比對。
+                // 新竹物流、客樂得、大榮、現金及圓通使用物流貨號比對。
+                case ReconciliationLogisticsUploadFormat.HctCollection:
+                case ReconciliationLogisticsUploadFormat.HctRemittance:
                 case ReconciliationLogisticsUploadFormat.Kelede:
                 case ReconciliationLogisticsUploadFormat.Ktj:
                 case ReconciliationLogisticsUploadFormat.Cash:
@@ -1807,9 +2095,7 @@ namespace Service.Services.ReconciliationLogistics
                             entities,
                             feeMasterCod => feeMasterCod.DlvInv,
                             entity => entity.DlvInv);
-                // 新竹物流、7-11 及超峰使用分提單號與物流貨號共同比對。
-                case ReconciliationLogisticsUploadFormat.HctCollection:
-                case ReconciliationLogisticsUploadFormat.HctRemittance:
+                // 7-11 及超峰使用分提單號與物流貨號共同比對。
                 case ReconciliationLogisticsUploadFormat.SevenEleven:
                 case ReconciliationLogisticsUploadFormat.TaixinStar:
                     return JetfDb.FeeMasterCods

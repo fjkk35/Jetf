@@ -35,6 +35,12 @@ namespace Service.EnumTax
         /// 回款金額小於費用明細應收金額。
         /// </summary>
         [Description("回款金額小於明細應收金額")]
-        RepaymentLessThanReceivable = 4
+        RepaymentLessThanReceivable = 4,
+
+        /// <summary>
+        /// 物流貨號仍對應多筆費用資料。
+        /// </summary>
+        [Description("物流貨號重複")]
+        DlvInvDuplicate = 5
     }
 }
