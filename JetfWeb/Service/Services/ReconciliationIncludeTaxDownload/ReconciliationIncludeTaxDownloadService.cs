@@ -365,6 +365,7 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
                 .SelectMany(master => master.Details.Select(detail => new ReconciliationIncludeTaxDownloadRow
                 {
                     OutDateTime = master.OutDateTime,
+                    Source = master.Source,
                     Type = master.Type,
                     Customer = master.Customer,
                     TaxNumber = detail.TaxNumber,
@@ -380,7 +381,69 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
                 .ThenBy(x => x.Customer)
                 .ThenBy(x => x.TrackingNo)
                 .ToList();
+
+            SetReconciliationAirTaxes(rows);
             return rows;
+        }
+
+        /// <summary>
+        /// 批次查詢 TACT／FTZ 分提單號對應的空快銷帳稅額並回填匯出資料。
+        /// </summary>
+        /// <param name="rows">包稅客戶明細下載資料。</param>
+        private void SetReconciliationAirTaxes(
+            IReadOnlyCollection<ReconciliationIncludeTaxDownloadRow> rows)
+        {
+            var airRows = rows
+                .Where(x => IsReconciliationAirSource(x.Source))
+                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
+                .ToList();
+            if (!airRows.Any())
+            {
+                return;
+            }
+
+            // Step 1：收集 TACT／FTZ 費用明細的分提單號，使用暫存表一次批次查詢銷帳資料。
+            var trackingNos = airRows
+                .Select(x => x.TrackingNo.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var reconciliationAirs = JetfDb.ReconciliationAirs
+                .AsNoTracking()
+                .WhereBulkContains(JetfDb, trackingNos, x => x.TrackingNo, x => x);
+
+            // Step 2：以分提單號建立索引，再將營業稅及進口稅回填至每筆匯出資料。
+            var reconciliationAirByTrackingNo = reconciliationAirs
+                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
+                .GroupBy(x => x.TrackingNo.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.First(),
+                    StringComparer.OrdinalIgnoreCase);
+            foreach (var row in airRows)
+            {
+                ReconciliationAirEntity reconciliationAir;
+                if (!reconciliationAirByTrackingNo.TryGetValue(
+                    row.TrackingNo.Trim(),
+                    out reconciliationAir))
+                {
+                    continue;
+                }
+
+                row.BusinessTax = reconciliationAir.BusinessTax;
+                row.ImportTax = reconciliationAir.ImportTax;
+            }
+        }
+
+        /// <summary>
+        /// 判斷費用主檔資料來源是否為 TACT 或 FTZ。
+        /// </summary>
+        /// <param name="source">費用主檔資料來源。</param>
+        /// <returns>是否需查詢空快代收銷帳稅額。</returns>
+        private static bool IsReconciliationAirSource(string source)
+        {
+            var value = (source ?? string.Empty).Trim();
+            return string.Equals(value, "TACT", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "FTZ", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -423,6 +486,10 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
                     return (row.Tax ?? 0).ToString();
                 case ReconciliationIncludeTaxField.FeeMasterDetail_TaxBase:
                     return (row.TaxBase ?? 0).ToString();
+                case ReconciliationIncludeTaxField.ReconciliationAir_BusinessTax:
+                    return row.BusinessTax.HasValue ? row.BusinessTax.Value.ToString() : string.Empty;
+                case ReconciliationIncludeTaxField.ReconciliationAir_ImportTax:
+                    return row.ImportTax.HasValue ? row.ImportTax.Value.ToString() : string.Empty;
                 default:
                     return string.Empty;
             }

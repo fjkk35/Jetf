@@ -73,7 +73,19 @@ namespace Service.EnumTax
         /// 費用明細稅基。
         /// </summary>
         [Description("稅基")]
-        FeeMasterDetail_TaxBase
+        FeeMasterDetail_TaxBase,
+
+        /// <summary>
+        /// 空快代收銷帳營業稅。
+        /// </summary>
+        [Description("營業稅")]
+        ReconciliationAir_BusinessTax,
+
+        /// <summary>
+        /// 空快代收銷帳進口稅。
+        /// </summary>
+        [Description("進口稅")]
+        ReconciliationAir_ImportTax
     }
 
     /// <summary>

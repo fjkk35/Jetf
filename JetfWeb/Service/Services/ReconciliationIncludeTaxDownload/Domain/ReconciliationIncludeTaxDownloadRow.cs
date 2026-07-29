@@ -13,6 +13,11 @@ namespace Service.Services.ReconciliationIncludeTaxDownload.Domain
         public DateTime? OutDateTime { get; set; }
 
         /// <summary>
+        /// 資料來源。
+        /// </summary>
+        public string Source { get; set; }
+
+        /// <summary>
         /// 報關類別。
         /// </summary>
         public string Type { get; set; }
@@ -61,5 +66,15 @@ namespace Service.Services.ReconciliationIncludeTaxDownload.Domain
         /// 稅基。
         /// </summary>
         public int? TaxBase { get; set; }
+
+        /// <summary>
+        /// 營業稅。
+        /// </summary>
+        public int? BusinessTax { get; set; }
+
+        /// <summary>
+        /// 進口稅。
+        /// </summary>
+        public int? ImportTax { get; set; }
     }
 }
