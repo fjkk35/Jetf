@@ -144,7 +144,19 @@ namespace Service.Services.ReconciliationAir
                         Recipient = GetCellByName(row, colIndex, "納稅義務人"),
                         TaxRecId = GetCellByName(row, colIndex, "納稅義務人統一編號"),
                         TaxBaseText = GetCellByName(row, colIndex, "營業稅基"),
-                        TaxText = GetCellByName(row, colIndex, "稅費金額")
+                        TaxText = GetCellByName(row, colIndex, "稅費金額"),
+                        TaxItem1 = GetCellByName(row, colIndex, "稅費項目一"),
+                        TaxAmount1Text = GetCellByName(row, colIndex, "單項稅費金額一"),
+                        TaxItem2 = GetCellByName(row, colIndex, "稅費項目二"),
+                        TaxAmount2Text = GetCellByName(row, colIndex, "單項稅費金額二"),
+                        TaxItem3 = GetCellByName(row, colIndex, "稅費項目三"),
+                        TaxAmount3Text = GetCellByName(row, colIndex, "單項稅費金額三"),
+                        TaxItem4 = GetCellByName(row, colIndex, "稅費項目四"),
+                        TaxAmount4Text = GetCellByName(row, colIndex, "單項稅費金額四"),
+                        TaxItem5 = GetCellByName(row, colIndex, "稅費項目五"),
+                        TaxAmount5Text = GetCellByName(row, colIndex, "單項稅費金額五"),
+                        TaxItem6 = GetCellByName(row, colIndex, "稅費項目六"),
+                        TaxAmount6Text = GetCellByName(row, colIndex, "單項稅費金額六")
                     });
 
                     if (IsEmptyRow(uploadRow))
@@ -204,7 +216,19 @@ namespace Service.Services.ReconciliationAir
                         Recipient = GetFieldByName(fields, colIndex, "納稅義務人"),
                         TaxRecId = GetFieldByName(fields, colIndex, "納稅義務人統一編號"),
                         TaxBaseText = GetFieldByName(fields, colIndex, "營業稅基"),
-                        TaxText = GetFieldByName(fields, colIndex, "稅費金額")
+                        TaxText = GetFieldByName(fields, colIndex, "稅費金額"),
+                        TaxItem1 = GetFieldByName(fields, colIndex, "稅費項目一"),
+                        TaxAmount1Text = GetFieldByName(fields, colIndex, "單項稅費金額一"),
+                        TaxItem2 = GetFieldByName(fields, colIndex, "稅費項目二"),
+                        TaxAmount2Text = GetFieldByName(fields, colIndex, "單項稅費金額二"),
+                        TaxItem3 = GetFieldByName(fields, colIndex, "稅費項目三"),
+                        TaxAmount3Text = GetFieldByName(fields, colIndex, "單項稅費金額三"),
+                        TaxItem4 = GetFieldByName(fields, colIndex, "稅費項目四"),
+                        TaxAmount4Text = GetFieldByName(fields, colIndex, "單項稅費金額四"),
+                        TaxItem5 = GetFieldByName(fields, colIndex, "稅費項目五"),
+                        TaxAmount5Text = GetFieldByName(fields, colIndex, "單項稅費金額五"),
+                        TaxItem6 = GetFieldByName(fields, colIndex, "稅費項目六"),
+                        TaxAmount6Text = GetFieldByName(fields, colIndex, "單項稅費金額六")
                     });
 
                     if (IsEmptyRow(uploadRow))
@@ -489,6 +513,18 @@ namespace Service.Services.ReconciliationAir
             row.TaxRecId = row.TaxRecId?.Trim() ?? string.Empty;
             row.TaxBaseText = row.TaxBaseText?.Trim() ?? string.Empty;
             row.TaxText = row.TaxText?.Trim() ?? string.Empty;
+            row.TaxItem1 = row.TaxItem1?.Trim() ?? string.Empty;
+            row.TaxAmount1Text = row.TaxAmount1Text?.Trim() ?? string.Empty;
+            row.TaxItem2 = row.TaxItem2?.Trim() ?? string.Empty;
+            row.TaxAmount2Text = row.TaxAmount2Text?.Trim() ?? string.Empty;
+            row.TaxItem3 = row.TaxItem3?.Trim() ?? string.Empty;
+            row.TaxAmount3Text = row.TaxAmount3Text?.Trim() ?? string.Empty;
+            row.TaxItem4 = row.TaxItem4?.Trim() ?? string.Empty;
+            row.TaxAmount4Text = row.TaxAmount4Text?.Trim() ?? string.Empty;
+            row.TaxItem5 = row.TaxItem5?.Trim() ?? string.Empty;
+            row.TaxAmount5Text = row.TaxAmount5Text?.Trim() ?? string.Empty;
+            row.TaxItem6 = row.TaxItem6?.Trim() ?? string.Empty;
+            row.TaxAmount6Text = row.TaxAmount6Text?.Trim() ?? string.Empty;
             row.FailReason = row.FailReason?.Trim() ?? string.Empty;
 
             if (IsTact(row.Type))
@@ -533,6 +569,8 @@ namespace Service.Services.ReconciliationAir
             foreach (var row in uploadRows)
             {
                 var failReasons = new List<string>();
+                row.ImportTax = null;
+                row.BusinessTax = null;
 
                 if (string.IsNullOrWhiteSpace(row.TrackingNo))
                 {
@@ -568,8 +606,73 @@ namespace Service.Services.ReconciliationAir
                     }
                 }
 
+                SetTaxAmount(row, row.TaxItem1, row.TaxAmount1Text, "單項稅費金額一", failReasons);
+                SetTaxAmount(row, row.TaxItem2, row.TaxAmount2Text, "單項稅費金額二", failReasons);
+                SetTaxAmount(row, row.TaxItem3, row.TaxAmount3Text, "單項稅費金額三", failReasons);
+                SetTaxAmount(row, row.TaxItem4, row.TaxAmount4Text, "單項稅費金額四", failReasons);
+                SetTaxAmount(row, row.TaxItem5, row.TaxAmount5Text, "單項稅費金額五", failReasons);
+                SetTaxAmount(row, row.TaxItem6, row.TaxAmount6Text, "單項稅費金額六", failReasons);
                 row.FailReason = string.Join("；", failReasons);
             }
+        }
+
+        /// <summary>
+        /// 依稅費項目將單項稅費金額寫入進口稅或營業稅。
+        /// </summary>
+        /// <param name="row">上傳列資料。</param>
+        /// <param name="taxItem">稅費項目。</param>
+        /// <param name="taxAmountText">單項稅費金額原始文字。</param>
+        /// <param name="fieldName">錯誤訊息使用的欄位名稱。</param>
+        /// <param name="failReasons">欄位驗證失敗原因。</param>
+        private static void SetTaxAmount(
+            ReconciliationAirUploadRow row,
+            string taxItem,
+            string taxAmountText,
+            string fieldName,
+            ICollection<string> failReasons)
+        {
+            var isImportTax = IsImportTaxItem(taxItem);
+            var isBusinessTax = IsBusinessTaxItem(taxItem);
+            if ((!isImportTax && !isBusinessTax) || string.IsNullOrWhiteSpace(taxAmountText))
+            {
+                return;
+            }
+
+            if (!int.TryParse(taxAmountText, out var taxAmount))
+            {
+                failReasons.Add($"{fieldName}格式錯誤");
+                return;
+            }
+
+            if (isImportTax)
+            {
+                row.ImportTax = (row.ImportTax ?? 0) + taxAmount;
+                return;
+            }
+
+            row.BusinessTax = (row.BusinessTax ?? 0) + taxAmount;
+        }
+
+        /// <summary>
+        /// 判斷是否為 FTZ 或 TACT 的進口稅項目。
+        /// </summary>
+        /// <param name="taxItem">稅費項目。</param>
+        /// <returns>是否為進口稅。</returns>
+        private static bool IsImportTaxItem(string taxItem)
+        {
+            return string.Equals(taxItem, "進口稅", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(taxItem, "A10-進口稅", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 判斷是否為 FTZ 或 TACT 的營業稅項目。
+        /// </summary>
+        /// <param name="taxItem">稅費項目。</param>
+        /// <returns>是否為營業稅。</returns>
+        private static bool IsBusinessTaxItem(string taxItem)
+        {
+            return string.Equals(taxItem, "營業稅", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(taxItem, "B40-營業稅", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -609,6 +712,8 @@ namespace Service.Services.ReconciliationAir
                     TaxRecId = row.TaxRecId,
                     TaxBase = row.TaxBase,
                     Tax = row.Tax,
+                    ImportTax = row.ImportTax,
+                    BusinessTax = row.BusinessTax,
                     CreatedOpe = currentUserId,
                     CreatedTime = currentTime
                 })

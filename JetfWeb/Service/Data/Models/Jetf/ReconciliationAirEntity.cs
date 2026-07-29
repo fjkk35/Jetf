@@ -61,6 +61,18 @@ namespace Service.Data
         public int Tax { get; set; }
 
         /// <summary>
+        /// 進口稅。
+        /// </summary>
+        [Column("ImportTax")]
+        public int? ImportTax { get; set; }
+
+        /// <summary>
+        /// 營業稅。
+        /// </summary>
+        [Column("BusinessTax")]
+        public int? BusinessTax { get; set; }
+
+        /// <summary>
         /// 修改人員。
         /// </summary>
         [Column("UpdatedOpe")]

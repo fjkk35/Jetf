@@ -56,6 +56,76 @@
         public int Tax { get; set; }
 
         /// <summary>
+        /// 稅費項目一。
+        /// </summary>
+        public string TaxItem1 { get; set; }
+
+        /// <summary>
+        /// 單項稅費金額一原始文字。
+        /// </summary>
+        public string TaxAmount1Text { get; set; }
+
+        /// <summary>
+        /// 稅費項目二。
+        /// </summary>
+        public string TaxItem2 { get; set; }
+
+        /// <summary>
+        /// 單項稅費金額二原始文字。
+        /// </summary>
+        public string TaxAmount2Text { get; set; }
+
+        /// <summary>
+        /// 稅費項目三。
+        /// </summary>
+        public string TaxItem3 { get; set; }
+
+        /// <summary>
+        /// 單項稅費金額三原始文字。
+        /// </summary>
+        public string TaxAmount3Text { get; set; }
+
+        /// <summary>
+        /// 稅費項目四。
+        /// </summary>
+        public string TaxItem4 { get; set; }
+
+        /// <summary>
+        /// 單項稅費金額四原始文字。
+        /// </summary>
+        public string TaxAmount4Text { get; set; }
+
+        /// <summary>
+        /// 稅費項目五。
+        /// </summary>
+        public string TaxItem5 { get; set; }
+
+        /// <summary>
+        /// 單項稅費金額五原始文字。
+        /// </summary>
+        public string TaxAmount5Text { get; set; }
+
+        /// <summary>
+        /// 稅費項目六。
+        /// </summary>
+        public string TaxItem6 { get; set; }
+
+        /// <summary>
+        /// 單項稅費金額六原始文字。
+        /// </summary>
+        public string TaxAmount6Text { get; set; }
+
+        /// <summary>
+        /// 進口稅。
+        /// </summary>
+        public int? ImportTax { get; set; }
+
+        /// <summary>
+        /// 營業稅。
+        /// </summary>
+        public int? BusinessTax { get; set; }
+
+        /// <summary>
         /// 失敗原因。
         /// </summary>
         public string FailReason { get; set; }
