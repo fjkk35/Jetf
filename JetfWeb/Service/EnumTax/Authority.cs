@@ -559,6 +559,11 @@ namespace Service.EnumTax
         ReconciliationIncludeTaxFormat,
 
         /// <summary>
+        /// 包稅客戶明細下載
+        /// </summary>
+        ReconciliationIncludeTaxDownload,
+
+        /// <summary>
         /// 應收未收明細
         /// </summary>
         Receivable,

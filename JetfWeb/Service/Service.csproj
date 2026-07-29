@@ -328,6 +328,7 @@
     <Compile Include="EnumTax\ReconciliationLogisticsCompany.cs" />
     <Compile Include="EnumTax\ReconciliationLogisticsResultStatus.cs" />
     <Compile Include="EnumTax\ReconciliationIncludeTaxColumnSourceType.cs" />
+    <Compile Include="EnumTax\ReconciliationIncludeTaxField.cs" />
     <Compile Include="EnumTax\ReceivableCollectionType.cs" />
     <Compile Include="EnumTax\ReceivableStatus.cs" />
     <Compile Include="EnumTax\CptStatusEnum.cs" />
@@ -693,6 +694,12 @@
     <Compile Include="Services\ReconciliationIncludeTaxFormat\Domain\ReconciliationIncludeTaxFormatListItem.cs" />
     <Compile Include="Services\ReconciliationIncludeTaxFormat\Domain\ReconciliationIncludeTaxFormatSaveRequest.cs" />
     <Compile Include="Services\ReconciliationIncludeTaxFormat\ReconciliationIncludeTaxFormatService.cs" />
+    <Compile Include="Services\ReconciliationIncludeTaxDownload\Domain\ReconciliationIncludeTaxDownloadRequest.cs" />
+    <Compile Include="Services\ReconciliationIncludeTaxDownload\Domain\ReconciliationIncludeTaxDownloadCustomerGroup.cs" />
+    <Compile Include="Services\ReconciliationIncludeTaxDownload\Domain\ReconciliationIncludeTaxDownloadExportResult.cs" />
+    <Compile Include="Services\ReconciliationIncludeTaxDownload\Domain\ReconciliationIncludeTaxDownloadFileGroup.cs" />
+    <Compile Include="Services\ReconciliationIncludeTaxDownload\Domain\ReconciliationIncludeTaxDownloadRow.cs" />
+    <Compile Include="Services\ReconciliationIncludeTaxDownload\ReconciliationIncludeTaxDownloadService.cs" />
     <Compile Include="Services\ReconciliationCustomer\Domain\ReconciliationCustomerConfirmRequest.cs" />
     <Compile Include="Services\ReconciliationCustomer\Domain\ReconciliationCustomerConfirmResult.cs" />
     <Compile Include="Services\ReconciliationCustomer\Domain\ReconciliationCustomerQueryRequest.cs" />

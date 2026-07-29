@@ -15,9 +15,5 @@ namespace Service.Services.ReconciliationIncludeTaxFormat.Domain
         /// </summary>
         public string Name { get; set; }
 
-        /// <summary>
-        /// 對應資料表欄位路徑。
-        /// </summary>
-        public string DataPath { get; set; }
     }
 }

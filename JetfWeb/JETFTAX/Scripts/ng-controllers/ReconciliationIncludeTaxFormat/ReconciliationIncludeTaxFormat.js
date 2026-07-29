@@ -20,7 +20,7 @@ mainApp.controller('ReconciliationIncludeTaxFormatController', ['$scope', '$http
     }
 
     function newColumn() {
-        return { Id: null, ColumnName: '', SourceType: 0, FieldKey: '', DefaultValue: '' };
+        return { ColumnName: '', SourceType: 0, FieldKey: '', DefaultValue: '' };
     }
 
     function emptyForm() {

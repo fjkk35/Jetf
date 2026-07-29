@@ -8,11 +8,6 @@ namespace Service.Services.ReconciliationIncludeTaxFormat.Domain
     public sealed class ReconciliationIncludeTaxFormatColumnRequest
     {
         /// <summary>
-        /// 欄位設定識別碼。
-        /// </summary>
-        public int? Id { get; set; }
-
-        /// <summary>
         /// 匯出欄位名稱。
         /// </summary>
         public string ColumnName { get; set; }

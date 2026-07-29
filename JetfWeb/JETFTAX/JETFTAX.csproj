@@ -384,6 +384,7 @@
     <Compile Include="Controllers\ReconciliationAirController.cs" />
     <Compile Include="Controllers\ReconciliationCustomerGroupController.cs" />
     <Compile Include="Controllers\ReconciliationIncludeTaxFormatController.cs" />
+    <Compile Include="Controllers\ReconciliationIncludeTaxDownloadController.cs" />
     <Compile Include="Controllers\ReconciliationCustomerController.cs" />
     <Compile Include="Controllers\ReconciliationLogisticsController.cs" />
     <Compile Include="Controllers\ReceivableController.cs" />
@@ -901,6 +902,7 @@
     <Content Include="Scripts\ng-controllers\ReconciliationAir\UploadAir.js" />
     <Content Include="Scripts\ng-controllers\ReconciliationCustomerGroup\ReconciliationCustomerGroup.js" />
     <Content Include="Scripts\ng-controllers\ReconciliationIncludeTaxFormat\ReconciliationIncludeTaxFormat.js" />
+    <Content Include="Scripts\ng-controllers\ReconciliationIncludeTaxDownload\ReconciliationIncludeTaxDownload.js" />
     <Content Include="Scripts\ng-controllers\ReconciliationCustomer\ReconciliationCustomer.js" />
     <Content Include="Scripts\ng-controllers\ReconciliationLogistics\ReconciliationLogistics.js" />
     <Content Include="Scripts\ng-controllers\Receivable\Receivable.js" />
@@ -2973,6 +2975,7 @@
     <Content Include="Views\ReconciliationAir\UploadAir.cshtml" />
     <Content Include="Views\ReconciliationCustomerGroup\Index.cshtml" />
     <Content Include="Views\ReconciliationIncludeTaxFormat\Index.cshtml" />
+    <Content Include="Views\ReconciliationIncludeTaxDownload\Index.cshtml" />
     <Content Include="Views\ReconciliationCustomer\Index.cshtml" />
     <Content Include="Views\ReconciliationLogistics\Index.cshtml" />
     <Content Include="Views\Receivable\Index.cshtml" />
@@ -3063,6 +3066,7 @@
     <TypeScriptCompile Include="Scripts\ng-controllers\ReconciliationAir\UploadAir.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ReconciliationCustomerGroup\ReconciliationCustomerGroup.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ReconciliationIncludeTaxFormat\ReconciliationIncludeTaxFormat.ts" />
+    <TypeScriptCompile Include="Scripts\ng-controllers\ReconciliationIncludeTaxDownload\ReconciliationIncludeTaxDownload.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ReconciliationCustomer\ReconciliationCustomer.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ReconciliationLogistics\ReconciliationLogistics.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\Receivable\Receivable.ts" />

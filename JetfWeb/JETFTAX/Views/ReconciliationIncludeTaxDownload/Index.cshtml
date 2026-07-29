@@ -1,0 +1,82 @@
+﻿@{
+    ViewBag.Title = "包稅客戶明細下載";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid reconciliation-include-tax-download-page"
+     ng-controller="ReconciliationIncludeTaxDownloadController"
+     ng-init="init()">
+    <span class="headtype">包稅客戶明細下載</span>
+    <hr />
+
+    <div class="card bg-light rounded p-4 mb-4" style="border:none">
+        <div class="row align-items-center">
+            <div class="form-group row col-xl-4 col-lg-6 mb-3">
+                <label class="col-sm-2 col-form-label text-right">日期</label>
+                <div class="col-sm-10 d-flex align-items-center">
+                    <input type="text"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.outDateStart"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="startDatePopup.opened"
+                           ng-click="openStartDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="開始日期"
+                           autocomplete="off" />
+                    <span class="mx-2">~</span>
+                    <input type="text"
+                           class="datepicker-input form-control"
+                           ng-model="searchForm.outDateEnd"
+                           uib-datepicker-popup="yyyy-MM-dd"
+                           datepicker-options="dateOptions"
+                           is-open="endDatePopup.opened"
+                           ng-click="openEndDatePopup()"
+                           close-text="關閉"
+                           current-text="今天"
+                           show-button-bar="false"
+                           readonly
+                           placeholder="結束日期"
+                           autocomplete="off" />
+                </div>
+            </div>
+
+            <div class="form-group row col-xl-4 col-lg-6 mb-3">
+                <label class="col-sm-3 col-form-label text-right">客戶</label>
+                <div class="col-sm-9">
+                    <reconciliation-customer-selector
+                        options-url="@Url.Action("GetCustomerSelectionOptions", "ReconciliationIncludeTaxDownload")"
+                        selected-customer-map="selectedCustomerMap"
+                        disabled="exporting">
+                    </reconciliation-customer-selector>
+                </div>
+            </div>
+
+            <div class="form-group row col-xl-3 col-lg-6 mb-3">
+                <label class="col-sm-4 col-form-label text-right">格式</label>
+                <div class="col-sm-8">
+                    <select class="form-control"
+                            ng-model="searchForm.formatId"
+                            ng-options="format.Id as format.FormatName for format in formats"
+                            ng-disabled="loading || exporting">
+                        <option value="">請選擇格式</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-xl-1 col-lg-6 mb-3 text-right">
+                <button type="button"
+                        class="btn btn-success"
+                        ng-click="exportExcel()"
+                        ng-disabled="loading || exporting">
+                    <i class="fa" ng-class="{'fa-spinner fa-spin': exporting, 'fa-download': !exporting}"></i>
+                    {{exporting ? '下載中...' : '下載Excel'}}
+                </button>
+            </div>
+        </div>
+        <div class="loader loader-bar" ng-class="{'is-active': exporting}" data-rounded data-text="檔案下載中"></div>
+    </div>
+</div>

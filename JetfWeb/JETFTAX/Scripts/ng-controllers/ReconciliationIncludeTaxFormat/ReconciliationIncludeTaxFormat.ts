@@ -9,11 +9,9 @@ interface ReconciliationIncludeTaxFormatListItem {
 interface ReconciliationIncludeTaxFieldOption {
     Key: string;
     Name: string;
-    DataPath: string;
 }
 
 interface ReconciliationIncludeTaxFormatColumn {
-    Id: number | null;
     ColumnName: string;
     SourceType: number;
     FieldKey: string;
@@ -74,7 +72,6 @@ mainApp.controller('ReconciliationIncludeTaxFormatController', ['$scope', '$http
 
     function newColumn(): ReconciliationIncludeTaxFormatColumn {
         return {
-            Id: null,
             ColumnName: '',
             SourceType: 0,
             FieldKey: '',
