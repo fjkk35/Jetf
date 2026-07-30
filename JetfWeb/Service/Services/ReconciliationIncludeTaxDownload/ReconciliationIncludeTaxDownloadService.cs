@@ -115,15 +115,53 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
             var customerGroups = GetCustomerGroups(customerCodes);
+            var customerNames = GetCustomerNames(customerCodes);
 
             return exportRows
                 .GroupBy(row => GetFileGroupKey(row.Customer, customerGroups), StringComparer.OrdinalIgnoreCase)
                 .Select(group => new ReconciliationIncludeTaxDownloadFileGroup
                 {
-                    Name = GetFileGroupName(group.Key, group.First().Customer, customerGroups),
+                    Name = GetFileGroupName(
+                        group.Key,
+                        group.First().Customer,
+                        customerGroups,
+                        customerNames),
                     Rows = group.ToList()
                 })
                 .ToList();
+        }
+
+        /// <summary>
+        /// 取得客戶代號對應的客戶名稱。
+        /// </summary>
+        /// <param name="customerCodes">客戶代號。</param>
+        /// <returns>以客戶代號索引的客戶名稱。</returns>
+        private Dictionary<string, string> GetCustomerNames(
+            IReadOnlyCollection<string> customerCodes)
+        {
+            var customerNames = new Dictionary<string, string>(
+                StringComparer.OrdinalIgnoreCase);
+            AddCustomerNames(customerNames, GetSeaCustomerNames(customerCodes));
+            AddCustomerNames(customerNames, GetAirCustomerNames(customerCodes));
+            return customerNames;
+        }
+
+        /// <summary>
+        /// 將客戶名稱加入對照表，已存在的客戶代號不覆蓋。
+        /// </summary>
+        /// <param name="target">目標客戶名稱對照表。</param>
+        /// <param name="source">來源客戶名稱對照表。</param>
+        private static void AddCustomerNames(
+            IDictionary<string, string> target,
+            IDictionary<string, string> source)
+        {
+            foreach (var item in source)
+            {
+                if (!target.ContainsKey(item.Key) && !string.IsNullOrWhiteSpace(item.Value))
+                {
+                    target.Add(item.Key, item.Value.Trim());
+                }
+            }
         }
 
         /// <summary>
@@ -184,7 +222,8 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
         private static string GetFileGroupName(
             string groupKey,
             string customerCode,
-            IDictionary<string, ReconciliationIncludeTaxDownloadCustomerGroup> customerGroups)
+            IDictionary<string, ReconciliationIncludeTaxDownloadCustomerGroup> customerGroups,
+            IDictionary<string, string> customerNames)
         {
             if (groupKey.StartsWith("G:", StringComparison.OrdinalIgnoreCase))
             {
@@ -196,7 +235,13 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
                 }
             }
 
-            return string.IsNullOrWhiteSpace(customerCode) ? "未指定客戶" : customerCode.Trim();
+            string customerName;
+            var normalizedCustomerCode = (customerCode ?? string.Empty).Trim();
+            return customerNames.TryGetValue(normalizedCustomerCode, out customerName)
+                ? customerName
+                : (string.IsNullOrWhiteSpace(normalizedCustomerCode)
+                    ? "未指定客戶"
+                    : normalizedCustomerCode);
         }
 
         /// <summary>
