@@ -191,6 +191,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'ReceivableCod', text: '到付款應收未收明細', url: '~/ReceivableCod/Index', auth: ['Receivable'] },
                 { id: 'ReconciliationCustomer', text: '客戶銷帳', url: '~/ReconciliationCustomer/Index', auth: ['ReconciliationCustomer'] },
                 { id: 'ReconciliationLogistics', text: '物流銷帳', url: '~/ReconciliationLogistics/Index', auth: ['ReconciliationLogistics'] },
+                { id: 'ReconciliationTaxDlvInvAdjustment', text: '稅金物流貨號調整', url: '~/ReconciliationTaxDlvInvAdjustment/Index', auth: ['ReconciliationTaxDlvInvAdjustment'] },
               ]
         },
         {

@@ -1,0 +1,102 @@
+﻿@{
+    ViewBag.Title = "稅金物流貨號調整";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .tax-dlv-inv-adjustment-page {
+        padding: 0 18px 18px;
+        box-sizing: border-box;
+    }
+
+    .tax-dlv-inv-adjustment-table th {
+        white-space: nowrap;
+    }
+
+    .tax-dlv-inv-adjustment-table .status-fail {
+        color: #e53935;
+        font-weight: 600;
+    }
+</style>
+
+<div class="tax-dlv-inv-adjustment-page"
+     ng-controller="ReconciliationTaxDlvInvAdjustmentController">
+    <span class="headtype">稅金物流貨號調整</span>
+    <hr />
+
+    <div class="containertype">
+        <div class="form-group row">
+            <label class="col-lg-1 col-md-3 col-sm-12 control-label"
+                   style="padding-top:7px;">
+                選擇檔案
+            </label>
+            <div class="col-lg-6 col-md-7 col-sm-12"
+                 style="margin-bottom:0.5rem;">
+                <input type="file"
+                       id="taxDlvInvAdjustmentFileInput"
+                       accept=".xlsx"
+                       class="form-control" />
+            </div>
+        </div>
+
+        <div class="form-group row" style="margin-bottom:0;">
+            <div class="col-lg-offset-1 col-md-offset-3 col-lg-11 col-md-9 col-sm-12"
+                 style="margin-top:0.5rem;">
+                <a href="@Url.Action("DownloadTemplate", "ReconciliationTaxDlvInvAdjustment")"
+                   target="_blank">
+                    下載範例
+                </a>
+            </div>
+        </div>
+
+        <div class="form-group row" style="margin-bottom:0;">
+            <div class="col-lg-offset-1 col-md-offset-3 col-lg-11 col-md-9 col-sm-12"
+                 style="margin-top:0.5rem;">
+                <button type="button"
+                        class="btn btn-primary confirmbtn"
+                        ng-click="uploadFile()"
+                        ng-disabled="uploading">
+                    <i class="fas fa-upload"></i>
+                    {{ uploading ? '上傳中...' : '上傳' }}
+                </button>
+            </div>
+        </div>
+
+        <div class="loader loader-bar"
+             ng-class="{'is-active': uploading}"
+             data-rounded
+             data-text="檔案上傳中"></div>
+
+        <div ng-if="uploadSummary">
+            <h4>處理結果（共 {{ uploadData.length }} 筆）</h4>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover
+                              tax-dlv-inv-adjustment-table">
+                    <thead>
+                        <tr>
+                            <th>Excel 列號</th>
+                            <th>分提單號</th>
+                            <th>舊物流貨號</th>
+                            <th>新物流貨號</th>
+                            <th>狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="item in uploadData track by $index">
+                            <td>{{ item.RowNo }}</td>
+                            <td>{{ item.TrackingNo }}</td>
+                            <td>{{ item.OldDlvInv }}</td>
+                            <td>{{ item.NewDlvInv }}</td>
+                            <td ng-class="{'status-fail': !item.IsSuccess}">
+                                {{ item.Status }}
+                            </td>
+                        </tr>
+                        <tr ng-if="uploadData.length === 0">
+                            <td colspan="5" class="text-center">查無資料</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

@@ -153,5 +153,7 @@ namespace Service.Data
         public DbSet<ReconciliationIncludeTaxFormatColumnEntity> ReconciliationIncludeTaxFormatColumns { get; set; }
 
         public DbSet<ReconciliationLogisticsEntity> ReconciliationLogistics { get; set; }
+
+        public DbSet<FeeMasterDlvInvModifyEntity> FeeMasterDlvInvModifies { get; set; }
     }
 }
