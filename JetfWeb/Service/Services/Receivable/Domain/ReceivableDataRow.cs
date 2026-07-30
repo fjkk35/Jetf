@@ -18,6 +18,16 @@ namespace Service.Services.Receivable.Domain
         public DateTime? OutDateTime { get; set; }
 
         /// <summary>
+        /// 客戶銷帳時間。
+        /// </summary>
+        public DateTime? CustomerReconciliationDate { get; set; }
+
+        /// <summary>
+        /// 物流銷帳日期。
+        /// </summary>
+        public DateTime? LogisticsReconciliationDate { get; set; }
+
+        /// <summary>
         /// 資料來源。
         /// </summary>
         public string Source { get; set; }

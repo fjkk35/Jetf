@@ -16,6 +16,16 @@ namespace Service.Services.Receivable.Domain
         public string PostingDate { get; set; }
 
         /// <summary>
+        /// 客戶銷帳日期，格式為 yyyy/MM/dd。
+        /// </summary>
+        public string CustomerReconciliationDate { get; set; }
+
+        /// <summary>
+        /// 物流銷帳日期，格式為 yyyy/MM/dd。
+        /// </summary>
+        public string LogisticsReconciliationDate { get; set; }
+
+        /// <summary>
         /// 資料來源。
         /// </summary>
         public string Source { get; set; }

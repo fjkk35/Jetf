@@ -167,6 +167,10 @@ namespace Service.Services.Receivable
             {
                 Id = x.Id,
                 OutDateTime = x.FeeMaster.OutDateTime,
+                CustomerReconciliationDate = x.ReceivedCustomerCodTime,
+                LogisticsReconciliationDate = x.ReconciliationLogisticsId.HasValue
+                    ? (DateTime?)x.ReconciliationLogistics.RepaymentDate
+                    : null,
                 Source = x.FeeMaster.Source,
                 Type = x.FeeMaster.Type,
                 CustomerCode = x.FeeMaster.Customer,
@@ -212,6 +216,8 @@ namespace Service.Services.Receivable
                 {
                     Id = row.Id,
                     PostingDate = row.OutDateTime?.ToString("yyyy/MM/dd"),
+                    CustomerReconciliationDate = row.CustomerReconciliationDate?.ToString("yyyy/MM/dd"),
+                    LogisticsReconciliationDate = row.LogisticsReconciliationDate?.ToString("yyyy/MM/dd"),
                     Source = row.Source,
                     Type = row.Type,
                     CustomerCode = row.CustomerCode,
@@ -351,7 +357,7 @@ namespace Service.Services.Receivable
             var numberStyle = NpoiStyle.CreateNumberStyle(workbook);
             var headers = new[]
             {
-                "序號", "掛帳日", "資料來源", "報關類別", "客戶", "出倉時間",
+                "序號", "掛帳日", "客戶銷帳日", "物流銷帳日", "資料來源", "報關類別", "客戶", "出倉時間",
                 "分提單號", "物流貨號", "稅單號碼", "代收小計", "已收金額", "未收金額",
                 "跟廠商收", "跟派件收", "捷豐支付", "報關費", "重派運費", "到付款",
                 "手續費", "未回收原因"
@@ -440,6 +446,8 @@ namespace Service.Services.Receivable
 
                 NpoiCell.CreateIntCell(row, column++, index + 1, dataStyle);
                 NpoiCell.CreateCell(row, column++, item.PostingDate, dataStyle);
+                NpoiCell.CreateCell(row, column++, item.CustomerReconciliationDate, dataStyle);
+                NpoiCell.CreateCell(row, column++, item.LogisticsReconciliationDate, dataStyle);
                 NpoiCell.CreateCell(row, column++, item.Source, dataStyle);
                 NpoiCell.CreateCell(row, column++, item.Type, dataStyle);
                 NpoiCell.CreateCell(row, column++, item.CustomerName, dataStyle);

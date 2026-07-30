@@ -3,6 +3,8 @@
 interface ReceivableRow {
     Id: number;
     PostingDate: string;
+    CustomerReconciliationDate: string;
+    LogisticsReconciliationDate: string;
     Source: string;
     Type: string;
     CustomerCode: string;

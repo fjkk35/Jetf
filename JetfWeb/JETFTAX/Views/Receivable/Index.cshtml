@@ -154,6 +154,8 @@
                     <tr>
                         <th>序號</th>
                         <th>掛帳日</th>
+                        <th>客戶銷帳日</th>
+                        <th>物流銷帳日</th>
                         <th>資料來源</th>
                         <th>報關類別</th>
                         <th>客戶</th>
@@ -176,11 +178,13 @@
                 </thead>
                 <tbody>
                     <tr ng-if="rows.length === 0">
-                        <td colspan="20" class="text-center">查無資料</td>
+                        <td colspan="22" class="text-center">查無資料</td>
                     </tr>
                     <tr ng-repeat="row in rows track by row.Id">
                         <td class="text-center">{{(currentPage - 1) * pageSize + $index + 1}}</td>
                         <td>{{row.PostingDate}}</td>
+                        <td>{{row.CustomerReconciliationDate}}</td>
+                        <td>{{row.LogisticsReconciliationDate}}</td>
                         <td>{{row.Source}}</td>
                         <td>{{row.Type}}</td>
                         <td title="{{row.CustomerCode}}">{{row.CustomerName}}</td>
