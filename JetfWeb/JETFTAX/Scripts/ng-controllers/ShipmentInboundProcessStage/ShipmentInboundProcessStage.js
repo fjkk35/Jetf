@@ -237,6 +237,11 @@ mainApp.controller('ShipmentInboundProcessStageController', function ($scope, $h
     };
 
     $scope.calcFee = function () {
+        if ($scope.processForm.processType == 4) {
+            $scope.processForm.fee = 0;
+            return;
+        }
+
         var freightFee = parseFloat($scope.processForm.freightFee) || 0;
         var tax = parseFloat($scope.processForm.tax) || 0;
         var ccFee = parseFloat($scope.processForm.ccFee) || 0;

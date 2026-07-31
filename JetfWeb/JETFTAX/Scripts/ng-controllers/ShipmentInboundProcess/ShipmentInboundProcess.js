@@ -259,6 +259,11 @@
 
     // 自動計算手續費
     $scope.calcFee = function () {
+        if ($scope.processForm.processType == 4) {
+            $scope.processForm.fee = 0;
+            return;
+        }
+
         if (applySpecialFeeRule()) {
             return;
         }

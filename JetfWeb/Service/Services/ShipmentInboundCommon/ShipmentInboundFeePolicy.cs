@@ -72,6 +72,11 @@ namespace Service.Services.ShipmentInboundCommon
             int? tax,
             int? ccFee)
         {
+            if (processType == ShipmentInboundProcessType.SelfPickup)
+            {
+                return 0;
+            }
+
             if (IsSpecialFeeCustomer(custCode))
             {
                 // 00043 / 00041 只依重出運費判斷手續費
