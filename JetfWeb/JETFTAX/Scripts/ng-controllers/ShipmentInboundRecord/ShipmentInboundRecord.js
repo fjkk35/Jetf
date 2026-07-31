@@ -173,6 +173,7 @@
         inboundDateEnd: null,
         outboundDateStart: null,
         outboundDateEnd: null,
+        isOutbound: '',
         custCode: '',
         sourceType: '',
         trackingNo: '',
@@ -273,6 +274,18 @@
         }
     };
 
+    function getIsOutbound() {
+        if ($scope.searchForm.isOutbound === 'true') {
+            return true;
+        }
+
+        if ($scope.searchForm.isOutbound === 'false') {
+            return false;
+        }
+
+        return null;
+    }
+
     // 清除查詢條件
     $scope.clearSearch = function () {
         $scope.searchForm = {
@@ -280,6 +293,7 @@
             inboundDateEnd: null,
             outboundDateStart: null,
             outboundDateEnd: null,
+            isOutbound: '',
             custCode: '',
             sourceType: '',
             trackingNo: '',
@@ -316,6 +330,7 @@
             InboundDateEnd: formatDate($scope.searchForm.inboundDateEnd),
             OutboundDateStart: formatDate($scope.searchForm.outboundDateStart),
             OutboundDateEnd: formatDate($scope.searchForm.outboundDateEnd),
+            IsOutbound: getIsOutbound(),
             CustCode: $scope.searchForm.custCode,
             CustCodes: $scope.customerSelectAll ? [] : ($scope.selectedCustCodes || []),
             SourceType: $scope.searchForm.sourceType,
@@ -367,6 +382,7 @@
             InboundDateEnd: formatDate($scope.searchForm.inboundDateEnd),
             OutboundDateStart: formatDate($scope.searchForm.outboundDateStart),
             OutboundDateEnd: formatDate($scope.searchForm.outboundDateEnd),
+            IsOutbound: getIsOutbound(),
             CustCode: $scope.searchForm.custCode,
             CustCodes: $scope.customerSelectAll ? [] : ($scope.selectedCustCodes || []),
             SourceType: $scope.searchForm.sourceType,
@@ -429,6 +445,7 @@
             InboundDateEnd: formatDate($scope.searchForm.inboundDateEnd),
             OutboundDateStart: formatDate($scope.searchForm.outboundDateStart),
             OutboundDateEnd: formatDate($scope.searchForm.outboundDateEnd),
+            IsOutbound: getIsOutbound(),
             CustCode: $scope.searchForm.custCode,
             CustCodes: $scope.customerSelectAll ? [] : ($scope.selectedCustCodes || []),
             SourceType: $scope.searchForm.sourceType,

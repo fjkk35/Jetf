@@ -427,6 +427,20 @@
                     </select>
                 </div>
             </div>
+
+            <!-- 出倉狀態 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="isOutbound" class="col-lg-4 col-form-label text-right">出倉狀態</label>
+                <div class="col-lg-8">
+                    <select id="isOutbound"
+                            class="form-control"
+                            ng-model="searchForm.isOutbound">
+                        <option value="">全部</option>
+                        <option value="true">已出倉</option>
+                        <option value="false">未出倉</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
         <!-- 按鈕區 -->

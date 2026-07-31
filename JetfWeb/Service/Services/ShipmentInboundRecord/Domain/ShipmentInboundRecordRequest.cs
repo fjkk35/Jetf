@@ -26,6 +26,11 @@ namespace Service.Services.ShipmentInboundRecord.Domain
         public string OutboundDateEnd { get; set; }
 
         /// <summary>
+        /// 出倉狀態：null=全部，true=已出倉，false=未出倉。
+        /// </summary>
+        public bool? IsOutbound { get; set; }
+
+        /// <summary>
         /// 處理方式
         /// </summary>
         public string ProcessType { get; set; }
