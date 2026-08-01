@@ -399,6 +399,10 @@
     <Compile Include="Models\CptTradeVan\NotReplyDetailModel.cs" />
     <Compile Include="Models\CptTradeVan\ReceiveOrderModel.cs" />
     <Compile Include="Models\CustomerModel.cs" />
+    <Compile Include="Models\DownloadIncludeTaxReportModel.cs" />
+    <Compile Include="Models\DownloadIncludeTaxReportSummaryModel.cs" />
+    <Compile Include="Models\DownloadIncludeTaxRequest.cs" />
+    <Compile Include="Models\DownloadIncludeTaxExportResult.cs" />
     <Compile Include="Models\CustomerTaxCalculate\CustomerTaxCalculateModel.cs" />
     <Compile Include="Models\CustomerTaxSetting\CustomerTaxSettingModel.cs" />
     <Compile Include="Models\CustomsBroker\CustomsBrokerModel.cs" />
@@ -565,6 +569,7 @@
     <Compile Include="Services\DeliveryAssistant\Domain\UploadOrderInfoResponse.cs" />
     <Compile Include="Services\DeliveryAssistant\Domain\UploadOrderInfoRow.cs" />
     <Compile Include="Services\DownloadService.cs" />
+    <Compile Include="Services\DownloadIncludeTax\DownloadIncludeTaxService.cs" />
     <Compile Include="Services\DropDownListService.cs" />
     <Compile Include="Services\EtlClearanceDetails\Domain\CoupangGoodsModel.cs" />
     <Compile Include="Services\EtlCustomerWorkLoadReport\Domain\CustWorkLoadDetailModel.cs" />

@@ -27,7 +27,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'SevenElevenEtlTax', text: '3-2-4.空快7-11稅金', url: '~/SevenElevenEtlTax/Index', auth: ['SevenElevenEtlTax'] },
                 { id: 'TCatEtlTax', text: '3-2-5.黑貓空快稅金', url: '~/TCatEtlTax/Index', auth: ['CainiaoTaixinStarSeaTax'] },
                 { id: 'DownloadNoIncludeTax', text: '3-3.空快稅金-回桃園倉庫明細表', url: '~/DownloadNoIncludeTax/Index', auth: ['DownloadEtlWarehouse'] },
-                { id: 'DownloadIncludeTax', text: '3-4.稅金總表及明細表', url: '~/Download/DownloadIncludeTax', auth: ['DownloadTaxReport'] },
+                { id: 'DownloadIncludeTax', text: '3-4.稅金總表及明細表', url: '~/DownloadIncludeTax/Index', auth: ['DownloadTaxReport'] },
                 { id: 'CainiaoHiLifeTaxDetails', text: '3-4-1.萊爾富接收稅金明細表', url: '~/CainiaoHiLifeTaxDetails/Index', auth: ['CainiaoHiLifeTax'] },
                 { id: 'DownloadSeaModifyG', text: '3-5.G類稅金調整明細表', url: '~/Download/DownloadSeaModifyG', auth: ['DownloadModifySeaTaxG'] },
                 { id: 'DownloadSeaModify', text: '3-6.海快TPCT及TIPC稅金調整明細表', url: '~/Download/DownloadSeaModify', auth: ['DownloadModifySeaTax'] },

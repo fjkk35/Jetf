@@ -1,0 +1,46 @@
+﻿@{
+    ViewBag.Title = "稅金總表及明細表";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="DownloadIncludeTaxController">
+    <span class="headtype">稅金總表及明細表</span>
+    <hr />
+
+    <form id="DownloadIncludeTaxForm" class="containertype">
+        <div style="margin-bottom:0.5rem; display:flex; align-items:center; gap:10px;">
+            <label for="startDate" style="width:70px; margin:0;">日　　期</label>
+            <input type="text" id="startDate" class="datepicker-input form-control"
+                   style="width:180px;"
+                   ng-model="form.startDate" uib-datepicker-popup="yyyy-MM-dd"
+                   datepicker-options="dateOptions" is-open="startDatePopup.opened"
+                   ng-click="openStartDatePopup()" show-button-bar="false"
+                   readonly autocomplete="off" />
+            <span>~</span>
+            <input type="text" id="endDate" class="datepicker-input form-control"
+                   style="width:180px;"
+                   ng-model="form.endDate" uib-datepicker-popup="yyyy-MM-dd"
+                   datepicker-options="dateOptions" is-open="endDatePopup.opened"
+                   ng-click="openEndDatePopup()" show-button-bar="false"
+                   readonly autocomplete="off" />
+        </div>
+
+        <div style="margin-bottom:0.75rem; display:flex; align-items:center; gap:10px;">
+            <label for="source" style="width:70px; margin:0;">資料來源</label>
+            <select id="source" class="form-control" style="width:97px;"
+                    ng-model="form.source" ng-disabled="exporting">
+                <option value="1">海運</option>
+                <option value="3">空運</option>
+            </select>
+        </div>
+
+        <button type="button" class="btn btn-primary confirmbtn col-lg-3"
+                style="font-size:1.2rem;"
+                ng-click="exportExcel()" ng-disabled="exporting">
+            <i class="fas" ng-class="{'fa-spinner fa-spin': exporting, 'fa-download': !exporting}"></i>
+            {{exporting ? '下載中...' : '下載'}}
+        </button>
+
+        <div class="loader loader-bar" ng-class="{'is-active': exporting}" data-rounded data-text="檔案下載中"></div>
+    </form>
+</div>
