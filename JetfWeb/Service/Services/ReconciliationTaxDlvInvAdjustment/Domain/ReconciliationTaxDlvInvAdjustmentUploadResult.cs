@@ -16,6 +16,21 @@ namespace Service.Services.ReconciliationTaxDlvInvAdjustment.Domain
         }
 
         /// <summary>
+        /// 上傳資料筆數。
+        /// </summary>
+        public int Count { get; set; }
+
+        /// <summary>
+        /// 成功更新的資料筆數。
+        /// </summary>
+        public int UpdatedCount { get; set; }
+
+        /// <summary>
+        /// 更新失敗的資料筆數。
+        /// </summary>
+        public int FailCount { get; set; }
+
+        /// <summary>
         /// 上傳結果訊息。
         /// </summary>
         public string Message { get; set; }

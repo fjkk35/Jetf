@@ -357,8 +357,14 @@ namespace Service.Services.ReconciliationTaxDlvInvAdjustment
 
             return new ReconciliationTaxDlvInvAdjustmentUploadResult
             {
+                Count = uploadRows.Count,
+                UpdatedCount = uploadRows.Count(x => x.IsSuccess),
+                FailCount = uploadRows.Count(x => !x.IsSuccess),
                 Message = "上傳完成",
                 Data = uploadRows
+                    .OrderByDescending(x => x.IsSuccess)
+                    .ThenBy(x => x.RowNo)
+                    .ToList()
             };
         }
 
@@ -396,6 +402,9 @@ namespace Service.Services.ReconciliationTaxDlvInvAdjustment
 
             return new ReconciliationTaxDlvInvAdjustmentUploadResult
             {
+                Count = uploadRows.Count,
+                UpdatedCount = 0,
+                FailCount = uploadRows.Count,
                 Message = "驗證失敗，整批未更新",
                 Data = uploadRows
             };

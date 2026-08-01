@@ -8,6 +8,9 @@
 }
 
 interface ReconciliationTaxDlvInvAdjustmentResult {
+    Count: number;
+    UpdatedCount: number;
+    FailCount: number;
     Message: string;
     Data: ReconciliationTaxDlvInvAdjustmentRow[];
 }

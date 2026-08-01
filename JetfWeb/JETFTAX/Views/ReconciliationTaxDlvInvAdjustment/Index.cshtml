@@ -9,6 +9,44 @@
         box-sizing: border-box;
     }
 
+    .tax-dlv-inv-adjustment-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 18px 0;
+    }
+
+    .tax-dlv-inv-adjustment-summary-card {
+        min-width: 180px;
+        padding: 14px 18px;
+        border-radius: 8px;
+        background: #f0fbf3;
+        border: 1px solid #d7dee6;
+        border-left: 5px solid #2fb344;
+    }
+
+    .tax-dlv-inv-adjustment-summary-card.summary-total {
+        border-left-color: #2f80ed;
+        background: #f2f7ff;
+    }
+
+    .tax-dlv-inv-adjustment-summary-card.summary-fail {
+        border-left-color: #e83e8c;
+        background: #fff3f8;
+    }
+
+    .tax-dlv-inv-adjustment-summary-card .label {
+        display: block;
+        color: #6c757d;
+        margin-bottom: 8px;
+    }
+
+    .tax-dlv-inv-adjustment-summary-card .value {
+        font-size: 24px;
+        font-weight: 600;
+        color: #1f2d3d;
+    }
+
     .tax-dlv-inv-adjustment-table th {
         white-space: nowrap;
     }
@@ -68,6 +106,21 @@
              data-text="檔案上傳中"></div>
 
         <div ng-if="uploadSummary">
+            <div class="tax-dlv-inv-adjustment-summary">
+                <div class="tax-dlv-inv-adjustment-summary-card summary-total">
+                    <span class="label">上傳筆數</span>
+                    <span class="value">{{ uploadSummary.Count }}</span>
+                </div>
+                <div class="tax-dlv-inv-adjustment-summary-card">
+                    <span class="label">更新筆數</span>
+                    <span class="value">{{ uploadSummary.UpdatedCount }}</span>
+                </div>
+                <div class="tax-dlv-inv-adjustment-summary-card summary-fail">
+                    <span class="label">失敗筆數</span>
+                    <span class="value">{{ uploadSummary.FailCount }}</span>
+                </div>
+            </div>
+
             <h4>處理結果（共 {{ uploadData.length }} 筆）</h4>
             <div class="table-responsive">
                 <table class="table table-bordered table-hover
