@@ -582,5 +582,10 @@ namespace Service.EnumTax
         /// 稅金物流貨號調整
         /// </summary>
         ReconciliationTaxDlvInvAdjustment,
+
+        /// <summary>
+        /// 稅金客戶調整
+        /// </summary>
+        ReconciliationTaxCustomerAdjustment,
     }
 }

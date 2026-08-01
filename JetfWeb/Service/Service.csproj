@@ -315,6 +315,7 @@
     <Compile Include="Data\Models\Jetf\ReconciliationIncludeTaxFormatColumnEntity.cs" />
     <Compile Include="Data\Models\Jetf\ReconciliationLogisticsEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterDlvInvModifyEntity.cs" />
+    <Compile Include="Data\Models\Jetf\FeeMasterCustomerModifyEntity.cs" />
     <Compile Include="Data\Models\Jetf\TelegramGroupEntity.cs" />
     <Compile Include="Data\Models\Jetf\StepConditionEntity.cs" />
     <Compile Include="Data\Models\Jetf\StepDetailEntity.cs" />
@@ -717,6 +718,9 @@
     <Compile Include="Services\ReconciliationTaxDlvInvAdjustment\Domain\ReconciliationTaxDlvInvAdjustmentUploadResult.cs" />
     <Compile Include="Services\ReconciliationTaxDlvInvAdjustment\Domain\ReconciliationTaxDlvInvAdjustmentUploadRow.cs" />
     <Compile Include="Services\ReconciliationTaxDlvInvAdjustment\ReconciliationTaxDlvInvAdjustmentService.cs" />
+    <Compile Include="Services\ReconciliationTaxCustomerAdjustment\Domain\ReconciliationTaxCustomerAdjustmentUploadResult.cs" />
+    <Compile Include="Services\ReconciliationTaxCustomerAdjustment\Domain\ReconciliationTaxCustomerAdjustmentUploadRow.cs" />
+    <Compile Include="Services\ReconciliationTaxCustomerAdjustment\ReconciliationTaxCustomerAdjustmentService.cs" />
     <Compile Include="Services\Receivable\Domain\ReceivableDataRow.cs" />
     <Compile Include="Services\Receivable\Domain\ReceivableListItem.cs" />
     <Compile Include="Services\Receivable\Domain\ReceivableQueryRequest.cs" />

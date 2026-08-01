@@ -192,6 +192,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'ReconciliationCustomer', text: '客戶銷帳', url: '~/ReconciliationCustomer/Index', auth: ['ReconciliationCustomer'] },
                 { id: 'ReconciliationLogistics', text: '物流銷帳', url: '~/ReconciliationLogistics/Index', auth: ['ReconciliationLogistics'] },
                 { id: 'ReconciliationTaxDlvInvAdjustment', text: '稅金物流貨號調整', url: '~/ReconciliationTaxDlvInvAdjustment/Index', auth: ['ReconciliationTaxDlvInvAdjustment'] },
+                { id: 'ReconciliationTaxCustomerAdjustment', text: '稅金客戶調整', url: '~/ReconciliationTaxCustomerAdjustment/Index', auth: ['ReconciliationTaxCustomerAdjustment'] },
               ]
         },
         {

@@ -155,5 +155,7 @@ namespace Service.Data
         public DbSet<ReconciliationLogisticsEntity> ReconciliationLogistics { get; set; }
 
         public DbSet<FeeMasterDlvInvModifyEntity> FeeMasterDlvInvModifies { get; set; }
+
+        public DbSet<FeeMasterCustomerModifyEntity> FeeMasterCustomerModifies { get; set; }
     }
 }
