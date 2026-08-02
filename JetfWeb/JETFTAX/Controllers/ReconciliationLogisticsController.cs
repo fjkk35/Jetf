@@ -224,5 +224,60 @@ namespace JETFTAX.Controllers
             }
         }
 
+        /// <summary>
+        /// 上傳物流檔案並產生比對明細 Excel，不會寫入銷帳資料。
+        /// </summary>
+        /// <param name="file">物流上傳檔案。</param>
+        /// <param name="company">物流公司。</param>
+        /// <returns>比對明細下載檔案資訊。</returns>
+        [HttpPost]
+        [UserAuthorize(Authority.ReconciliationLogistics)]
+        public JsonResult CompareDetail(
+            HttpPostedFileBase file,
+            ReconciliationLogisticsCompany? company)
+        {
+            try
+            {
+                if (!company.HasValue ||
+                    !Enum.IsDefined(typeof(ReconciliationLogisticsCompany), company.Value))
+                {
+                    return Json(new ResponseModel("請選擇物流公司"));
+                }
+
+                if (file == null || file.ContentLength == 0)
+                {
+                    return Json(new ResponseModel("請選擇檔案"));
+                }
+
+                var expectedExtension = company.Value == ReconciliationLogisticsCompany.Ktj
+                    ? ".csv"
+                    : ".xlsx";
+                if (!string.Equals(
+                    Path.GetExtension(file.FileName),
+                    expectedExtension,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return Json(new ResponseModel(
+                        $"{company.Value.ToDescription()}上傳檔案副檔名需為 {expectedExtension.TrimStart('.')}"));
+                }
+
+                var fileBytes = _service.CreateComparisonExcel(file.InputStream, company.Value);
+                var fileGuid = Guid.NewGuid().ToString();
+                var fileName = $"物流銷帳比對明細_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+                TempData[fileGuid] = fileBytes;
+
+                return Json(new ResponseModel(
+                    new ReconciliationLogisticsComparisonFileResult
+                    {
+                        FileGuid = fileGuid,
+                        FileName = fileName
+                    }));
+            }
+            catch (Exception ex)
+            {
+                return Json(new ResponseModel($"比對明細產生失敗：{ex.GetBaseException().Message}"));
+            }
+        }
+
     }
 }

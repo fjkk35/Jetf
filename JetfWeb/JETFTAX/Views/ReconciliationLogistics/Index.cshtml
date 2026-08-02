@@ -146,6 +146,12 @@
                         ng-disabled="loading || uploading || optionsLoading">
                     <i class="fa fa-upload"></i> 批量上傳
                 </button>
+                <button type="button"
+                        class="btn btn-warning ml-2"
+                        ng-click="openComparisonModal()"
+                        ng-disabled="loading || uploading || comparing || optionsLoading">
+                    <i class="fa fa-file-excel-o"></i> 比對明細
+                </button>
             </div>
         </div>
     </div>
@@ -238,12 +244,12 @@
         </nav>
     </div>
 
-    <div class="modal fade reconciliation-logistics-upload-modal"
+    <div class="modal fade reconciliation-logistics-upload-modal reconciliation-logistics-comparison-modal"
          id="reconciliationLogisticsUploadModal"
          tabindex="-1"
          role="dialog"
          data-keyboard="false">
-        <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-dialog modal-md" role="document">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">批量上傳物流銷帳</h5>
@@ -423,6 +429,66 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade reconciliation-logistics-upload-modal reconciliation-logistics-comparison-modal"
+         id="reconciliationLogisticsComparisonModal"
+         tabindex="-1"
+         role="dialog"
+         data-keyboard="false">
+        <div class="modal-dialog modal-md" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">比對物流銷帳明細</h5>
+                    <button type="button"
+                            class="close"
+                            data-dismiss="modal"
+                            ng-disabled="comparing"
+                            aria-label="關閉">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group row">
+                        <label class="col-lg-2 col-md-3 col-form-label text-right">物流公司</label>
+                        <div class="col-lg-5 col-md-7">
+                            <select class="form-control"
+                                    ng-model="comparisonForm.company"
+                                    ng-disabled="optionsLoading || comparing">
+                                <option value="">請選擇</option>
+                                <option ng-repeat="item in companies track by item.Value"
+                                        value="{{item.Value}}">{{item.Text}}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-lg-2 col-md-3 col-form-label text-right">選擇檔案</label>
+                        <div class="col-lg-8 col-md-9">
+                            <input type="file"
+                                   id="reconciliationLogisticsComparisonFile"
+                                   class="form-control"
+                                   accept="{{comparisonAcceptedFileExtension}}"
+                                   ng-disabled="comparing" />
+                        </div>
+                    </div>
+                    <div class="loader loader-bar"
+                         ng-if="comparing"
+                         ng-class="{'is-active': comparing}"
+                         data-rounded
+                         data-text="檔案讀取中"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-primary"
+                            ng-click="compareDetail()"
+                            ng-disabled="comparing || optionsLoading">
+                        <i class="fa"
+                           ng-class="comparing ? 'fa-spinner fa-spin' : 'fa-upload'"></i>
+                        {{comparing ? '讀取中...' : '上傳'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -449,6 +515,21 @@
         height: 420px;
         max-height: calc(100vh - 170px);
         overflow-y: auto;
+    }
+
+    .reconciliation-logistics-comparison-modal .modal-dialog {
+        max-width: 720px;
+    }
+
+    .reconciliation-logistics-comparison-modal .modal-body {
+        height: auto;
+        max-height: none;
+        overflow-y: visible;
+        padding: 1.25rem 1.5rem 0.5rem;
+    }
+
+    .reconciliation-logistics-comparison-modal .form-group {
+        margin-bottom: 1rem;
     }
 
     .reconciliation-logistics-summary {

@@ -268,6 +268,615 @@ namespace Service.Services.ReconciliationLogistics
         }
 
         /// <summary>
+        /// 讀取物流銷帳檔案，將上傳資料與既有銷帳及費用資料組成比對明細 Excel。
+        /// </summary>
+        /// <param name="stream">上傳檔案串流。</param>
+        /// <param name="company">物流公司。</param>
+        /// <returns>比對明細 Excel 內容。</returns>
+        public byte[] CreateComparisonExcel(
+            Stream stream,
+            ReconciliationLogisticsCompany company)
+        {
+            if (!Enum.IsDefined(typeof(ReconciliationLogisticsCompany), company))
+            {
+                throw new ArgumentException("物流公司選項不正確");
+            }
+
+            if (stream == null)
+            {
+                throw new ArgumentException("未選擇檔案");
+            }
+
+            byte[] fileBytes;
+            using (var copiedStream = new MemoryStream())
+            {
+                stream.CopyTo(copiedStream);
+                fileBytes = copiedStream.ToArray();
+            }
+
+            ReconciliationLogisticsUploadFormat uploadFormat;
+            List<ReconciliationLogisticsUploadRow> uploadRows;
+            using (var uploadStream = new MemoryStream(fileBytes))
+            {
+                uploadRows = ReadUploadRows(uploadStream, company, out uploadFormat);
+            }
+
+            if (!uploadRows.Any())
+            {
+                throw new InvalidOperationException("檔案中沒有資料");
+            }
+
+            ReconciliationLogisticsComparisonUpload comparisonUpload;
+            using (var rawStream = new MemoryStream(fileBytes))
+            {
+                comparisonUpload = ReadComparisonUpload(
+                    rawStream,
+                    company,
+                    uploadFormat);
+            }
+
+            var exportRows = BuildComparisonExportRows(
+                uploadRows,
+                comparisonUpload,
+                company,
+                uploadFormat);
+            return CreateComparisonWorkbook(
+                exportRows,
+                comparisonUpload.Headers);
+        }
+
+        /// <summary>
+        /// 讀取比對明細檔案的原始欄位與資料值。
+        /// </summary>
+        /// <param name="stream">檔案串流。</param>
+        /// <param name="company">物流公司。</param>
+        /// <param name="uploadFormat">已辨識的物流檔案格式。</param>
+        /// <returns>原始欄位與資料列。</returns>
+        private static ReconciliationLogisticsComparisonUpload ReadComparisonUpload(
+            Stream stream,
+            ReconciliationLogisticsCompany company,
+            ReconciliationLogisticsUploadFormat uploadFormat)
+        {
+            if (uploadFormat == ReconciliationLogisticsUploadFormat.Ktj)
+            {
+                return ReadComparisonCsv(stream);
+            }
+
+            var result = new ReconciliationLogisticsComparisonUpload();
+            var workbook = new XSSFWorkbook(stream);
+            try
+            {
+                var sheet = company == ReconciliationLogisticsCompany.Yto
+                    ? workbook.GetSheet("明细") ?? workbook.GetSheet("明細")
+                    : workbook.GetSheetAt(0);
+                if (sheet == null)
+                {
+                    throw new InvalidOperationException(
+                        $"找不到{company.ToDescription()}明細工作表，請確認檔案格式");
+                }
+
+                int headerRowIndex;
+                Dictionary<string, int> columnIndexes;
+                GetUploadFormat(
+                    sheet,
+                    company,
+                    out headerRowIndex,
+                    out columnIndexes);
+                var headerRow = sheet.GetRow(headerRowIndex);
+                var headerIndexes = new List<int>();
+                var usedHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                for (var columnIndex = 0;
+                     headerRow != null && columnIndex < headerRow.LastCellNum;
+                     columnIndex++)
+                {
+                    var header = headerRow.GetCellData(columnIndex).Trim();
+                    if (string.IsNullOrWhiteSpace(header))
+                    {
+                        continue;
+                    }
+
+                    var displayHeader = header;
+                    if (!usedHeaders.Add(displayHeader))
+                    {
+                        displayHeader = $"{header}_{columnIndex + 1}";
+                        usedHeaders.Add(displayHeader);
+                    }
+
+                    result.Headers.Add(displayHeader);
+                    headerIndexes.Add(columnIndex);
+                }
+
+                for (var rowIndex = headerRowIndex + 1;
+                     rowIndex <= sheet.LastRowNum;
+                     rowIndex++)
+                {
+                    var excelRow = sheet.GetRow(rowIndex);
+                    if (excelRow == null)
+                    {
+                        continue;
+                    }
+
+                    var values = headerIndexes
+                        .Select(index => excelRow.GetCellData(index))
+                        .ToList();
+                    if (values.All(string.IsNullOrWhiteSpace))
+                    {
+                        continue;
+                    }
+
+                    result.Rows.Add(new ReconciliationLogisticsComparisonUploadRow
+                    {
+                        RowNo = rowIndex + 1,
+                        Values = values
+                    });
+                }
+
+                return result;
+            }
+            finally
+            {
+                workbook.Close();
+            }
+        }
+
+        /// <summary>
+        /// 讀取大榮 CSV 的原始欄位與資料值。
+        /// </summary>
+        /// <param name="stream">CSV 檔案串流。</param>
+        /// <returns>CSV 原始欄位與資料列。</returns>
+        private static ReconciliationLogisticsComparisonUpload ReadComparisonCsv(
+            Stream stream)
+        {
+            var result = new ReconciliationLogisticsComparisonUpload();
+            using (var parser = new TextFieldParser(
+                stream,
+                Encoding.GetEncoding(950),
+                true))
+            {
+                parser.TextFieldType = FieldType.Delimited;
+                parser.SetDelimiters(",");
+                parser.HasFieldsEnclosedInQuotes = true;
+                parser.TrimWhiteSpace = true;
+                if (parser.EndOfData)
+                {
+                    return result;
+                }
+
+                var headers = parser.ReadFields() ?? new string[0];
+                result.Headers.AddRange(headers.Select(x => (x ?? string.Empty).Trim()));
+                var rowNo = 1;
+                while (!parser.EndOfData)
+                {
+                    var fields = parser.ReadFields();
+                    rowNo++;
+                    if (fields == null)
+                    {
+                        continue;
+                    }
+
+                    var firstColumn = fields.Length > 0
+                        ? (fields[0] ?? string.Empty).Trim()
+                        : string.Empty;
+                    if (firstColumn.EndsWith("總計", StringComparison.Ordinal))
+                    {
+                        break;
+                    }
+
+                    var values = new List<string>();
+                    for (var index = 0; index < result.Headers.Count; index++)
+                    {
+                        values.Add(index < fields.Length ? fields[index] : string.Empty);
+                    }
+
+                    result.Rows.Add(new ReconciliationLogisticsComparisonUploadRow
+                    {
+                        RowNo = rowNo,
+                        Values = values
+                    });
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 將標準化上傳資料與資料庫資料組成比對明細列。
+        /// </summary>
+        /// <param name="uploadRows">標準化上傳資料。</param>
+        /// <param name="comparisonUpload">原始上傳欄位與資料。</param>
+        /// <param name="company">物流公司。</param>
+        /// <param name="uploadFormat">物流檔案格式。</param>
+        /// <returns>Excel 匯出列。</returns>
+        private List<ReconciliationLogisticsComparisonExportRow> BuildComparisonExportRows(
+            IList<ReconciliationLogisticsUploadRow> uploadRows,
+            ReconciliationLogisticsComparisonUpload comparisonUpload,
+            ReconciliationLogisticsCompany company,
+            ReconciliationLogisticsUploadFormat uploadFormat)
+        {
+            var logistics = GetComparisonLogistics(uploadRows, company, uploadFormat);
+            var feeMasters = GetComparisonFeeMasters(uploadRows, uploadFormat);
+            var linkedFeeMasterIdsByLogisticsId =
+                new Dictionary<int, int>();
+            if (logistics.Any())
+            {
+                var logisticsIds = logistics.Select(x => x.Id).ToList();
+                var logisticsDetails = JetfDb.FeeMasterDetails
+                    .AsNoTracking()
+                    .Where(x => x.ReconciliationLogisticsId.HasValue)
+                    .WhereBulkContains(
+                        JetfDb,
+                        logisticsIds,
+                        x => x.ReconciliationLogisticsId,
+                        x => x)
+                    .Select(x => new
+                    {
+                        LogisticsId = x.ReconciliationLogisticsId.Value,
+                        x.FeeMasterId
+                    })
+                    .ToList();
+                foreach (var detail in logisticsDetails)
+                {
+                    if (!linkedFeeMasterIdsByLogisticsId.ContainsKey(detail.LogisticsId))
+                    {
+                        linkedFeeMasterIdsByLogisticsId.Add(
+                            detail.LogisticsId,
+                            detail.FeeMasterId);
+                    }
+                }
+            }
+
+            var feeMasterIds = linkedFeeMasterIdsByLogisticsId
+                .Values
+                .Distinct()
+                .ToList();
+            var linkedFeeMasters = new List<FeeMasterEntity>();
+            if (feeMasterIds.Any())
+            {
+                linkedFeeMasters = JetfDb.FeeMasters
+                    .AsNoTracking()
+                    .Where(x => x.Download == "1")
+                    .WhereBulkContains(
+                        JetfDb,
+                        feeMasterIds,
+                        x => x.Id,
+                        x => x);
+            }
+
+            var airTrackingNos = linkedFeeMasters
+                .Concat(feeMasters)
+                .Where(x => IsReconciliationAirSource(x.Source) &&
+                            !string.IsNullOrWhiteSpace(x.TrackingNo))
+                .Select(x => x.TrackingNo.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var reconciliationAirs = airTrackingNos.Any()
+                ? JetfDb.ReconciliationAirs
+                    .AsNoTracking()
+                    .WhereBulkContains(
+                        JetfDb,
+                        airTrackingNos,
+                        x => x.TrackingNo,
+                        x => x)
+                : new List<ReconciliationAirEntity>();
+            var reconciliationAirByTrackingNo = reconciliationAirs
+                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
+                .GroupBy(x => x.TrackingNo.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.First(),
+                    StringComparer.OrdinalIgnoreCase);
+
+            var rawRowsByRowNo = comparisonUpload.Rows
+                .GroupBy(x => x.RowNo)
+                .ToDictionary(x => x.Key, x => x.First());
+            var rows = new List<ReconciliationLogisticsComparisonExportRow>();
+            foreach (var uploadRow in uploadRows)
+            {
+                var logisticsRow = FindComparisonLogistics(
+                    uploadRow,
+                    logistics,
+                    uploadFormat);
+                var feeMaster = FindComparisonFeeMaster(
+                    uploadRow,
+                    feeMasters,
+                    uploadFormat);
+                if (logisticsRow != null)
+                {
+                    int linkedFeeMasterId;
+                    if (linkedFeeMasterIdsByLogisticsId.TryGetValue(
+                        logisticsRow.Id,
+                        out linkedFeeMasterId))
+                    {
+                        feeMaster = linkedFeeMasters.FirstOrDefault(
+                            x => x.Id == linkedFeeMasterId) ?? feeMaster;
+                    }
+                }
+
+                var row = new ReconciliationLogisticsComparisonExportRow
+                {
+                    RepaymentDate = logisticsRow?.RepaymentDate,
+                    OutDateTime = feeMaster?.OutDateTime,
+                    Type = feeMaster?.Type,
+                    Customer = feeMaster?.Customer,
+                    BagNumber = feeMaster?.BagNumber,
+                    TrackingNo = feeMaster?.TrackingNo ?? uploadRow.TrackingNo,
+                    DlvInv = feeMaster?.DlvInv ?? uploadRow.DlvInv,
+                    ReceivedAmount = logisticsRow?.ReceivedAmount,
+                    ToDlvCod = feeMaster == null || string.IsNullOrWhiteSpace(feeMaster.ToDlvCod)
+                        ? (int?)null
+                        : feeMaster.ToDlvCod.ToInt(),
+                    DifferenceAmount = logisticsRow?.DifferenceAmount,
+                    TransCod = feeMaster?.TransCod,
+                    Ccfee = feeMaster?.Ccfee,
+                    Cod = feeMaster?.Cod,
+                    Fee = feeMaster?.Fee,
+                    Source = feeMaster?.Source,
+                    UploadedValues = rawRowsByRowNo.ContainsKey(uploadRow.RowNo)
+                        ? rawRowsByRowNo[uploadRow.RowNo].Values
+                        : new List<string>()
+                };
+
+                if (feeMaster != null &&
+                    IsReconciliationAirSource(feeMaster.Source))
+                {
+                    ReconciliationAirEntity reconciliationAir;
+                    if (reconciliationAirByTrackingNo.TryGetValue(
+                        (feeMaster.TrackingNo ?? string.Empty).Trim(),
+                        out reconciliationAir))
+                    {
+                        row.TaxPayer = reconciliationAir.Recipient;
+                        row.TaxRecId = reconciliationAir.TaxRecId;
+                    }
+                }
+                else
+                {
+                    row.TaxPayer = feeMaster?.TaxPayer;
+                    row.TaxRecId = feeMaster?.TaxRecId;
+                }
+
+                rows.Add(row);
+            }
+
+            return rows;
+        }
+
+        /// <summary>
+        /// 查詢符合物流公司及檔案比對規則的物流銷帳紀錄。
+        /// </summary>
+        private List<ReconciliationLogisticsEntity> GetComparisonLogistics(
+            IEnumerable<ReconciliationLogisticsUploadRow> uploadRows,
+            ReconciliationLogisticsCompany company,
+            ReconciliationLogisticsUploadFormat uploadFormat)
+        {
+            var query = JetfDb.ReconciliationLogistics
+                .AsNoTracking()
+                .Where(x => x.Company == company);
+            switch (uploadFormat)
+            {
+                case ReconciliationLogisticsUploadFormat.TradeVan:
+                    return query.WhereBulkContains(
+                        JetfDb,
+                        uploadRows,
+                        x => x.TrackingNo,
+                        x => x.TrackingNo);
+                case ReconciliationLogisticsUploadFormat.SevenEleven:
+                case ReconciliationLogisticsUploadFormat.TaixinStar:
+                    return query.WhereBulkContains(
+                        JetfDb,
+                        uploadRows,
+                        x => new { x.TrackingNo, x.DlvInv },
+                        x => new { x.TrackingNo, x.DlvInv });
+                default:
+                    return query.WhereBulkContains(
+                        JetfDb,
+                        uploadRows,
+                        x => x.DlvInv,
+                        x => x.DlvInv);
+            }
+        }
+
+        /// <summary>
+        /// 查詢符合物流檔案比對規則的費用主檔。
+        /// </summary>
+        private List<FeeMasterEntity> GetComparisonFeeMasters(
+            IEnumerable<ReconciliationLogisticsUploadRow> uploadRows,
+            ReconciliationLogisticsUploadFormat uploadFormat)
+        {
+            var query = JetfDb.FeeMasters
+                .AsNoTracking()
+                .Where(x => x.Download == "1");
+            switch (uploadFormat)
+            {
+                case ReconciliationLogisticsUploadFormat.TradeVan:
+                    return query.WhereBulkContains(
+                        JetfDb,
+                        uploadRows,
+                        x => x.TrackingNo,
+                        x => x.TrackingNo);
+                case ReconciliationLogisticsUploadFormat.SevenEleven:
+                case ReconciliationLogisticsUploadFormat.TaixinStar:
+                    return query.WhereBulkContains(
+                        JetfDb,
+                        uploadRows,
+                        x => new { x.TrackingNo, x.DlvInv },
+                        x => new { x.TrackingNo, x.DlvInv });
+                default:
+                    return query.WhereBulkContains(
+                        JetfDb,
+                        uploadRows,
+                        x => x.DlvInv,
+                        x => x.DlvInv);
+            }
+        }
+
+        /// <summary>
+        /// 依物流公司檔案規則取得單筆物流銷帳紀錄。
+        /// </summary>
+        private static ReconciliationLogisticsEntity FindComparisonLogistics(
+            ReconciliationLogisticsUploadRow uploadRow,
+            IEnumerable<ReconciliationLogisticsEntity> logistics,
+            ReconciliationLogisticsUploadFormat uploadFormat)
+        {
+            var candidates = logistics.Where(x => IsSameComparisonKey(
+                x.TrackingNo,
+                x.DlvInv,
+                uploadRow.TrackingNo,
+                uploadRow.DlvInv,
+                uploadFormat));
+            if (IsHctUploadFormat(uploadFormat))
+            {
+                var primaryMatches = logistics.Where(x => string.Equals(
+                    (x.DlvInv ?? string.Empty).Trim(),
+                    (uploadRow.DlvInv ?? string.Empty).Trim(),
+                    StringComparison.OrdinalIgnoreCase));
+                if (primaryMatches.Count() > 1 &&
+                    !string.IsNullOrWhiteSpace(uploadRow.TrackingNo))
+                {
+                    candidates = primaryMatches.Where(x => string.Equals(
+                        (x.TrackingNo ?? string.Empty).Trim(),
+                        uploadRow.TrackingNo.Trim(),
+                        StringComparison.OrdinalIgnoreCase));
+                }
+            }
+
+            return candidates
+                .OrderByDescending(x => x.Id)
+                .FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 依物流公司檔案規則取得單筆費用主檔。
+        /// </summary>
+        private static FeeMasterEntity FindComparisonFeeMaster(
+            ReconciliationLogisticsUploadRow uploadRow,
+            IEnumerable<FeeMasterEntity> feeMasters,
+            ReconciliationLogisticsUploadFormat uploadFormat)
+        {
+            var candidates = feeMasters.Where(x => IsSameComparisonKey(
+                x.TrackingNo,
+                x.DlvInv,
+                uploadRow.TrackingNo,
+                uploadRow.DlvInv,
+                uploadFormat));
+            if (IsHctUploadFormat(uploadFormat))
+            {
+                var primaryMatches = feeMasters.Where(x => string.Equals(
+                    (x.DlvInv ?? string.Empty).Trim(),
+                    (uploadRow.DlvInv ?? string.Empty).Trim(),
+                    StringComparison.OrdinalIgnoreCase));
+                if (primaryMatches.Count() > 1 &&
+                    !string.IsNullOrWhiteSpace(uploadRow.TrackingNo))
+                {
+                    candidates = primaryMatches.Where(x => string.Equals(
+                        (x.TrackingNo ?? string.Empty).Trim(),
+                        uploadRow.TrackingNo.Trim(),
+                        StringComparison.OrdinalIgnoreCase));
+                }
+            }
+
+            return candidates
+                .OrderBy(x => x.Id)
+                .FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 判斷兩筆資料是否符合指定物流檔案的比對鍵。
+        /// </summary>
+        private static bool IsSameComparisonKey(
+            string trackingNo,
+            string dlvInv,
+            string uploadTrackingNo,
+            string uploadDlvInv,
+            ReconciliationLogisticsUploadFormat uploadFormat)
+        {
+            var trackingMatches = string.Equals(
+                (trackingNo ?? string.Empty).Trim(),
+                (uploadTrackingNo ?? string.Empty).Trim(),
+                StringComparison.OrdinalIgnoreCase);
+            var dlvInvMatches = string.Equals(
+                (dlvInv ?? string.Empty).Trim(),
+                (uploadDlvInv ?? string.Empty).Trim(),
+                StringComparison.OrdinalIgnoreCase);
+            switch (uploadFormat)
+            {
+                case ReconciliationLogisticsUploadFormat.TradeVan:
+                    return trackingMatches;
+                case ReconciliationLogisticsUploadFormat.SevenEleven:
+                case ReconciliationLogisticsUploadFormat.TaixinStar:
+                    return trackingMatches && dlvInvMatches;
+                default:
+                    return dlvInvMatches;
+            }
+        }
+
+        /// <summary>
+        /// 建立比對明細 Excel。
+        /// </summary>
+        private static byte[] CreateComparisonWorkbook(
+            IList<ReconciliationLogisticsComparisonExportRow> rows,
+            IList<string> uploadedHeaders)
+        {
+            var workbook = new XSSFWorkbook();
+            try
+            {
+                var sheet = workbook.CreateSheet("物流銷帳比對明細");
+                var headerStyle = NpoiStyle.CreateHeaderStyle(workbook);
+                var dataStyle = NpoiStyle.CreateDataStyle(workbook);
+                var dateStyle = NpoiStyle.CreateDateTimeStyle(workbook, "yyyy/mm/dd hh:mm:ss");
+                var numberStyle = NpoiStyle.CreateNumberStyle(workbook);
+                var dateOnlyStyle = NpoiStyle.CreateDateTimeStyle(workbook, "yyyy/mm/dd");
+                var headers = new[]
+                {
+                    "回款日期", "出倉時間", "報關類別", "客戶", "清關袋號", "分提單號",
+                    "物流貨號", "物流回款金額", "捷豐應收總計", "差異金額", "跟派件收",
+                    "報關費", "到付款", "手續費", "納稅義務人", "納稅義務人身分證號",
+                    "資料來源(倉別)"
+                };
+                var allHeaders = headers.Concat(uploadedHeaders ?? new List<string>()).ToArray();
+                NpoiCell.CreateHeaderCells(sheet.CreateRow(0), allHeaders, headerStyle);
+
+                for (var rowIndex = 0; rowIndex < rows.Count; rowIndex++)
+                {
+                    var item = rows[rowIndex];
+                    var excelRow = sheet.CreateRow(rowIndex + 1);
+                    var column = 0;
+                    NpoiCell.CreateDateTimeCell(excelRow, column++, item.RepaymentDate, dateOnlyStyle);
+                    NpoiCell.CreateDateTimeCell(excelRow, column++, item.OutDateTime, dateStyle);
+                    NpoiCell.CreateCell(excelRow, column++, item.Type, dataStyle);
+                    NpoiCell.CreateCell(excelRow, column++, item.Customer, dataStyle);
+                    NpoiCell.CreateCell(excelRow, column++, item.BagNumber, dataStyle);
+                    NpoiCell.CreateCell(excelRow, column++, item.TrackingNo, dataStyle);
+                    NpoiCell.CreateCell(excelRow, column++, item.DlvInv, dataStyle);
+                    NpoiCell.CreateIntCell(excelRow, column++, item.ReceivedAmount, numberStyle);
+                    NpoiCell.CreateIntCell(excelRow, column++, item.ToDlvCod, numberStyle);
+                    NpoiCell.CreateIntCell(excelRow, column++, item.DifferenceAmount, numberStyle);
+                    NpoiCell.CreateIntCell(excelRow, column++, item.TransCod, numberStyle);
+                    NpoiCell.CreateIntCell(excelRow, column++, item.Ccfee, numberStyle);
+                    NpoiCell.CreateIntCell(excelRow, column++, item.Cod, numberStyle);
+                    NpoiCell.CreateIntCell(excelRow, column++, item.Fee, numberStyle);
+                    NpoiCell.CreateCell(excelRow, column++, item.TaxPayer, dataStyle);
+                    NpoiCell.CreateCell(excelRow, column++, item.TaxRecId, dataStyle);
+                    NpoiCell.CreateCell(excelRow, column++, item.Source, dataStyle);
+                    foreach (var value in item.UploadedValues ?? new List<string>())
+                    {
+                        NpoiCell.CreateCell(excelRow, column++, value, dataStyle);
+                    }
+                }
+
+                sheet.AutoSizeColumns(allHeaders.Length, minWidth: 12);
+                using (var stream = new MemoryStream())
+                {
+                    workbook.Write(stream);
+                    return stream.ToArray();
+                }
+            }
+            finally
+            {
+                workbook.Close();
+            }
+        }
+
+        /// <summary>
         /// 匯出本次物流銷帳結果 Excel。
         /// </summary>
         /// <param name="result">本次物流銷帳完整結果。</param>
@@ -1848,6 +2457,18 @@ namespace Service.Services.ReconciliationLogistics
         {
             return uploadFormat == ReconciliationLogisticsUploadFormat.HctCollection ||
                    uploadFormat == ReconciliationLogisticsUploadFormat.HctRemittance;
+        }
+
+        /// <summary>
+        /// 判斷費用主檔資料來源是否為空運稅費資料。
+        /// </summary>
+        /// <param name="source">費用主檔資料來源。</param>
+        /// <returns>是否需要使用 ReconciliationAir 的納稅義務人資料。</returns>
+        private static bool IsReconciliationAirSource(string source)
+        {
+            var value = (source ?? string.Empty).Trim();
+            return string.Equals(value, "TACT", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(value, "FTZ", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

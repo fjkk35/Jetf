@@ -39,6 +39,12 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
                 fileInput.value = '';
             }
         }
+        function clearSelectedComparisonFile() {
+            var fileInput = document.getElementById('reconciliationLogisticsComparisonFile');
+            if (fileInput) {
+                fileInput.value = '';
+            }
+        }
         function setUploadModalStaticBackdrop(enabled) {
             // Bootstrap 4 會在點擊背景時讀取目前設定，因此可依上傳結果切換是否允許關閉。
             var modalInstance = $('#reconciliationLogisticsUploadModal')
@@ -50,6 +56,14 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
         function getSelectedUploadCompany() {
             for (var index = 0; index < $scope.companies.length; index++) {
                 if ($scope.companies[index].Value === $scope.uploadForm.company) {
+                    return $scope.companies[index];
+                }
+            }
+            return null;
+        }
+        function getSelectedComparisonCompany() {
+            for (var index = 0; index < $scope.companies.length; index++) {
+                if ($scope.companies[index].Value === $scope.comparisonForm.company) {
                     return $scope.companies[index];
                 }
             }
@@ -156,6 +170,9 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
             repaymentDate: today(),
             company: ''
         };
+        $scope.comparisonForm = {
+            company: ''
+        };
         $scope.dateOptions = {
             startingDay: 1,
             showWeeks: false
@@ -182,6 +199,9 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
         $scope.uploadData = [];
         $scope.resultRows = [];
         $scope.downloadInfo = null;
+        $scope.comparisonAcceptedFileExtension = '.xlsx,.csv';
+        $scope.comparing = false;
+        $scope.comparisonDownloadInfo = null;
         $scope.init = function () {
             angular.element('#ReconciliationLogistics').addClass('active');
             loadCompanies();
@@ -265,6 +285,105 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
                 keyboard: false,
                 show: true
             });
+        };
+        $scope.openComparisonModal = function () {
+            $scope.comparisonForm = {
+                company: ''
+            };
+            $scope.comparisonAcceptedFileExtension = '.xlsx,.csv';
+            $scope.comparing = false;
+            $scope.comparisonDownloadInfo = null;
+            clearSelectedComparisonFile();
+            $('#reconciliationLogisticsComparisonModal').modal({
+                backdrop: true,
+                keyboard: false,
+                show: true
+            });
+        };
+        $scope.$watch('comparisonForm.company', function (newValue, oldValue) {
+            var selectedCompany = getSelectedComparisonCompany();
+            $scope.comparisonAcceptedFileExtension = selectedCompany
+                ? selectedCompany.FileExtension
+                : '.xlsx,.csv';
+            if (newValue !== oldValue) {
+                clearSelectedComparisonFile();
+                $scope.comparisonDownloadInfo = null;
+            }
+        });
+        $scope.compareDetail = function () {
+            if (!$scope.comparisonForm.company) {
+                showError('請選擇物流公司');
+                return;
+            }
+            var fileInput = document.getElementById('reconciliationLogisticsComparisonFile');
+            var file = fileInput && fileInput.files && fileInput.files.length
+                ? fileInput.files[0]
+                : null;
+            if (!file) {
+                showError('請選擇檔案');
+                return;
+            }
+            var selectedCompany = getSelectedComparisonCompany();
+            var expectedExtension = selectedCompany
+                ? selectedCompany.FileExtension.replace('.', '').toLowerCase()
+                : '';
+            var extension = file.name.split('.').pop().toLowerCase();
+            if (!expectedExtension || extension !== expectedExtension) {
+                clearSelectedComparisonFile();
+                showError((selectedCompany ? selectedCompany.Text : '物流公司') +
+                    '上傳檔案副檔名需為 ' + expectedExtension);
+                return;
+            }
+            var formData = new FormData();
+            formData.append('file', file);
+            formData.append('company', $scope.comparisonForm.company);
+            $scope.comparing = true;
+            $scope.comparisonDownloadInfo = null;
+            $http.post(Router.action('ReconciliationLogistics', 'CompareDetail'), formData, {
+                transformRequest: angular.identity,
+                headers: { 'Content-Type': undefined }
+            }).then(function (response) {
+                if (redirectIfNeeded(response.data)) {
+                    return;
+                }
+                if (response.data.status === 'error' || !response.data.ReturnObject) {
+                    showError(response.data.msg || '比對明細產生失敗');
+                    return;
+                }
+                var result = response.data.ReturnObject;
+            $scope.comparisonDownloadInfo = {
+                fileGuid: result.FileGuid,
+                fileName: result.FileName
+            };
+            $scope.downloadComparisonExcel();
+            swal({
+                title: '成功',
+                text: '比對明細已產生並開始下載。',
+                icon: 'success'
+            });
+            }).catch(function () {
+                showError('比對明細產生失敗，請稍後再試');
+            }).finally(function () {
+                $scope.comparing = false;
+                clearSelectedComparisonFile();
+            });
+        };
+        $scope.downloadComparisonExcel = function () {
+            if (!$scope.comparisonDownloadInfo) {
+                showError('沒有可下載的比對明細');
+                return;
+            }
+            var downloadInfo = $scope.comparisonDownloadInfo;
+            $scope.comparisonDownloadInfo = null;
+            var downloadUrl = Router.action('Download', 'DownloadFile')
+                + '?fileGuid=' + encodeURIComponent(downloadInfo.fileGuid)
+                + '&fileName=' + encodeURIComponent(downloadInfo.fileName);
+            var link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = downloadInfo.fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         };
         $scope.$watch('uploadForm.company', function (newValue, oldValue) {
             var selectedCompany = getSelectedUploadCompany();
