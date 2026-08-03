@@ -77,6 +77,20 @@
             </div>
         </div>
 
+        <!-- 單號 -->
+        <div class="row mb-3">
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="orderNoList" class="col-lg-4 col-form-label text-right">單號</label>
+                <div class="col-lg-8">
+                    <textarea id="orderNoList"
+                              class="form-control"
+                              ng-model="searchForm.orderNoList"
+                              rows="3"
+                              placeholder="每行輸入一筆單號"></textarea>
+                </div>
+            </div>
+        </div>
+
         <!-- 按鈕區 -->
         <div class="row">
             <div class="col-lg-12 text-right">
@@ -92,6 +106,12 @@
                         ng-disabled="exporting">
                     <i class="fa" ng-class="{'fa-spinner fa-spin': exporting, 'fa-download': !exporting}"></i>
                     {{exporting ? '匯出中...' : '匯出Excel'}}
+                </button>
+                <button type="button"
+                        class="btn btn-secondary ml-2"
+                        ng-click="clearSearch()"
+                        ng-disabled="exporting || uploading">
+                    <i class="fa fa-refresh"></i> 清除
                 </button>
             </div>
         </div>

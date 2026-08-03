@@ -3,6 +3,7 @@
     $scope.searchForm = {
         dataType: '',
         transNo: '',
+        orderNoList: '',
         startDate: new Date(),
         endDate: new Date()
     };
@@ -40,6 +41,19 @@
 
     $scope.openEndDatePopup = function () {
         $scope.endDatePopup.opened = true;
+    };
+
+    // 清除查詢條件
+    $scope.clearSearch = function () {
+        $scope.searchForm = {
+            dataType: '',
+            transNo: '',
+            orderNoList: '',
+            startDate: new Date(),
+            endDate: new Date()
+        };
+        $scope.startDatePopup.opened = false;
+        $scope.endDatePopup.opened = false;
     };
 
     // 載入作業地區清單
@@ -93,6 +107,7 @@
         var request = {
             DataType: $scope.searchForm.dataType,
             TransNo: $scope.searchForm.transNo,
+            OrderNoList: $scope.searchForm.orderNoList,
             StartDate: $scope.formatDate($scope.searchForm.startDate),
             EndDate: $scope.formatDate($scope.searchForm.endDate)
         };

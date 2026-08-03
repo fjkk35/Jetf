@@ -7,6 +7,8 @@ using Service.Models;
 using Service.Services.DeliveryAssistant.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -17,6 +19,8 @@ namespace Service.Services.DeliveryAssistant
 {
     public class DeliveryAssistantService : _BaseService
     {
+        private const int ExportQueryCommandTimeoutSeconds = 300;
+
         public DeliveryAssistantService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
             : base(jetfDbContext, dataCenterDbContext)
         {
@@ -71,42 +75,98 @@ namespace Service.Services.DeliveryAssistant
         /// </summary>
         public byte[] ExportExcel(DeliveryAssistantRequest request)
         {
-            string sql = @"
-with FilteredUpload as (
-SELECT UploadTime, Data
-FROM [jetf].[dbo].[PdtScanCargoUpload]
-WHERE DataType = @DataType
-AND TransNo = @TransNo
-AND UploadTime >= @StartDate
-AND UploadTime <  @EndDate
-)
-SELECT
-a.UploadTime,
-a.Data,
-b.Importer,
-b.ImporterPhone,
-b.ImporterAddr,
-b.GW,
-isnull(c.TO_DLV_COD,b.Cod) as TO_DLV_COD
-FROM FilteredUpload a
-LEFT JOIN jetf.dbo.SjlShippingData b ON a.Data = b.JetfSerial
-LEFT JOIN jetf.dbo.FEE_MASTER c ON a.Data = c.DLV_INV AND c.Download = 1";
+            var orderNoList = (request.OrderNoList ?? string.Empty)
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
             DateTime startDate = DateTime.Parse(request.StartDate);
             DateTime endDate = DateTime.Parse(request.EndDate).AddDays(1);
+            string startDateText = startDate.ToString("yyyy-MM-dd HH:mm:ss");
+            string endDateText = endDate.ToString("yyyy-MM-dd HH:mm:ss");
 
-            var data = conn.Query<DeliveryAssistantExportModel>(sql, new
+            var uploadQuery = JetfDb.PdtScanCargoUploads
+                .AsNoTracking()
+                .Where(x => x.DataType == request.DataType
+                    && x.TransNo == request.TransNo
+                    && x.UploadTime != null
+                    && x.UploadTime.CompareTo(startDateText) >= 0
+                    && x.UploadTime.CompareTo(endDateText) < 0);
+
+            if (orderNoList.Any())
             {
-                DataType = request.DataType,
-                TransNo = request.TransNo,
-                StartDate = startDate,
-                EndDate = endDate
-            }, commandTimeout: 300)
-            .GroupBy(x => x.Data)
-            .Select(g => g.OrderByDescending(x => x.GW).First())
-            .ToList();
+                uploadQuery = uploadQuery.Where(x => orderNoList.Contains(x.Data));
+            }
+
+            JetfDb.Database.CommandTimeout = ExportQueryCommandTimeoutSeconds;
+
+            var query =
+                from upload in uploadQuery
+                join shippingData in JetfDb.SjlShippingDatas.AsNoTracking()
+                    on upload.Data equals shippingData.JetfSerial into shippingDataGroup
+                from shippingData in shippingDataGroup.DefaultIfEmpty()
+                join feeMaster in JetfDb.FeeMasters
+                        .AsNoTracking()
+                        .Where(x => x.Download == "1")
+                    on upload.Data equals feeMaster.DlvInv into feeMasterGroup
+                from feeMaster in feeMasterGroup.DefaultIfEmpty()
+                select new
+                {
+                    upload.UploadTime,
+                    upload.Data,
+                    shippingData.Importer,
+                    shippingData.ImporterPhone,
+                    shippingData.ImporterAddr,
+                    shippingData.Gw,
+                    shippingData.Cod,
+                    ToDlvCod = feeMaster.ToDlvCod
+                };
+
+            var data = query
+                .ToList()
+                .Select(x => new DeliveryAssistantExportModel
+                {
+                    UploadTime = ParseDateTime(x.UploadTime),
+                    Data = x.Data,
+                    Importer = x.Importer,
+                    ImporterPhone = x.ImporterPhone,
+                    ImporterAddr = x.ImporterAddr,
+                    GW = x.Gw,
+                    TO_DLV_COD = ParseDecimal(x.ToDlvCod)
+                        ?? (x.Cod.HasValue ? (decimal?)x.Cod.Value : null)
+                })
+                .GroupBy(x => x.Data)
+                .Select(g => g.OrderByDescending(x => x.GW).First())
+                .ToList();
 
             return BuildExcel(data, request);
+        }
+
+        /// <summary>
+        /// 將費用主檔的代收金額文字轉為匯出模型使用的數值。
+        /// </summary>
+        private static decimal? ParseDecimal(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            decimal result;
+            return decimal.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out result)
+                ? (decimal?)result
+                : null;
+        }
+
+        /// <summary>
+        /// 將掃貨上傳時間文字轉為匯出模型使用的日期。
+        /// </summary>
+        private static DateTime? ParseDateTime(string value)
+        {
+            DateTime result;
+            return DateTime.TryParse(value, out result) ? (DateTime?)result : null;
         }
 
         /// <summary>

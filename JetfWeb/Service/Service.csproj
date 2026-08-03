@@ -262,6 +262,8 @@
     <Compile Include="Data\Models\Jetf\CustomerMasterEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterDetailEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterEntity.cs" />
+    <Compile Include="Data\Models\Jetf\PdtScanCargoUploadEntity.cs" />
+    <Compile Include="Data\Models\Jetf\SjlShippingDataEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterCodEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterTestEntity.cs" />
     <Compile Include="Data\Models\Jetf\AbnormalStateEntity.cs" />
