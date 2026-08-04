@@ -16,7 +16,7 @@
         public string DataType { get; set; }
 
         /// <summary>
-        /// 派件公司（TransNo）
+        /// 派件公司（TransNo，可不填；未填時不限制派件公司）。
         /// </summary>
         public string TransNo { get; set; }
 

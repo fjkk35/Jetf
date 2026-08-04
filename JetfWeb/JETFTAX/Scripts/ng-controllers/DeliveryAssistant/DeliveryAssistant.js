@@ -93,10 +93,6 @@
             swal({ title: '提醒', text: '請選擇作業地區', icon: 'warning' });
             return;
         }
-        if (!$scope.searchForm.transNo) {
-            swal({ title: '提醒', text: '請選擇派件公司', icon: 'warning' });
-            return;
-        }
         if (!$scope.searchForm.startDate || !$scope.searchForm.endDate) {
             swal({ title: '提醒', text: '請選擇日期', icon: 'warning' });
             return;
@@ -112,26 +108,57 @@
             EndDate: $scope.formatDate($scope.searchForm.endDate)
         };
 
-        var form = document.createElement('form');
-        form.method = 'POST';
-        form.action = Router.action('DeliveryAssistant', 'ExportExcel');
-        form.target = '_blank';
-
-        for (var key in request) {
-            if (request[key] !== null && request[key] !== undefined && request[key] !== '') {
-                var input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = request[key];
-                form.appendChild(input);
+        // 以 AJAX 等待匯出完成，完成後再觸發瀏覽器下載，避免按鈕立即恢復造成使用者誤以為尚未執行。
+        $http({
+            method: 'POST',
+            url: Router.action('DeliveryAssistant', 'ExportExcel'),
+            data: request,
+            responseType: 'arraybuffer'
+        }).then(function (response) {
+            var contentType = response.headers('content-type') || '';
+            if (contentType.indexOf('application/json') >= 0 || contentType.indexOf('text/html') >= 0) {
+                var errorMessage = '匯出失敗，請稍後再試';
+                try {
+                    var responseText = new TextDecoder('utf-8').decode(new Uint8Array(response.data));
+                    var errorData = JSON.parse(responseText);
+                    errorMessage = errorData.message || errorData.msg || errorMessage;
+                } catch (e) {
+                    // 非 JSON 回應通常是登入頁或未預期的錯誤頁，使用預設錯誤訊息。
+                }
+                swal({ title: '錯誤', text: errorMessage, icon: 'error' });
+                return;
             }
-        }
 
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
+            var blob = new Blob([response.data], {
+                type: contentType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+            var downloadUrl = URL.createObjectURL(blob);
+            var link = document.createElement('a');
+            var fileName = '派送助理_' + request.StartDate.replace(/-/g, '') + '_' + request.EndDate.replace(/-/g, '') + '.xlsx';
+            var contentDisposition = response.headers('content-disposition') || '';
+            var fileNameMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
 
-        $scope.exporting = false;
+            if (fileNameMatch) {
+                fileName = fileNameMatch[1] || fileNameMatch[2];
+                try {
+                    fileName = decodeURIComponent(fileName);
+                } catch (e) {
+                    // Content-Disposition 未編碼時沿用原始檔名。
+                }
+            }
+
+            link.href = downloadUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(downloadUrl);
+        }).catch(function (error) {
+            console.error('匯出失敗:', error);
+            swal({ title: '錯誤', text: '匯出失敗，請稍後再試', icon: 'error' });
+        }).finally(function () {
+            $scope.exporting = false;
+        });
     };
 
     // 開啟上傳 Modal

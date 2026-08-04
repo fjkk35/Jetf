@@ -86,14 +86,16 @@ namespace Service.Services.DeliveryAssistant
             DateTime endDate = DateTime.Parse(request.EndDate).AddDays(1);
             string startDateText = startDate.ToString("yyyy-MM-dd HH:mm:ss");
             string endDateText = endDate.ToString("yyyy-MM-dd HH:mm:ss");
+            var transNo = (request.TransNo ?? string.Empty).Trim();
 
             var uploadQuery = JetfDb.PdtScanCargoUploads
                 .AsNoTracking()
                 .Where(x => x.DataType == request.DataType
-                    && x.TransNo == request.TransNo
                     && x.UploadTime != null
                     && x.UploadTime.CompareTo(startDateText) >= 0
-                    && x.UploadTime.CompareTo(endDateText) < 0);
+                    && x.UploadTime.CompareTo(endDateText) < 0)
+                // 派件公司為選填條件；未指定時查詢所有派件公司資料。
+                .WhereIf(!string.IsNullOrWhiteSpace(transNo), x => x.TransNo == transNo);
 
             if (orderNoList.Any())
             {
