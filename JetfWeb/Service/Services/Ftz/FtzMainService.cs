@@ -126,7 +126,6 @@ namespace Service.Services.Ftz
 
             // 建立字典存放查詢結果
             var customerDict = new Dictionary<string, string>();
-            var flightDict = new Dictionary<string, string>();
             var trackingNoDict = new Dictionary<string, string>();
             var bagNoDict = new Dictionary<string, string>();
             Dictionary<string, string> airTransNameLookup = null;
@@ -145,32 +144,14 @@ namespace Service.Services.Ftz
                     .ToDictionary(r => r.MAINNUMBER,r=> r.DESPATCHNAME);
             }
 
-            // 2. 批次查詢班機
-            if (allMwbs.Any())
-            {
-                var sql = @"
-                        SELECT MAINNUMBER, FLIGHTNUMBER 
-                        FROM [DATA_CENTER].[dbo].[MAINORDERINFO] 
-                        WHERE MAINNUMBER IN @Mwbs";
-
-                var flights = conn.Query<(string MAINNUMBER, string FLIGHTNUMBER)>(sql, new { Mwbs = allMwbs });
-                
-                flightDict = flights
-                     .GroupBy(x => x.MAINNUMBER)
-                     .ToDictionary(
-                         g => g.Key,
-                         g => g.First().FLIGHTNUMBER
-                     );
-            }
-
-            // 3. 批次查詢分提單號的派件公司
+            // 2. 批次查詢分提單號的派件公司
             if (allHwbs.Any())
             {
                 airTransNameLookup = GetAirTransNameLookup();
                 trackingNoDict = GetOriginalTransNameLookup(allHwbs, true, true, airTransNameLookup);
             }
 
-            // 4. 批次查詢袋號的派件公司
+            // 3. 批次查詢袋號的派件公司
             if (allBagNos.Any())
             {
                 if (airTransNameLookup == null)
@@ -188,12 +169,6 @@ namespace Service.Services.Ftz
                 if (customerDict.ContainsKey(r.Mwb))
                 {
                     r.Customer = customerDict[r.Mwb];
-                }
-
-                // 設定班機
-                if (flightDict.ContainsKey(r.Mwb))
-                {
-                    r.FlightNumber = flightDict[r.Mwb];
                 }
 
                 // 設定派件公司
@@ -606,7 +581,7 @@ namespace Service.Services.Ftz
                 throw new Exception("找不到 Excel 頁籤：主號2");
             }
 
-            var requiredHeaders = new[] { "主號", "總件數", "傳輸時間" };
+            var requiredHeaders = new[] { "主號", "總件數", "傳輸時間", "進口日期", "航機班次" };
             var headerInfo = FindUploadHeader(sheet, requiredHeaders);
             var headerMap = headerInfo.Item2;
             var missingHeaders = requiredHeaders.Where(header => !headerMap.ContainsKey(header)).ToList();
@@ -628,6 +603,8 @@ namespace Service.Services.Ftz
                 var mwb = row.GetCellData(headerMap["主號"]);
                 var totalPiece = row.GetCellData(headerMap["總件數"]);
                 var transmissionTime = row.GetCellData(headerMap["傳輸時間"]);
+                var importDate = row.GetCellData(headerMap["進口日期"]);
+                var flightNumber = row.GetCellData(headerMap["航機班次"]);
 
 
                 if (string.IsNullOrWhiteSpace(mwb))
@@ -640,7 +617,8 @@ namespace Service.Services.Ftz
                     Mwb = mwb.Trim(),
                     TotalPiece = (totalPiece ?? "").Trim(),
                     TransmissionTime = (transmissionTime ?? "").Trim(),
-
+                    ImportDate = (importDate ?? "").Trim(),
+                    FlightNumber = (flightNumber ?? "").Trim()
                 });
             }
 
@@ -957,6 +935,23 @@ namespace Service.Services.Ftz
         }
 
         /// <summary>
+        /// 依主號整理主號2 頁籤的進口日期與航機班次。
+        /// </summary>
+        private Dictionary<string, FtzMainUploadSummaryRow> BuildMainUploadSummaryByMwb(
+            IEnumerable<FtzMainUploadSummaryRow> uploadRows)
+        {
+            return (uploadRows ?? Enumerable.Empty<FtzMainUploadSummaryRow>())
+                .Where(row => !string.IsNullOrWhiteSpace(row.Mwb))
+                .GroupBy(row => row.Mwb.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group
+                        .OrderByDescending(row => ParseUploadTransmissionTime(row.TransmissionTime))
+                        .First(),
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
         /// 解析主號2 頁籤的傳輸時間。
         /// </summary>
         private DateTime ParseUploadTransmissionTime(string value)
@@ -1066,6 +1061,7 @@ namespace Service.Services.Ftz
 
             // 先把上傳資料整理成實際需要補到未進倉明細的未收單資料，供兩個頁籤共用。
             var uploadTotalPieceByMwb = BuildMainUploadTotalPieceByMwb(uploadData.SummaryRows);
+            var uploadSummaryByMwb = BuildMainUploadSummaryByMwb(uploadData.SummaryRows);
 
             var unreceivedUploadRows = results
                 .SelectMany(item => item.UnreceivedRows ?? new List<FtzMainUploadExcelRow>())
@@ -1077,7 +1073,7 @@ namespace Service.Services.Ftz
             // 建立表頭
             var headers = new List<string>
               {
-                  "主號","客戶名稱","航班", "總袋數", "收單件數", "未進倉小計",
+                  "進口日期", "主號","客戶名稱","航班", "總袋數", "收單件數", "未進倉小計",
                   "申報", "進倉","未進倉件", "併袋", "進倉袋", "未進倉袋", "未收單件數", "未收單B6F", "G類無ID"
               };
 
@@ -1108,10 +1104,12 @@ namespace Service.Services.Ftz
                 var item = results[i];
                 IRow dataRow = sheet.CreateRow(i + 1);
                 var column = 0;
+                var mwb = string.IsNullOrWhiteSpace(item.Mwb) ? string.Empty : item.Mwb.Trim();
+                uploadSummaryByMwb.TryGetValue(mwb, out var uploadSummary);
+                NpoiCell.CreateCell(dataRow, column++, uploadSummary?.ImportDate ?? "", dataStyle);
                 NpoiCell.CreateCell(dataRow, column++, item.Mwb ?? "", dataStyle);
                 NpoiCell.CreateCell(dataRow, column++, item.Customer ?? "", dataStyle);
-                NpoiCell.CreateCell(dataRow, column++, item.FlightNumber ?? "", dataStyle);
-                var mwb = string.IsNullOrWhiteSpace(item.Mwb) ? string.Empty : item.Mwb.Trim();
+                NpoiCell.CreateCell(dataRow, column++, uploadSummary?.FlightNumber ?? "", dataStyle);
                 string uploadTotalPiece;
                 NpoiCell.CreateIntCell(
                     dataRow,

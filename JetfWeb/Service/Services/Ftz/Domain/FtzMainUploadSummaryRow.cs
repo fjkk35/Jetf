@@ -19,5 +19,15 @@
         /// 傳輸時間。
         /// </summary>
         public string TransmissionTime { get; set; }
+
+        /// <summary>
+        /// 進口日期。
+        /// </summary>
+        public string ImportDate { get; set; }
+
+        /// <summary>
+        /// 航機班次。
+        /// </summary>
+        public string FlightNumber { get; set; }
     }
 }

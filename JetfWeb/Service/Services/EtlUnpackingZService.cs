@@ -243,8 +243,10 @@ namespace Service.Services
             row.CreateCell(1).SetCellValue("主號");
             row.CreateCell(2).SetCellValue("傳輸時間");
             row.CreateCell(3).SetCellValue("總件數");
-            row.CreateCell(4).SetCellValue("狀態");
-            row.CreateCell(5).SetCellValue("結果");
+            row.CreateCell(4).SetCellValue("進口日期");
+            row.CreateCell(5).SetCellValue("航機班次");
+            row.CreateCell(6).SetCellValue("狀態");
+            row.CreateCell(7).SetCellValue("結果");
 
             sheet.SetColumnWidth(0, 3000);
             sheet.SetColumnWidth(1, 6000);
@@ -252,6 +254,8 @@ namespace Service.Services
             sheet.SetColumnWidth(3, 6000);
             sheet.SetColumnWidth(4, 6000);
             sheet.SetColumnWidth(5, 6000);
+            sheet.SetColumnWidth(6, 6000);
+            sheet.SetColumnWidth(7, 6000);
 
 
             int iRow = 1;
@@ -267,8 +271,15 @@ namespace Service.Services
                         row.CreateCell(2).SetCellValue(transDate.ToString("yyyy/MM/dd HH:mm:ss"));
                     }
                     row.CreateCell(3).SetCellValue(item.TOT_PACK_QTY);
-                    row.CreateCell(4).SetCellValue(item.STATUS);
-                    row.CreateCell(5).SetCellValue(item.Detail?.Msg);
+                    var importDateText = string.Empty;
+                    if (DateTime.TryParseExact(item.IMPORT_DATE, "yyyyMMdd", null, System.Globalization.DateTimeStyles.None, out var importDate))
+                    {
+                        importDateText = importDate.ToString("yyyy/MM/dd");
+                    }
+                    row.CreateCell(4).SetCellValue(importDateText);
+                    row.CreateCell(5).SetCellValue(item.VOYAGE_FLIGHT_NO);
+                    row.CreateCell(6).SetCellValue(item.STATUS);
+                    row.CreateCell(7).SetCellValue(item.Detail?.Msg);
                     iRow++;
                 }
             }
