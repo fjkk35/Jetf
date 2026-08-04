@@ -992,7 +992,7 @@ namespace Service.Services.Ftz
         }
 
         /// <summary>
-        /// 設定未收單 B6F 筆數。
+        /// 設定未收單指定錯單類別筆數。
         /// </summary>
         private void SetUnreceivedB6FCounts(List<FtzMainQueryViewModel> results, List<FtzMainUploadExcelRow> uploadRows)
         {
@@ -1010,7 +1010,7 @@ namespace Service.Services.Ftz
         }
 
         /// <summary>
-        /// 設定未收單 B6F 筆數。
+        /// 設定未收單指定錯單類別筆數。
         /// </summary>
         private void SetUnreceivedB6FCounts(
             List<FtzMainQueryViewModel> results,
@@ -1504,12 +1504,16 @@ namespace Service.Services.Ftz
         }
 
         /// <summary>
-        /// 判斷錯單類別是否包含 B6F。
+        /// 判斷錯單類別是否包含未收單統計指定的錯單類別。
         /// </summary>
         private bool ContainsB6FReason(string reason)
         {
             return !string.IsNullOrWhiteSpace(reason) &&
-                reason.IndexOf("B6F", StringComparison.OrdinalIgnoreCase) >= 0;
+                (reason.IndexOf("B6F", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 reason.IndexOf("A03", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 reason.IndexOf("B6B", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 reason.IndexOf("B15", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                 reason.IndexOf("B6C", StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         /// <summary>
