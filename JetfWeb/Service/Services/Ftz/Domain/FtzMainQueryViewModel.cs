@@ -77,7 +77,7 @@ namespace Service.Services.Ftz.Domain
         public int ReceivedPieceCount { get; set; }
 
         /// <summary>
-        /// 排除 ZZZA 後的未收單件數。
+        /// 排除 ZZZA 及無派件公司後的未收單件數。
         /// </summary>
         public int UnreceivedCount { get; set; }
 

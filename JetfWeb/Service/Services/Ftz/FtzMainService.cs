@@ -867,8 +867,9 @@ namespace Service.Services.Ftz
                 item.ZzzaUnreceivedCount = unreceivedRows.Count(IsZzzaUploadRow);
                 item.ZzzaCount = item.ZzzaGciCount + item.ZzzaReceivedCount + item.ZzzaUnreceivedCount;
 
-                // 未收單件數需排除 ZZZA未收單；原始補列資料仍保留供未進倉明細匯出。
-                item.UnreceivedCount = unreceivedRows.Count - item.ZzzaUnreceivedCount;
+                // 未收單件數只統計有派件公司的非 ZZZA 補列資料；無派件公司另列於派件公司統計。
+                item.UnreceivedCount = unreceivedRows.Count(row =>
+                    !IsZzzaUploadRow(row) && !IsSameTransName(row.TransName, NoTransName));
                 item.UnreceivedRows = unreceivedRows;
 
                 // G類無ID只計算未收單補列資料，不包含原本已收單的未進倉明細。
@@ -1111,10 +1112,30 @@ namespace Service.Services.Ftz
                 NpoiCell.CreateCell(dataRow, column++, item.Customer ?? "", dataStyle);
                 NpoiCell.CreateCell(dataRow, column++, uploadSummary?.FlightNumber ?? "", dataStyle);
                 string uploadTotalPiece;
+                var totalBagText = "";
+                // 主號2 的「總件數」作為總袋數基準，扣除同主號的無派件公司統計數量。
+                if (uploadTotalPieceByMwb.TryGetValue(mwb, out uploadTotalPiece))
+                {
+                    int totalBagCount;
+                    if (int.TryParse(uploadTotalPiece, out totalBagCount))
+                    {
+                        var noTransNameCount = 0;
+                        if (item.TransNameCounts != null)
+                        {
+                            item.TransNameCounts.TryGetValue(NoTransName, out noTransNameCount);
+                        }
+                        totalBagText = (totalBagCount - noTransNameCount).ToString(CultureInfo.InvariantCulture);
+                    }
+                    else
+                    {
+                        // 非整數內容保留上傳檔原值，避免匯出時誤改資料。
+                        totalBagText = uploadTotalPiece;
+                    }
+                }
                 NpoiCell.CreateIntCell(
                     dataRow,
                     column++,
-                    uploadTotalPieceByMwb.TryGetValue(mwb, out uploadTotalPiece) ? uploadTotalPiece : "",
+                    totalBagText,
                     numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.ReceivedPieceCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.NotGciTotal, numberStyle);
