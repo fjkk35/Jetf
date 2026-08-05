@@ -46,9 +46,9 @@ namespace Service.Services.Ftz.Domain
         public string expBagGcoCount { get; set; }
 
         /// <summary>
-        /// 分號：2276筆
+        /// 分號筆數；查無資料時 FTZ 可能回傳 null。
         /// </summary>
-        public int count { get; set; }
+        public int? count { get; set; }
 
         /// <summary>
         /// 申報
