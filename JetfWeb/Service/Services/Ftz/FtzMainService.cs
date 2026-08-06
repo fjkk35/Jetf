@@ -891,6 +891,7 @@ namespace Service.Services.Ftz
 
                 // 派件公司統計同樣排除 ZZZA收單及 ZZZA未收單，匯出直接使用此計算結果。
                 item.TransNameCounts = BuildTransNameCounts(item, unreceivedRows);
+                item.TransNameSummary = BuildTransNameSummary(item.TransNameCounts);
             }
         }
 
@@ -916,6 +917,16 @@ namespace Service.Services.Ftz
                     (unreceivedRows?.Count(row =>
                         !IsZzzaUploadRow(row) && IsSameTransName(row.TransName, transName)) ?? 0),
                 StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 將件數大於 0 的派件公司組合成顯示文字。
+        /// </summary>
+        private string BuildTransNameSummary(Dictionary<string, int> transNameCounts)
+        {
+            return string.Concat((transNameCounts ?? new Dictionary<string, int>())
+                .Where(item => item.Value > 0)
+                .Select(item => $"{item.Key}共{item.Value}件"));
         }
 
         /// <summary>
@@ -1088,6 +1099,7 @@ namespace Service.Services.Ftz
             headers.Add("ZZZA進倉");
             headers.Add("ZZZA收單");
             headers.Add("ZZZA未收單");
+            headers.Add("派件公司件數");
             headers.Add("錯誤訊息");
 
             IRow headerRow = sheet.CreateRow(0);
@@ -1163,6 +1175,7 @@ namespace Service.Services.Ftz
                 NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaGciCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaReceivedCount, numberStyle);
                 NpoiCell.CreateIntCell(dataRow, column++, item.ZzzaUnreceivedCount, numberStyle);
+                NpoiCell.CreateCell(dataRow, column++, item.TransNameSummary ?? "", dataStyle);
                 NpoiCell.CreateCell(dataRow, column++, item.ErrorMessage ?? "", dataStyle);
             }
 

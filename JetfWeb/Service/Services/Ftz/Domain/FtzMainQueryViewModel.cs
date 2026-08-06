@@ -112,6 +112,11 @@ namespace Service.Services.Ftz.Domain
         public Dictionary<string, int> TransNameCounts { get; set; } = new Dictionary<string, int>();
 
         /// <summary>
+        /// 件數大於 0 的派件公司件數組合文字。
+        /// </summary>
+        public string TransNameSummary { get; set; }
+
+        /// <summary>
         /// 需要補列到未進倉明細的未收單資料。
         /// </summary>
         public List<FtzMainUploadExcelRow> UnreceivedRows { get; set; } = new List<FtzMainUploadExcelRow>();
