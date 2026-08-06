@@ -311,24 +311,38 @@ namespace Service.Services
             sheet.SetColumnWidth(4, 6000);
             sheet.SetColumnWidth(5, 6000);
 
-            int iRow = 1;
-            foreach (var mawb in mawbList)
-            {
-                mawb.GridModel?.ForEach(r =>
-                {
-                    r.Detail?.GridModel?.ForEach(item =>
+            // 先彙整所有明細，讓同一主號即使分散在不同筆資料，也能一起判斷收單註記。
+            var detailRows = mawbList
+                .SelectMany(mawb => mawb.GridModel ?? new List<Gb350GridModel>())
+                .SelectMany(r => (r.Detail?.GridModel ?? new List<Gb350DetailGridModel>())
+                    .Select(item => new
                     {
-                        row = sheet.CreateRow(iRow);
-                        row.CreateCell(0).SetCellValue(item.POUCH_NO);
-                        row.CreateCell(1).SetCellValue(item.QTY);
-                        row.CreateCell(2).SetCellValue(item.WEIGHT);
-                        row.CreateCell(3).SetCellValue(item.HAWB);
-                        row.CreateCell(4).SetCellValue(item.REMARK);
-                        row.CreateCell(5).SetCellValue(item.SOURCE_NOTE);
-                        row.CreateCell(6).SetCellValue(r.MAWB);
-                        iRow++;
-                    });
-                });
+                        MainNumber = r.MAWB ?? string.Empty,
+                        Detail = item
+                    }))
+                .ToList();
+
+            // 若同一主號的分艙單收單註記全部空白，明細頁籤的該欄位全部補上 X。
+            var mainNumbersWithSourceNote = detailRows
+                .GroupBy(r => r.MainNumber)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Any(r => !string.IsNullOrWhiteSpace(r.Detail.SOURCE_NOTE)));
+
+            int iRow = 1;
+            foreach (var item in detailRows)
+            {
+                row = sheet.CreateRow(iRow);
+                row.CreateCell(0).SetCellValue(item.Detail.POUCH_NO);
+                row.CreateCell(1).SetCellValue(item.Detail.QTY);
+                row.CreateCell(2).SetCellValue(item.Detail.WEIGHT);
+                row.CreateCell(3).SetCellValue(item.Detail.HAWB);
+                row.CreateCell(4).SetCellValue(item.Detail.REMARK);
+                // 已有任一註記時保留原值；同一主號全空白時統一標示 X。
+                row.CreateCell(5).SetCellValue(
+                    mainNumbersWithSourceNote[item.MainNumber] ? item.Detail.SOURCE_NOTE : "X");
+                row.CreateCell(6).SetCellValue(item.MainNumber);
+                iRow++;
             }
         }
 
