@@ -117,6 +117,15 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
             var customerGroups = GetCustomerGroups(customerCodes);
             var customerNames = GetCustomerNames(customerCodes);
 
+            // 將匯出資料的客戶代號轉成客戶名稱，Excel 的客戶欄位顯示名稱。
+            foreach (var row in exportRows)
+            {
+                var customerCode = (row.Customer ?? string.Empty).Trim();
+                row.CustomerName = customerNames.TryGetValue(customerCode, out var customerName)
+                    ? customerName
+                    : customerCode;
+            }
+
             return exportRows
                 .GroupBy(row => GetFileGroupKey(row.Customer, customerGroups), StringComparer.OrdinalIgnoreCase)
                 .Select(group => new ReconciliationIncludeTaxDownloadFileGroup
@@ -372,7 +381,7 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
                     var value = column.SourceType == ReconciliationIncludeTaxColumnSourceType.Constant
                         ? column.DefaultValue
                         : GetFieldValue(dataRow, column.FieldKey);
-                    NpoiCell.CreateCell(excelRow, columnIndex, value, dataStyle);
+                    CreateExcelCell(excelRow, columnIndex, value, dataStyle);
                 }
             }
 
@@ -381,7 +390,7 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
         }
 
         /// <summary>
-        /// 查詢 Download=1 且 INCLUDE_TAX 為 C 或 Y 的費用明細。
+        /// 查詢 Download=1 且 INCLUDE_TAX 為 C 的費用明細。
         /// </summary>
         /// <param name="request">下載查詢條件。</param>
         /// <param name="startDate">開始日期。</param>
@@ -402,7 +411,7 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
             var rows = JetfDb.FeeMasters
                 .AsNoTracking()
                 .Where(x => x.Download == "1")
-                .Where(x => x.IncludeTax == "C" || x.IncludeTax == "Y")
+                .Where(x => x.IncludeTax == "C")
                 .Where(x => x.OutDateTime.HasValue &&
                             x.OutDateTime >= startDate &&
                             x.OutDateTime < endDateExclusive)
@@ -416,11 +425,13 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
                     TaxNumber = detail.TaxNumber,
                     MainNumber = detail.MainNumber,
                     BagNumber = detail.BagNumber,
+                    ClearanceNumber = detail.ClearanceNumber,
                     TrackingNo = detail.TrackingNo,
                     DlvInv = detail.DlvInv,
                     TaxPayer = detail.TaxPayer,
                     Tax = detail.Tax,
-                    TaxBase = detail.TaxBase
+                    TaxBase = detail.TaxBase,
+                    Ccfee = detail.Ccfee
                 }))
                 .OrderBy(x => x.OutDateTime)
                 .ThenBy(x => x.Customer)
@@ -440,42 +451,79 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
         {
             var airRows = rows
                 .Where(x => IsReconciliationAirSource(x.Source))
-                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
+                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo) ||
+                            !string.IsNullOrWhiteSpace(x.BagNumber))
                 .ToList();
             if (!airRows.Any())
             {
                 return;
             }
 
-            // Step 1：收集 TACT／FTZ 費用明細的分提單號，使用暫存表一次批次查詢銷帳資料。
+            // Step 1：先使用費用明細的分提單號批次查詢空快銷帳資料。
             var trackingNos = airRows
+                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
                 .Select(x => x.TrackingNo.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            var reconciliationAirs = JetfDb.ReconciliationAirs
+            var trackingReconciliationAirs = JetfDb.ReconciliationAirs
                 .AsNoTracking()
                 .WhereBulkContains(JetfDb, trackingNos, x => x.TrackingNo, x => x);
 
-            // Step 2：以分提單號建立索引，再將營業稅及進口稅回填至每筆匯出資料。
-            var reconciliationAirByTrackingNo = reconciliationAirs
+            // Step 2：以分提單號建立索引，找不到的資料才改用清關袋號再次比對。
+            var reconciliationAirByTrackingNo = trackingReconciliationAirs
                 .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
                 .GroupBy(x => x.TrackingNo.Trim(), StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(
                     group => group.Key,
                     group => group.First(),
                     StringComparer.OrdinalIgnoreCase);
+
+            // Step 2-1：只保留分提單號查不到、但有清關袋號的資料，準備進行備援比對。
+            var fallbackBagNumbers = airRows
+                .Where(x => !string.IsNullOrWhiteSpace(x.BagNumber))
+                .Where(x => string.IsNullOrWhiteSpace(x.TrackingNo) ||
+                            !reconciliationAirByTrackingNo.ContainsKey(x.TrackingNo.Trim()))
+                .Select(x => x.BagNumber.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            // Step 2-2：使用清關袋號批次查詢 ReconciliationAir 的 TrackingNo。
+            var bagReconciliationAirs = JetfDb.ReconciliationAirs
+                .AsNoTracking()
+                .WhereBulkContains(JetfDb, fallbackBagNumbers, x => x.TrackingNo, x => x);
+
+            // Step 2-3：建立清關袋號對照表，供後續回填資料時快速取得比對結果。
+            var reconciliationAirByBagNumber = bagReconciliationAirs
+                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
+                .GroupBy(x => x.TrackingNo.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.First(),
+                    StringComparer.OrdinalIgnoreCase);
+
+            // Step 3：將找到的稅額及納稅義務人回填至每筆匯出資料。
             foreach (var row in airRows)
             {
-                ReconciliationAirEntity reconciliationAir;
-                if (!reconciliationAirByTrackingNo.TryGetValue(
-                    row.TrackingNo.Trim(),
-                    out reconciliationAir))
+                ReconciliationAirEntity reconciliationAir = null;
+                var matched = !string.IsNullOrWhiteSpace(row.TrackingNo) &&
+                              reconciliationAirByTrackingNo.TryGetValue(
+                                  row.TrackingNo.Trim(),
+                                  out reconciliationAir);
+                if (!matched && !string.IsNullOrWhiteSpace(row.BagNumber))
+                {
+                    matched = reconciliationAirByBagNumber.TryGetValue(
+                        row.BagNumber.Trim(),
+                        out reconciliationAir);
+                }
+
+                if (!matched)
                 {
                     continue;
                 }
 
                 row.BusinessTax = reconciliationAir.BusinessTax;
                 row.ImportTax = reconciliationAir.ImportTax;
+                row.TaxPayer = reconciliationAir.Recipient;
             }
         }
 
@@ -492,12 +540,12 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
         }
 
         /// <summary>
-        /// 依欄位 enum 讀取明細 Model 的匯出值。
+        /// 依欄位 enum 讀取明細 Model 的匯出值；金額欄位保留數值型別。
         /// </summary>
         /// <param name="row">明細資料列。</param>
         /// <param name="fieldKey">格式欄位代碼。</param>
-        /// <returns>匯出文字。</returns>
-        private static string GetFieldValue(
+        /// <returns>匯出值。</returns>
+        private static object GetFieldValue(
             ReconciliationIncludeTaxDownloadRow row,
             string fieldKey)
         {
@@ -514,13 +562,15 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
                 case ReconciliationIncludeTaxField.FeeMaster_Type:
                     return row.Type ?? string.Empty;
                 case ReconciliationIncludeTaxField.FeeMaster_Customer:
-                    return row.Customer ?? string.Empty;
+                    return row.CustomerName ?? row.Customer ?? string.Empty;
                 case ReconciliationIncludeTaxField.FeeMasterDetail_TaxNumber:
                     return row.TaxNumber ?? string.Empty;
                 case ReconciliationIncludeTaxField.FeeMasterDetail_MainNumber:
                     return row.MainNumber ?? string.Empty;
                 case ReconciliationIncludeTaxField.FeeMasterDetail_BagNumber:
                     return row.BagNumber ?? string.Empty;
+                case ReconciliationIncludeTaxField.FeeMasterDetail_ClearanceNumber:
+                    return row.ClearanceNumber ?? string.Empty;
                 case ReconciliationIncludeTaxField.FeeMasterDetail_TrackingNo:
                     return row.TrackingNo ?? string.Empty;
                 case ReconciliationIncludeTaxField.FeeMasterDetail_DlvInv:
@@ -528,16 +578,40 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
                 case ReconciliationIncludeTaxField.FeeMasterDetail_TaxPayer:
                     return row.TaxPayer ?? string.Empty;
                 case ReconciliationIncludeTaxField.FeeMasterDetail_Tax:
-                    return (row.Tax ?? 0).ToString();
+                    return row.Tax;
                 case ReconciliationIncludeTaxField.FeeMasterDetail_TaxBase:
-                    return (row.TaxBase ?? 0).ToString();
+                    return row.TaxBase;
+                case ReconciliationIncludeTaxField.FeeMasterDetail_Ccfee:
+                    return row.Ccfee;
                 case ReconciliationIncludeTaxField.ReconciliationAir_BusinessTax:
-                    return row.BusinessTax.HasValue ? row.BusinessTax.Value.ToString() : string.Empty;
+                    return row.BusinessTax;
                 case ReconciliationIncludeTaxField.ReconciliationAir_ImportTax:
-                    return row.ImportTax.HasValue ? row.ImportTax.Value.ToString() : string.Empty;
+                    return row.ImportTax;
                 default:
                     return string.Empty;
             }
+        }
+
+        /// <summary>
+        /// 依值的型別建立 Excel 儲存格，避免金額欄位被寫成文字。
+        /// </summary>
+        /// <param name="row">Excel 資料列。</param>
+        /// <param name="columnIndex">欄位索引。</param>
+        /// <param name="value">儲存格值。</param>
+        /// <param name="style">儲存格樣式。</param>
+        private static void CreateExcelCell(
+            IRow row,
+            int columnIndex,
+            object value,
+            ICellStyle style)
+        {
+            if (value is int)
+            {
+                NpoiCell.CreateIntCell(row, columnIndex, (int)value, style);
+                return;
+            }
+
+            NpoiCell.CreateCell(row, columnIndex, value as string ?? string.Empty, style);
         }
 
         /// <summary>

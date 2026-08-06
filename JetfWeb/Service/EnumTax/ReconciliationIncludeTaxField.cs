@@ -46,6 +46,12 @@ namespace Service.EnumTax
         FeeMasterDetail_BagNumber,
 
         /// <summary>
+        /// 費用明細報單號碼。
+        /// </summary>
+        [Description("報單號碼")]
+        FeeMasterDetail_ClearanceNumber,
+
+        /// <summary>
         /// 費用明細分提單號。
         /// </summary>
         [Description("分提單號")]
@@ -74,6 +80,12 @@ namespace Service.EnumTax
         /// </summary>
         [Description("稅基")]
         FeeMasterDetail_TaxBase,
+
+        /// <summary>
+        /// 費用明細報關費。
+        /// </summary>
+        [Description("報關費")]
+        FeeMasterDetail_Ccfee,
 
         /// <summary>
         /// 空快代收銷帳營業稅。

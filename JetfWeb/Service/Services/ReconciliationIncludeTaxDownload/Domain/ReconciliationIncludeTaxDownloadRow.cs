@@ -28,6 +28,11 @@ namespace Service.Services.ReconciliationIncludeTaxDownload.Domain
         public string Customer { get; set; }
 
         /// <summary>
+        /// 客戶名稱。
+        /// </summary>
+        public string CustomerName { get; set; }
+
+        /// <summary>
         /// 稅單號碼。
         /// </summary>
         public string TaxNumber { get; set; }
@@ -41,6 +46,11 @@ namespace Service.Services.ReconciliationIncludeTaxDownload.Domain
         /// 清關袋號。
         /// </summary>
         public string BagNumber { get; set; }
+
+        /// <summary>
+        /// 報單號碼。
+        /// </summary>
+        public string ClearanceNumber { get; set; }
 
         /// <summary>
         /// 分提單號。
@@ -66,6 +76,11 @@ namespace Service.Services.ReconciliationIncludeTaxDownload.Domain
         /// 稅基。
         /// </summary>
         public int? TaxBase { get; set; }
+
+        /// <summary>
+        /// 報關費。
+        /// </summary>
+        public int? Ccfee { get; set; }
 
         /// <summary>
         /// 營業稅。
