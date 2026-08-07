@@ -32,5 +32,8 @@ namespace Service.EnumTax
 
         [Description("JFKL-基隆港務(捷豐)")]
         JFKL,
+
+        [Description("DTKL-TPCT(鼎泰)")]
+        DTKL,
     }
 }

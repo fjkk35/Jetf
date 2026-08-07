@@ -49,7 +49,8 @@ namespace JETFTAX.Controllers
                 { SeaTaxType.JFKH, new SeaTaxValidationRule("高雄郵聯(捷豐)", "捷豐") },
                 { SeaTaxType.WAHA, new SeaTaxValidationRule("萬海", "萬海") },
                 { SeaTaxType.UNIJ, new SeaTaxValidationRule("連捷", "連捷") },
-                { SeaTaxType.JFKL, new SeaTaxValidationRule("基隆港務(捷豐)", "基隆港") }
+                { SeaTaxType.JFKL, new SeaTaxValidationRule("基隆港務(捷豐)", "基隆港") },
+                { SeaTaxType.DTKL, new SeaTaxValidationRule("DTKL-TPCT(鼎泰)", "DTKL", "鼎泰") }
             };
 
         /// <summary>

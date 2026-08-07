@@ -64,6 +64,7 @@ namespace Service.Services
                 case SeaTaxType.CHWN:  //海運-高雄郵聯(全旺)
                 case SeaTaxType.UNIJ:  //海運-連捷
                 case SeaTaxType.JFKL:  //基隆港務(捷豐)
+                case SeaTaxType.DTKL:  //鼎泰-TPCT
                     dt_Upload = ReadExcelIpost(filePath);
                     break;
             }
