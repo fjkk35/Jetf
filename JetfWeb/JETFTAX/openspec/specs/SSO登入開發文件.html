@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>進口快遞管理系統 SSO 登入 API</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --page: #f6f8fb;
+            --surface: #ffffff;
+            --text: #172033;
+            --muted: #667085;
+            --border: #d8dee9;
+            --get: #1f9d68;
+            --get-soft: #eaf8f1;
+            --code: #172033;
+            --code-text: #e8edf5;
+            --link: #1769aa;
+            --danger: #c0392b;
+            --shadow: 0 8px 28px rgba(23, 32, 51, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--page);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+            line-height: 1.6;
+        }
+
+        .page {
+            width: min(1080px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 40px 0 64px;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin-top: 0;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+            font-size: clamp(28px, 4vw, 40px);
+            line-height: 1.2;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+
+        h3 {
+            margin: 24px 0 12px;
+            font-size: 17px;
+        }
+
+        code,
+        pre,
+        output {
+            font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+        }
+
+        code {
+            overflow-wrap: anywhere;
+        }
+
+        .subtitle {
+            margin-bottom: 26px;
+            color: var(--muted);
+        }
+
+        .endpoint {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px;
+            padding: 14px 18px;
+            border: 1px solid #9dd8be;
+            border-radius: 10px;
+            background: var(--get-soft);
+        }
+
+        .method {
+            flex: 0 0 auto;
+            padding: 5px 11px;
+            border-radius: 6px;
+            background: var(--get);
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .endpoint code {
+            min-width: 0;
+            font-weight: 650;
+            word-break: break-all;
+        }
+
+        .section {
+            margin-top: 22px;
+            padding: clamp(20px, 4vw, 30px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 11px 12px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 650;
+        }
+
+        tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .try-box {
+            border-left: 4px solid var(--get);
+        }
+
+        .field {
+            display: grid;
+            gap: 7px;
+            margin-bottom: 18px;
+        }
+
+        label {
+            font-weight: 650;
+        }
+
+        input {
+            width: 100%;
+            padding: 11px 13px;
+            border: 1px solid #aeb8c7;
+            border-radius: 7px;
+            background: #fff;
+            color: var(--text);
+            font: inherit;
+        }
+
+        input:focus {
+            border-color: var(--get);
+            outline: 3px solid rgba(31, 157, 104, 0.17);
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 16px 0;
+        }
+
+        button,
+        .button-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            background: #fff;
+            color: var(--text);
+            font: inherit;
+            font-weight: 650;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        button:hover,
+        .button-link:hover {
+            border-color: var(--get);
+        }
+
+        button:focus-visible,
+        .button-link:focus-visible {
+            outline: 3px solid rgba(31, 157, 104, 0.25);
+            outline-offset: 2px;
+        }
+
+        .primary {
+            border-color: var(--get);
+            background: var(--get);
+            color: #fff;
+        }
+
+        .primary:hover {
+            background: #178457;
+        }
+
+        .output-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .output-item {
+            min-width: 0;
+            padding: 13px 15px;
+            border-radius: 8px;
+            background: var(--code);
+            color: var(--code-text);
+        }
+
+        .output-item.full {
+            grid-column: 1 / -1;
+        }
+
+        .output-label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aebbd0;
+            font-family: inherit;
+            font-size: 13px;
+        }
+
+        .output-value {
+            display: block;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
+        }
+
+        .status {
+            min-height: 24px;
+            margin: 10px 0 0;
+            color: var(--get);
+            font-size: 14px;
+        }
+
+        .status.error {
+            color: var(--danger);
+        }
+
+        pre {
+            margin: 12px 0 0;
+            padding: 16px;
+            overflow-x: auto;
+            border-radius: 8px;
+            background: var(--code);
+            color: var(--code-text);
+            line-height: 1.55;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .note {
+            margin: 14px 0 0;
+            padding: 12px 14px;
+            border-left: 4px solid #e0a72f;
+            background: #fff8e8;
+            color: #674b0c;
+        }
+
+        .response-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-code {
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: var(--get-soft);
+            color: #126b47;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        @media (max-width: 680px) {
+            .page {
+                width: min(100% - 20px, 1080px);
+                padding-top: 24px;
+            }
+
+            .endpoint {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .output-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .output-item.full {
+                grid-column: auto;
+            }
+
+            th,
+            td {
+                min-width: 110px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <header>
+            <h1>進口快遞管理系統 SSO 登入 API</h1>
+            <p class="subtitle">SSO 登入串接規格與簽章產生工具</p>
+            <div class="endpoint" aria-label="API endpoint">
+                <span class="method">GET</span>
+                <code>http://192.168.1.9/JETF/login/sso</code>
+            </div>
+        </header>
+
+        <section class="section" aria-labelledby="api-info-title">
+            <h2 id="api-info-title">API 資訊</h2>
+            <div class="table-wrap">
+                <table>
+                    <tbody>
+                        <tr>
+                            <th scope="row">URL</th>
+                            <td><code>http://192.168.1.9/JETF/login/sso</code></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">驗證方式</th>
+                            <td><code>HMAC-SHA256</code></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Secret Key</th>
+                            <td><code>7f3c6e9a-8b41-4e2d-9a6f-2c8d1e5b0a73</code></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Timestamp 有效時間</th>
+                            <td>30 秒</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="request-title">
+            <h2 id="request-title">Request</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">參數</th>
+                            <th scope="col">必填</th>
+                            <th scope="col">型別</th>
+                            <th scope="col">說明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>userId</code></td>
+                            <td>是</td>
+                            <td>string</td>
+                            <td>進口快遞管理系統使用者代碼，帳號必須存在且為啟用狀態</td>
+                        </tr>
+                        <tr>
+                            <td><code>timestamp</code></td>
+                            <td>是</td>
+                            <td>long</td>
+                            <td>呼叫當下的 UTC Unix Timestamp，單位為秒</td>
+                        </tr>
+                        <tr>
+                            <td><code>sign</code></td>
+                            <td>是</td>
+                            <td>string</td>
+                            <td>HMAC-SHA256 簽章，64 字元小寫十六進位</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Request URL 格式</h3>
+            <pre><code>http://192.168.1.9/JETF/login/sso?userId={userId}&amp;timestamp={timestamp}&amp;sign={sign}</code></pre>
+            <p class="note">請將使用者的瀏覽器導向此 URL，讓瀏覽器取得進口快遞管理系統登入 Session。</p>
+        </section>
+
+        <section class="section" aria-labelledby="sign-title">
+            <h2 id="sign-title">Sign 產生方式</h2>
+            <h3>1. 組合簽章原文</h3>
+            <pre><code>userId={userId}&amp;timestamp={timestamp}</code></pre>
+
+            <h3>2. 使用 HMAC-SHA256 計算</h3>
+            <pre><code>sign = HMAC-SHA256(
+    key: UTF8(Secret Key),
+    data: UTF8(簽章原文)
+)</code></pre>
+
+            <h3>3. 轉成小寫十六進位字串</h3>
+            <pre><code>Secret Key：7f3c6e9a-8b41-4e2d-9a6f-2c8d1e5b0a73
+簽章原文：userId=Jetf001&amp;timestamp=1780202356
+sign：941b19479afa204467ebecaa397438335f5951d0fa99b6e9d8100c7121624583</code></pre>
+            <p class="note">固定 timestamp 僅供核對簽章結果；實際呼叫必須使用當下的 UTC Unix Timestamp 秒數。</p>
+        </section>
+
+        <section class="section" aria-labelledby="response-title">
+            <h2 id="response-title">Response</h2>
+
+            <h3 class="response-title">登入成功 <span class="status-code">302 Found</span></h3>
+            <pre><code>HTTP/1.1 302 Found
+Location: /JETF/LoginSuccess/Index
+Set-Cookie: ASP.NET_SessionId=...</code></pre>
+            <p>成功後建立進口快遞管理系統 Session 並導向登入成功頁，不回傳 JSON。</p>
+
+            <h3>登入失敗</h3>
+            <pre><code>{
+  "code": "004",
+  "message": "Sign 驗證失敗"
+}</code></pre>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">HTTP Status</th>
+                            <th scope="col">Code</th>
+                            <th scope="col">Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>400 Bad Request</code></td><td><code>001</code></td><td>缺少必要參數</td></tr>
+                        <tr><td><code>400 Bad Request</code></td><td><code>002</code></td><td>Timestamp 格式錯誤</td></tr>
+                        <tr><td><code>401 Unauthorized</code></td><td><code>003</code></td><td>Timestamp 已過期</td></tr>
+                        <tr><td><code>401 Unauthorized</code></td><td><code>004</code></td><td>Sign 驗證失敗</td></tr>
+                        <tr><td><code>403 Forbidden</code></td><td><code>005</code></td><td>使用者不存在或不可登入</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section try-box" aria-labelledby="generator-title">
+            <h2 id="generator-title">簽章產生工具</h2>
+            <div class="field">
+                <label for="userId">userId</label>
+                <input id="userId" name="userId" type="text" value="Jetf001" autocomplete="off" spellcheck="false">
+                <span class="hint">輸入使用者代碼後，系統會以目前的 UTC Unix Timestamp 自動產生簽章。</span>
+            </div>
+
+            <div class="output-grid" aria-live="polite">
+                <div class="output-item">
+                    <span class="output-label">timestamp</span>
+                    <output id="timestamp" class="output-value">—</output>
+                </div>
+                <div class="output-item">
+                    <span class="output-label">有效期限</span>
+                    <output id="expiresAt" class="output-value">—</output>
+                </div>
+                <div class="output-item full">
+                    <span class="output-label">簽章原文</span>
+                    <output id="rawData" class="output-value">—</output>
+                </div>
+                <div class="output-item full">
+                    <span class="output-label">sign</span>
+                    <output id="sign" class="output-value">—</output>
+                </div>
+                <div class="output-item full">
+                    <span class="output-label">完整 Request URL</span>
+                    <output id="requestUrl" class="output-value">—</output>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="regenerate" class="primary" type="button">重新產生</button>
+                <button id="copySign" type="button">複製 sign</button>
+                <button id="copyUrl" type="button">複製 URL</button>
+                <a id="openUrl" class="button-link" href="#" target="_blank" rel="noopener">開啟登入 URL</a>
+            </div>
+            <p id="toolStatus" class="status" role="status" aria-live="polite"></p>
+        </section>
+    </main>
+
+    <script>
+        (() => {
+            "use strict";
+
+            const BASE_URL = "http://192.168.1.9/JETF/login/sso";
+            const SECRET_KEY = "7f3c6e9a-8b41-4e2d-9a6f-2c8d1e5b0a73";
+            const VALIDITY_SECONDS = 30;
+            const TEST_RAW_DATA = "userId=Jetf001&timestamp=1780202356";
+            const TEST_SIGN = "941b19479afa204467ebecaa397438335f5951d0fa99b6e9d8100c7121624583";
+
+            const SHA256_CONSTANTS = new Uint32Array([
+                0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+                0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+                0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+                0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+                0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+                0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+                0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+                0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+                0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+                0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+                0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+                0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+                0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+                0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+                0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+                0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+            ]);
+
+            const initialHash = new Uint32Array([
+                0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+                0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+            ]);
+
+            const elements = {
+                userId: document.getElementById("userId"),
+                timestamp: document.getElementById("timestamp"),
+                expiresAt: document.getElementById("expiresAt"),
+                rawData: document.getElementById("rawData"),
+                sign: document.getElementById("sign"),
+                requestUrl: document.getElementById("requestUrl"),
+                regenerate: document.getElementById("regenerate"),
+                copySign: document.getElementById("copySign"),
+                copyUrl: document.getElementById("copyUrl"),
+                openUrl: document.getElementById("openUrl"),
+                status: document.getElementById("toolStatus")
+            };
+
+            function rotateRight(value, shift) {
+                return (value >>> shift) | (value << (32 - shift));
+            }
+
+            function sha256(message) {
+                const messageLength = message.length;
+                const bitLength = messageLength * 8;
+                const paddedLength = Math.ceil((messageLength + 1 + 8) / 64) * 64;
+                const padded = new Uint8Array(paddedLength);
+                padded.set(message);
+                padded[messageLength] = 0x80;
+
+                const paddedView = new DataView(padded.buffer);
+                paddedView.setUint32(paddedLength - 8, Math.floor(bitLength / 0x100000000), false);
+                paddedView.setUint32(paddedLength - 4, bitLength >>> 0, false);
+
+                const hash = new Uint32Array(initialHash);
+                const words = new Uint32Array(64);
+
+                for (let offset = 0; offset < paddedLength; offset += 64) {
+                    for (let index = 0; index < 16; index += 1) {
+                        words[index] = paddedView.getUint32(offset + index * 4, false);
+                    }
+
+                    for (let index = 16; index < 64; index += 1) {
+                        const first = rotateRight(words[index - 15], 7) ^
+                            rotateRight(words[index - 15], 18) ^
+                            (words[index - 15] >>> 3);
+                        const second = rotateRight(words[index - 2], 17) ^
+                            rotateRight(words[index - 2], 19) ^
+                            (words[index - 2] >>> 10);
+                        words[index] = (words[index - 16] + first + words[index - 7] + second) >>> 0;
+                    }
+
+                    let a = hash[0];
+                    let b = hash[1];
+                    let c = hash[2];
+                    let d = hash[3];
+                    let e = hash[4];
+                    let f = hash[5];
+                    let g = hash[6];
+                    let h = hash[7];
+
+                    for (let index = 0; index < 64; index += 1) {
+                        const sigmaOne = rotateRight(e, 6) ^ rotateRight(e, 11) ^ rotateRight(e, 25);
+                        const choice = (e & f) ^ (~e & g);
+                        const temporaryOne = (h + sigmaOne + choice + SHA256_CONSTANTS[index] + words[index]) >>> 0;
+                        const sigmaZero = rotateRight(a, 2) ^ rotateRight(a, 13) ^ rotateRight(a, 22);
+                        const majority = (a & b) ^ (a & c) ^ (b & c);
+                        const temporaryTwo = (sigmaZero + majority) >>> 0;
+
+                        h = g;
+                        g = f;
+                        f = e;
+                        e = (d + temporaryOne) >>> 0;
+                        d = c;
+                        c = b;
+                        b = a;
+                        a = (temporaryOne + temporaryTwo) >>> 0;
+                    }
+
+                    hash[0] = (hash[0] + a) >>> 0;
+                    hash[1] = (hash[1] + b) >>> 0;
+                    hash[2] = (hash[2] + c) >>> 0;
+                    hash[3] = (hash[3] + d) >>> 0;
+                    hash[4] = (hash[4] + e) >>> 0;
+                    hash[5] = (hash[5] + f) >>> 0;
+                    hash[6] = (hash[6] + g) >>> 0;
+                    hash[7] = (hash[7] + h) >>> 0;
+                }
+
+                const result = new Uint8Array(32);
+                const resultView = new DataView(result.buffer);
+                hash.forEach((value, index) => resultView.setUint32(index * 4, value, false));
+                return result;
+            }
+
+            function concatenate(first, second) {
+                const result = new Uint8Array(first.length + second.length);
+                result.set(first);
+                result.set(second, first.length);
+                return result;
+            }
+
+            function toHex(bytes) {
+                return Array.from(bytes, value => value.toString(16).padStart(2, "0")).join("");
+            }
+
+            function hmacSha256(keyText, dataText) {
+                const encoder = new TextEncoder();
+                let key = encoder.encode(keyText);
+                const data = encoder.encode(dataText);
+
+                if (key.length > 64) {
+                    key = sha256(key);
+                }
+
+                const keyBlock = new Uint8Array(64);
+                keyBlock.set(key);
+                const innerPad = new Uint8Array(64);
+                const outerPad = new Uint8Array(64);
+
+                for (let index = 0; index < 64; index += 1) {
+                    innerPad[index] = keyBlock[index] ^ 0x36;
+                    outerPad[index] = keyBlock[index] ^ 0x5c;
+                }
+
+                const innerHash = sha256(concatenate(innerPad, data));
+                return toHex(sha256(concatenate(outerPad, innerHash)));
+            }
+
+            function setStatus(message, isError = false) {
+                elements.status.textContent = message;
+                elements.status.classList.toggle("error", isError);
+            }
+
+            function clearOutput() {
+                elements.timestamp.textContent = "—";
+                elements.expiresAt.textContent = "—";
+                elements.rawData.textContent = "—";
+                elements.sign.textContent = "—";
+                elements.requestUrl.textContent = "—";
+                elements.openUrl.href = "#";
+                elements.openUrl.setAttribute("aria-disabled", "true");
+            }
+
+            function generate() {
+                const userId = elements.userId.value.trim();
+                if (!userId) {
+                    clearOutput();
+                    setStatus("請輸入 userId。", true);
+                    return;
+                }
+
+                const timestamp = Math.floor(Date.now() / 1000).toString();
+                const rawData = `userId=${userId}&timestamp=${timestamp}`;
+                const sign = hmacSha256(SECRET_KEY, rawData);
+                const requestUrl = `${BASE_URL}?userId=${encodeURIComponent(userId)}` +
+                    `&timestamp=${encodeURIComponent(timestamp)}&sign=${encodeURIComponent(sign)}`;
+                const expiresAt = new Date((Number(timestamp) + VALIDITY_SECONDS) * 1000);
+
+                elements.timestamp.textContent = timestamp;
+                elements.expiresAt.textContent = expiresAt.toLocaleString("zh-TW", { hour12: false });
+                elements.rawData.textContent = rawData;
+                elements.sign.textContent = sign;
+                elements.requestUrl.textContent = requestUrl;
+                elements.openUrl.href = requestUrl;
+                elements.openUrl.removeAttribute("aria-disabled");
+                setStatus(`簽章已產生，有效時間為 ${VALIDITY_SECONDS} 秒。`);
+            }
+
+            async function copyText(value, label) {
+                if (!value || value === "—") {
+                    setStatus("目前沒有可複製的內容。", true);
+                    return;
+                }
+
+                try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(value);
+                    } else {
+                        const temporary = document.createElement("textarea");
+                        temporary.value = value;
+                        temporary.setAttribute("readonly", "");
+                        temporary.style.position = "absolute";
+                        temporary.style.left = "-9999px";
+                        document.body.appendChild(temporary);
+                        temporary.select();
+                        const copied = document.execCommand("copy");
+                        temporary.remove();
+                        if (!copied) {
+                            throw new Error("copy failed");
+                        }
+                    }
+                    setStatus(`${label} 已複製。`);
+                } catch (error) {
+                    setStatus(`無法自動複製 ${label}，請手動選取內容。`, true);
+                }
+            }
+
+            elements.userId.addEventListener("input", generate);
+            elements.regenerate.addEventListener("click", generate);
+            elements.copySign.addEventListener("click", () => copyText(elements.sign.textContent, "sign"));
+            elements.copyUrl.addEventListener("click", () => copyText(elements.requestUrl.textContent, "URL"));
+            elements.openUrl.addEventListener("click", event => {
+                if (elements.openUrl.getAttribute("aria-disabled") === "true") {
+                    event.preventDefault();
+                }
+            });
+
+            if (hmacSha256(SECRET_KEY, TEST_RAW_DATA) !== TEST_SIGN) {
+                clearOutput();
+                setStatus("簽章元件自我檢查失敗，請勿使用產生結果。", true);
+                return;
+            }
+
+            generate();
+        })();
+    </script>
+</body>
+</html>

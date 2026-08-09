@@ -20,8 +20,8 @@ namespace JETFTAX.Controllers
 {
     public class AccountController : Controller
     {
-        // SSO 連結允許的最大時間差，超過 3 分鐘視為過期。
-        private const int SsoTimestampToleranceSeconds = 180;
+        // SSO 連結允許的最大時間差，超過 30 秒視為過期。
+        private const int SsoTimestampToleranceSeconds = 30;
         private readonly AccountService _accountService;
 
         public AccountController(AccountService accountService)
@@ -106,7 +106,7 @@ namespace JETFTAX.Controllers
                 return CreateSsoErrorResult(HttpStatusCode.BadRequest, "002", "Timestamp 格式錯誤");
             }
 
-            // 依規格只接受 3 分鐘內的請求，避免舊連結被重放。
+            // 依規格只接受 30 秒內的請求，避免舊連結被重放。
             var currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             if (currentTimestamp - requestTimestamp > SsoTimestampToleranceSeconds)
             {
