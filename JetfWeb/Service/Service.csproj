@@ -867,6 +867,7 @@
     <Compile Include="Services\SjlBilling\Domain\SjlBillingQueryRowModel.cs" />
     <Compile Include="Services\SjlBilling\SjlBillingService.cs" />
     <Compile Include="Services\Step\StepService.cs" />
+    <Compile Include="Services\Tact\Domain\MainRow.cs" />
     <Compile Include="Services\Tact\Domain\TactBagNoModel.cs" />
     <Compile Include="Services\Tact\Domain\TactBagQueryRequest.cs" />
     <Compile Include="Services\Tact\Domain\TactHwbModel.cs" />

@@ -154,6 +154,21 @@ namespace Service.Services.Tact
 
                 model.NotGciPieceCount = (model.NotGciPiece ?? 0) + (model.NotGciBagNumber ?? 0);
 
+                // 取得分提單號與併袋號明細
+                HtmlNodeCollection mainRowNodes = divNode.SelectNodes(".//table//tr[position() >= 3 and count(.//td) >= 14]");
+                if (mainRowNodes != null)
+                {
+                    foreach (var tr in mainRowNodes)
+                    {
+                        HtmlNodeCollection tdNodes = tr.SelectNodes(".//td");
+                        model.Rows.Add(new MainRow
+                        {
+                            Hwb = tdNodes[0].InnerText.Trim(),
+                            ExpBagNo = tdNodes[2].InnerText.Trim()
+                        });
+                    }
+                }
+
                 // 找出未入倉明細
                 HtmlNodeCollection trList = divNode.SelectNodes(".//table//tr[position() >= 3 and .//td[11][text()='未進倉']]");
                 if (trList != null)

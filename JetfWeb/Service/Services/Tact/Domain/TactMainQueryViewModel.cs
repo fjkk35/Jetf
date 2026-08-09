@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,112 +7,118 @@ using System.Threading.Tasks;
 namespace Service.Services.Tact.Domain
 {
     /// <summary>
-    /// Tact ¥D¸¹¬d¸ßµ²ªG
+    /// Tact ä¸»è™ŸæŸ¥è©¢çµæœ
     /// </summary>
     public class TactMainQueryViewModel
     {
         public TactMainQueryViewModel()
         {
+            Rows = new List<MainRow>();
             NotGciDetails = new List<TactMainNoDetailModel>();
         }
 
         /// <summary>
-        /// ¥D¸¹
+        /// ä¸»è™Ÿæ˜ç´°
+        /// </summary>
+        public List<MainRow> Rows { get; set; }
+
+        /// <summary>
+        /// ä¸»è™Ÿ
         /// </summary>
         public string Mwb { get; set; }
 
         /// <summary>
-        /// «È¤á¦WºÙ
+        /// å®¢æˆ¶åç¨±
         /// </summary>
         public string Customer { get; set; }
 
         /// <summary>
-        /// ¯è¯Z
+        /// èˆªç­
         /// </summary>
         public string FlightNumber { get; set; }
 
         /// <summary>
-        /// ¥Ó³ø¥ó¼Æ¡]¥H¤À¸¹¥Ó³ø¡^
+        /// ç”³å ±ä»¶æ•¸ï¼ˆä»¥åˆ†è™Ÿç”³å ±ï¼‰
         /// </summary>
         public int? Piece { get; set; }
 
         /// <summary>
-        /// ¶i­Ü¥ó¼Æ
+        /// é€²å€‰ä»¶æ•¸
         /// </summary>
         public int? GciPiece { get; set; }
 
         /// <summary>
-        /// ¥X­Ü¥ó¼Æ
+        /// å‡ºå€‰ä»¶æ•¸
         /// </summary>
         public int? GcoPiece { get; set; }
 
         /// <summary>
-        /// ¥¼¶i­Ü¥ó¼Æ
+        /// æœªé€²å€‰ä»¶æ•¸
         /// </summary>
         public int? NotGciPiece { get; set; }
 
         /// <summary>
-        /// ¶i­Ü­«¶q
+        /// é€²å€‰é‡é‡
         /// </summary>
         public double? GciWeight { get; set; }
 
         /// <summary>
-        /// ¥H¤À¸¹¥Ó³ø¼Æ¶q
+        /// ä»¥åˆ†è™Ÿç”³å ±æ•¸é‡
         /// </summary>
         public int? TrackingNo { get; set; }
 
         /// <summary>
-        /// ¨Ö³U¼Æ¶q
+        /// ä½µè¢‹æ•¸é‡
         /// </summary>
         public int? BagNumber { get; set; }
 
         /// <summary>
-        /// ¶i­Ü³U¼Æ
+        /// é€²å€‰è¢‹æ•¸
         /// </summary>
         public int? GciBagNumber { get; set; }
 
         /// <summary>
-        /// ¥X­Ü³U¼Æ
+        /// å‡ºå€‰è¢‹æ•¸
         /// </summary>
         public int? GcoBagNumber { get; set; }
 
         /// <summary>
-        /// ¥¼¶i­Ü³U¼Æ
+        /// æœªé€²å€‰è¢‹æ•¸
         /// </summary>
         public int? NotGciBagNumber { get; set; }
 
         /// <summary>
-        /// ¥¼¶i­Ü¤p­p
+        /// æœªé€²å€‰å°è¨ˆ
         /// </summary>
         public int NotGciPieceCount { get; set; }
 
         /// <summary>
-        /// B6F ¼Æ¶q
+        /// B6F æ•¸é‡
         /// </summary>
         public int B6FCount { get; set; }
 
         /// <summary>
-        /// B6F ¤À¸¹¡]³r¸¹¤À¹j¡^
+        /// B6F åˆ†è™Ÿï¼ˆé€—è™Ÿåˆ†éš”ï¼‰
         /// </summary>
         public string B6FTrackingNo { get; set; }
 
         /// <summary>
-        /// ¥¼¶i­Ü¥ó¤£§tB6F¤À¸¹¡]³r¸¹¤À¹j¡^
+        /// æœªé€²å€‰ä»¶ä¸å«B6Fåˆ†è™Ÿï¼ˆé€—è™Ÿåˆ†éš”ï¼‰
         /// </summary>
         public string NotGciPieceNotB6F { get; set; }
 
         /// <summary>
-        /// ¥¼¶i­Ü¥Ó³ø³U¸¹¡]³r¸¹¤À¹j¡^
+        /// æœªé€²å€‰ç”³å ±è¢‹è™Ÿï¼ˆé€—è™Ÿåˆ†éš”ï¼‰
         /// </summary>
         public string NotGciPieceBagNumber { get; set; }
 
         /// <summary>
-        /// ¥¼¶i­Ü©ú²Ó
+        /// æœªé€²å€‰æ˜ç´°
         /// </summary>
         public List<TactMainNoDetailModel> NotGciDetails { get; set; }
 
         /// <summary>
-        /// ¿ù»~°T®§
+        /// éŒ¯èª¤è¨Šæ¯
         /// </summary>
         public string ErrorMessage { get; set; }
     }
