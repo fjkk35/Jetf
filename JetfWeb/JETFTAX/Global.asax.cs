@@ -20,6 +20,8 @@ using Service.Services.Job.SjlJob;
 using Service.Services.Job.TactWebClientJob;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -87,6 +89,11 @@ namespace JETFTAX
                    .InstancePerMatchingLifetimeScope(requestScopeTag, backgroundJobScopeTag);
 
             builder.RegisterType<DataCenterDbContext>()
+                   .AsSelf()
+                   .InstancePerMatchingLifetimeScope(requestScopeTag, backgroundJobScopeTag);
+
+            builder.Register(context => new SqlConnection(
+                       ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
                    .AsSelf()
                    .InstancePerMatchingLifetimeScope(requestScopeTag, backgroundJobScopeTag);
 

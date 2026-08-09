@@ -1,99 +1,73 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Service.Services.AirMainComparison.Domain;
 
 namespace Service.Services.Tact.Domain
 {
     /// <summary>
-    /// Tact ¥D¸¹¬d¸ß©ú²Ó
+    /// Tact ä¸»è™Ÿæœªé€²å€‰æ˜ç´°ã€‚
     /// </summary>
-    public class TactMainNoDetailModel
+    public class TactMainNoDetailModel : IAirMainDetailRow
     {
-        /// <summary>
-        /// ¤À´£³æ¸¹
-        /// </summary>
+        /// <summary>åˆ†æå–®è™Ÿã€‚</summary>
         public string TrackingNo { get; set; }
 
-        /// <summary>
-        /// ³øÃöÃş§O
-        /// </summary>
+        /// <summary>å ±é—œé¡åˆ¥ã€‚</summary>
         public string DeclType { get; set; }
 
-        /// <summary>
-        /// ¨Ö³U¸¹
-        /// </summary>
+        /// <summary>ä½µè¢‹è™Ÿã€‚</summary>
         public string BagNumber { get; set; }
 
-        /// <summary>
-        /// ³ø³æ¸¹½X
-        /// </summary>
+        /// <summary>å ±å–®è™Ÿç¢¼ã€‚</summary>
         public string DeclNo { get; set; }
 
-        /// <summary>
-        /// ³qÃö¤è¦¡
-        /// </summary>
+        /// <summary>é€šé—œæ–¹å¼ã€‚</summary>
         public string ClearanceType { get; set; }
 
-        /// <summary>
-        /// ¥Ó³ø¥ó¼Æ
-        /// </summary>
+        /// <summary>ç”³å ±ä»¶æ•¸ã€‚</summary>
         public int Piece { get; set; }
 
-        /// <summary>
-        /// ¶i­Ü¥ó¼Æ
-        /// </summary>
+        /// <summary>é€²å€‰ä»¶æ•¸ã€‚</summary>
         public int GciPiece { get; set; }
 
-        /// <summary>
-        /// ¥X­Ü¥ó¼Æ
-        /// </summary>
+        /// <summary>å‡ºå€‰ä»¶æ•¸ã€‚</summary>
         public int GcoPiece { get; set; }
 
-        /// <summary>
-        /// ¥Ó³ø­«¶q
-        /// </summary>
+        /// <summary>ç”³å ±é‡é‡ã€‚</summary>
         public string Weight { get; set; }
 
-        /// <summary>
-        /// ¶i­Ü­«¶q
-        /// </summary>
+        /// <summary>é€²å€‰é‡é‡ã€‚</summary>
         public string GciWeight { get; set; }
 
-        /// <summary>
-        /// ¶i­Ü®É¶¡
-        /// </summary>
+        /// <summary>é€²å€‰æ™‚é–“æˆ–ç‹€æ…‹ã€‚</summary>
         public string GciDate1 { get; set; }
 
-        /// <summary>
-        /// ¥X­Ü®É¶¡
-        /// </summary>
+        /// <summary>å‡ºå€‰æ™‚é–“ã€‚</summary>
         public string GcoDate1 { get; set; }
 
-        /// <summary>
-        /// ¯è¾÷¯Z¦¸
-        /// </summary>
+        /// <summary>èˆªæ©Ÿç­æ¬¡ã€‚</summary>
         public string FlightNo { get; set; }
 
-        /// <summary>
-        /// §ó§ï«á³ø³æ¸¹
-        /// </summary>
+        /// <summary>æ›´æ”¹å¾Œå ±å–®è™Ÿã€‚</summary>
         public string UpdateDecl { get; set; }
 
-        /// <summary>
-        /// µ|¶Oª÷ÃB
-        /// </summary>
+        /// <summary>ç¨…è²»é‡‘é¡ã€‚</summary>
         public string Amount { get; set; }
 
-        /// <summary>
-        /// ¬O§_¬° B6F
-        /// </summary>
-        public bool B6F { get; set; }
-
-        /// <summary>
-        /// ¬£¥ó¤½¥q
-        /// </summary>
+        /// <summary>æ´¾ä»¶å…¬å¸ã€‚</summary>
         public string TransName { get; set; }
+
+        /// <summary>AIR_DETAIN ç‹€æ…‹ã€‚</summary>
+        public string Status { get; set; }
+
+        /// <summary>ä¸Šå‚³æ˜ç´°çš„ ZZZA è¨»è¨˜ã€‚</summary>
+        public string ZzzaRemark { get; set; }
+
+        string IAirMainDetailRow.Hwb => TrackingNo;
+        string IAirMainDetailRow.BagNo => BagNumber;
+        string IAirMainDetailRow.DeclNo => DeclNo;
+        int IAirMainDetailRow.DeclaredPiece => Piece;
+        int IAirMainDetailRow.GciPiece => GciPiece;
+        int IAirMainDetailRow.GcoPiece => GcoPiece;
+        string IAirMainDetailRow.DeclType => DeclType;
+        string IAirMainDetailRow.Remarks => string.Empty;
     }
 }

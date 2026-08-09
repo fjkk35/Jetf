@@ -4,6 +4,7 @@ using NPOI.XSSF.UserModel;
 using Service.Extensions;
 using Service.Models;
 using Service.Services.Tact.Domain;
+using Service.Services.AirMainComparison;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -21,9 +22,16 @@ namespace Service.Services.Tact
 {
     public partial class TactService : _BaseService
     {
-        public TactService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
+        private readonly AirMainComparisonService _airMainComparisonService;
+
+        public TactService(
+            Service.Data.JetfDbContext jetfDbContext,
+            Service.Data.DataCenterDbContext dataCenterDbContext,
+            AirMainComparisonService airMainComparisonService)
             : base(jetfDbContext, dataCenterDbContext)
         {
+            _airMainComparisonService = airMainComparisonService
+                ?? throw new ArgumentNullException(nameof(airMainComparisonService));
         }
 
         private const string BASE_URL = "https://www.tactl.com";

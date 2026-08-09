@@ -1,6 +1,7 @@
 ﻿using Service.Models;
 using Service.Services.Ftz;
 using Service.Services.Ftz.Domain;
+using Service.Services.AirMainComparison.Domain;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -115,7 +116,7 @@ namespace JETFTAX.Controllers
         {
             try
             {
-                FtzMainUploadExcelData uploadData = null;
+                AirMainUploadExcelData uploadData = null;
 
                 if (uploadFile != null && uploadFile.ContentLength > 0)
                 {

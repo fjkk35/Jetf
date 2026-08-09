@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Service.Services.AirMainComparison;
+using Service.Services.AirMainComparison.Domain;
 
 namespace Service.Services.Ftz.Domain
 {
     /// <summary>
     /// Ftz 主號查詢結果（用於前端展示）
     /// </summary>
-    public class FtzMainQueryViewModel
+    public class FtzMainQueryViewModel : IAirMainComparisonItem
     {
         /// <summary>
         /// 主號
@@ -119,7 +121,7 @@ namespace Service.Services.Ftz.Domain
         /// <summary>
         /// 需要補列到未進倉明細的未收單資料。
         /// </summary>
-        public List<FtzMainUploadExcelRow> UnreceivedRows { get; set; } = new List<FtzMainUploadExcelRow>();
+        public List<AirMainUploadExcelRow> UnreceivedRows { get; set; } = new List<AirMainUploadExcelRow>();
 
         /// <summary>
         /// 未收單B6F筆數
@@ -152,5 +154,35 @@ namespace Service.Services.Ftz.Domain
         /// 原始 API 回應資料
         /// </summary>
         public FtzMainQueryResult RawData { get; set; }
+
+        int IAirMainComparisonItem.DeclaredPiece
+        {
+            get => AirMainValueParser.ParseInt(HwbPiece);
+            set => HwbPiece = value.ToString();
+        }
+
+        int IAirMainComparisonItem.GciPiece
+        {
+            get => AirMainValueParser.ParseInt(HwbGciPiece);
+            set => HwbGciPiece = value.ToString();
+        }
+
+        int IAirMainComparisonItem.BagCount => AirMainValueParser.ParseInt(ExpBagCount);
+        int IAirMainComparisonItem.GciBagCount => AirMainValueParser.ParseInt(ExpBagGciCount);
+        int IAirMainComparisonItem.NotGciPiece
+        {
+            get => NotGciPiece;
+            set => NotGciPiece = value;
+        }
+        int IAirMainComparisonItem.NotGciBag => NotGciBag;
+        int IAirMainComparisonItem.NotGciTotal
+        {
+            get => NotGciTotal;
+            set => NotGciTotal = value;
+        }
+        IEnumerable<IAirMainQueryRow> IAirMainComparisonItem.QueryRows =>
+            RawData?.Rows?.Cast<IAirMainQueryRow>() ?? Enumerable.Empty<IAirMainQueryRow>();
+        IEnumerable<IAirMainDetailRow> IAirMainComparisonItem.NotGciDetails =>
+            NotGciDetails?.Cast<IAirMainDetailRow>() ?? Enumerable.Empty<IAirMainDetailRow>();
     }
 }

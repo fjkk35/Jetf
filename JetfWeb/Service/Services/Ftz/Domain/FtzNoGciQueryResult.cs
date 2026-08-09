@@ -19,7 +19,7 @@ namespace Service.Services.Ftz.Domain
     /// <summary>
     /// 申報未進倉明細
     /// </summary>
-    public class Row
+    public class Row : Service.Services.AirMainComparison.Domain.IAirMainDetailRow
     {
         /// <summary>提單號碼(主號)</summary>
         public string mwb { get; set; }
@@ -96,6 +96,15 @@ namespace Service.Services.Ftz.Domain
         /// 派件公司
         /// </summary>
         public string TransName { get; set; }
+
+        string Service.Services.AirMainComparison.Domain.IAirMainDetailRow.Hwb => hwb;
+        string Service.Services.AirMainComparison.Domain.IAirMainDetailRow.BagNo => expBagNo;
+        string Service.Services.AirMainComparison.Domain.IAirMainDetailRow.DeclNo => declNo;
+        int Service.Services.AirMainComparison.Domain.IAirMainDetailRow.DeclaredPiece => Service.Services.AirMainComparison.AirMainValueParser.ParseInt(piece);
+        int Service.Services.AirMainComparison.Domain.IAirMainDetailRow.GciPiece => Service.Services.AirMainComparison.AirMainValueParser.ParseInt(gciPiece);
+        int Service.Services.AirMainComparison.Domain.IAirMainDetailRow.GcoPiece => Service.Services.AirMainComparison.AirMainValueParser.ParseInt(gcoPiece);
+        string Service.Services.AirMainComparison.Domain.IAirMainDetailRow.DeclType => declType;
+        string Service.Services.AirMainComparison.Domain.IAirMainDetailRow.Remarks => remarks;
     }
 
     //public class UserData

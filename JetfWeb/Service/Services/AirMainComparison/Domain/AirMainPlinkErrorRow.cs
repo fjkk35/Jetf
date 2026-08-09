@@ -1,12 +1,12 @@
-namespace Service.Services.Ftz.Domain
+namespace Service.Services.AirMainComparison.Domain
 {
     /// <summary>
-    /// FTZ 未收單錯單資料。
+    /// 空運主號未收單資料對應的 PLINK 錯單。
     /// </summary>
-    public class FtzPlinkErrorRow
+    public class AirMainPlinkErrorRow
     {
         /// <summary>
-        /// 分號。
+        /// 錯單單號。
         /// </summary>
         public string Hawb { get; set; }
 

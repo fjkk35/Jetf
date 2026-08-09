@@ -105,9 +105,10 @@ namespace Service.Services.Ftz.Domain
         /// </summary>
         public string expBagPiece { get; set; }
     }
-
-
-    public class MainRow
+    /// <summary>
+    /// FTZ 主號查詢的完整明細識別資料。
+    /// </summary>
+    public class MainRow : Service.Services.AirMainComparison.Domain.IAirMainQueryRow
     {
         /// <summary>
         /// 分號

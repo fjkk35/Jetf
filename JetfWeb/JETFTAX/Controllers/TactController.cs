@@ -1,6 +1,7 @@
 ﻿using Service.Models;
 using Service.Services.Tact;
 using Service.Services.Tact.Domain;
+using Service.Services.AirMainComparison.Domain;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -61,23 +62,6 @@ namespace JETFTAX.Controllers
         }
 
         /// <summary>
-        /// 主號查詢
-        /// </summary>
-        [HttpPost]
-        public async Task<JsonResult> QueryMain(TactMainQueryRequest request)
-        {
-            try
-            {
-                var result = await _tactService.MainQueryAsync(request);
-                return Json(result);
-            }
-            catch (Exception ex)
-            {
-                return Json(new ResponseModel(ex.Message));
-            }
-        }
-
-        /// <summary>
         /// 匯出 Excel（分號查詢）
         /// </summary>
         [HttpPost]
@@ -111,11 +95,17 @@ namespace JETFTAX.Controllers
         /// 主號查詢匯出 Excel
         /// </summary>
         [HttpPost]
-        public async Task<JsonResult> ExportMainExcel(TactMainQueryRequest request)
+        public async Task<JsonResult> ExportMainExcel(TactMainQueryRequest request, HttpPostedFileBase uploadFile)
         {
             try
             {
-                var workbook = await _tactService.ExportMainExcel(request);
+                AirMainUploadExcelData uploadData = null;
+                if (uploadFile != null && uploadFile.ContentLength > 0)
+                {
+                    uploadData = _tactService.ReadMainUploadData(uploadFile.InputStream);
+                }
+
+                var workbook = await _tactService.ExportMainExcel(request, uploadData);
 
                 string handle = Guid.NewGuid().ToString();
                 string fileName = $"Tact主號查詢結果_{DateTime.Now:yyyyMMddHHmmss}.xlsx";

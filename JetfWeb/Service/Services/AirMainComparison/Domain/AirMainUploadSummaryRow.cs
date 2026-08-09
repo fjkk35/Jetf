@@ -1,9 +1,9 @@
-﻿namespace Service.Services.Ftz.Domain
+namespace Service.Services.AirMainComparison.Domain
 {
     /// <summary>
-    /// FTZ 主號查詢上傳 Excel 的主號2 頁籤資料列。
+    /// 空運主號上傳 Excel 的主號2摘要資料列。
     /// </summary>
-    public class FtzMainUploadSummaryRow
+    public class AirMainUploadSummaryRow
     {
         /// <summary>
         /// 主號。

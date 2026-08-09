@@ -1,17 +1,27 @@
-namespace Service.Services.Ftz.Domain
+using System.Collections.Generic;
+
+namespace Service.Services.AirMainComparison.Domain
 {
     /// <summary>
-    /// FTZ 主號查詢上傳 Excel 的明細頁籤資料列。
+    /// 空運主號上傳 Excel 的明細資料列。
     /// </summary>
-    public class FtzMainUploadExcelRow
+    public class AirMainUploadExcelRow
     {
+        /// <summary>
+        /// 建立空運主號上傳明細。
+        /// </summary>
+        public AirMainUploadExcelRow()
+        {
+            PlinkErrors = new List<AirMainPlinkErrorRow>();
+        }
+
         /// <summary>
         /// 主號。
         /// </summary>
         public string Mwb { get; set; }
 
         /// <summary>
-        /// 袋號或分號。
+        /// 上傳檔袋號。
         /// </summary>
         public string BagNo { get; set; }
 
@@ -21,12 +31,12 @@ namespace Service.Services.Ftz.Domain
         public string ReceiptMark { get; set; }
 
         /// <summary>
-        /// 一分號多件的分號清單。
+        /// 一分號多件之分號。
         /// </summary>
         public string OneHwbMultiPieceHwb { get; set; }
 
         /// <summary>
-        /// 備註；目前僅保留 ZZZA 註記。
+        /// ZZZA 備註。
         /// </summary>
         public string Remark { get; set; }
 
@@ -39,5 +49,10 @@ namespace Service.Services.Ftz.Domain
         /// 派件公司。
         /// </summary>
         public string TransName { get; set; }
+
+        /// <summary>
+        /// 對應的 PLINK 錯單資料。
+        /// </summary>
+        public List<AirMainPlinkErrorRow> PlinkErrors { get; set; }
     }
 }
