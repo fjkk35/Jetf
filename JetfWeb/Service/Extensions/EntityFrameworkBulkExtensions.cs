@@ -434,6 +434,82 @@ namespace Service.Data
             Action<BulkContainsOptions> optionsAction = null)
             where TEntity : class
         {
+            return WhereBulkContainsCore(
+                source,
+                context,
+                containsItems,
+                entityKeyExpression,
+                containsKeyExpression,
+                GetSelectablePropertyMaps(typeof(TEntity)),
+                optionsAction,
+                (connection, transaction, sql, parameters, timeout) =>
+                    context.Database.SqlQuery<TEntity>(sql, parameters).ToList());
+        }
+
+        /// <summary>
+        /// 使用暫存表批次比對資料，並只從資料庫取回投影所需的欄位。
+        /// </summary>
+        /// <typeparam name="TEntity">資料表實體型別。</typeparam>
+        /// <typeparam name="TContains">批次比對資料型別。</typeparam>
+        /// <typeparam name="TResult">查詢結果型別。</typeparam>
+        /// <param name="source">要套用批次比對的 Entity Framework 查詢。</param>
+        /// <param name="context">查詢使用的資料庫內容。</param>
+        /// <param name="containsItems">要寫入暫存表的批次比對資料。</param>
+        /// <param name="entityKeyExpression">實體的比對欄位。</param>
+        /// <param name="containsKeyExpression">批次資料的比對欄位。</param>
+        /// <param name="selectExpression">指定要取回的實體欄位及結果投影。</param>
+        /// <param name="optionsAction">批次查詢選項。</param>
+        /// <returns>只包含指定投影的查詢結果。</returns>
+        /// <remarks>
+        /// SQL 只取回投影中直接使用的已對應簡單型別欄位；投影內的運算會在欄位讀回後由 .NET 執行。
+        /// </remarks>
+        public static List<TResult> WhereBulkContains<TEntity, TContains, TResult>(
+            this IQueryable<TEntity> source,
+            DbContext context,
+            IEnumerable<TContains> containsItems,
+            Expression<Func<TEntity, object>> entityKeyExpression,
+            Expression<Func<TContains, object>> containsKeyExpression,
+            Expression<Func<TEntity, TResult>> selectExpression,
+            Action<BulkContainsOptions> optionsAction = null)
+            where TEntity : class
+        {
+            if (selectExpression == null)
+            {
+                throw new ArgumentNullException(nameof(selectExpression));
+            }
+
+            List<PropertyMap> selectMaps;
+            var projector = CreateBulkContainsProjector(selectExpression, out selectMaps);
+
+            return WhereBulkContainsCore(
+                source,
+                context,
+                containsItems,
+                entityKeyExpression,
+                containsKeyExpression,
+                selectMaps,
+                optionsAction,
+                (connection, transaction, sql, parameters, timeout) => ExecuteBulkContainsProjectionQuery(
+                    connection,
+                    transaction,
+                    sql,
+                    parameters,
+                    timeout,
+                    selectMaps,
+                    projector));
+        }
+
+        private static List<TResult> WhereBulkContainsCore<TEntity, TContains, TResult>(
+            IQueryable<TEntity> source,
+            DbContext context,
+            IEnumerable<TContains> containsItems,
+            Expression<Func<TEntity, object>> entityKeyExpression,
+            Expression<Func<TContains, object>> containsKeyExpression,
+            List<PropertyMap> selectMaps,
+            Action<BulkContainsOptions> optionsAction,
+            Func<SqlConnection, SqlTransaction, string, SqlParameter[], int, List<TResult>> queryExecutor)
+            where TEntity : class
+        {
             if (source == null)
             {
                 throw new ArgumentNullException(nameof(source));
@@ -457,7 +533,7 @@ namespace Service.Data
             var rows = (containsItems ?? Enumerable.Empty<TContains>()).ToList();
             if (rows.Count == 0)
             {
-                return new List<TEntity>();
+                return new List<TResult>();
             }
 
             var options = new BulkContainsOptions();
@@ -467,7 +543,7 @@ namespace Service.Data
             var table = CreateBulkContainsTable(rows, maps);
             if (table.Rows.Count == 0)
             {
-                return new List<TEntity>();
+                return new List<TResult>();
             }
 
             var objectQuery = GetObjectQuery(source);
@@ -507,9 +583,14 @@ namespace Service.Data
                     bulkCopy.WriteToServer(table);
                 }
 
-                var sql = CreateBulkContainsQuerySql(objectQuery, tempTableName, maps, GetSelectablePropertyMaps(typeof(TEntity)));
+                var sql = CreateBulkContainsQuerySql(objectQuery, tempTableName, maps, selectMaps);
                 var parameters = CreateSqlParameters(objectQuery).ToArray();
-                return context.Database.SqlQuery<TEntity>(sql, parameters).ToList();
+                return queryExecutor(
+                    connection,
+                    transaction,
+                    sql,
+                    parameters,
+                    context.Database.CommandTimeout ?? options.TimeoutSeconds);
             }
             finally
             {
@@ -520,6 +601,45 @@ namespace Service.Data
                     connection.Close();
                 }
             }
+        }
+
+        private static List<TResult> ExecuteBulkContainsProjectionQuery<TResult>(
+            SqlConnection connection,
+            SqlTransaction transaction,
+            string sql,
+            SqlParameter[] parameters,
+            int timeout,
+            List<PropertyMap> selectMaps,
+            Func<object[], TResult> projector)
+        {
+            var results = new List<TResult>();
+
+            using (var command = new SqlCommand(sql, connection, transaction))
+            {
+                command.CommandTimeout = timeout;
+                if (parameters.Length > 0)
+                {
+                    command.Parameters.AddRange(parameters);
+                }
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var values = new object[selectMaps.Count];
+                        for (var index = 0; index < selectMaps.Count; index++)
+                        {
+                            values[index] = ConvertBulkContainsValue(
+                                reader.IsDBNull(index) ? null : reader.GetValue(index),
+                                selectMaps[index].Property.PropertyType);
+                        }
+
+                        results.Add(projector(values));
+                    }
+                }
+            }
+
+            return results;
         }
 
         private static DataTable CreateDataTable<TEntity>(IEnumerable<TEntity> rows, List<PropertyMap> maps)
@@ -654,6 +774,56 @@ namespace Service.Data
             }
 
             return maps;
+        }
+
+        private static Func<object[], TResult> CreateBulkContainsProjector<TEntity, TResult>(
+            Expression<Func<TEntity, TResult>> selectExpression,
+            out List<PropertyMap> selectMaps)
+        {
+            var valuesParameter = Expression.Parameter(typeof(object[]), "values");
+            var visitor = new BulkContainsProjectionVisitor<TEntity>(
+                selectExpression.Parameters[0],
+                valuesParameter,
+                GetSelectablePropertyMaps(typeof(TEntity)));
+            var projectionBody = visitor.Visit(selectExpression.Body);
+
+            selectMaps = visitor.SelectMaps;
+            return Expression.Lambda<Func<object[], TResult>>(projectionBody, valuesParameter).Compile();
+        }
+
+        private static object ConvertBulkContainsValue(object value, Type targetType)
+        {
+            if (value == null || value == DBNull.Value)
+            {
+                return null;
+            }
+
+            var actualType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+            if (actualType.IsInstanceOfType(value))
+            {
+                return value;
+            }
+
+            if (actualType.IsEnum)
+            {
+                return value is string
+                    ? Enum.Parse(actualType, (string)value)
+                    : Enum.ToObject(actualType, value);
+            }
+
+            if (actualType == typeof(Guid))
+            {
+                return new Guid(Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture));
+            }
+
+            if (actualType == typeof(DateTimeOffset))
+            {
+                return DateTimeOffset.Parse(
+                    Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture),
+                    System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            return Convert.ChangeType(value, actualType, System.Globalization.CultureInfo.InvariantCulture);
         }
 
         private static List<Expression> GetKeyExpressions(Expression expression)
@@ -843,8 +1013,9 @@ inner join {QuoteIdentifier(tempTableName)} as [Source]
             IEnumerable<PropertyMap> selectMaps)
         {
             var sourceSql = objectQuery.ToTraceString();
-            var selectColumns = selectMaps.Select(map =>
-                $"[BulkSource].{QuoteIdentifier(map.ColumnName)} as {QuoteIdentifier(map.Property.Name)}");
+            var selectColumns = selectMaps
+                .Select(map => $"[BulkSource].{QuoteIdentifier(map.ColumnName)} as {QuoteIdentifier(map.Property.Name)}")
+                .DefaultIfEmpty("cast(1 as bit) as [__BulkProjection]");
             var joinConditions = maps.Select(map =>
                 $"(([BulkSource].{QuoteIdentifier(map.EntityColumnName)} = [BulkKeys].{QuoteIdentifier(map.TempColumnName)}) or ([BulkSource].{QuoteIdentifier(map.EntityColumnName)} is null and [BulkKeys].{QuoteIdentifier(map.TempColumnName)} is null))");
 
@@ -1186,6 +1357,71 @@ where exists (
             public PropertyInfo Property { get; set; }
 
             public string ColumnName { get; set; }
+        }
+
+        private sealed class BulkContainsProjectionVisitor<TEntity> : ExpressionVisitor
+        {
+            private readonly ParameterExpression _entityParameter;
+            private readonly ParameterExpression _valuesParameter;
+            private readonly List<PropertyMap> _availableMaps;
+            private readonly List<PropertyMap> _selectMaps = new List<PropertyMap>();
+
+            public BulkContainsProjectionVisitor(
+                ParameterExpression entityParameter,
+                ParameterExpression valuesParameter,
+                List<PropertyMap> availableMaps)
+            {
+                _entityParameter = entityParameter;
+                _valuesParameter = valuesParameter;
+                _availableMaps = availableMaps;
+            }
+
+            public List<PropertyMap> SelectMaps => _selectMaps;
+
+            protected override Expression VisitMember(MemberExpression node)
+            {
+                if (node.Expression != null && RemoveConvert(node.Expression) == _entityParameter)
+                {
+                    var property = node.Member as PropertyInfo;
+                    if (property == null)
+                    {
+                        throw new ArgumentException("Select expression fields must be public properties.", "selectExpression");
+                    }
+
+                    var map = _availableMaps.FirstOrDefault(candidate => candidate.Property == property);
+                    if (map == null)
+                    {
+                        throw new ArgumentException(
+                            $"Select expression property '{property.Name}' must be a mapped simple property.",
+                            "selectExpression");
+                    }
+
+                    var index = _selectMaps.FindIndex(candidate => candidate.Property == property);
+                    if (index < 0)
+                    {
+                        index = _selectMaps.Count;
+                        _selectMaps.Add(map);
+                    }
+
+                    return Expression.Convert(
+                        Expression.ArrayIndex(_valuesParameter, Expression.Constant(index)),
+                        node.Type);
+                }
+
+                return base.VisitMember(node);
+            }
+
+            protected override Expression VisitParameter(ParameterExpression node)
+            {
+                if (node == _entityParameter)
+                {
+                    throw new ArgumentException(
+                        "Select expression must reference explicit mapped fields instead of the entire entity.",
+                        "selectExpression");
+                }
+
+                return base.VisitParameter(node);
+            }
         }
 
         private sealed class BulkContainsKeyMap<TContains>
