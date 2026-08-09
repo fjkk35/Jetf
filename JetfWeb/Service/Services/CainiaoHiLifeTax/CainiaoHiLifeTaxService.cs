@@ -125,43 +125,54 @@ namespace Service.Services.CainiaoHiLifeTax
                             insert [jetf].[dbo].[CainiaoHiLifeTax](Seq, DlvInv, Tax, FileName, UploadOpe, UploadTime)
                             values (@Seq, @DlvInv, @Tax, @FileName, @UploadOpe, @UploadTime)";
 
-            if (conn.State != ConnectionState.Open)
+            try
             {
-                conn.Open();
-            }
-
-            using (SqlTransaction tran = conn.BeginTransaction())
-            {
-                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                if (conn.State != ConnectionState.Open)
                 {
-                    cmd.Transaction = tran;
-                    try
-                    {
-                        var uploadTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                        list.ForEach(r =>
-                        {
-                            cmd.Parameters.Clear();
-                            cmd.Parameters.Add("@Seq", SqlDbType.NVarChar).Value = r.Seq;
-                            cmd.Parameters.Add("@DlvInv", SqlDbType.NVarChar).Value = r.DlvInv;
-                            cmd.Parameters.Add("@Tax", SqlDbType.NVarChar).Value = r.Tax;
-                            cmd.Parameters.Add("@FileName", SqlDbType.NVarChar).Value = fileName;
-                            cmd.Parameters.Add("@UploadTime", SqlDbType.NVarChar).Value = uploadTime;
-                            cmd.Parameters.Add("@UploadOpe", SqlDbType.NVarChar).Value = userId;
-                            cmd.ExecuteNonQuery();
-                        });
+                    conn.Open();
+                }
 
-                        //確認寫入
-                        tran.Commit();
-                    }
-                    catch (Exception ex)
+                using (SqlTransaction tran = conn.BeginTransaction())
+                {
+                    using (SqlCommand cmd = new SqlCommand(sql, conn))
                     {
-                        resopnseModel.status = Status.error;
-                        resopnseModel.msg = ex.Message;
-                        //取消寫入
-                        tran.Rollback();
+                        cmd.Transaction = tran;
+                        try
+                        {
+                            var uploadTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                            list.ForEach(r =>
+                            {
+                                cmd.Parameters.Clear();
+                                cmd.Parameters.Add("@Seq", SqlDbType.NVarChar).Value = r.Seq;
+                                cmd.Parameters.Add("@DlvInv", SqlDbType.NVarChar).Value = r.DlvInv;
+                                cmd.Parameters.Add("@Tax", SqlDbType.NVarChar).Value = r.Tax;
+                                cmd.Parameters.Add("@FileName", SqlDbType.NVarChar).Value = fileName;
+                                cmd.Parameters.Add("@UploadTime", SqlDbType.NVarChar).Value = uploadTime;
+                                cmd.Parameters.Add("@UploadOpe", SqlDbType.NVarChar).Value = userId;
+                                cmd.ExecuteNonQuery();
+                            });
+
+                            //確認寫入
+                            tran.Commit();
+                        }
+                        catch (Exception ex)
+                        {
+                            resopnseModel.status = Status.error;
+                            resopnseModel.msg = ex.Message;
+                            //取消寫入
+                            tran.Rollback();
+                        }
                     }
                 }
             }
+            finally
+            {
+                if (conn.State != ConnectionState.Closed)
+                {
+                    conn.Close();
+                }
+            }
+
             return resopnseModel;
         }
 

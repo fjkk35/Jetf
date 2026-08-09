@@ -60,45 +60,55 @@ namespace Service.Services
             ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
-            if (conn.State != ConnectionState.Open)
+            try
             {
-                conn.Open();
-            }
-            //讀取Excel B6F拆袋資料
-            DataTable dt = new DataTable();
-            if (source == "ETL")
-            {
-                dt = ReadExcelB6F(filePath);
-            }
-            else if (source == "SEA")
-            {
-                dt = ReadExcelSeaB6F(filePath);
-            }
-
-            //新增
-            if (dt.Rows.Count > 0)
-            {
-                //寫入資料
-                string upload_time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                if (conn.State != ConnectionState.Open)
+                {
+                    conn.Open();
+                }
+                //讀取Excel B6F拆袋資料
+                DataTable dt = new DataTable();
                 if (source == "ETL")
                 {
-                    resopnseModel = InsertB6F_Unpacking_Upload(dt, upload_time, userId);
+                    dt = ReadExcelB6F(filePath);
                 }
                 else if (source == "SEA")
                 {
-                    resopnseModel = InsertB6F_Sea_Unpacking_Upload(dt, upload_time, userId);
+                    dt = ReadExcelSeaB6F(filePath);
                 }
-                if (resopnseModel.status == Status.success)
+
+                //新增
+                if (dt.Rows.Count > 0)
                 {
-                    resopnseModel.msg = $"上傳檔案筆數：{dt.Rows.Count }";
+                    //寫入資料
+                    string upload_time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    if (source == "ETL")
+                    {
+                        resopnseModel = InsertB6F_Unpacking_Upload(dt, upload_time, userId);
+                    }
+                    else if (source == "SEA")
+                    {
+                        resopnseModel = InsertB6F_Sea_Unpacking_Upload(dt, upload_time, userId);
+                    }
+                    if (resopnseModel.status == Status.success)
+                    {
+                        resopnseModel.msg = $"上傳檔案筆數：{dt.Rows.Count }";
+                    }
+                }
+                else
+                {
+                    resopnseModel.status = Status.error;
+                    resopnseModel.msg = "上傳檔案筆數：0";
                 }
             }
-            else
+            finally
             {
-                resopnseModel.status = Status.error;
-                resopnseModel.msg = "上傳檔案筆數：0";
+                if (conn.State != ConnectionState.Closed)
+                {
+                    conn.Close();
+                }
             }
-            conn.Close();
+
             return resopnseModel;
         }
 
