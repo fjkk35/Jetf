@@ -46,10 +46,12 @@ namespace Service.Services
             ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
-            if (conn.State != ConnectionState.Open)
+            try
             {
-                conn.Open();
-            }
+                if (conn.State != ConnectionState.Open)
+                {
+                    conn.Open();
+                }
             //讀取Excel 
             List<PostClearanceUploadModel> modelList = ReadExcelPostClearance(filePath);
             //新增
@@ -71,7 +73,11 @@ namespace Service.Services
                 resopnseModel.status = Status.error;
                 resopnseModel.msg = "上傳檔案筆數：0";
             }
-            conn.Close();
+            }
+            finally
+            {
+                conn.Close();
+            }
             return resopnseModel;
         }
 

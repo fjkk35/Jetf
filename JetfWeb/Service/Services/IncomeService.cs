@@ -29,23 +29,29 @@ namespace Service.Services
         {
             int days = Convert.ToInt32((Convert.ToDateTime(eDate) - Convert.ToDateTime(sDate)).TotalDays) + 1;
             DateTime date = Convert.ToDateTime(sDate);
-            conn.Open();
-            for (int i = 0; i < days; i++)
+            try
             {
-                using (SqlCommand cmd = new SqlCommand("jetf.dbo.SP_Insert_Income_Report", conn))
+                conn.Open();
+                for (int i = 0; i < days; i++)
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.Add("@DataDate", SqlDbType.NVarChar).Value = date.AddDays(i).ToString("yyyyMMdd");
-                    cmd.Parameters.Add("@SDate_ETL", SqlDbType.DateTime).Value = $"{date.AddDays(i).ToString("yyyy-MM-dd")} 09:00:00";
-                    cmd.Parameters.Add("@EDate_ETL", SqlDbType.DateTime).Value = $"{date.AddDays(i + 1).ToString("yyyy-MM-dd")} 08:59:59";
-                    cmd.Parameters.Add("@SDate", SqlDbType.DateTime).Value = $"{date.AddDays(i).ToString("yyyy-MM-dd")} 00:00:00";
-                    cmd.Parameters.Add("@EDate", SqlDbType.DateTime).Value = $"{date.AddDays(i).ToString("yyyy-MM-dd")} 23:59:59";
-                    cmd.CommandTimeout = 600;
-                    cmd.ExecuteNonQuery();
+                    using (SqlCommand cmd = new SqlCommand("jetf.dbo.SP_Insert_Income_Report", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.Add("@DataDate", SqlDbType.NVarChar).Value = date.AddDays(i).ToString("yyyyMMdd");
+                        cmd.Parameters.Add("@SDate_ETL", SqlDbType.DateTime).Value = $"{date.AddDays(i).ToString("yyyy-MM-dd")} 09:00:00";
+                        cmd.Parameters.Add("@EDate_ETL", SqlDbType.DateTime).Value = $"{date.AddDays(i + 1).ToString("yyyy-MM-dd")} 08:59:59";
+                        cmd.Parameters.Add("@SDate", SqlDbType.DateTime).Value = $"{date.AddDays(i).ToString("yyyy-MM-dd")} 00:00:00";
+                        cmd.Parameters.Add("@EDate", SqlDbType.DateTime).Value = $"{date.AddDays(i).ToString("yyyy-MM-dd")} 23:59:59";
+                        cmd.CommandTimeout = 600;
+                        cmd.ExecuteNonQuery();
+                    }
                 }
             }
-            conn.Close();
+            finally
+            {
+                conn.Close();
+            }
         }
 
         public DataTableModel IncomeReport_Details(string sDate, string eDate)
@@ -172,19 +178,25 @@ namespace Service.Services
         {
             int days = Convert.ToInt32((Convert.ToDateTime(eDate) - Convert.ToDateTime(sDate)).TotalDays) + 1;
             DateTime date = Convert.ToDateTime(sDate);
-            conn.Open();
-            for (int i = 0; i < days; i++)
+            try
             {
-                using (SqlCommand cmd = new SqlCommand("jetf.dbo.SP_Insert_Income_ETA_Report", conn))
+                conn.Open();
+                for (int i = 0; i < days; i++)
                 {
-                    cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.Add("@DataDate", SqlDbType.NVarChar).Value = date.AddDays(i).ToString("yyyyMMdd");
-                    cmd.CommandTimeout = 600;
-                    cmd.ExecuteNonQuery();
+                    using (SqlCommand cmd = new SqlCommand("jetf.dbo.SP_Insert_Income_ETA_Report", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.Add("@DataDate", SqlDbType.NVarChar).Value = date.AddDays(i).ToString("yyyyMMdd");
+                        cmd.CommandTimeout = 600;
+                        cmd.ExecuteNonQuery();
+                    }
                 }
             }
-            conn.Close();
+            finally
+            {
+                conn.Close();
+            }
         }
 
         public DataTableModel IncomeETAReport(string sDate, string eDate)

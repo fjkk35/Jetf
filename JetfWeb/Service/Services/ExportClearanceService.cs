@@ -72,7 +72,6 @@ namespace Service.Services
 
                     //確認寫入
                     transactionScope.Complete();
-                    conn.Close();
                 }
 
                 StringBuilder sb = new StringBuilder();
@@ -86,6 +85,10 @@ namespace Service.Services
             {
                 resopnseModel.status = Status.error;
                 resopnseModel.msg = ex.Message;
+            }
+            finally
+            {
+                conn.Close();
             }
 
             return resopnseModel;

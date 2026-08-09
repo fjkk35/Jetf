@@ -45,13 +45,16 @@ namespace Service.Services
                     cmd.Parameters.Add("@CrtUser", SqlDbType.NVarChar).Value = user_id;
                     conn.Open();
                     cmd.ExecuteNonQuery();
-                    conn.Close();
                 }
             }
             catch (Exception ex)
             {
                 resopnseModel.status = Status.error;
                 resopnseModel.msg = ex.Message;
+            }
+            finally
+            {
+                conn.Close();
             }
             return resopnseModel;
         }
@@ -75,13 +78,16 @@ namespace Service.Services
                     cmd.Parameters.Add("@Token", SqlDbType.NVarChar).Value = token;
                     conn.Open();
                     cmd.ExecuteNonQuery();
-                    conn.Close();
                 }
             }
             catch (Exception ex)
             {
                 resopnseModel.status = Status.error;
                 resopnseModel.msg = ex.Message;
+            }
+            finally
+            {
+                conn.Close();
             }
             return resopnseModel;
         }

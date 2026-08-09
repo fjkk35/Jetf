@@ -33,32 +33,38 @@ namespace Service.Services
             ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
-            if (conn.State != ConnectionState.Open)
+            try
             {
-                conn.Open();
-            }
-            //讀取Csv
-            DataTable dt = ReadCsv(filePath);
-
-            //新增
-            if (dt.Rows.Count > 0)
-            {
-                //寫入資料
-                string upload_time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-                resopnseModel = InsertEtlMergeBagNo(dt, upload_time, userId);
-
-                if (resopnseModel.status == Status.success)
+                if (conn.State != ConnectionState.Open)
                 {
-                    resopnseModel.msg = $"上傳檔案筆數：{dt.Rows.Count }";
+                    conn.Open();
+                }
+                //讀取Csv
+                DataTable dt = ReadCsv(filePath);
+
+                //新增
+                if (dt.Rows.Count > 0)
+                {
+                    //寫入資料
+                    string upload_time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    resopnseModel = InsertEtlMergeBagNo(dt, upload_time, userId);
+
+                    if (resopnseModel.status == Status.success)
+                    {
+                        resopnseModel.msg = $"上傳檔案筆數：{dt.Rows.Count }";
+                    }
+                }
+                else
+                {
+                    resopnseModel.status = Status.error;
+                    resopnseModel.msg = "上傳檔案筆數：0";
                 }
             }
-            else
+            finally
             {
-                resopnseModel.status = Status.error;
-                resopnseModel.msg = "上傳檔案筆數：0";
+                conn.Close();
             }
-            conn.Close();
             return resopnseModel;
         }
 

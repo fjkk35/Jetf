@@ -41,37 +41,43 @@ namespace Service.Services
             ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
 
-            if (conn.State != ConnectionState.Open)
+            try
             {
-                conn.Open();
-            }
-            List<EtlUnpackingZModel> list = new List<EtlUnpackingZModel>();
-
-            filePaths.ForEach(r =>
-            {
-                //讀取Excel
-                list.AddRange(ReadCsv(r));
-            });
-
-            //新增
-            if (list.Count > 0)
-            {
-                string uploadTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-                //寫入資料
-                resopnseModel = InsertEtlUnpackingZ(list, uploadTime, userId);
-
-                if (resopnseModel.status == Status.success)
+                if (conn.State != ConnectionState.Open)
                 {
-                    resopnseModel.msg = $"上傳檔案筆數：{list.Count }";
+                    conn.Open();
+                }
+                List<EtlUnpackingZModel> list = new List<EtlUnpackingZModel>();
+
+                filePaths.ForEach(r =>
+                {
+                    //讀取Excel
+                    list.AddRange(ReadCsv(r));
+                });
+
+                //新增
+                if (list.Count > 0)
+                {
+                    string uploadTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    //寫入資料
+                    resopnseModel = InsertEtlUnpackingZ(list, uploadTime, userId);
+
+                    if (resopnseModel.status == Status.success)
+                    {
+                        resopnseModel.msg = $"上傳檔案筆數：{list.Count }";
+                    }
+                }
+                else
+                {
+                    resopnseModel.status = Status.error;
+                    resopnseModel.msg = "上傳檔案筆數：0";
                 }
             }
-            else
+            finally
             {
-                resopnseModel.status = Status.error;
-                resopnseModel.msg = "上傳檔案筆數：0";
+                conn.Close();
             }
-            conn.Close();
             return resopnseModel;
         }
 

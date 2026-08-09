@@ -36,34 +36,39 @@ namespace Service.Services
         {
             ResponseModel resopnseModel = new ResponseModel();
 
-            if (conn.State != ConnectionState.Open)
+            try
             {
-                conn.Open();
-            }
-
-            //讀取檔案
-            DataTable dt_Upload = ReadExcelInvoiceWork(filePath);
-
-            //新增
-            if (dt_Upload.Rows.Count > 0)
-            {
-                //寫入資料
-                string upload_time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                resopnseModel = InsertInvoiceWork(dt_Upload, upload_time, userId);
-
-                if (resopnseModel.status == Status.success)
+                if (conn.State != ConnectionState.Open)
                 {
-                    //resopnseModel.msg = $"上傳檔案筆數：{dt_Upload.Rows.Count}";
-                    resopnseModel.msg = $"{upload_time}︿{userId}";
+                    conn.Open();
+                }
+
+                //讀取檔案
+                DataTable dt_Upload = ReadExcelInvoiceWork(filePath);
+
+                //新增
+                if (dt_Upload.Rows.Count > 0)
+                {
+                    //寫入資料
+                    string upload_time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    resopnseModel = InsertInvoiceWork(dt_Upload, upload_time, userId);
+
+                    if (resopnseModel.status == Status.success)
+                    {
+                        //resopnseModel.msg = $"上傳檔案筆數：{dt_Upload.Rows.Count}";
+                        resopnseModel.msg = $"{upload_time}︿{userId}";
+                    }
+                }
+                else
+                {
+                    resopnseModel.status = Status.error;
+                    resopnseModel.msg = $"上傳檔案筆數：{dt_Upload.Rows.Count}";
                 }
             }
-            else
+            finally
             {
-                resopnseModel.status = Status.error;
-                resopnseModel.msg = $"上傳檔案筆數：{dt_Upload.Rows.Count}";
+                conn.Close();
             }
-
-            conn.Close();
             return resopnseModel;
         }
 
