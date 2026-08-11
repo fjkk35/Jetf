@@ -33,6 +33,8 @@ namespace JETFTAX.Controllers
         /// LINE 電話綁定
         /// </summary>
         /// <returns></returns>
+        [AllowAnonymous]
+        [HttpGet]
         public ActionResult PhoneBind(string code, string state)
         {
             var tokenAsync = _lineLoginService.GetAccessToken(code);
@@ -55,6 +57,7 @@ namespace JETFTAX.Controllers
             return View(vm);
         }
 
+        [AllowAnonymous]
         [HttpPost]
         public JsonResult PhoneBind(LineUserProfileViewModel vm)
         {
@@ -70,6 +73,8 @@ namespace JETFTAX.Controllers
             }
         }
 
+        [AllowAnonymous]
+        [HttpGet]
         public ActionResult Privacy() 
         { 
             return View();
