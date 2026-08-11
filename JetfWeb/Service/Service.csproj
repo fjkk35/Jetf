@@ -826,6 +826,7 @@
     <Compile Include="Services\ShipmentInboundRecord\Domain\UpdateSourceTypeRequest.cs" />
     <Compile Include="Services\ShipmentInboundRecord\Domain\UpdateUnknownShipmentBasicInfoRequest.cs" />
     <Compile Include="Services\ShipmentInboundRecord\Domain\UpdateTrackingNoRequest.cs" />
+    <Compile Include="Services\ShipmentInboundRecord\HctTrackingQueryService.cs" />
     <Compile Include="Services\ShipmentInboundRecord\ShipmentInboundRecordService.cs" />
     <Compile Include="Services\ShipmentInboundWarehouseProcess\Domain\ShipmentInboundWarehouseProcessBatchUploadErrorModel.cs" />
     <Compile Include="Services\ShipmentInboundWarehouseProcess\Domain\ShipmentInboundWarehouseProcessBatchUploadRowModel.cs" />

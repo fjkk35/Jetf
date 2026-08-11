@@ -157,6 +157,15 @@
             '?cargoNumber=' + encodeURIComponent((cargoNumber || '').toString().trim());
     };
 
+    $scope.canSearchHctTrackingNo = function (trackingNo) {
+        return normalizeText(trackingNo).length === 10;
+    };
+
+    $scope.getHctTrackingUrl = function (trackingNo) {
+        return Router.action('ShipmentInboundRecord', 'HctTracking') +
+            '?trackingNo=' + encodeURIComponent(normalizeText(trackingNo));
+    };
+
     // 載入詳細資料
     $scope.loadDetail = function () {
         var id = getQueryParam('id');

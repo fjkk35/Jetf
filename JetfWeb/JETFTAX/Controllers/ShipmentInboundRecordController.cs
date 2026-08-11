@@ -15,13 +15,16 @@ namespace JETFTAX.Controllers
     {
         private readonly ShipmentInboundRecordService _shipmentInboundRecordService;
         private readonly ShipmentInboundExceptionImageStorageService _imageStorageService;
+        private readonly HctTrackingQueryService _hctTrackingQueryService;
 
         public ShipmentInboundRecordController(
             ShipmentInboundRecordService shipmentInboundRecordService,
-            ShipmentInboundExceptionImageStorageService imageStorageService)
+            ShipmentInboundExceptionImageStorageService imageStorageService,
+            HctTrackingQueryService hctTrackingQueryService)
         {
             _shipmentInboundRecordService = shipmentInboundRecordService;
             _imageStorageService = imageStorageService;
+            _hctTrackingQueryService = hctTrackingQueryService;
         }
 
         // GET: ShipmentInboundRecord
@@ -75,6 +78,28 @@ namespace JETFTAX.Controllers
             catch (Exception ex)
             {
                 return Json(new { error = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        /// <summary>
+        /// 轉址至 HCT 貨號查詢頁面。
+        /// </summary>
+        /// <param name="trackingNo">貨號。</param>
+        /// <returns>HCT 貨號查詢頁面。</returns>
+        [HttpGet]
+        [UserAuthorize(Authority.ShipmentInboundRecord)]
+        public ActionResult HctTracking(string trackingNo)
+        {
+            try
+            {
+                var url = _hctTrackingQueryService.BuildQueryUrl(trackingNo);
+                return Redirect(url);
+            }
+            catch (Exception ex)
+            {
+                Response.StatusCode = 400;
+                Response.TrySkipIisCustomErrors = true;
+                return Content(ex.Message);
             }
         }
 

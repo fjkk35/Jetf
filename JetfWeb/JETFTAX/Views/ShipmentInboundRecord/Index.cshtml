@@ -573,6 +573,16 @@
                                            style="cursor: pointer; text-decoration: underline; font-weight: 600;">
                                             {{item.TrackingNo}}
                                         </a>
+                                        <a ng-if="canSearchHctTrackingNo(item.TrackingNo)"
+                                           ng-href="{{getHctTrackingUrl(item.TrackingNo)}}"
+                                           target="_blank"
+                                           rel="noopener"
+                                           class="btn btn-sm btn-success ml-1 px-1 py-0"
+                                           title="查詢 HCT 貨態"
+                                           aria-label="查詢 HCT 貨態"
+                                           style="line-height: 1.2; min-width: 22px; font-weight: 600;">
+                                            查
+                                        </a>
                                         <a ng-if="item.HasTrackingNoSignReceipt"
                                            ng-href="{{getCargoReceiptUrl(item.TrackingNo)}}"
                                            target="_blank"
@@ -608,6 +618,16 @@
                                     <td ng-show="visibleColumns.size">{{item.Size}}</td>
                                     <td class="col-outbound-no" ng-show="visibleColumns.outboundTrackingNo">
                                         <span>{{item.OutboundTrackingNo}}</span>
+                                        <a ng-if="canSearchHctTrackingNo(item.OutboundTrackingNo)"
+                                           ng-href="{{getHctTrackingUrl(item.OutboundTrackingNo)}}"
+                                           target="_blank"
+                                           rel="noopener"
+                                           class="btn btn-sm btn-success ml-1 px-1 py-0"
+                                           title="查詢 HCT 貨態"
+                                           aria-label="查詢 HCT 貨態"
+                                           style="line-height: 1.2; min-width: 22px; font-weight: 600;">
+                                            查
+                                        </a>
                                         <a ng-if="item.HasOutboundTrackingNoSignReceipt"
                                            ng-href="{{getCargoReceiptUrl(item.OutboundTrackingNo)}}"
                                            target="_blank"

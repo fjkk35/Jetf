@@ -321,6 +321,16 @@
                                 <div class="detail-label">單號：</div>
                                 <div class="detail-value detail-value-highlight tracking-no-wrap">
                                     <span>{{data.TrackingNo}}</span>
+                                    <a ng-if="canSearchHctTrackingNo(data.TrackingNo)"
+                                       ng-href="{{getHctTrackingUrl(data.TrackingNo)}}"
+                                       target="_blank"
+                                       rel="noopener"
+                                       class="btn btn-sm btn-success ml-2 px-1 py-0"
+                                       title="查詢 HCT 貨態"
+                                       aria-label="查詢 HCT 貨態"
+                                       style="line-height: 1.2; min-width: 22px; font-weight: 600;">
+                                        查
+                                    </a>
                                     <a ng-if="data.HasTrackingNoSignReceipt"
                                        ng-href="{{getCargoReceiptUrl(data.TrackingNo)}}"
                                        target="_blank"
@@ -612,6 +622,16 @@
                                 <div class="detail-label">出庫單號：</div>
                                 <div class="detail-value">
                                     <span class="badge badge-custom badge-info">{{data.OutboundTrackingNo}}</span>
+                                    <a ng-if="canSearchHctTrackingNo(data.OutboundTrackingNo)"
+                                       ng-href="{{getHctTrackingUrl(data.OutboundTrackingNo)}}"
+                                       target="_blank"
+                                       rel="noopener"
+                                       class="btn btn-sm btn-success ml-2 px-1 py-0"
+                                       title="查詢 HCT 貨態"
+                                       aria-label="查詢 HCT 貨態"
+                                       style="line-height: 1.2; min-width: 22px; font-weight: 600;">
+                                        查
+                                    </a>
                                     <a ng-if="data.HasOutboundTrackingNoSignReceipt"
                                        ng-href="{{getCargoReceiptUrl(data.OutboundTrackingNo)}}"
                                        target="_blank"
