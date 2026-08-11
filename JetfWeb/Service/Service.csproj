@@ -720,7 +720,10 @@
     <Compile Include="Services\ReconciliationCustomer\Domain\ReconciliationCustomerQueryRequest.cs" />
     <Compile Include="Services\ReconciliationCustomer\Domain\ReconciliationCustomerQueryResult.cs" />
     <Compile Include="Services\ReconciliationCustomer\ReconciliationCustomerService.cs" />
+    <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsComparisonFeeMaster.cs" />
+    <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsFeeMasterLink.cs" />
     <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsFeeMasterMatch.cs" />
+    <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsFeeMasterCodMatch.cs" />
     <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsComparisonExportRow.cs" />
     <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsComparisonFileResult.cs" />
     <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsComparisonUpload.cs" />

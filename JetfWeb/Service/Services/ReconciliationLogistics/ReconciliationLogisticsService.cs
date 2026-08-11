@@ -494,53 +494,84 @@ namespace Service.Services.ReconciliationLogistics
             ReconciliationLogisticsUploadFormat uploadFormat)
         {
             var logistics = GetComparisonLogistics(uploadRows, company, uploadFormat);
-            var feeMasters = GetComparisonFeeMasters(uploadRows, uploadFormat);
-            var linkedFeeMasterIdsByLogisticsId =
-                new Dictionary<int, int>();
-            if (logistics.Any())
-            {
-                var logisticsIds = logistics.Select(x => x.Id).ToList();
-                var logisticsDetails = JetfDb.FeeMasterDetails
-                    .AsNoTracking()
-                    .Where(x => x.ReconciliationLogisticsId.HasValue)
-                    .WhereBulkContains(
-                        JetfDb,
-                        logisticsIds,
-                        x => x.ReconciliationLogisticsId,
-                        x => x)
-                    .Select(x => new
-                    {
-                        LogisticsId = x.ReconciliationLogisticsId.Value,
-                        x.FeeMasterId
-                    })
-                    .ToList();
-                foreach (var detail in logisticsDetails)
-                {
-                    if (!linkedFeeMasterIdsByLogisticsId.ContainsKey(detail.LogisticsId))
-                    {
-                        linkedFeeMasterIdsByLogisticsId.Add(
-                            detail.LogisticsId,
-                            detail.FeeMasterId);
-                    }
-                }
-            }
-
-            var feeMasterIds = linkedFeeMasterIdsByLogisticsId
+            var logisticsByUploadRow = uploadRows.ToDictionary(
+                uploadRow => uploadRow,
+                uploadRow => FindComparisonLogistics(
+                    uploadRow,
+                    logistics,
+                    uploadFormat));
+            var logisticsIds = logisticsByUploadRow
+                .Values
+                .Where(x => x != null)
+                .Select(x => x.Id)
+                .Distinct()
+                .ToList();
+            var feeMasterLinks = logisticsIds.Any()
+                ? GetComparisonFeeMasterLinks(logisticsIds)
+                : new List<ReconciliationLogisticsFeeMasterLink>();
+            var feeMasterIdByLogisticsId = feeMasterLinks
+                .Where(x => x.ReconciliationLogisticsId.HasValue)
+                .GroupBy(x => x.ReconciliationLogisticsId.Value)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.OrderBy(x => x.DetailId).First().FeeMasterId);
+            var linkedFeeMasterIds = feeMasterIdByLogisticsId
                 .Values
                 .Distinct()
                 .ToList();
-            var linkedFeeMasters = new List<FeeMasterEntity>();
-            if (feeMasterIds.Any())
-            {
-                linkedFeeMasters = JetfDb.FeeMasters
-                    .AsNoTracking()
-                    .Where(x => x.Download == "1")
-                    .WhereBulkContains(
-                        JetfDb,
-                        feeMasterIds,
-                        x => x.Id,
-                        x => x);
-            }
+            var linkedFeeMasters = linkedFeeMasterIds.Any()
+                ? GetComparisonFeeMastersByIds(linkedFeeMasterIds)
+                : new List<ReconciliationLogisticsComparisonFeeMaster>();
+            var linkedFeeMasterById = linkedFeeMasters
+                .ToDictionary(
+                    x => x.Id,
+                    x => x);
+            var linkedFeeMasterByLogisticsId = feeMasterIdByLogisticsId
+                .Where(x => linkedFeeMasterById.ContainsKey(x.Value))
+                .ToDictionary(
+                    x => x.Key,
+                    x => linkedFeeMasterById[x.Value]);
+            var logisticsIdsWithoutLinkedFeeMaster = logisticsIds
+                .Where(x => !linkedFeeMasterByLogisticsId.ContainsKey(x))
+                .ToList();
+            var linkedFeeMasterCods = logisticsIdsWithoutLinkedFeeMaster.Any()
+                ? GetComparisonFeeMasterCodsByLogisticsIds(
+                    logisticsIdsWithoutLinkedFeeMaster)
+                : new List<ReconciliationLogisticsFeeMasterCodMatch>();
+            var linkedFeeMasterCodByLogisticsId = linkedFeeMasterCods
+                .Where(x => x.ReconciliationLogisticsId.HasValue)
+                .GroupBy(x => x.ReconciliationLogisticsId.Value)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.OrderBy(x => x.Id).First());
+
+            // 已有物流銷帳關聯的資料直接使用關聯 Id，其餘資料才需要以單號查詢費用主檔。
+            var uploadRowsWithoutLinkedFee = uploadRows
+                .Where(uploadRow =>
+                {
+                    var logisticsRow = logisticsByUploadRow[uploadRow];
+                    return logisticsRow == null ||
+                           (!linkedFeeMasterByLogisticsId.ContainsKey(logisticsRow.Id) &&
+                            !linkedFeeMasterCodByLogisticsId.ContainsKey(logisticsRow.Id));
+                })
+                .ToList();
+            var feeMasters = uploadRowsWithoutLinkedFee.Any()
+                ? GetComparisonFeeMasters(uploadRowsWithoutLinkedFee, uploadFormat)
+                : new List<ReconciliationLogisticsComparisonFeeMaster>();
+            var feeMasterByUploadRow = uploadRowsWithoutLinkedFee.ToDictionary(
+                uploadRow => uploadRow,
+                uploadRow => FindComparisonFeeMaster(
+                    uploadRow,
+                    feeMasters,
+                    uploadFormat));
+
+            // 到付款只查詢費用主檔仍找不到的上傳資料，避免將整份上傳檔寫入 COD 批次暫存表。
+            var feeMasterCodUploadRows = uploadRowsWithoutLinkedFee
+                .Where(uploadRow => feeMasterByUploadRow[uploadRow] == null)
+                .ToList();
+            var feeMasterCods = feeMasterCodUploadRows.Any()
+                ? GetComparisonFeeMasterCods(feeMasterCodUploadRows, uploadFormat)
+                : new List<ReconciliationLogisticsFeeMasterCodMatch>();
 
             var airTrackingNos = linkedFeeMasters
                 .Concat(feeMasters)
@@ -572,45 +603,67 @@ namespace Service.Services.ReconciliationLogistics
             var rows = new List<ReconciliationLogisticsComparisonExportRow>();
             foreach (var uploadRow in uploadRows)
             {
-                var logisticsRow = FindComparisonLogistics(
-                    uploadRow,
-                    logistics,
-                    uploadFormat);
-                var feeMaster = FindComparisonFeeMaster(
-                    uploadRow,
-                    feeMasters,
-                    uploadFormat);
+                var logisticsRow = logisticsByUploadRow[uploadRow];
+                ReconciliationLogisticsComparisonFeeMaster feeMaster = null;
+                ReconciliationLogisticsFeeMasterCodMatch feeMasterCod = null;
                 if (logisticsRow != null)
                 {
-                    int linkedFeeMasterId;
-                    if (linkedFeeMasterIdsByLogisticsId.TryGetValue(
+                    linkedFeeMasterByLogisticsId.TryGetValue(
                         logisticsRow.Id,
-                        out linkedFeeMasterId))
+                        out feeMaster);
+                    if (feeMaster == null)
                     {
-                        feeMaster = linkedFeeMasters.FirstOrDefault(
-                            x => x.Id == linkedFeeMasterId) ?? feeMaster;
+                        linkedFeeMasterCodByLogisticsId.TryGetValue(
+                            logisticsRow.Id,
+                            out feeMasterCod);
                     }
                 }
+
+                // 沒有既有關聯時才依物流格式的單號規則進行備援比對。
+                if (feeMaster == null && feeMasterCod == null)
+                {
+                    feeMasterByUploadRow.TryGetValue(
+                        uploadRow,
+                        out feeMaster);
+                }
+                if (feeMaster == null && feeMasterCod == null)
+                {
+                    feeMasterCod = FindComparisonFeeMasterCod(
+                        uploadRow,
+                        feeMasterCods,
+                        uploadFormat);
+                }
+
+                var feeMasterCodCc = feeMasterCod == null
+                    ? (int?)null
+                    : decimal.ToInt32(feeMasterCod.Cc);
 
                 var row = new ReconciliationLogisticsComparisonExportRow
                 {
                     RepaymentDate = logisticsRow?.RepaymentDate,
-                    OutDateTime = feeMaster?.OutDateTime,
+                    OutDateTime = feeMaster?.OutDateTime ?? feeMasterCod?.SignOutTime,
                     Type = feeMaster?.Type,
-                    Customer = feeMaster?.Customer,
-                    BagNumber = feeMaster?.BagNumber,
-                    TrackingNo = feeMaster?.TrackingNo ?? uploadRow.TrackingNo,
-                    DlvInv = feeMaster?.DlvInv ?? uploadRow.DlvInv,
+                    Customer = feeMaster?.Customer ?? feeMasterCod?.Customer,
+                    BagNumber = feeMaster?.BagNumber ?? feeMasterCod?.BagNumber,
+                    TrackingNo = feeMaster?.TrackingNo ?? feeMasterCod?.TrackingNo ?? uploadRow.TrackingNo,
+                    DlvInv = feeMaster?.DlvInv ?? feeMasterCod?.DlvInv ?? uploadRow.DlvInv,
                     ReceivedAmount = logisticsRow?.ReceivedAmount,
-                    ToDlvCod = feeMaster == null || string.IsNullOrWhiteSpace(feeMaster.ToDlvCod)
-                        ? (int?)null
-                        : feeMaster.ToDlvCod.ToInt(),
+                    ToDlvCod = feeMaster == null
+                        ? feeMasterCodCc
+                        : string.IsNullOrWhiteSpace(feeMaster.ToDlvCod)
+                            ? (int?)null
+                            : feeMaster.ToDlvCod.ToInt(),
                     DifferenceAmount = logisticsRow?.DifferenceAmount,
                     TransCod = feeMaster?.TransCod,
                     Ccfee = feeMaster?.Ccfee,
-                    Cod = feeMaster?.Cod,
+                    Cod = feeMaster?.Cod ?? feeMasterCodCc,
                     Fee = feeMaster?.Fee,
-                    Source = feeMaster?.Source,
+                    Status = logisticsRow == null
+                        ? string.Empty
+                        : logisticsRow.Status.HasValue
+                            ? logisticsRow.Status.Value.ToDescription()
+                            : "未設定",
+                    Source = feeMaster?.Source ?? feeMasterCod?.DataType,
                     UploadedValues = rawRowsByRowNo.ContainsKey(uploadRow.RowNo)
                         ? rawRowsByRowNo[uploadRow.RowNo].Values
                         : new List<string>()
@@ -678,13 +731,14 @@ namespace Service.Services.ReconciliationLogistics
         /// <summary>
         /// 查詢符合物流檔案比對規則的費用主檔。
         /// </summary>
-        private List<FeeMasterEntity> GetComparisonFeeMasters(
+        private List<ReconciliationLogisticsComparisonFeeMaster> GetComparisonFeeMasters(
             IEnumerable<ReconciliationLogisticsUploadRow> uploadRows,
             ReconciliationLogisticsUploadFormat uploadFormat)
         {
             var query = JetfDb.FeeMasters
                 .AsNoTracking()
                 .Where(x => x.Download == "1");
+            var selectExpression = GetComparisonFeeMasterProjection();
             switch (uploadFormat)
             {
                 case ReconciliationLogisticsUploadFormat.TradeVan:
@@ -692,21 +746,162 @@ namespace Service.Services.ReconciliationLogistics
                         JetfDb,
                         uploadRows,
                         x => x.TrackingNo,
-                        x => x.TrackingNo);
+                        x => x.TrackingNo,
+                        selectExpression);
                 case ReconciliationLogisticsUploadFormat.SevenEleven:
                 case ReconciliationLogisticsUploadFormat.TaixinStar:
                     return query.WhereBulkContains(
                         JetfDb,
                         uploadRows,
                         x => new { x.TrackingNo, x.DlvInv },
-                        x => new { x.TrackingNo, x.DlvInv });
+                        x => new { x.TrackingNo, x.DlvInv },
+                        selectExpression);
                 default:
                     return query.WhereBulkContains(
                         JetfDb,
                         uploadRows,
                         x => x.DlvInv,
-                        x => x.DlvInv);
+                        x => x.DlvInv,
+                        selectExpression);
             }
+        }
+
+        /// <summary>
+        /// 依物流銷帳紀錄識別碼批次查詢費用明細關聯。
+        /// </summary>
+        private List<ReconciliationLogisticsFeeMasterLink> GetComparisonFeeMasterLinks(
+            IEnumerable<int> logisticsIds)
+        {
+            return JetfDb.FeeMasterDetails
+                .AsNoTracking()
+                .Where(x => x.ReconciliationLogisticsId.HasValue)
+                .WhereBulkContains(
+                    JetfDb,
+                    logisticsIds,
+                    x => x.ReconciliationLogisticsId,
+                    x => x,
+                    x => new ReconciliationLogisticsFeeMasterLink
+                    {
+                        DetailId = x.Id,
+                        FeeMasterId = x.FeeMasterId,
+                        ReconciliationLogisticsId = x.ReconciliationLogisticsId
+                    });
+        }
+
+        /// <summary>
+        /// 依費用主檔識別碼批次查詢比對明細所需的費用主檔。
+        /// </summary>
+        private List<ReconciliationLogisticsComparisonFeeMaster>
+            GetComparisonFeeMastersByIds(IEnumerable<int> feeMasterIds)
+        {
+            return JetfDb.FeeMasters
+                .AsNoTracking()
+                .Where(x => x.Download == "1")
+                .WhereBulkContains(
+                    JetfDb,
+                    feeMasterIds,
+                    x => x.Id,
+                    x => x,
+                    GetComparisonFeeMasterProjection());
+        }
+
+        /// <summary>
+        /// 建立物流銷帳比對明細所需的費用主檔欄位投影。
+        /// </summary>
+        private static System.Linq.Expressions.Expression<Func<FeeMasterEntity,
+            ReconciliationLogisticsComparisonFeeMaster>> GetComparisonFeeMasterProjection()
+        {
+            return x => new ReconciliationLogisticsComparisonFeeMaster
+            {
+                Id = x.Id,
+                Source = x.Source,
+                Type = x.Type,
+                Customer = x.Customer,
+                BagNumber = x.BagNumber,
+                TrackingNo = x.TrackingNo,
+                DlvInv = x.DlvInv,
+                OutDateTime = x.OutDateTime,
+                ToDlvCod = x.ToDlvCod,
+                TransCod = x.TransCod,
+                Ccfee = x.Ccfee,
+                Cod = x.Cod,
+                Fee = x.Fee,
+                TaxPayer = x.TaxPayer,
+                TaxRecId = x.TaxRecId
+            };
+        }
+
+        /// <summary>
+        /// 查詢符合物流檔案比對規則的到付款資料。
+        /// </summary>
+        private List<ReconciliationLogisticsFeeMasterCodMatch> GetComparisonFeeMasterCods(
+            IEnumerable<ReconciliationLogisticsUploadRow> uploadRows,
+            ReconciliationLogisticsUploadFormat uploadFormat)
+        {
+            var query = JetfDb.FeeMasterCods.AsNoTracking();
+            var selectExpression = GetComparisonFeeMasterCodProjection();
+            switch (uploadFormat)
+            {
+                case ReconciliationLogisticsUploadFormat.TradeVan:
+                    return query.WhereBulkContains(
+                        JetfDb,
+                        uploadRows,
+                        x => x.TrackingNo,
+                        x => x.TrackingNo,
+                        selectExpression);
+                case ReconciliationLogisticsUploadFormat.SevenEleven:
+                case ReconciliationLogisticsUploadFormat.TaixinStar:
+                    return query.WhereBulkContains(
+                        JetfDb,
+                        uploadRows,
+                        x => new { x.TrackingNo, x.DlvInv },
+                        x => new { x.TrackingNo, x.DlvInv },
+                        selectExpression);
+                default:
+                    return query.WhereBulkContains(
+                        JetfDb,
+                        uploadRows,
+                        x => x.DlvInv,
+                        x => x.DlvInv,
+                        selectExpression);
+            }
+        }
+
+        /// <summary>
+        /// 依物流銷帳紀錄識別碼批次查詢已關聯的到付款資料。
+        /// </summary>
+        private List<ReconciliationLogisticsFeeMasterCodMatch>
+            GetComparisonFeeMasterCodsByLogisticsIds(IEnumerable<int> logisticsIds)
+        {
+            return JetfDb.FeeMasterCods
+                .AsNoTracking()
+                .Where(x => x.ReconciliationLogisticsId.HasValue)
+                .WhereBulkContains(
+                    JetfDb,
+                    logisticsIds,
+                    x => x.ReconciliationLogisticsId,
+                    x => x,
+                    GetComparisonFeeMasterCodProjection());
+        }
+
+        /// <summary>
+        /// 建立物流銷帳比對明細所需的到付款欄位投影。
+        /// </summary>
+        private static System.Linq.Expressions.Expression<Func<FeeMasterCodEntity,
+            ReconciliationLogisticsFeeMasterCodMatch>> GetComparisonFeeMasterCodProjection()
+        {
+            return x => new ReconciliationLogisticsFeeMasterCodMatch
+            {
+                Id = x.Id,
+                DataType = x.DataType,
+                Customer = x.Customer,
+                BagNumber = x.BagNumber,
+                TrackingNo = x.TrackingNo,
+                DlvInv = x.DlvInv,
+                Cc = x.Cc,
+                SignOutTime = x.SignOutTime,
+                ReconciliationLogisticsId = x.ReconciliationLogisticsId
+            };
         }
 
         /// <summary>
@@ -747,9 +942,9 @@ namespace Service.Services.ReconciliationLogistics
         /// <summary>
         /// 依物流公司檔案規則取得單筆費用主檔。
         /// </summary>
-        private static FeeMasterEntity FindComparisonFeeMaster(
+        private static ReconciliationLogisticsComparisonFeeMaster FindComparisonFeeMaster(
             ReconciliationLogisticsUploadRow uploadRow,
-            IEnumerable<FeeMasterEntity> feeMasters,
+            IEnumerable<ReconciliationLogisticsComparisonFeeMaster> feeMasters,
             ReconciliationLogisticsUploadFormat uploadFormat)
         {
             var candidates = feeMasters.Where(x => IsSameComparisonKey(
@@ -761,6 +956,41 @@ namespace Service.Services.ReconciliationLogistics
             if (IsHctUploadFormat(uploadFormat))
             {
                 var primaryMatches = feeMasters.Where(x => string.Equals(
+                    (x.DlvInv ?? string.Empty).Trim(),
+                    (uploadRow.DlvInv ?? string.Empty).Trim(),
+                    StringComparison.OrdinalIgnoreCase));
+                if (primaryMatches.Count() > 1 &&
+                    !string.IsNullOrWhiteSpace(uploadRow.TrackingNo))
+                {
+                    candidates = primaryMatches.Where(x => string.Equals(
+                        (x.TrackingNo ?? string.Empty).Trim(),
+                        uploadRow.TrackingNo.Trim(),
+                        StringComparison.OrdinalIgnoreCase));
+                }
+            }
+
+            return candidates
+                .OrderBy(x => x.Id)
+                .FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 依物流公司檔案規則取得單筆到付款資料。
+        /// </summary>
+        private static ReconciliationLogisticsFeeMasterCodMatch FindComparisonFeeMasterCod(
+            ReconciliationLogisticsUploadRow uploadRow,
+            IEnumerable<ReconciliationLogisticsFeeMasterCodMatch> feeMasterCods,
+            ReconciliationLogisticsUploadFormat uploadFormat)
+        {
+            var candidates = feeMasterCods.Where(x => IsSameComparisonKey(
+                x.TrackingNo,
+                x.DlvInv,
+                uploadRow.TrackingNo,
+                uploadRow.DlvInv,
+                uploadFormat));
+            if (IsHctUploadFormat(uploadFormat))
+            {
+                var primaryMatches = feeMasterCods.Where(x => string.Equals(
                     (x.DlvInv ?? string.Empty).Trim(),
                     (uploadRow.DlvInv ?? string.Empty).Trim(),
                     StringComparison.OrdinalIgnoreCase));
@@ -829,7 +1059,7 @@ namespace Service.Services.ReconciliationLogistics
                 {
                     "回款日期", "出倉時間", "報關類別", "客戶", "清關袋號", "分提單號",
                     "物流貨號", "物流回款金額", "捷豐應收總計", "差異金額", "跟派件收",
-                    "報關費", "到付款", "手續費", "納稅義務人", "納稅義務人身分證號",
+                    "報關費", "到付款", "手續費", "狀態", "納稅義務人", "納稅義務人身分證號",
                     "資料來源(倉別)"
                 };
                 var allHeaders = headers.Concat(uploadedHeaders ?? new List<string>()).ToArray();
@@ -854,6 +1084,7 @@ namespace Service.Services.ReconciliationLogistics
                     NpoiCell.CreateIntCell(excelRow, column++, item.Ccfee, numberStyle);
                     NpoiCell.CreateIntCell(excelRow, column++, item.Cod, numberStyle);
                     NpoiCell.CreateIntCell(excelRow, column++, item.Fee, numberStyle);
+                    NpoiCell.CreateCell(excelRow, column++, item.Status, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.TaxPayer, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.TaxRecId, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.Source, dataStyle);

@@ -50,6 +50,9 @@ namespace Service.Services.ReconciliationLogistics.Domain
         /// <summary>手續費。</summary>
         public int? Fee { get; set; }
 
+        /// <summary>物流銷帳比對狀態。</summary>
+        public string Status { get; set; }
+
         /// <summary>納稅義務人。</summary>
         public string TaxPayer { get; set; }
 
