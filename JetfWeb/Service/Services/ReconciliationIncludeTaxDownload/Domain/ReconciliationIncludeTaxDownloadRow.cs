@@ -68,6 +68,11 @@ namespace Service.Services.ReconciliationIncludeTaxDownload.Domain
         public string TaxPayer { get; set; }
 
         /// <summary>
+        /// 原單納稅義務人。
+        /// </summary>
+        public string OriginalTaxPayer { get; set; }
+
+        /// <summary>
         /// 稅金。
         /// </summary>
         public int? Tax { get; set; }

@@ -16,6 +16,12 @@ namespace Service.EnumTax
         FeeMaster_OutDateTime,
 
         /// <summary>
+        /// 費用主檔資料來源。
+        /// </summary>
+        [Description("資料來源")]
+        FeeMaster_Source,
+
+        /// <summary>
         /// 費用主檔報關類別。
         /// </summary>
         [Description("報關類別")]
@@ -68,6 +74,12 @@ namespace Service.EnumTax
         /// </summary>
         [Description("納稅義務人")]
         FeeMasterDetail_TaxPayer,
+
+        /// <summary>
+        /// 費用明細原單納稅義務人。
+        /// </summary>
+        [Description("原單納稅義務人")]
+        FeeMasterDetail_Recipient,
 
         /// <summary>
         /// 費用明細稅金。

@@ -429,6 +429,7 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
                     TrackingNo = detail.TrackingNo,
                     DlvInv = detail.DlvInv,
                     TaxPayer = detail.TaxPayer,
+                    OriginalTaxPayer = detail.Recipient,
                     Tax = detail.Tax,
                     TaxBase = detail.TaxBase,
                     Ccfee = detail.Ccfee
@@ -559,6 +560,8 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
             {
                 case ReconciliationIncludeTaxField.FeeMaster_OutDateTime:
                     return row.OutDateTime.HasValue ? row.OutDateTime.Value.ToString("yyyy/MM/dd") : string.Empty;
+                case ReconciliationIncludeTaxField.FeeMaster_Source:
+                    return row.Source ?? string.Empty;
                 case ReconciliationIncludeTaxField.FeeMaster_Type:
                     return row.Type ?? string.Empty;
                 case ReconciliationIncludeTaxField.FeeMaster_Customer:
@@ -577,6 +580,8 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
                     return row.DlvInv ?? string.Empty;
                 case ReconciliationIncludeTaxField.FeeMasterDetail_TaxPayer:
                     return row.TaxPayer ?? string.Empty;
+                case ReconciliationIncludeTaxField.FeeMasterDetail_Recipient:
+                    return row.OriginalTaxPayer ?? string.Empty;
                 case ReconciliationIncludeTaxField.FeeMasterDetail_Tax:
                     return row.Tax;
                 case ReconciliationIncludeTaxField.FeeMasterDetail_TaxBase:
