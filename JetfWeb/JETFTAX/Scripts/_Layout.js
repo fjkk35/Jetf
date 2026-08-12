@@ -11,7 +11,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
             id: 'tax', title: '稅金操作', icon: 'fas fa-fw fa-file-invoice-dollar', partner: 'Tax', children: [
                 //{ id: 'Seatax', text: '1-1.海運稅金資料上傳', url: '~/Upload/Seatax', auth: ['UploadSeaTax'] },
                 { id: 'SeaTaxUploadNew', text: '1-1.海運稅金資料上傳', url: '~/SeaTaxUpload/Index', auth: ['UploadSeaTax'] },
-                { id: 'SeataxG', text: '2-1.G類資料上傳', url: '~/Upload/SeataxG', auth: ['UploadSeaTaxG'] },
+                { id: 'SeataxG', text: '2-1.G類資料上傳', url: '~/SeaTaxGUpload/Index', auth: ['UploadSeaTaxG'] },
                 //{ id: 'DownloadSea', text: '3-1.物流代收檔下載-海運', url: '~/Download/DownloadSea', auth: ['DownloadSeaTax'] },
                 { id: 'DownloadSeaNew', text: '3-1.物流代收檔下載-海運', url: '~/DownloadSeaNew/Index', auth: ['DownloadSeaTax'] },
                 { id: 'CainiaoSevenElevenSeaTax', text: '3-1-1.菜鳥7-11海運稅金', url: '~/CainiaoSevenElevenSeaTax/Index', auth: ['CainiaoSevenElevenSeaTax'] },

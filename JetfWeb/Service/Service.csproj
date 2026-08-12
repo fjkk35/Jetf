@@ -922,6 +922,8 @@
     <Compile Include="Services\SeaTaxUpload\SeaTaxUploadJoinedRow.cs" />
     <Compile Include="Services\SeaTaxUpload\SeaTaxUploadService.cs" />
     <Compile Include="Services\SeaTaxUpload\UploadKey.cs" />
+    <Compile Include="Services\SeaTaxGUpload\SeaTaxGUploadRow.cs" />
+    <Compile Include="Services\SeaTaxGUpload\SeaTaxGUploadService.cs" />
     <Compile Include="Services\UploadService.cs" />
     <Compile Include="Services\UserContextService.cs" />
     <Compile Include="Services\UserMaster\Domain\UserMasterDto.cs" />
