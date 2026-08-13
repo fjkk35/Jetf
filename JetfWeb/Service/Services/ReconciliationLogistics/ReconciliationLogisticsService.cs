@@ -690,7 +690,37 @@ namespace Service.Services.ReconciliationLogistics
                 rows.Add(row);
             }
 
+            SetComparisonCustomerNames(rows);
             return rows;
+        }
+
+        /// <summary>
+        /// 將比對明細的客戶代號轉換為 Excel 顯示用的客戶名稱。
+        /// </summary>
+        /// <param name="rows">比對明細匯出資料列。</param>
+        private void SetComparisonCustomerNames(
+            IList<ReconciliationLogisticsComparisonExportRow> rows)
+        {
+            var customerCodes = rows
+                .Select(x => x.Customer)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+            var seaCustomerNames = GetSeaCustomerNames(customerCodes);
+            var airCustomerNames = GetAirCustomerNames(customerCodes);
+
+            foreach (var row in rows)
+            {
+                var customerCode = row.Customer ?? string.Empty;
+                var customerNames = IsReconciliationAirSource(row.Source)
+                    ? airCustomerNames
+                    : seaCustomerNames;
+                row.CustomerName = customerNames.TryGetValue(
+                    customerCode,
+                    out var customerName)
+                    ? customerName
+                    : customerCode;
+            }
         }
 
         /// <summary>
@@ -1073,7 +1103,11 @@ namespace Service.Services.ReconciliationLogistics
                     NpoiCell.CreateDateTimeCell(excelRow, column++, item.RepaymentDate, dateOnlyStyle);
                     NpoiCell.CreateDateTimeCell(excelRow, column++, item.OutDateTime, dateStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.Type, dataStyle);
-                    NpoiCell.CreateCell(excelRow, column++, item.Customer, dataStyle);
+                    NpoiCell.CreateCell(
+                        excelRow,
+                        column++,
+                        item.CustomerName ?? item.Customer,
+                        dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.BagNumber, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.TrackingNo, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.DlvInv, dataStyle);

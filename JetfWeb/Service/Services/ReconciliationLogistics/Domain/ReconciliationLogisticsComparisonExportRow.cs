@@ -20,6 +20,9 @@ namespace Service.Services.ReconciliationLogistics.Domain
         /// <summary>客戶代號。</summary>
         public string Customer { get; set; }
 
+        /// <summary>匯出 Excel 顯示的客戶名稱。</summary>
+        public string CustomerName { get; set; }
+
         /// <summary>清關袋號。</summary>
         public string BagNumber { get; set; }
 
