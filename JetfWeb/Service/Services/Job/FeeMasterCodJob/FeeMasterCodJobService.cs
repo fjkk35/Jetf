@@ -34,8 +34,9 @@ namespace Service.Services.Job.FeeMasterCodJob
 
         /// <summary>
         /// 依系統時間查詢前三個完整日，每次只處理一天的空運及海運到付款資料。
-        /// 已存在 CLEARANCE_TAX 的資料不會寫入。
-        /// 空運主號與追蹤號、海運主號與分提單號已存在時不會再次寫入。
+        /// 空運已存在 CLEARANCE_TAX 的資料不會寫入。
+        /// 海運僅在當日已有來源為 1 的 FEE_MASTER 時處理，且物流貨號已存在 FEE_MASTER 時不會寫入。
+        /// 空運主號與追蹤號、海運主號與分提單號已存在 FEE_MASTER_COD 時不會再次寫入。
         /// </summary>
         /// <returns>非同步排程工作。</returns>
         public async Task RunFeeMasterCodJobAsync()
@@ -74,9 +75,29 @@ namespace Service.Services.Job.FeeMasterCodJob
             airQueryRows.Clear();
             airRows.Clear();
 
+            if (!await HasSeaFeeMasterRowsAsync(startTime))
+            {
+                Logger.Info($"{JobName}略過海運，FEE_MASTER 無符合資料，資料日期={startTime:yyyyMMdd}");
+                return;
+            }
+
             var seaQueryRows = await QuerySeaRowsAsync(startTime, endTime);
             var seaRows = DeduplicateSeaRows(seaQueryRows);
             SaveSeaRows(seaRows);
+        }
+
+        /// <summary>
+        /// 檢查指定資料日期是否至少有一筆來源為 1 的 FEE_MASTER。
+        /// </summary>
+        /// <param name="dataDate">待處理的資料日期。</param>
+        /// <returns>是否可執行海運到付款資料寫入。</returns>
+        private Task<bool> HasSeaFeeMasterRowsAsync(DateTime dataDate)
+        {
+            var formattedDataDate = dataDate.ToString("yyyyMMdd");
+
+            return JetfDb.FeeMasters
+                .AsNoTracking()
+                .AnyAsync(x => x.DataDate == formattedDataDate && x.Source == "1");
         }
 
         /// <summary>
@@ -163,7 +184,7 @@ WHERE c.DATA_TYPE IN ('tact', 'ftz')
         }
 
         /// <summary>
-        /// 查詢指定時間區間內尚無稅金資料的海運到付款資料。
+        /// 查詢指定時間區間內，物流貨號尚未存在 FEE_MASTER 的海運到付款資料。
         /// </summary>
         /// <param name="startTime">當日起始時間（含）。</param>
         /// <param name="endTime">隔日起始時間（不含）。</param>
@@ -191,9 +212,8 @@ WHERE c.DATA_TYPE IS NOT NULL
   AND NOT EXISTS
       (
           SELECT 1
-          FROM DATA_CENTER.dbo.CLEARANCE_TAX AS tax
-          WHERE tax.MAIN_NUMBER = sea.MAINNUMBER
-            AND tax.BAG_NUMBER = sea.BL_NO
+          FROM [jetf].[dbo].[FEE_MASTER] AS fee
+          WHERE fee.DLV_INV = sea.JETF_SERIAL
       );";
 
             return (await conn.QueryAsync<FeeMasterCodSourceRow>(
