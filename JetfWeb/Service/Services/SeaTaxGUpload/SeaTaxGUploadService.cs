@@ -176,21 +176,20 @@ namespace Service.Services.SeaTaxGUpload
                 CustomerName = excelRow.GetCellData(columnIndexes["客戶"])
             };
 
-            var deliveryAmount =
-                uploadRow.ClearanceFee +
-                uploadRow.Cod +
-                uploadRow.Fee;
-
             if (uploadRow.IncludeTax == "C")
             {
-                // C 類別的稅金向客戶收取，物流代收金額不包含稅金，派送端代收金額維持為 0。
-                uploadRow.ToDlvCod = deliveryAmount;
-                uploadRow.CustomerCod = uploadRow.Tax;
+                // C 類別：TO_DLV_COD 為到付款加手續費，CUSTOMER_COD 為稅金加報關費，TRANS_COD 為 0。
+                uploadRow.ToDlvCod = uploadRow.Cod + uploadRow.Fee;
+                uploadRow.CustomerCod = uploadRow.Tax + uploadRow.ClearanceFee;
             }
             else
             {
                 // 非 C 類別由物流及派送端代收稅金，客戶代收金額維持為空值。
-                uploadRow.ToDlvCod = deliveryAmount + uploadRow.Tax;
+                uploadRow.ToDlvCod =
+                    uploadRow.ClearanceFee +
+                    uploadRow.Cod +
+                    uploadRow.Fee +
+                    uploadRow.Tax;
                 uploadRow.TransCod = uploadRow.Tax;
             }
 
@@ -317,6 +316,11 @@ namespace Service.Services.SeaTaxGUpload
                 if (string.IsNullOrWhiteSpace(row.DlvInv))
                 {
                     missingFields.Add("派送單號");
+                }
+
+                if (string.IsNullOrWhiteSpace(row.IncludeTax))
+                {
+                    missingFields.Add("稅金類別");
                 }
 
                 if (string.IsNullOrWhiteSpace(row.CustomerName))
