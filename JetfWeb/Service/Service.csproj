@@ -732,6 +732,7 @@
     <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsQueryRequest.cs" />
     <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsQueryResponse.cs" />
     <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsResultItem.cs" />
+    <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsRetryRequest.cs" />
     <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsUploadResult.cs" />
     <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsUploadRow.cs" />
     <Compile Include="Services\ReconciliationLogistics\ReconciliationLogisticsService.cs" />

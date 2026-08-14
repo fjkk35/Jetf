@@ -225,6 +225,41 @@ namespace JETFTAX.Controllers
         }
 
         /// <summary>
+        /// 重新銷帳指定日期區間內查無物流貨號的資料。
+        /// </summary>
+        /// <param name="request">日期區間及物流公司條件。</param>
+        /// <returns>重新銷帳統計結果。</returns>
+        [HttpPost]
+        [UserAuthorize(Authority.ReconciliationLogistics)]
+        public JsonResult RetryNotFound(
+            ReconciliationLogisticsRetryRequest request)
+        {
+            var responseModel = new ResponseModel();
+            if (!UploadSemaphore.Wait(0))
+            {
+                responseModel.status = Status.error;
+                responseModel.msg =
+                    $"[{UploadExecutingUserId}]正在執行物流銷帳，請等待執行完成後再試";
+                return Json(responseModel);
+            }
+
+            try
+            {
+                UploadExecutingUserId = UserContextService.GetUserId();
+                return Json(_service.RetryFeeMasterNotFound(request));
+            }
+            catch (Exception ex)
+            {
+                return Json(new ResponseModel($"重新銷帳失敗：{ex.GetBaseException().Message}"));
+            }
+            finally
+            {
+                UploadExecutingUserId = string.Empty;
+                UploadSemaphore.Release();
+            }
+        }
+
+        /// <summary>
         /// 上傳物流檔案並產生比對明細 Excel，不會寫入銷帳資料。
         /// </summary>
         /// <param name="file">物流上傳檔案。</param>

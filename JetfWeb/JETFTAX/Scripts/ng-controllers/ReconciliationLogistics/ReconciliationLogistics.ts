@@ -72,6 +72,13 @@ interface ReconciliationLogisticsUploadSummary {
     UpdatedDetailCount: number;
 }
 
+interface ReconciliationLogisticsRetrySummary {
+    Count: number;
+    UpdatedCount: number;
+    UnmatchedCount: number;
+    Message: string;
+}
+
 interface ReconciliationLogisticsComparisonFileResult {
     FileGuid: string;
     FileName: string;
@@ -93,10 +100,17 @@ interface ReconciliationLogisticsScope extends ng.IScope {
     comparisonForm: {
         company: string;
     };
+    retryForm: {
+        repaymentDateStart: Date | null;
+        repaymentDateEnd: Date | null;
+        company: string;
+    };
     dateOptions: any;
     searchStartDatePopup: { opened: boolean };
     searchEndDatePopup: { opened: boolean };
     uploadDatePopup: { opened: boolean };
+    retryStartDatePopup: { opened: boolean };
+    retryEndDatePopup: { opened: boolean };
     companies: ReconciliationLogisticsCompanyOption[];
     statuses: ReconciliationLogisticsStatusOption[];
     acceptedFileExtension: string;
@@ -128,10 +142,14 @@ interface ReconciliationLogisticsScope extends ng.IScope {
         fileGuid: string;
         fileName: string;
     } | null;
+    retrying: boolean;
+    retrySummary: ReconciliationLogisticsRetrySummary | null;
     init: () => void;
     openSearchStartDatePopup: () => void;
     openSearchEndDatePopup: () => void;
     openUploadDatePopup: () => void;
+    openRetryStartDatePopup: () => void;
+    openRetryEndDatePopup: () => void;
     search: () => void;
     clearSearch: () => void;
     changePageSize: () => void;
@@ -145,6 +163,8 @@ interface ReconciliationLogisticsScope extends ng.IScope {
     openComparisonModal: () => void;
     compareDetail: () => void;
     downloadComparisonExcel: () => void;
+    openRetryModal: () => void;
+    retryReconcile: () => void;
 }
 
 mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', function (
@@ -186,6 +206,21 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
 
         if (moment($scope.searchForm.repaymentDateStart)
             .isAfter($scope.searchForm.repaymentDateEnd, 'day')) {
+            showError('開始日期不可晚於結束日期');
+            return false;
+        }
+
+        return true;
+    }
+
+    function validateRetryDates(): boolean {
+        if (!$scope.retryForm.repaymentDateStart || !$scope.retryForm.repaymentDateEnd) {
+            showError('回款日期為必填，請選擇開始日期與結束日期');
+            return false;
+        }
+
+        if (moment($scope.retryForm.repaymentDateStart)
+            .isAfter($scope.retryForm.repaymentDateEnd, 'day')) {
             showError('開始日期不可晚於結束日期');
             return false;
         }
@@ -365,6 +400,11 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
     $scope.comparisonForm = {
         company: ''
     };
+    $scope.retryForm = {
+        repaymentDateStart: today(),
+        repaymentDateEnd: today(),
+        company: ''
+    };
     $scope.dateOptions = {
         startingDay: 1,
         showWeeks: false
@@ -372,6 +412,8 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
     $scope.searchStartDatePopup = { opened: false };
     $scope.searchEndDatePopup = { opened: false };
     $scope.uploadDatePopup = { opened: false };
+    $scope.retryStartDatePopup = { opened: false };
+    $scope.retryEndDatePopup = { opened: false };
     $scope.companies = [];
     $scope.statuses = [];
     $scope.acceptedFileExtension = '.xlsx,.csv';
@@ -394,6 +436,8 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
     $scope.comparisonAcceptedFileExtension = '.xlsx,.csv';
     $scope.comparing = false;
     $scope.comparisonDownloadInfo = null;
+    $scope.retrying = false;
+    $scope.retrySummary = null;
 
     $scope.init = function (): void {
         angular.element('#ReconciliationLogistics').addClass('active');
@@ -410,6 +454,14 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
 
     $scope.openUploadDatePopup = function (): void {
         $scope.uploadDatePopup.opened = true;
+    };
+
+    $scope.openRetryStartDatePopup = function (): void {
+        $scope.retryStartDatePopup.opened = true;
+    };
+
+    $scope.openRetryEndDatePopup = function (): void {
+        $scope.retryEndDatePopup.opened = true;
     };
 
     $scope.search = function (): void {
@@ -612,6 +664,75 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    $scope.openRetryModal = function (): void {
+        $scope.retryForm = {
+            repaymentDateStart: $scope.searchForm.repaymentDateStart || today(),
+            repaymentDateEnd: $scope.searchForm.repaymentDateEnd || today(),
+            company: ''
+        };
+        $scope.retryStartDatePopup.opened = false;
+        $scope.retryEndDatePopup.opened = false;
+        $scope.retrying = false;
+        $scope.retrySummary = null;
+
+        $('#reconciliationLogisticsRetryModal').modal({
+            backdrop: true,
+            keyboard: false,
+            show: true
+        });
+    };
+
+    $scope.retryReconcile = function (): void {
+        if (!validateRetryDates()) {
+            return;
+        }
+
+        if (!$scope.retryForm.company) {
+            showError('請選擇物流公司');
+            return;
+        }
+
+        $scope.retrying = true;
+        $scope.retrySummary = null;
+        $http.post(Router.action('ReconciliationLogistics', 'RetryNotFound'), {
+            RepaymentDateStart: formatDate($scope.retryForm.repaymentDateStart),
+            RepaymentDateEnd: formatDate($scope.retryForm.repaymentDateEnd),
+            Company: parseNullableNumber($scope.retryForm.company)
+        }).then(function (
+            response: ng.IHttpResponse<ApiResponse<ReconciliationLogisticsUploadResult>>
+        ): void {
+            if (redirectIfNeeded(response.data)) {
+                return;
+            }
+
+            if (response.data.status === 'error' || !response.data.ReturnObject) {
+                showError(response.data.msg || '重新銷帳失敗');
+                return;
+            }
+
+            var result = response.data.ReturnObject;
+            $scope.retrySummary = {
+                Count: result.Count || 0,
+                UpdatedCount: result.UpdatedCount || 0,
+                UnmatchedCount: result.UnmatchedCount || 0,
+                Message: result.Message || response.data.msg || '重新銷帳完成'
+            };
+            swal({
+                title: '完成',
+                text: $scope.retrySummary.Message,
+                icon: 'success'
+            });
+
+            if ($scope.isSearched) {
+                loadData();
+            }
+        }).catch(function (): void {
+            showError('重新銷帳失敗，請稍後再試');
+        }).finally(function (): void {
+            $scope.retrying = false;
+        });
     };
 
     $scope.$watch('uploadForm.company', function (

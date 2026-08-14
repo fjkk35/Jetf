@@ -152,6 +152,12 @@
                         ng-disabled="loading || uploading || comparing || optionsLoading">
                     <i class="fa fa-file-excel-o"></i> 比對明細
                 </button>
+                <button type="button"
+                        class="btn btn-success ml-2"
+                        ng-click="openRetryModal()"
+                        ng-disabled="loading || uploading || comparing || retrying || optionsLoading">
+                    <i class="fa fa-refresh"></i> 重新銷帳
+                </button>
             </div>
         </div>
     </div>
@@ -489,6 +495,109 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade reconciliation-logistics-upload-modal reconciliation-logistics-retry-modal"
+         id="reconciliationLogisticsRetryModal"
+         tabindex="-1"
+         role="dialog"
+         data-keyboard="false">
+        <div class="modal-dialog modal-md" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">重新銷帳</h5>
+                    <button type="button"
+                            class="close"
+                            data-dismiss="modal"
+                            ng-disabled="retrying"
+                            aria-label="關閉">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group row">
+                        <label class="col-lg-3 col-md-4 col-form-label text-right">回款日期(起)</label>
+                        <div class="col-lg-7 col-md-8">
+                            <input type="text"
+                                   class="datepicker-input form-control"
+                                   ng-model="retryForm.repaymentDateStart"
+                                   uib-datepicker-popup="yyyy-MM-dd"
+                                   datepicker-options="dateOptions"
+                                   is-open="retryStartDatePopup.opened"
+                                   ng-click="openRetryStartDatePopup()"
+                                   close-text="關閉"
+                                   current-text="今天"
+                                   show-button-bar="false"
+                                   readonly
+                                   placeholder="開始日期" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-lg-3 col-md-4 col-form-label text-right">回款日期(迄)</label>
+                        <div class="col-lg-7 col-md-8">
+                            <input type="text"
+                                   class="datepicker-input form-control"
+                                   ng-model="retryForm.repaymentDateEnd"
+                                   uib-datepicker-popup="yyyy-MM-dd"
+                                   datepicker-options="dateOptions"
+                                   is-open="retryEndDatePopup.opened"
+                                   ng-click="openRetryEndDatePopup()"
+                                   close-text="關閉"
+                                   current-text="今天"
+                                   show-button-bar="false"
+                                   readonly
+                                   placeholder="結束日期" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-lg-3 col-md-4 col-form-label text-right">物流公司</label>
+                        <div class="col-lg-7 col-md-8">
+                            <select class="form-control"
+                                    ng-model="retryForm.company"
+                                    ng-disabled="optionsLoading || retrying">
+                                <option value="">請選擇</option>
+                                <option ng-repeat="item in companies track by item.Value"
+                                        value="{{item.Value}}">{{item.Text}}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="loader loader-bar"
+                         ng-if="retrying"
+                         ng-class="{'is-active': retrying}"
+                         data-rounded
+                         data-text="重新銷帳中"></div>
+
+                    <div class="mt-3" ng-if="retrySummary">
+                        <div class="alert alert-info">{{retrySummary.Message}}</div>
+                        <div class="reconciliation-logistics-summary">
+                            <div class="reconciliation-logistics-summary-card summary-source">
+                                <span class="label">全部筆數</span>
+                                <span class="value">{{retrySummary.Count}}</span>
+                            </div>
+                            <div class="reconciliation-logistics-summary-card summary-created">
+                                <span class="label">成功筆數</span>
+                                <span class="value">{{retrySummary.UpdatedCount}}</span>
+                            </div>
+                            <div class="reconciliation-logistics-summary-card summary-exception">
+                                <span class="label">未匹配筆數</span>
+                                <span class="value">{{retrySummary.UnmatchedCount}}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-success"
+                            ng-click="retryReconcile()"
+                            ng-disabled="retrying || optionsLoading">
+                        <i class="fa"
+                           ng-class="retrying ? 'fa-spinner fa-spin' : 'fa-refresh'"></i>
+                        {{retrying ? '銷帳中...' : '銷帳'}}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -529,6 +638,21 @@
     }
 
     .reconciliation-logistics-comparison-modal .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .reconciliation-logistics-retry-modal .modal-dialog {
+        max-width: 720px;
+    }
+
+    .reconciliation-logistics-retry-modal .modal-body {
+        height: auto;
+        max-height: none;
+        overflow-y: visible;
+        padding: 1.25rem 1.5rem 0.5rem;
+    }
+
+    .reconciliation-logistics-retry-modal .form-group {
         margin-bottom: 1rem;
     }
 

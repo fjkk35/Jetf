@@ -268,6 +268,118 @@ namespace Service.Services.ReconciliationLogistics
         }
 
         /// <summary>
+        /// 重新比對指定日期區間內查無物流貨號的銷帳資料。
+        /// </summary>
+        /// <param name="request">日期區間及物流公司條件。</param>
+        /// <returns>重新銷帳統計結果。</returns>
+        public ResponseModel RetryFeeMasterNotFound(
+            ReconciliationLogisticsRetryRequest request)
+        {
+            try
+            {
+                var startDate = request?.RepaymentDateStart?.Date;
+                var endDate = request?.RepaymentDateEnd?.Date;
+                if (!startDate.HasValue || !endDate.HasValue)
+                {
+                    return new ResponseModel("回款日期為必填，請選擇開始日期與結束日期");
+                }
+
+                if (startDate.Value > endDate.Value)
+                {
+                    return new ResponseModel("開始日期不可晚於結束日期");
+                }
+
+                if (request == null ||
+                    !request.Company.HasValue ||
+                    !Enum.IsDefined(
+                        typeof(ReconciliationLogisticsCompany),
+                        request.Company.Value))
+                {
+                    return new ResponseModel("請選擇物流公司");
+                }
+
+                var currentUserId = GetUserId();
+
+                var endDateExclusive = endDate.Value.AddDays(1);
+                var company = request.Company.Value;
+                var entities = JetfDb.ReconciliationLogistics
+                    .Where(x =>
+                        x.Company == company &&
+                        x.Status == ReconciliationLogisticsResultStatus.FeeMasterNotFound &&
+                        x.RepaymentDate >= startDate.Value &&
+                        x.RepaymentDate < endDateExclusive)
+                    .OrderBy(x => x.RepaymentDate)
+                    .ThenBy(x => x.Id)
+                    .ToList();
+                var result = new ReconciliationLogisticsUploadResult
+                {
+                    Count = entities.Count,
+                    Data = new List<ReconciliationLogisticsUploadRow>(),
+                    Results = new List<ReconciliationLogisticsResultItem>()
+                };
+
+                if (!entities.Any())
+                {
+                    result.Message = "查無符合條件的查無物流貨號資料";
+                    return new ResponseModel
+                    {
+                        IsSuccess = true,
+                        status = Status.success,
+                        msg = result.Message,
+                        ReturnObject = result
+                    };
+                }
+
+                using (var transaction = JetfDb.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        // 沿用批量上傳的共用比對與銷帳邏輯，並更新既有的物流銷帳紀錄。
+                        var retryResult = MatchAndApplyReceivedAmounts(
+                            entities,
+                            GetRetryUploadFormat(company),
+                            currentUserId,
+                            false);
+
+                        // 依物流銷帳紀錄是否成功連結 FEE_MASTER 或 FEE_MASTER_COD 統計結果。
+                        var updatedCount = entities.Count(x => x.IsFeeMaster || x.IsFeeMasterCod);
+                        retryResult.Count = entities.Count;
+                        retryResult.UpdatedCount = updatedCount;
+                        retryResult.UnmatchedCount = retryResult.Count - updatedCount;
+                        retryResult.ExceptionCount = retryResult.Results.Count(x => x.IsSuccess && x.IsException);
+                        retryResult.FailCount = retryResult.Count - updatedCount;
+
+                        // 重新銷帳畫面只顯示統計數字，不回傳逐筆明細，避免產生不必要的回應資料。
+                        retryResult.Data = new List<ReconciliationLogisticsUploadRow>();
+                        retryResult.Results = new List<ReconciliationLogisticsResultItem>();
+                        retryResult.Message = "重新銷帳完成";
+
+                        // 所有資料及費用主檔異動成功後才提交交易。
+                        transaction.Commit();
+
+                        return new ResponseModel
+                        {
+                            IsSuccess = true,
+                            status = Status.success,
+                            msg = retryResult.Message,
+                            ReturnObject = retryResult
+                        };
+                    }
+                    catch
+                    {
+                        // 任一筆銷帳發生錯誤時回滾整批異動，避免只更新部分資料。
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ResponseModel($"重新銷帳失敗：{ex.GetBaseException().Message}");
+            }
+        }
+
+        /// <summary>
         /// 讀取物流銷帳檔案，將上傳資料與既有銷帳及費用資料組成比對明細 Excel。
         /// </summary>
         /// <param name="stream">上傳檔案串流。</param>
@@ -2409,8 +2521,8 @@ namespace Service.Services.ReconciliationLogistics
             var result = MatchAndApplyReceivedAmounts(
                 entities,
                 uploadFormat,
-                repaymentDate,
-                currentUserId);
+                currentUserId,
+                true);
 
             // 更新 FEE_MASTER_DETAIL 或備援的 FEE_MASTER_COD 都視為成功銷帳。
             var updatedCount = entities.Count(x => x.IsFeeMaster || x.IsFeeMasterCod);
@@ -2424,16 +2536,16 @@ namespace Service.Services.ReconciliationLogistics
         /// <summary>
         /// 比對費用明細、分配回款並加入需保留追蹤的物流銷帳紀錄。
         /// </summary>
-        /// <param name="entities">尚未寫入的物流銷帳資料。</param>
+        /// <param name="entities">待處理的物流銷帳資料。</param>
         /// <param name="uploadFormat">物流上傳格式。</param>
-        /// <param name="repaymentDate">回款日期。</param>
         /// <param name="currentUserId">操作人員。</param>
+        /// <param name="insertEntities">是否新增物流銷帳紀錄；否則更新既有紀錄。</param>
         /// <returns>物流銷帳比對及更新結果。</returns>
         private ReconciliationLogisticsUploadResult MatchAndApplyReceivedAmounts(
             List<ReconciliationLogisticsEntity> entities,
             ReconciliationLogisticsUploadFormat uploadFormat,
-            DateTime repaymentDate,
-            string currentUserId)
+            string currentUserId,
+            bool insertEntities)
         {
             // Step 1：先建立每筆上傳資料的預設結果，讓失敗資料也能顯示於畫面及 Excel。
             var resultByEntity = entities.ToDictionary(x => x, CreateResultItem);
@@ -2598,7 +2710,11 @@ namespace Service.Services.ReconciliationLogistics
                     entity.DifferenceAmount = resultItem.Difference;
 
                     // 先分配可銷帳金額並收集異動明細，再依差異判斷金額不足或超額。
-                    var appliedDetails = ApplyReceivedAmount(entity, detailGroup, repaymentDate, currentUserId);
+                    var appliedDetails = ApplyReceivedAmount(
+                        entity,
+                        detailGroup,
+                        entity.RepaymentDate,
+                        currentUserId);
                     updatedDetails.AddRange(appliedDetails);
 
                     if (entity.IsFeeMaster && resultItem.Difference < 0)
@@ -2667,7 +2783,7 @@ namespace Service.Services.ReconciliationLogistics
 
                     // 保留回款日期、操作人員及物流銷帳關聯，供後續追蹤。
                     feeMasterCod.ReceivedCc = entity.ReceivedAmount;
-                    feeMasterCod.ReceivedCcTime = repaymentDate;
+                    feeMasterCod.ReceivedCcTime = entity.RepaymentDate;
                     feeMasterCod.ReceivedCcUserId = currentUserId;
                     feeMasterCod.ReconciliationLogistics = entity;
                     updatedFeeMasterCods.Add(feeMasterCod);
@@ -2680,8 +2796,15 @@ namespace Service.Services.ReconciliationLogistics
                 entity.Status = resultByEntity[entity].Status;
             }
 
-            // Step 9：批次新增物流銷帳紀錄並回填新增後的 Id。
-            JetfDb.BulkInsert(entities, options => options.AutoMapOutputDirection = true);
+            // Step 9：批次新增或更新物流銷帳紀錄；重試模式沿用原有資料，不重複新增。
+            if (insertEntities)
+            {
+                JetfDb.BulkInsert(entities, options => options.AutoMapOutputDirection = true);
+            }
+            else
+            {
+                JetfDb.BulkUpdate(entities);
+            }
 
             // Step 10：將物流銷帳 Id 回填至實際更新的費用明細與到付款資料。
             foreach (var detail in updatedDetails)
@@ -2722,6 +2845,40 @@ namespace Service.Services.ReconciliationLogistics
         {
             return uploadFormat == ReconciliationLogisticsUploadFormat.HctCollection ||
                    uploadFormat == ReconciliationLogisticsUploadFormat.HctRemittance;
+        }
+
+        /// <summary>
+        /// 依物流公司取得重試銷帳使用的比對格式。
+        /// </summary>
+        /// <param name="company">物流公司。</param>
+        /// <returns>物流上傳比對格式。</returns>
+        private static ReconciliationLogisticsUploadFormat GetRetryUploadFormat(
+            ReconciliationLogisticsCompany company)
+        {
+            switch (company)
+            {
+                case ReconciliationLogisticsCompany.Hct:
+                    return ReconciliationLogisticsUploadFormat.HctCollection;
+                case ReconciliationLogisticsCompany.SevenEleven:
+                    return ReconciliationLogisticsUploadFormat.SevenEleven;
+                case ReconciliationLogisticsCompany.Kelede:
+                    return ReconciliationLogisticsUploadFormat.Kelede;
+                case ReconciliationLogisticsCompany.Ktj:
+                    return ReconciliationLogisticsUploadFormat.Ktj;
+                case ReconciliationLogisticsCompany.TaixinStar:
+                    return ReconciliationLogisticsUploadFormat.TaixinStar;
+                case ReconciliationLogisticsCompany.Cash:
+                    return ReconciliationLogisticsUploadFormat.Cash;
+                case ReconciliationLogisticsCompany.Yto:
+                    return ReconciliationLogisticsUploadFormat.Yto;
+                case ReconciliationLogisticsCompany.TradeVan:
+                    return ReconciliationLogisticsUploadFormat.TradeVan;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(company),
+                        company,
+                        "不支援的物流公司");
+            }
         }
 
         /// <summary>
