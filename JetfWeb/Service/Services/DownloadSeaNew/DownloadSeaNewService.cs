@@ -1,4 +1,4 @@
-using NPOI.SS.UserModel;
+﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.Data;
 using Service.Models;
@@ -489,6 +489,8 @@ namespace Service.Services.DownloadSeaNew
                     return string.Format("{0}-連捷-{1}票.xlsx", dataDate, count);
                 case "JFKL":
                     return string.Format("{0}-基隆港務(捷豐)-{1}票.xlsx", dataDate, count);
+                case "DTKL":
+                    return string.Format("{0}-鼎泰新竹-{1}票.xlsx", dataDate, count);
                 default:
                     return string.Empty;
             }
