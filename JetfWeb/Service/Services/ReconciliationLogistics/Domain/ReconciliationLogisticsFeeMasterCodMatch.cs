@@ -28,6 +28,11 @@ namespace Service.Services.ReconciliationLogistics.Domain
         /// <summary>到付款金額。</summary>
         public decimal Cc { get; set; }
 
+        /// <summary>
+        /// 應向物流代收金額。
+        /// </summary>
+        public int? ToDlvCod { get; set; }
+
         /// <summary>出倉時間。</summary>
         public DateTime SignOutTime { get; set; }
 

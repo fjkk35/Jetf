@@ -392,6 +392,7 @@ WHERE c.DATA_TYPE IS NOT NULL
                 TrackingNo = row.TrackingNo,
                 DlvInv = row.DlvInv,
                 Cc = row.Cc,
+                ToDlvCod = decimal.ToInt32(row.Cc),
                 SignOutTime = row.SignOutTime,
                 CreatedTime = DateTime.Now
             };

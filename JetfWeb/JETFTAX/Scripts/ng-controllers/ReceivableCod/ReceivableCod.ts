@@ -10,6 +10,9 @@ interface ReceivableCodRow {
     OutDateTime: string;
     TrackingNo: string;
     DlvInv: string;
+    CodAmount: number;
+    FreightFee: number;
+    Fee: number;
     ReceivableAmount: number;
     ReceivedAmount: number;
     UnreceivedAmount: number;

@@ -161,7 +161,10 @@ namespace Service.Services.ReceivableCod
                 SignOutTime = x.SignOutTime,
                 TrackingNo = x.TrackingNo,
                 DlvInv = x.DlvInv,
-                ReceivableAmount = x.Cc,
+                CodAmount = x.Cc,
+                FreightFee = x.FreightFee ?? 0,
+                Fee = x.Fee ?? 0,
+                ReceivableAmount = x.ToDlvCod ?? 0,
                 ReceivedAmount = x.ReceivedCc ?? 0
             });
         }
@@ -232,6 +235,9 @@ namespace Service.Services.ReceivableCod
                     OutDateTime = row.SignOutTime.ToString("yyyy/MM/dd HH:mm:ss"),
                     TrackingNo = row.TrackingNo,
                     DlvInv = row.DlvInv,
+                    CodAmount = row.CodAmount,
+                    FreightFee = row.FreightFee,
+                    Fee = row.Fee,
                     ReceivableAmount = row.ReceivableAmount,
                     ReceivedAmount = row.ReceivedAmount,
                     UnreceivedAmount = row.ReceivableAmount - row.ReceivedAmount
@@ -310,7 +316,8 @@ namespace Service.Services.ReceivableCod
             var headers = new[]
             {
                 "序號", "掛帳日", "資料來源", "報關類別", "客戶", "出倉時間",
-                "分提單號", "物流貨號", "應收金額", "已收金額", "未收金額"
+                "分提單號", "物流貨號", "到付款", "運費", "手續費",
+                "應收金額", "已收金額", "未收金額"
             };
 
             NpoiCell.CreateHeaderCells(sheet.CreateRow(0), headers, headerStyle);
@@ -328,6 +335,21 @@ namespace Service.Services.ReceivableCod
                 NpoiCell.CreateCell(row, column++, item.OutDateTime, dataStyle);
                 NpoiCell.CreateCell(row, column++, item.TrackingNo, dataStyle);
                 NpoiCell.CreateCell(row, column++, item.DlvInv, dataStyle);
+                NpoiCell.CreateDoubleCell(
+                    row,
+                    column++,
+                    Convert.ToDouble(item.CodAmount),
+                    numberStyle);
+                NpoiCell.CreateDoubleCell(
+                    row,
+                    column++,
+                    Convert.ToDouble(item.FreightFee),
+                    numberStyle);
+                NpoiCell.CreateDoubleCell(
+                    row,
+                    column++,
+                    Convert.ToDouble(item.Fee),
+                    numberStyle);
                 NpoiCell.CreateDoubleCell(
                     row,
                     column++,

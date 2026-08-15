@@ -44,7 +44,6 @@ namespace Service.Data
         /// <summary>
         /// 空運袋號或海運分提單號。
         /// </summary>
-        [Required]
         [StringLength(100)]
         [Column("BAG_NUMBER")]
         public string BagNumber { get; set; }
@@ -68,6 +67,30 @@ namespace Service.Data
         /// </summary>
         [Column("CC")]
         public decimal Cc { get; set; }
+
+        /// <summary>
+        /// 重出運費。
+        /// </summary>
+        [Column("FreightFee")]
+        public int? FreightFee { get; set; }
+
+        /// <summary>
+        /// 重出手續費。
+        /// </summary>
+        [Column("Fee")]
+        public int? Fee { get; set; }
+
+        /// <summary>
+        /// 應向物流代收金額。
+        /// </summary>
+        [Column("ToDlvCod")]
+        public int? ToDlvCod { get; set; }
+
+        /// <summary>
+        /// 是否由貨件入庫出庫流程建立。
+        /// </summary>
+        [Column("IsShipmentInbound")]
+        public bool IsShipmentInbound { get; set; }
 
         /// <summary>
         /// 出倉時間。

@@ -43,6 +43,21 @@ namespace Service.Services.ReceivableCod.Domain
         public string DlvInv { get; set; }
 
         /// <summary>
+        /// 到付款金額。
+        /// </summary>
+        public decimal CodAmount { get; set; }
+
+        /// <summary>
+        /// 運費。
+        /// </summary>
+        public decimal FreightFee { get; set; }
+
+        /// <summary>
+        /// 手續費。
+        /// </summary>
+        public decimal Fee { get; set; }
+
+        /// <summary>
         /// 到付款應收金額。
         /// </summary>
         public decimal ReceivableAmount { get; set; }

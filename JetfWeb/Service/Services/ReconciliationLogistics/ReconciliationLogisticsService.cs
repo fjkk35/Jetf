@@ -761,7 +761,7 @@ namespace Service.Services.ReconciliationLogistics
                     DlvInv = feeMaster?.DlvInv ?? feeMasterCod?.DlvInv ?? uploadRow.DlvInv,
                     ReceivedAmount = logisticsRow?.ReceivedAmount,
                     ToDlvCod = feeMaster == null
-                        ? feeMasterCodCc
+                        ? feeMasterCod?.ToDlvCod
                         : string.IsNullOrWhiteSpace(feeMaster.ToDlvCod)
                             ? (int?)null
                             : feeMaster.ToDlvCod.ToInt(),
@@ -1041,6 +1041,7 @@ namespace Service.Services.ReconciliationLogistics
                 TrackingNo = x.TrackingNo,
                 DlvInv = x.DlvInv,
                 Cc = x.Cc,
+                ToDlvCod = x.ToDlvCod,
                 SignOutTime = x.SignOutTime,
                 ReconciliationLogisticsId = x.ReconciliationLogisticsId
             };
@@ -2764,9 +2765,9 @@ namespace Service.Services.ReconciliationLogistics
                 {
                     var entity = match.Key;
                     var feeMasterCod = match.Value;
-                    // 使用 FEE_MASTER_COD.CC 計算差異與狀態，並將物流公司回款金額完整寫入。
+                    // 使用 FEE_MASTER_COD.ToDlvCod 計算差異與狀態，並將物流公司回款金額完整寫入。
                     var resultItem = resultByEntity[entity];
-                    resultItem.ReceivableAmount = decimal.ToInt32(feeMasterCod.Cc);
+                    resultItem.ReceivableAmount = feeMasterCod.ToDlvCod.GetValueOrDefault();
                     resultItem.Difference = resultItem.ReceivableAmount - resultItem.RepaymentAmount;
                     resultItem.Status = ReconciliationLogisticsResultStatus.Matched;
                     if (resultItem.Difference < 0)

@@ -158,6 +158,9 @@
                         <th>出倉時間</th>
                         <th>分提單號</th>
                         <th>物流貨號</th>
+                        <th>到付款</th>
+                        <th>運費</th>
+                        <th>手續費</th>
                         <th>應收金額</th>
                         <th>已收金額</th>
                         <th>未收金額</th>
@@ -165,7 +168,7 @@
                 </thead>
                 <tbody>
                     <tr ng-if="rows.length === 0">
-                        <td colspan="11" class="text-center">查無資料</td>
+                        <td colspan="14" class="text-center">查無資料</td>
                     </tr>
                     <tr ng-repeat="row in rows track by row.Id">
                         <td class="text-center">
@@ -178,6 +181,9 @@
                         <td>{{row.OutDateTime}}</td>
                         <td>{{row.TrackingNo}}</td>
                         <td>{{row.DlvInv}}</td>
+                        <td class="text-right">{{row.CodAmount | number:0}}</td>
+                        <td class="text-right">{{row.FreightFee | number:0}}</td>
+                        <td class="text-right">{{row.Fee | number:0}}</td>
                         <td class="text-right">{{row.ReceivableAmount | number:0}}</td>
                         <td class="text-right">{{row.ReceivedAmount | number:0}}</td>
                         <td class="text-right">{{row.UnreceivedAmount | number:0}}</td>
@@ -226,7 +232,7 @@
 
 <style>
     .receivable-cod-page .receivable-cod-table {
-        min-width: 1350px;
+        min-width: 1650px;
         white-space: nowrap;
     }
 

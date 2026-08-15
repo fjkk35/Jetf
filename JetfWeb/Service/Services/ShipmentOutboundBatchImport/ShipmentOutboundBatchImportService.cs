@@ -1,5 +1,6 @@
 ﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using Service.Data;
 using Service.EnumTax;
 using Service.Extensions;
 using Service.Models;
@@ -242,23 +243,6 @@ namespace Service.Services.ShipmentOutboundBatchImport
         private void UpdateShipmentOutbound(List<ShipmentOutboundModel> shipmentOutboundList)
         {
             var trackingNos = shipmentOutboundList.Select(x => x.TrackingNo).Distinct().ToList();
-            var updateSql = @"
-                UPDATE [jetf].[dbo].[ShipmentInbound]
-                SET OutboundDate = @OutboundDate,
-                    OutboundTrackingNo = @OutboundTrackingNo,
-                    OutboundTime = GETDATE(),
-                    OutboundOpe = @OutboundOpe,
-                    WarehouseProcessType = '1',
-                    WarehouseProcessTime = GETDATE(),
-                    WarehouseProcessOpe = @OutboundOpe
-                WHERE TrackingNo = @TrackingNo AND OutboundDate IS NULL";
-
-            var insertHistorySql = @"
-                INSERT INTO [jetf].[dbo].[ShipmentInboundEditHistory]
-                ([ShipmentInboundId], [FieldName], [OldValue], [NewValue], [EditTime], [EditUser])
-                VALUES
-                (@ShipmentInboundId, @FieldName, @OldValue, @NewValue, @EditTime, @EditUser)";
-
             var userId = GetUserId();
 
             {
@@ -269,6 +253,7 @@ namespace Service.Services.ShipmentOutboundBatchImport
                         var shipmentInboundIds = JetfDb.ShipmentInbounds
                             .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
                             .ToDictionary(x => x.TrackingNo, x => x);
+                        var feeMasterCodCandidates = new List<FeeMasterCodEntity>();
 
                         foreach (var shipment in shipmentOutboundList)
                         {
@@ -295,8 +280,15 @@ namespace Service.Services.ShipmentOutboundBatchImport
                                 EditTime = DateTime.Now,
                                 EditUser = userId
                             });
+
+                            // 僅開新單號重出且符合運費、手續費及稅金／報關費／到付款條件時，才建立 FEE_MASTER_COD。
+                            if (ShouldCreateShipmentInboundFeeMasterCod(entity, shipment))
+                            {
+                                feeMasterCodCandidates.Add(CreateShipmentInboundFeeMasterCod(entity));
+                            }
                         }
 
+                        AddShipmentInboundFeeMasterCods(feeMasterCodCandidates);
                         JetfDb.SaveChanges();
                         transaction.Commit();
                     }
@@ -306,6 +298,93 @@ namespace Service.Services.ShipmentOutboundBatchImport
                         throw;
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// 判斷出庫資料是否符合新增貨件入庫到付款資料的條件。
+        /// </summary>
+        /// <param name="entity">貨件入庫資料。</param>
+        /// <param name="shipment">出庫上傳資料。</param>
+        /// <returns>是否應新增 FEE_MASTER_COD。</returns>
+        private static bool ShouldCreateShipmentInboundFeeMasterCod(
+            ShipmentInboundEntity entity,
+            ShipmentOutboundModel shipment)
+        {
+            return shipment.ProcessType == ShipmentInboundProcessType.NewTrackingNo &&
+                   entity.FreightFee > 0 &&
+                   entity.Fee > 0 &&
+                   entity.Tax == 0 &&
+                   entity.Ccfee == 0 &&
+                   entity.Cod == 0 &&
+                   !string.IsNullOrWhiteSpace(entity.OutboundTrackingNo);
+        }
+
+        /// <summary>
+        /// 建立由貨件入庫出庫流程產生的 FEE_MASTER_COD 資料。
+        /// </summary>
+        /// <param name="entity">已完成出庫欄位更新的貨件入庫資料。</param>
+        /// <returns>待新增的 FEE_MASTER_COD 資料。</returns>
+        private static FeeMasterCodEntity CreateShipmentInboundFeeMasterCod(
+            ShipmentInboundEntity entity)
+        {
+            var freightFee = entity.FreightFee.GetValueOrDefault();
+            var fee = entity.Fee.GetValueOrDefault();
+
+            return new FeeMasterCodEntity
+            {
+                DataType = entity.DataType ?? string.Empty,
+                MainNumber = entity.MainNumber ?? string.Empty,
+                Customer = entity.CustCode,
+                BagNumber = string.Empty,
+                TrackingNo = entity.OriginalTrackingNo,
+                DlvInv = entity.OutboundTrackingNo,
+                Cc = 0,
+                SignOutTime = entity.OutboundDate.Value,
+                CreatedTime = DateTime.Now,
+                FreightFee = freightFee,
+                Fee = fee,
+                ToDlvCod = freightFee + fee,
+                IsShipmentInbound = true
+            };
+        }
+
+        /// <summary>
+        /// 批次檢查物流貨號後新增貨件入庫產生的 FEE_MASTER_COD。
+        /// </summary>
+        /// <param name="candidates">符合金額及處理方式條件的候選資料。</param>
+        private void AddShipmentInboundFeeMasterCods(
+            List<FeeMasterCodEntity> candidates)
+        {
+            // 沒有符合條件的候選資料時，不需要查詢或新增資料。
+            if (candidates == null || candidates.Count == 0)
+            {
+                return;
+            }
+
+            // 整理物流貨號清單，供後續批次查詢使用。
+            var dlvInvs = candidates
+                .Select(x => x.DlvInv)
+                .Distinct()
+                .ToList();
+
+            // 批次查詢 FEE_MASTER_COD 已存在的物流貨號，避免重複新增。
+            var existingDlvInvs = JetfDb.FeeMasterCods
+                .AsNoTracking()
+                .Where(x => dlvInvs.Contains(x.DlvInv))
+                .Select(x => x.DlvInv)
+                .ToHashSet();
+
+            // 排除資料庫已存在及同批次重複的物流貨號，每個物流貨號只保留一筆。
+            var entities = candidates
+                .Where(x => !existingDlvInvs.Contains(x.DlvInv))
+                .GroupBy(x => x.DlvInv)
+                .Select(x => x.First())
+                .ToList();
+            if (entities.Count > 0)
+            {
+                // 使用 EF Bulk Extensions 一次批次新增資料，並沿用外層交易。
+                JetfDb.BulkInsert(entities);
             }
         }
     }
