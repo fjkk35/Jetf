@@ -2591,8 +2591,13 @@ namespace Service.Services.ReconciliationLogistics
                         "不支援的物流上傳格式");
             }
 
-            // Step 3：依上傳格式從費用主檔或明細取得單號對應的 FEE_MASTER_ID。
-            var matchedFeeMasterIds = GetMatchedFeeMasterIds(entities, uploadFormat);
+            // Step 3：先依原本單號規則取得 FEE_MASTER，再以 OutboundTrackingNo 補查未命中的重出貨件。
+
+            var matchedFeeMasterIds = GetMatchedFeeMasterIds(
+                entities,
+                uploadFormat,
+                feeMasterKeySelector,
+                entityKeySelector);
             var feeMasterIds = matchedFeeMasterIds
                 .Select(x => x.FeeMasterId)
                 .Distinct()
@@ -3012,14 +3017,112 @@ namespace Service.Services.ReconciliationLogistics
         }
 
         /// <summary>
-        /// 依上傳格式取得單號與已下載費用主檔識別碼的對應資料。
+        /// 先依原本物流格式的單號規則比對，再以 FEE_MASTER.OutboundTrackingNo 補查重出單號。
+        /// </summary>
+        /// <param name="entities">待比對的物流銷帳資料。</param>
+        /// <param name="uploadFormat">物流上傳格式。</param>
+        /// <param name="feeMasterKeySelector">原本費用主檔比對鍵。</param>
+        /// <param name="entityKeySelector">物流銷帳資料比對鍵。</param>
+        /// <returns>符合單號的費用主檔識別碼。</returns>
+        private List<ReconciliationLogisticsFeeMasterMatch> GetMatchedFeeMasterIds(
+            List<ReconciliationLogisticsEntity> entities,
+            ReconciliationLogisticsUploadFormat uploadFormat,
+            Func<ReconciliationLogisticsFeeMasterMatch, string> feeMasterKeySelector,
+            Func<ReconciliationLogisticsEntity, string> entityKeySelector)
+        {
+            // 先執行原本的 FEE_MASTER.DLV_INV／費用明細比對規則，維持既有銷帳優先順序。
+            var originalMatches = GetMatchedFeeMasterIdsByUploadFormat(entities, uploadFormat);
+            var originalMatchKeys = originalMatches
+                .Select(feeMasterKeySelector)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var outboundCandidates = entities
+                .Where(x => !originalMatchKeys.Contains(entityKeySelector(x)))
+                .ToList();
+
+            if (outboundCandidates.Count == 0)
+            {
+                return originalMatches;
+            }
+
+            // 原本單號查無資料時，才使用 FEE_MASTER.OutboundTrackingNo 查找重出貨件。
+            return originalMatches
+                .Concat(GetMatchedFeeMasterIdsByOutboundTrackingNo(outboundCandidates))
+                .ToList();
+        }
+
+        /// <summary>
+        /// 依 FEE_MASTER.OutboundTrackingNo 批次查詢重出貨件。
+        /// </summary>
+        /// <param name="entities">待比對的物流銷帳資料。</param>
+        /// <returns>符合重出單號的費用主檔識別碼。</returns>
+        private List<ReconciliationLogisticsFeeMasterMatch>
+            GetMatchedFeeMasterIdsByOutboundTrackingNo(
+                IEnumerable<ReconciliationLogisticsEntity> entities)
+        {
+            var candidates = entities
+                .Where(x => !string.IsNullOrWhiteSpace(x.DlvInv))
+                .ToList();
+            if (candidates.Count == 0)
+            {
+                return new List<ReconciliationLogisticsFeeMasterMatch>();
+            }
+
+            var feeMasters = JetfDb.FeeMasters
+                .AsNoTracking()
+                .Where(x => x.Download == "1")
+                .WhereBulkContains(
+                    JetfDb,
+                    candidates,
+                    x => x.OutboundTrackingNo,
+                    x => x.DlvInv,
+                    x => new ReconciliationLogisticsFeeMasterMatch
+                    {
+                        FeeMasterId = x.Id,
+                        TrackingNo = x.TrackingNo,
+                        DlvInv = x.OutboundTrackingNo
+                    });
+            var feeMastersByOutboundTrackingNo = feeMasters
+                .Where(x => !string.IsNullOrWhiteSpace(x.DlvInv))
+                .GroupBy(x => x.DlvInv.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.ToList(),
+                    StringComparer.OrdinalIgnoreCase);
+            var matches = new List<ReconciliationLogisticsFeeMasterMatch>();
+
+            // 將查到的主檔欄位改以本次上傳單號建立比對鍵，讓後續銷帳沿用原本流程。
+            foreach (var entity in candidates)
+            {
+                List<ReconciliationLogisticsFeeMasterMatch> feeMasterMatches;
+                if (!feeMastersByOutboundTrackingNo.TryGetValue(
+                    entity.DlvInv.Trim(),
+                    out feeMasterMatches))
+                {
+                    continue;
+                }
+
+                matches.AddRange(feeMasterMatches.Select(x =>
+                    new ReconciliationLogisticsFeeMasterMatch
+                    {
+                        FeeMasterId = x.FeeMasterId,
+                        TrackingNo = entity.TrackingNo,
+                        DlvInv = entity.DlvInv
+                    }));
+            }
+
+            return matches;
+        }
+
+        /// <summary>
+        /// 依原本物流格式取得單號與已下載費用主檔識別碼的對應資料。
         /// </summary>
         /// <param name="entities">待比對的物流銷帳資料。</param>
         /// <param name="uploadFormat">物流上傳格式。</param>
         /// <returns>符合單號的費用主檔識別碼。</returns>
-        private List<ReconciliationLogisticsFeeMasterMatch> GetMatchedFeeMasterIds(
-            List<ReconciliationLogisticsEntity> entities,
-            ReconciliationLogisticsUploadFormat uploadFormat)
+        private List<ReconciliationLogisticsFeeMasterMatch>
+            GetMatchedFeeMasterIdsByUploadFormat(
+                List<ReconciliationLogisticsEntity> entities,
+                ReconciliationLogisticsUploadFormat uploadFormat)
         {
             switch (uploadFormat)
             {
