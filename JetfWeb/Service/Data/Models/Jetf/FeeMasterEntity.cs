@@ -85,6 +85,13 @@ namespace Service.Data
         public string DlvInv { get; set; }
 
         /// <summary>
+        /// 出庫單號。
+        /// </summary>
+        [StringLength(50)]
+        [Column("OutboundTrackingNo")]
+        public string OutboundTrackingNo { get; set; }
+
+        /// <summary>
         /// 進倉日。
         /// </summary>
         [Column("IN_DATE")]

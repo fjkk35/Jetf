@@ -254,6 +254,7 @@ namespace Service.Services.ShipmentOutboundBatchImport
                             .Where(x => trackingNos.Contains(x.TrackingNo) && !x.OutboundDate.HasValue)
                             .ToDictionary(x => x.TrackingNo, x => x);
                         var feeMasterCodCandidates = new List<FeeMasterCodEntity>();
+                        var feeMasterOutboundCandidates = new List<ShipmentInboundEntity>();
 
                         foreach (var shipment in shipmentOutboundList)
                         {
@@ -282,12 +283,24 @@ namespace Service.Services.ShipmentOutboundBatchImport
                             });
 
                             // 僅開新單號重出且符合運費、手續費及稅金／報關費／到付款條件時，才建立 FEE_MASTER_COD。
-                            if (ShouldCreateShipmentInboundFeeMasterCod(entity, shipment))
+                            if (IsCreateShipmentInboundFeeMasterCod(
+                                entity,
+                                shipment.ProcessType))
                             {
                                 feeMasterCodCandidates.Add(CreateShipmentInboundFeeMasterCod(entity));
                             }
+
+                            // 僅開新單號重出且稅金、報關費或到付款任一大於 0 時，
+                            // 後續才檢查原始序號對應的 FEE_MASTER 是否可以更新出庫單號。
+                            if (IsUpdateFeeMasterOutboundTrackingNo(
+                                entity,
+                                shipment.ProcessType))
+                            {
+                                feeMasterOutboundCandidates.Add(entity);
+                            }
                         }
 
+                        UpdateFeeMasterOutboundTrackingNos(feeMasterOutboundCandidates);
                         AddShipmentInboundFeeMasterCods(feeMasterCodCandidates);
                         JetfDb.SaveChanges();
                         transaction.Commit();
@@ -305,19 +318,99 @@ namespace Service.Services.ShipmentOutboundBatchImport
         /// 判斷出庫資料是否符合新增貨件入庫到付款資料的條件。
         /// </summary>
         /// <param name="entity">貨件入庫資料。</param>
-        /// <param name="shipment">出庫上傳資料。</param>
+        /// <param name="processType">出庫處理方式。</param>
         /// <returns>是否應新增 FEE_MASTER_COD。</returns>
-        private static bool ShouldCreateShipmentInboundFeeMasterCod(
+        private static bool IsCreateShipmentInboundFeeMasterCod(
             ShipmentInboundEntity entity,
-            ShipmentOutboundModel shipment)
+            ShipmentInboundProcessType processType)
         {
-            return shipment.ProcessType == ShipmentInboundProcessType.NewTrackingNo &&
+            return processType == ShipmentInboundProcessType.NewTrackingNo &&
                    entity.FreightFee > 0 &&
                    entity.Fee > 0 &&
                    entity.Tax == 0 &&
                    entity.Ccfee == 0 &&
                    entity.Cod == 0 &&
                    !string.IsNullOrWhiteSpace(entity.OutboundTrackingNo);
+        }
+
+        /// <summary>
+        /// 判斷出庫資料是否符合更新 FEE_MASTER 出庫單號的條件。
+        /// </summary>
+        /// <param name="entity">貨件入庫資料。</param>
+        /// <param name="processType">出庫處理方式。</param>
+        /// <returns>是否應查找並更新 FEE_MASTER。</returns>
+        private static bool IsUpdateFeeMasterOutboundTrackingNo(
+            ShipmentInboundEntity entity,
+            ShipmentInboundProcessType processType)
+        {
+            return processType == ShipmentInboundProcessType.NewTrackingNo &&
+                   (entity.Tax > 0 || entity.Ccfee > 0 || entity.Cod > 0) &&
+                   !string.IsNullOrWhiteSpace(entity.OriginalJetfSerial) &&
+                   !string.IsNullOrWhiteSpace(entity.OutboundTrackingNo);
+        }
+
+        /// <summary>
+        /// 依貨件入庫的原始序號批次查找 FEE_MASTER，只有所有明細尚未收回物流代收款時，
+        /// 才更新 FEE_MASTER 的出庫單號。
+        /// </summary>
+        /// <param name="candidates">符合出庫條件的貨件入庫資料。</param>
+        private void UpdateFeeMasterOutboundTrackingNos(
+            List<ShipmentInboundEntity> candidates)
+        {
+            // 沒有符合條件的資料時，不需要查詢費用主檔。
+            if (candidates == null || candidates.Count == 0)
+            {
+                return;
+            }
+
+            // 以原始序號批次查詢 FEE_MASTER.DLV_INV，避免逐筆查詢資料庫。
+            var outboundTrackingBySerial = candidates
+                .GroupBy(x => x.OriginalJetfSerial)
+                .ToDictionary(x => x.Key, x => x.First().OutboundTrackingNo);
+
+            var originalJetfSerials = outboundTrackingBySerial.Keys.ToList();
+            var feeMasters = JetfDb.FeeMasters
+                .AsNoTracking()
+                .WhereBulkContains(
+                    JetfDb,
+                    originalJetfSerials,
+                    x => x.DlvInv,
+                    x => x)
+                .ToList();
+
+            if (feeMasters.Count == 0)
+            {
+                return;
+            }
+
+            // 一次取得所有對應明細，僅保留 RECEIVED_TO_DLV_COD 全部為 NULL 的 FEE_MASTER。
+            var feeMasterIds = feeMasters.Select(x => x.Id).ToList();
+            var feeMasterDetails = JetfDb.FeeMasterDetails
+                .AsNoTracking()
+                .WhereBulkContains(
+                    JetfDb,
+                    feeMasterIds,
+                    x => x.FeeMasterId,
+                    x => x)
+                .ToList();
+            var eligibleFeeMasterIds = feeMasterDetails
+                .GroupBy(x => x.FeeMasterId)
+                .Where(x => x.All(detail => !detail.ReceivedToDlvCod.HasValue))
+                .Select(x => x.Key)
+                .ToHashSet();
+
+            // 同一 DLV_INV 若對應多筆主檔，符合條件的資料全部更新。
+            var updates = feeMasters
+                .Where(x => eligibleFeeMasterIds.Contains(x.Id) &&
+                            outboundTrackingBySerial.ContainsKey(x.DlvInv))
+                .ToList();
+            foreach (var feeMaster in updates)
+            {
+                feeMaster.OutboundTrackingNo = outboundTrackingBySerial[feeMaster.DlvInv];
+            }
+
+            // 使用 EF 批次更新，並沿用出庫上傳外層交易。
+            JetfDb.BulkUpdate(updates);
         }
 
         /// <summary>
