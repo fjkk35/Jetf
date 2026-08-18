@@ -75,7 +75,8 @@ namespace Service.Services.Tact
                 // 取得派件公司，並套用上傳明細的未收單、ZZZA 與 FTZ 錯單規則。
                 _airMainComparisonService.ApplyComparison(
                     results.Cast<IAirMainComparisonItem>().ToList(),
-                    uploadRows);
+                    uploadRows,
+                    excludeZzzaFromUnreceivedB6F: true);
 
                 return new ResponseModel(results);
             }

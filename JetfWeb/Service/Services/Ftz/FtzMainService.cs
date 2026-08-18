@@ -76,7 +76,8 @@ namespace Service.Services.Ftz
                 // 取得派件公司，並套用上傳明細的未收單與 ZZZA 統計。
                 _airMainComparisonService.ApplyComparison(
                     results.Cast<IAirMainComparisonItem>().ToList(),
-                    uploadRows);
+                    uploadRows,
+                    excludeZzzaFromUnreceivedB6F: true);
 
                 return new ResponseModel { ReturnObject = results };
             }

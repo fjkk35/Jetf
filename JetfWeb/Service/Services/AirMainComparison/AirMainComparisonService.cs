@@ -1,6 +1,5 @@
 using Dapper;
 using NPOI.SS.UserModel;
-using NPOI.SS.Util;
 using NPOI.XSSF.UserModel;
 using Service.Data;
 using Service.Extensions;
@@ -97,9 +96,11 @@ namespace Service.Services.AirMainComparison
         /// </summary>
         /// <param name="results">FTZ 或 Tact 主號查詢結果。</param>
         /// <param name="uploadRows">上傳明細資料。</param>
+        /// <param name="excludeZzzaFromUnreceivedB6F">是否從未收單 B6F 統計排除 ZZZA。</param>
         public void ApplyComparison(
             IList<IAirMainComparisonItem> results,
-            IEnumerable<AirMainUploadExcelRow> uploadRows)
+            IEnumerable<AirMainUploadExcelRow> uploadRows,
+            bool excludeZzzaFromUnreceivedB6F = false)
         {
             if (results == null)
             {
@@ -157,6 +158,7 @@ namespace Service.Services.AirMainComparison
                     !IsZzzaUploadRow(row) && !IsSameTransName(row.TransName, NoTransName));
                 item.UnreceivedRows = unreceivedRows;
                 item.UnreceivedB6FCount = unreceivedRows.Count(row =>
+                    (!excludeZzzaFromUnreceivedB6F || !IsZzzaUploadRow(row)) &&
                     (row.PlinkErrors ?? new List<AirMainPlinkErrorRow>())
                         .Any(error => ContainsB6FReason(error.Reason)));
 
@@ -1267,38 +1269,29 @@ namespace Service.Services.AirMainComparison
                 foreach (var uploadRow in item.UnreceivedRows ?? new List<AirMainUploadExcelRow>())
                 {
                     var errorRows = uploadRow.PlinkErrors ?? new List<AirMainPlinkErrorRow>();
-                    var errorRowCount = Math.Max(errorRows.Count, 1);
-                    var startRowIndex = rowIndex;
-                    var displayItemNo = itemNo++;
+                    var errorReasons = string.Join(",",
+                        errorRows
+                            .Select(error => (error?.Reason ?? "").Trim())
+                            .Where(reason => !string.IsNullOrWhiteSpace(reason))
+                            .Distinct(StringComparer.OrdinalIgnoreCase));
+                    var errorHawbs = string.Join(",",
+                        errorRows
+                            .Select(error => (error?.Hawb ?? "").Trim())
+                            .Where(hawb => !string.IsNullOrWhiteSpace(hawb))
+                            .Distinct(StringComparer.OrdinalIgnoreCase));
 
-                    for (int errorIndex = 0; errorIndex < errorRowCount; errorIndex++)
-                    {
-                        var row = sheet.CreateRow(rowIndex++);
-                        if (errorIndex == 0)
-                        {
-                            NpoiCell.CreateIntCell(row, 0, displayItemNo, dataStyle);
-                            NpoiCell.CreateCell(row, 1, uploadRow.Mwb ?? "", dataStyle);
-                            NpoiCell.CreateCell(row, 2, uploadRow.BagNo ?? "", dataStyle);
-                            NpoiCell.CreateCell(row, 3, "未收單", dataStyle);
-                            CreateBlankCells(row, 4, 9, dataStyle);
-                            NpoiCell.CreateCell(row, 10, uploadRow.OneHwbMultiPieceHwb ?? "", dataStyle);
-                            NpoiCell.CreateCell(row, 15, uploadRow.Remark ?? "", dataStyle);
-                        }
-                        else
-                        {
-                            CreateBlankCells(row, 0, 10, dataStyle);
-                            NpoiCell.CreateCell(row, 15, "", dataStyle);
-                        }
-
-                        var errorRow = errorIndex < errorRows.Count ? errorRows[errorIndex] : null;
-                        NpoiCell.CreateCell(row, 11, errorRow?.Reason ?? "", dataStyle);
-                        NpoiCell.CreateCell(row, 12, errorRow?.Hawb ?? "", dataStyle);
-                        NpoiCell.CreateCell(row, 13, NormalizeTransName(uploadRow.TransName), dataStyle);
-                        NpoiCell.CreateCell(row, 14, uploadRow.Status ?? "", dataStyle);
-                    }
-
-                    MergeColumns(sheet, startRowIndex, rowIndex - 1, 0, 10);
-                    MergeColumns(sheet, startRowIndex, rowIndex - 1, 15, 15);
+                    var row = sheet.CreateRow(rowIndex++);
+                    NpoiCell.CreateIntCell(row, 0, itemNo++, dataStyle);
+                    NpoiCell.CreateCell(row, 1, uploadRow.Mwb ?? "", dataStyle);
+                    NpoiCell.CreateCell(row, 2, uploadRow.BagNo ?? "", dataStyle);
+                    NpoiCell.CreateCell(row, 3, "未收單", dataStyle);
+                    CreateBlankCells(row, 4, 9, dataStyle);
+                    NpoiCell.CreateCell(row, 10, uploadRow.OneHwbMultiPieceHwb ?? "", dataStyle);
+                    NpoiCell.CreateCell(row, 11, errorReasons, dataStyle);
+                    NpoiCell.CreateCell(row, 12, errorHawbs, dataStyle);
+                    NpoiCell.CreateCell(row, 13, NormalizeTransName(uploadRow.TransName), dataStyle);
+                    NpoiCell.CreateCell(row, 14, uploadRow.Status ?? "", dataStyle);
+                    NpoiCell.CreateCell(row, 15, uploadRow.Remark ?? "", dataStyle);
                 }
             }
         }
@@ -1314,20 +1307,5 @@ namespace Service.Services.AirMainComparison
             }
         }
 
-        /// <summary>
-        /// 合併指定欄位的多列儲存格。
-        /// </summary>
-        private void MergeColumns(ISheet sheet, int firstRow, int lastRow, int firstColumn, int lastColumn)
-        {
-            if (sheet == null || lastRow <= firstRow)
-            {
-                return;
-            }
-
-            for (int column = firstColumn; column <= lastColumn; column++)
-            {
-                sheet.AddMergedRegion(new CellRangeAddress(firstRow, lastRow, column, column));
-            }
-        }
     }
 }
