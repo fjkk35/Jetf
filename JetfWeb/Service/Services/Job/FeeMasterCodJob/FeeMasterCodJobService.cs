@@ -11,12 +11,12 @@ using System.Threading.Tasks;
 namespace Service.Services.Job.FeeMasterCodJob
 {
     /// <summary>
-    /// 將前三個完整日的空運及海運到付款資料寫入 FEE_MASTER_COD。
+    /// 將前 3 個完整日的空運及海運到付款資料寫入 FEE_MASTER_COD。
     /// </summary>
     public sealed class FeeMasterCodJobService : _BaseService
     {
         private const string JobName = "稅金到付款資料";
-        private const int CommandTimeoutSeconds = 600;
+        private const int CommandTimeoutSeconds = 1200;
         private const int BatchSize = 500;
         private const int ProcessingDays = 3;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
@@ -33,7 +33,7 @@ namespace Service.Services.Job.FeeMasterCodJob
         }
 
         /// <summary>
-        /// 依系統時間查詢前三個完整日，每次只處理一天的空運及海運到付款資料。
+        /// 依系統時間查詢前 3 個完整日，每次只處理一天的空運及海運到付款資料。
         /// 空運已存在 CLEARANCE_TAX 的資料不會寫入。
         /// 海運僅在當日已有來源為 1 的 FEE_MASTER 時處理，且物流貨號已存在 FEE_MASTER 時不會寫入。
         /// 空運主號與追蹤號、海運主號與分提單號已存在 FEE_MASTER_COD 時不會再次寫入。
@@ -45,7 +45,7 @@ namespace Service.Services.Job.FeeMasterCodJob
 
             try
             {
-                // 從昨天開始逐日往前處理，每完成一天後再往前一天。
+                // 從昨天開始逐日往前處理 3 天，每完成一天後再往前一天。
                 for (var processedDays = 0; processedDays < ProcessingDays; processedDays++)
                 {
                     Logger.Info($"{JobName}開始，處理日期={processDate:yyyy-MM-dd}");
@@ -97,7 +97,7 @@ namespace Service.Services.Job.FeeMasterCodJob
 
             return JetfDb.FeeMasters
                 .AsNoTracking()
-                .AnyAsync(x => x.DataDate == formattedDataDate && x.Source == "1");
+                .AnyAsync(x => x.DataDate == formattedDataDate && x.SourceType == "1");
         }
 
         /// <summary>
@@ -184,7 +184,7 @@ WHERE c.DATA_TYPE IN ('tact', 'ftz')
         }
 
         /// <summary>
-        /// 查詢指定時間區間內，物流貨號尚未存在 FEE_MASTER 的海運到付款資料。
+        /// 查詢指定時間區間內，並排除已存在 FEE_MASTER 物流貨號的海運到付款資料。
         /// </summary>
         /// <param name="startTime">當日起始時間（含）。</param>
         /// <param name="endTime">隔日起始時間（不含）。</param>
@@ -208,15 +208,9 @@ WHERE c.DATA_TYPE IS NOT NULL
   AND c.DATA_TYPE NOT IN ('tact', 'ftz')
   AND c.SIGN_OUT_TIME >= @START_TIME
   AND c.SIGN_OUT_TIME < @END_TIME
-  AND sea.CC > 0
-  AND NOT EXISTS
-      (
-          SELECT 1
-          FROM [jetf].[dbo].[FEE_MASTER] AS fee
-          WHERE fee.DLV_INV = sea.JETF_SERIAL
-      );";
+  AND sea.CC > 0;";
 
-            return (await conn.QueryAsync<FeeMasterCodSourceRow>(
+            var rows = (await conn.QueryAsync<FeeMasterCodSourceRow>(
                 sql,
                 new
                 {
@@ -224,6 +218,12 @@ WHERE c.DATA_TYPE IS NOT NULL
                     END_TIME = endTime
                 },
                 commandTimeout: CommandTimeoutSeconds)).ToList();
+
+            // 來源資料查出後，使用 EF 批次查詢 FEE_MASTER.DLV_INV，直接排除既有資料。
+            var existingFeeMasterDlvInvs = LoadExistingSeaFeeMasterDlvInvs(rows);
+            return rows
+                .Where(x => !existingFeeMasterDlvInvs.Contains(NormalizeKeyPart(x.DlvInv)))
+                .ToList();
         }
 
         /// <summary>
@@ -300,7 +300,7 @@ WHERE c.DATA_TYPE IS NOT NULL
         }
 
         /// <summary>
-        /// 儲存尚未存在的海運資料。
+        /// 儲存尚未存在於 FEE_MASTER 及 FEE_MASTER_COD 的海運資料。
         /// </summary>
         /// <param name="rows">已完成記憶體去重的海運資料。</param>
         /// <returns>實際新增筆數。</returns>
@@ -313,6 +313,36 @@ WHERE c.DATA_TYPE IS NOT NULL
                 .ToList();
 
             return SaveEntities(entities);
+        }
+
+        /// <summary>
+        /// 批次查詢海運來源物流貨號是否已存在 FEE_MASTER。
+        /// </summary>
+        /// <param name="rows">待比對的海運資料。</param>
+        /// <returns>已存在於 FEE_MASTER 的物流貨號集合。</returns>
+        private HashSet<string> LoadExistingSeaFeeMasterDlvInvs(
+            IEnumerable<FeeMasterCodSourceRow> rows)
+        {
+            var dlvInvs = rows
+                .Select(x => x.DlvInv)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(NormalizeKeyPart)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            if (!dlvInvs.Any())
+            {
+                return new HashSet<string>(StringComparer.Ordinal);
+            }
+
+            return JetfDb.FeeMasters
+                .AsNoTracking()
+                .WhereBulkContains(
+                    JetfDb,
+                    dlvInvs,
+                    feeMaster => feeMaster.DlvInv,
+                    dlvInv => dlvInv)
+                .Select(x => NormalizeKeyPart(x.DlvInv))
+                .ToHashSet(StringComparer.Ordinal);
         }
 
         /// <summary>
