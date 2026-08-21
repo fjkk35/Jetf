@@ -625,16 +625,6 @@ namespace Service.Services.ShipmentInboundProcess
         }
 
         /// <summary>
-        /// 取得空運派件公司名稱對照表。
-        /// </summary>
-        /// <param name="transNos">派件公司代碼清單。</param>
-        /// <returns>派件公司代碼與名稱對照。</returns>
-        private Dictionary<string, string> GetAirTransNames(List<string> transNos)
-        {
-            return base.GetAirTransNames(transNos);
-        }
-
-        /// <summary>
         /// Marks rows whose freight fee and handling fee are forced to zero by customer policy.
         /// </summary>
         /// <param name="data">Rows to mark.</param>
@@ -662,14 +652,9 @@ namespace Service.Services.ShipmentInboundProcess
                                    .Distinct()
                                    .ToList();
 
-            var airTransNos = data.Where(x => x.DataType == "空運" && !string.IsNullOrWhiteSpace(x.TransNo))
-                                  .Select(x => x.TransNo)
-                                  .Distinct()
-                                  .ToList();
-
             var airCustNames = GetAirCustNames(airCustCodes);
             var seaCustNames = GetSeaCustNames(seaCustCodes);
-            var airTransNames = GetAirTransNames(airTransNos);
+            var airTransNames = GetAllAirTransNames();
 
             foreach (var item in data)
             {

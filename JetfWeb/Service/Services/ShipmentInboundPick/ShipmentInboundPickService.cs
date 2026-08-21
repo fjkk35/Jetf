@@ -96,14 +96,9 @@ namespace Service.Services.ShipmentInboundPick
                                    .Distinct()
                                    .ToList();
 
-            var airTransNos = data.Where(x => x.DataType == "空運" && !string.IsNullOrWhiteSpace(x.TransNo))
-                                  .Select(x => x.TransNo)
-                                  .Distinct()
-                                  .ToList();
-
             var airCustNames = GetAirCustomerNames(airCustCodes);
             var seaCustNames = GetSeaCustomerNames(seaCustCodes);
-            var airTransNames = GetAirTransNames(airTransNos);
+            var airTransNames = GetAllAirTransNames();
 
             foreach (var item in data)
             {

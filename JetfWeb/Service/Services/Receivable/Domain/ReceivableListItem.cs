@@ -46,6 +46,11 @@ namespace Service.Services.Receivable.Domain
         public string CustomerName { get; set; }
 
         /// <summary>
+        /// 派件公司。
+        /// </summary>
+        public string DlvCom { get; set; }
+
+        /// <summary>
         /// 出倉時間。
         /// </summary>
         public string OutDateTime { get; set; }

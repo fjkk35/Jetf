@@ -9,6 +9,7 @@ interface ReceivableRow {
     Type: string;
     CustomerCode: string;
     CustomerName: string;
+    DlvCom: string;
     OutDateTime: string;
     TrackingNo: string;
     DlvInv: string;

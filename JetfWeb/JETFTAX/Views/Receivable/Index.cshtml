@@ -159,6 +159,7 @@
                         <th>資料來源</th>
                         <th>報關類別</th>
                         <th>客戶</th>
+                        <th>派件公司</th>
                         <th>出倉時間</th>
                         <th>分提單號</th>
                         <th>物流貨號</th>
@@ -178,7 +179,7 @@
                 </thead>
                 <tbody>
                     <tr ng-if="rows.length === 0">
-                        <td colspan="22" class="text-center">查無資料</td>
+                        <td colspan="23" class="text-center">查無資料</td>
                     </tr>
                     <tr ng-repeat="row in rows track by row.Id">
                         <td class="text-center">{{(currentPage - 1) * pageSize + $index + 1}}</td>
@@ -188,6 +189,7 @@
                         <td>{{row.Source}}</td>
                         <td>{{row.Type}}</td>
                         <td title="{{row.CustomerCode}}">{{row.CustomerName}}</td>
+                        <td>{{row.DlvCom}}</td>
                         <td>{{row.OutDateTime}}</td>
                         <td>{{row.TrackingNo}}</td>
                         <td>{{row.DlvInv}}</td>
@@ -235,7 +237,7 @@
 
 <style>
     .receivable-page .receivable-table {
-        min-width: 2450px;
+        min-width: 2550px;
         white-space: nowrap;
     }
 

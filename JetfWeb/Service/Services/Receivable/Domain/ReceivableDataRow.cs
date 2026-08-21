@@ -43,6 +43,11 @@ namespace Service.Services.Receivable.Domain
         public string CustomerCode { get; set; }
 
         /// <summary>
+        /// 派件公司。
+        /// </summary>
+        public string DlvCom { get; set; }
+
+        /// <summary>
         /// 分提單號。
         /// </summary>
         public string TrackingNo { get; set; }

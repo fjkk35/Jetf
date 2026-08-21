@@ -330,11 +330,6 @@ namespace Service.Services.ShipmentInboundRecord
             return GetSeaCustomerNames(custCodes);
         }
 
-        private Dictionary<string, string> GetAirTransNames(List<string> transNos)
-        {
-            return base.GetAirTransNames(transNos);
-        }
-
         private void FillCustomerAndTransNames(List<ShipmentInboundRecordModel> data)
         {
             var airCustCodes = data.Where(x => x.DataType == "空運" && !string.IsNullOrWhiteSpace(x.CustCode))
@@ -347,14 +342,9 @@ namespace Service.Services.ShipmentInboundRecord
                                    .Distinct()
                                    .ToList();
 
-            var airTransNos = data.Where(x => x.DataType == "空運" && !string.IsNullOrWhiteSpace(x.TransNo))
-                                  .Select(x => x.TransNo)
-                                  .Distinct()
-                                  .ToList();
-
             var airCustNames = GetAirCustNames(airCustCodes);
             var seaCustNames = GetSeaCustNames(seaCustCodes);
-            var airTransNames = GetAirTransNames(airTransNos);
+            var airTransNames = GetAllAirTransNames();
 
             foreach (var item in data)
             {

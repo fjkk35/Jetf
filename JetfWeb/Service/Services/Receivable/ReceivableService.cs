@@ -174,6 +174,7 @@ namespace Service.Services.Receivable
                 Source = x.FeeMaster.Source,
                 Type = x.FeeMaster.Type,
                 CustomerCode = x.FeeMaster.Customer,
+                DlvCom = x.FeeMaster.DlvCom,
                 TrackingNo = x.TrackingNo,
                 DlvInv = x.DlvInv,
                 TaxNumber = x.TaxNumber,
@@ -205,6 +206,9 @@ namespace Service.Services.Receivable
             AddCustomerNames(customerNames, GetSeaCustomerNames(customerCodes));
             AddCustomerNames(customerNames, GetAirCustomerNames(customerCodes));
 
+            // 空運派件公司主檔資料量小，直接一次載入全部代號與中文名稱供 tact、FTZ 資料使用。
+            var airTransNames = GetAllAirTransNames();
+
             return rows.Select(row =>
             {
                 var transCod = row.TransCod;
@@ -212,6 +216,17 @@ namespace Service.Services.Receivable
                 var receivedAmount = row.ReceivedCustomerCod + row.ReceivedToDlvCod;
                 string customerName;
                 customerNames.TryGetValue(row.CustomerCode ?? string.Empty, out customerName);
+                var dlvCom = row.DlvCom;
+
+                if (row.Source == "tact" || row.Source == "FTZ")
+                {
+                    string transName;
+                    if (airTransNames.TryGetValue(row.DlvCom ?? string.Empty, out transName) &&
+                        !string.IsNullOrWhiteSpace(transName))
+                    {
+                        dlvCom = transName;
+                    }
+                }
 
                 return new ReceivableListItem
                 {
@@ -225,6 +240,7 @@ namespace Service.Services.Receivable
                     CustomerName = string.IsNullOrWhiteSpace(customerName)
                         ? row.CustomerCode
                         : customerName,
+                    DlvCom = dlvCom,
                     OutDateTime = row.OutDateTime?.ToString("yyyy/MM/dd HH:mm:ss"),
                     TrackingNo = row.TrackingNo,
                     DlvInv = row.DlvInv,
@@ -358,7 +374,7 @@ namespace Service.Services.Receivable
             var numberStyle = NpoiStyle.CreateNumberStyle(workbook);
             var headers = new[]
             {
-                "序號", "掛帳日", "客戶銷帳日", "物流銷帳日", "資料來源", "報關類別", "客戶", "出倉時間",
+                "序號", "掛帳日", "客戶銷帳日", "物流銷帳日", "資料來源", "報關類別", "客戶", "派件公司", "出倉時間",
                 "分提單號", "物流貨號", "稅單號碼", "代收小計", "已收金額", "未收金額",
                 "跟廠商收", "跟派件收", "捷豐支付", "報關費", "重派運費", "到付款",
                 "手續費", "未回收原因"
@@ -452,6 +468,7 @@ namespace Service.Services.Receivable
                 NpoiCell.CreateCell(row, column++, item.Source, dataStyle);
                 NpoiCell.CreateCell(row, column++, item.Type, dataStyle);
                 NpoiCell.CreateCell(row, column++, item.CustomerName, dataStyle);
+                NpoiCell.CreateCell(row, column++, item.DlvCom, dataStyle);
                 NpoiCell.CreateCell(row, column++, item.OutDateTime, dataStyle);
                 NpoiCell.CreateCell(row, column++, item.TrackingNo, dataStyle);
                 NpoiCell.CreateCell(row, column++, item.DlvInv, dataStyle);

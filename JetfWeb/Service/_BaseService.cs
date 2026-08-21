@@ -92,22 +92,15 @@ namespace Service
                 .ToDictionary(g => g.Key, g => g.Select(x => x.CustName).FirstOrDefault() ?? string.Empty);
         }
 
-        protected Dictionary<string, string> GetAirTransNames(IEnumerable<string> transNos)
+        /// <summary>
+        /// 取得全部空運派件公司代號與名稱對照表。
+        /// </summary>
+        /// <returns>以派件公司代號為鍵、中文名稱為值的對照表。</returns>
+        protected Dictionary<string, string> GetAllAirTransNames()
         {
-            var codes = (transNos ?? Enumerable.Empty<string>())
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Select(x => x.Trim())
-                .Distinct()
-                .ToList();
-
-            if (!codes.Any())
-            {
-                return new Dictionary<string, string>();
-            }
-
             return JetfDb.CustomerMasters
                 .AsNoTracking()
-                .Where(x => x.TranType == "空運" && codes.Contains(x.TransNo))
+                .Where(x => x.TranType == "空運" && !string.IsNullOrEmpty(x.TransNo))
                 .GroupBy(x => x.TransNo)
                 .ToDictionary(g => g.Key, g => g.Select(x => x.TransName).FirstOrDefault() ?? string.Empty);
         }
