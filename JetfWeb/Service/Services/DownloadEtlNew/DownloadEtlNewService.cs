@@ -1154,7 +1154,7 @@ namespace Service.Services.DownloadEtlNew
                 return;
             }
 
-            // step 3: 指定 D 類型時，稅金由物流代收，貨到付款金額另外保留。
+            // step 3：D 類型的 TO_DLV_COD 與一般 N 類型使用相同計算方式。
             if (draft.IncludeTax == "D")
             {
                 ApplyTaxData(draft, CalculateTaxD(amounts));
@@ -1439,7 +1439,7 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 計算 D 類型的代收金額。
+        /// 計算 D 類型的代收金額；TO_DLV_COD 與 N 類型使用相同規則。
         /// </summary>
         /// <param name="amounts">本次應計金額。</param>
         /// <returns>計算結果。</returns>
@@ -1449,7 +1449,7 @@ namespace Service.Services.DownloadEtlNew
             {
                 TransCod = amounts.Tax1 + amounts.Tax2,
                 CustomerCod = 0,
-                ToDlvCod = amounts.Cod
+                ToDlvCod = amounts.Tax1 + amounts.Tax2 + amounts.Cod + amounts.Fee
             };
         }
 
