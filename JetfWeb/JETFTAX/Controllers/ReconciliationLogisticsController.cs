@@ -178,11 +178,24 @@ namespace JETFTAX.Controllers
                         expectedExtension.TrimStart('.')));
                 }
 
-                var response = _service.Upload(
-                    file.InputStream,
-                    file.FileName,
-                    company.Value,
-                    repaymentDate.Value);
+                // 保留原始上傳檔案，檔名加入時間避免同名檔案互相覆蓋。
+                var savedFileName =
+                    $"{Path.GetFileNameWithoutExtension(file.FileName)}_" +
+                    $"{DateTime.Now:yyyyMMddHHmmssfff}{expectedExtension}";
+                var uploadDirectory = Server.MapPath("~/UploadFIle");
+                Directory.CreateDirectory(uploadDirectory);
+                var savedFilePath = Path.Combine(uploadDirectory, savedFileName);
+                file.SaveAs(savedFilePath);
+
+                ResponseModel response;
+                using (var fileStream = System.IO.File.OpenRead(savedFilePath))
+                {
+                    response = _service.Upload(
+                        fileStream,
+                        savedFileName,
+                        company.Value,
+                        repaymentDate.Value);
+                }
                 var result = response.ReturnObject as ReconciliationLogisticsUploadResult;
                 if (result != null && (result.Results.Any() || result.Data.Any()))
                 {
