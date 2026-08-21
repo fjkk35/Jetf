@@ -161,6 +161,13 @@ namespace Service.Services.SeaTaxGUpload
             int rowNumber,
             IDictionary<string, int> columnIndexes)
         {
+            int taxPayerColumnIndex;
+            var taxPayer = columnIndexes.TryGetValue(
+                "收件人",
+                out taxPayerColumnIndex)
+                ? excelRow.GetCellData(taxPayerColumnIndex)
+                : string.Empty;
+
             var uploadRow = new SeaTaxGUploadRow
             {
                 RowNumber = rowNumber,
@@ -173,6 +180,7 @@ namespace Service.Services.SeaTaxGUpload
                 Fee = ParseAmount(excelRow.GetCellData(columnIndexes["代收手續"]), rowNumber, "代收手續"),
                 IncludeTax = excelRow.GetCellData(columnIndexes["稅金類別"]),
                 Recipient = excelRow.GetCellData(columnIndexes["客戶名"]),
+                TaxPayer = taxPayer,
                 CustomerName = excelRow.GetCellData(columnIndexes["客戶"])
             };
 
@@ -251,6 +259,7 @@ namespace Service.Services.SeaTaxGUpload
                    string.IsNullOrWhiteSpace(row.DlvInv) &&
                    string.IsNullOrWhiteSpace(row.IncludeTax) &&
                    string.IsNullOrWhiteSpace(row.Recipient) &&
+                   string.IsNullOrWhiteSpace(row.TaxPayer) &&
                    string.IsNullOrWhiteSpace(row.CustomerName) &&
                    row.Tax == 0 &&
                    row.ClearanceFee == 0 &&
@@ -411,8 +420,8 @@ namespace Service.Services.SeaTaxGUpload
                 .Append("    from jetf.dbo.FEE_MASTER where SOURCE_TYPE='1' and DLV_INV=@DLV_INV ")
                 .Append("    update [jetf].[dbo].[FEE_MASTER] set Download='0' where SOURCE_TYPE='1' and DLV_INV=@DLV_INV ")
                 .Append("end ")
-                .Append("insert [jetf].[dbo].[FEE_MASTER](DATADATE, SOURCE, SOURCE_TYPE, CUSTOMER, TRACKINGNO, TYPE, DLV_INV, OUT_DATETIME, TAX1, FEE, CCFEE, COD, INCLUDE_TAX, TO_DLV_COD, RECIPIENT, TRANS_COD, CUSTOMER_COD) ")
-                .Append("values(@DATADATE, @SOURCE, @SOURCE_TYPE, @CUSTOMER, @TRACKINGNO, @TYPE, @DLV_INV, @OUT_DATETIME, @TAX1, @FEE, @CCFEE, @COD, @INCLUDE_TAX, @TO_DLV_COD, @RECIPIENT, @TRANS_COD, @CUSTOMER_COD) ")
+                .Append("insert [jetf].[dbo].[FEE_MASTER](DATADATE, SOURCE, SOURCE_TYPE, CUSTOMER, TRACKINGNO, TYPE, DLV_INV, OUT_DATETIME, TAX1, FEE, CCFEE, COD, INCLUDE_TAX, TO_DLV_COD, RECIPIENT, TAX_PAYER, TRANS_COD, CUSTOMER_COD) ")
+                .Append("values(@DATADATE, @SOURCE, @SOURCE_TYPE, @CUSTOMER, @TRACKINGNO, @TYPE, @DLV_INV, @OUT_DATETIME, @TAX1, @FEE, @CCFEE, @COD, @INCLUDE_TAX, @TO_DLV_COD, @RECIPIENT, @TAX_PAYER, @TRANS_COD, @CUSTOMER_COD) ")
                 .Append("declare @FeeMasterId int=cast(scope_identity() as int) ")
                 .Append("insert [jetf].[dbo].[FEE_MASTER_DETAIL](FEE_MASTER_ID, MAIN_NUMBER, TRACKINGNO, CLEARANCE_NUMBER, BAG_NUMBER, TAX_NUMBER, TAX_PAYER, TAX_RECID, DLV_INV, TAX_BASE, TAX, CCFEE, COD, FEE, RECIPIENT, RECPHONE, RECADDRESS, TO_DLV_COD, TRANS_COD, CUSTOMER_COD) ")
                 .Append("select ID, MAIN_NUMBER, TRACKINGNO, CLEARANCE_NUMBER, BAG_NUMBER, TAX_NUMBER, TAX_PAYER, TAX_RECID, DLV_INV, TAX_BASE, TAX1, CCFEE, COD, FEE, RECIPIENT, RECPHONE, RECADDRESS, TO_DLV_COD, TRANS_COD, CUSTOMER_COD ")
@@ -463,6 +472,7 @@ namespace Service.Services.SeaTaxGUpload
                                 command.Parameters.Add("@INCLUDE_TAX", SqlDbType.NVarChar).Value = row.IncludeTax;
                                 command.Parameters.Add("@TO_DLV_COD", SqlDbType.NVarChar).Value = row.ToDlvCod.ToString(CultureInfo.InvariantCulture);
                                 command.Parameters.Add("@RECIPIENT", SqlDbType.NVarChar).Value = row.Recipient;
+                                command.Parameters.Add("@TAX_PAYER", SqlDbType.NVarChar).Value = row.TaxPayer;
                                 command.Parameters.Add("@TRANS_COD", SqlDbType.Int).Value = row.TransCod;
                                 command.Parameters.Add("@CUSTOMER_COD", SqlDbType.Int).Value =
                                     row.CustomerCod.HasValue

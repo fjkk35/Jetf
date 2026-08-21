@@ -72,9 +72,22 @@ namespace JETFTAX.Controllers
                     return Json(new ResponseModel("副檔名需為 xlsx"));
                 }
 
-                var response = _seaTaxGUploadService.Upload(
-                    uploadDate.ToString("yyyyMMdd"),
-                    file.InputStream);
+                // 保留原始上傳檔案，檔名加入時間避免同名檔案互相覆蓋。
+                var savedFileName =
+                    $"{Path.GetFileNameWithoutExtension(file.FileName)}_" +
+                    $"{DateTime.Now:yyyyMMddHHmmssfff}.xlsx";
+                var uploadDirectory = Server.MapPath("~/UploadFIle");
+                Directory.CreateDirectory(uploadDirectory);
+                var savedFilePath = Path.Combine(uploadDirectory, savedFileName);
+                file.SaveAs(savedFilePath);
+
+                ResponseModel response;
+                using (var fileStream = System.IO.File.OpenRead(savedFilePath))
+                {
+                    response = _seaTaxGUploadService.Upload(
+                        uploadDate.ToString("yyyyMMdd"),
+                        fileStream);
+                }
                 return Json(response);
             }
             catch (Exception ex)

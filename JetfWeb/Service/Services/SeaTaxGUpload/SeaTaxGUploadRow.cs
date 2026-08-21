@@ -80,5 +80,10 @@ namespace Service.Services.SeaTaxGUpload
         /// </summary>
         public string Recipient { get; set; }
 
+        /// <summary>
+        /// 收件人欄位內容，寫入納稅義務人。
+        /// </summary>
+        public string TaxPayer { get; set; }
+
     }
 }
