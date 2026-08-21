@@ -78,7 +78,12 @@ namespace Service.Services.Receivable.Domain
         public int CustomerCod { get; set; }
 
         /// <summary>
-        /// 應向物流公司收取的金額文字。
+        /// 派件收金額。
+        /// </summary>
+        public int TransCod { get; set; }
+
+        /// <summary>
+        /// 代收小計使用的應向物流公司收取金額。
         /// </summary>
         public string ToDlvCod { get; set; }
 

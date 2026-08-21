@@ -181,6 +181,7 @@ namespace Service.Services.Receivable
                 Cod = x.Cod ?? 0,
                 Fee = x.Fee ?? 0,
                 CustomerCod = x.CustomerCod ?? 0,
+                TransCod = x.TransCod ?? 0,
                 ToDlvCod = x.ToDlvCod,
                 ReceivedCustomerCod = x.ReceivedCustomerCod ?? 0,
                 ReceivedToDlvCod = x.ReceivedToDlvCod ?? 0
@@ -206,8 +207,8 @@ namespace Service.Services.Receivable
 
             return rows.Select(row =>
             {
-                var toDlvCod = row.ToDlvCod.ToInt();
-                var codSubtotal = row.CustomerCod + toDlvCod;
+                var transCod = row.TransCod;
+                var codSubtotal = row.CustomerCod + row.ToDlvCod.ToInt();
                 var receivedAmount = row.ReceivedCustomerCod + row.ReceivedToDlvCod;
                 string customerName;
                 customerNames.TryGetValue(row.CustomerCode ?? string.Empty, out customerName);
@@ -232,7 +233,7 @@ namespace Service.Services.Receivable
                     ReceivedAmount = receivedAmount,
                     UnreceivedAmount = codSubtotal - receivedAmount,
                     CustomerCod = row.CustomerCod,
-                    ToDlvCod = toDlvCod,
+                    TransCod = transCod,
                     JetfPayment = string.Empty,
                     Ccfee = row.Ccfee,
                     RedispatchFreight = string.Empty,
@@ -459,7 +460,7 @@ namespace Service.Services.Receivable
                 NpoiCell.CreateIntCell(row, column++, item.ReceivedAmount, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.UnreceivedAmount, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.CustomerCod, numberStyle);
-                NpoiCell.CreateIntCell(row, column++, item.ToDlvCod, numberStyle);
+                NpoiCell.CreateIntCell(row, column++, item.TransCod, numberStyle);
                 NpoiCell.CreateCell(row, column++, item.JetfPayment, dataStyle);
                 NpoiCell.CreateIntCell(row, column++, item.Ccfee, numberStyle);
                 NpoiCell.CreateCell(row, column++, item.RedispatchFreight, dataStyle);
