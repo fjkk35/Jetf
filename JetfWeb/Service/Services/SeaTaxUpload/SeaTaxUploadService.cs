@@ -70,11 +70,26 @@ namespace Service.Services.SeaTaxUpload
                     Logger.Debug($"step3 結束: 查詢缺漏異動資料，補遺筆數={modifyRows.Count}");
 
                     Logger.Debug($"step4 開始: 重建 FeeMasterModify 快照，補遺筆數={modifyRows.Count}");
-                    RefreshFeeMasterModifySnapshot(JetfDb, DataCenterDb, modifyRows, dataDate);
+                    var modifyOrders = GetLatestSeaOrderLookup(
+                        DataCenterDb,
+                        modifyRows
+                            .Select(row => new UploadKey(row.MainNumber, row.BagNumber))
+                            .ToList());
+                    RefreshFeeMasterModifySnapshot(
+                        JetfDb,
+                        modifyRows,
+                        modifyOrders,
+                        dataDate);
                     Logger.Debug($"step4 結束: 重建 FeeMasterModify 快照，補遺筆數={modifyRows.Count}");
 
                     Logger.Debug($"step5 開始: 將補遺資料回補至上傳集合與 SeaTaxUpload，補遺筆數={modifyRows.Count}");
-                    AppendModifyRowsToUpload(JetfDb, uploadRows, modifyRows, uploadTime, userId);
+                    AppendModifyRowsToUpload(
+                        JetfDb,
+                        uploadRows,
+                        modifyRows,
+                        modifyOrders,
+                        uploadTime,
+                        userId);
                     Logger.Debug($"step5 結束: 回補完成，目前總上傳筆數={uploadRows.Count}");
 
                     JetfDb.SaveChanges();
@@ -257,8 +272,8 @@ and not exists (
         /// </summary>
         private void RefreshFeeMasterModifySnapshot(
             JetfDbContext jetfDb,
-            DataCenterDbContext dataCenterDb,
             List<SeaTaxModifyRow> modifyRows,
+            List<SeaOrderOriginalEntity> latestOrders,
             string dataDate)
         {
             if (modifyRows == null || modifyRows.Count == 0)
@@ -267,9 +282,6 @@ and not exists (
             }
 
             var dataType = modifyRows[0].DataType;
-            var latestOrders = GetLatestSeaOrderLookup(
-                dataCenterDb,
-                modifyRows.Select(row => new UploadKey(row.MainNumber, row.BagNumber)).ToList());
 
             jetfDb.DeleteWhere(jetfDb.FeeMasterModifies
                 .Where(row => row.ModifyDataDate == dataDate && row.DataType == dataType));
@@ -305,16 +317,33 @@ and not exists (
             JetfDbContext jetfDb,
             List<SeaTaxUploadExcelRow> uploadRows,
             IEnumerable<SeaTaxModifyRow> modifyRows,
+            IEnumerable<SeaOrderOriginalEntity> latestOrders,
             DateTime uploadTime,
             string userId)
         {
+            var orderByKey = (latestOrders ?? Enumerable.Empty<SeaOrderOriginalEntity>())
+                .ToDictionary(
+                    row => BuildLookupKey(row.MainNumber, row.BlNo),
+                    row => row);
             var rows = (modifyRows ?? Enumerable.Empty<SeaTaxModifyRow>())
-                .Select(row => new SeaTaxUploadExcelRow
+                .Select(row =>
                 {
-                    MainNumber = NormalizeText(row.MainNumber),
-                    BlNo = NormalizeText(row.BagNumber),
-                    Tax = row.TaxAmount.HasValue ? row.TaxAmount.Value.ToString(CultureInfo.InvariantCulture) : string.Empty,
-                    TaxNumber = NormalizeText(row.TaxNumber)
+                    SeaOrderOriginalEntity order;
+                    orderByKey.TryGetValue(
+                        BuildLookupKey(row.MainNumber, row.BagNumber),
+                        out order);
+
+                    return new SeaTaxUploadExcelRow
+                    {
+                        MainNumber = NormalizeText(row.MainNumber),
+                        BlNo = NormalizeText(row.BagNumber),
+                        Tax = row.TaxAmount.HasValue
+                            ? row.TaxAmount.Value.ToString(CultureInfo.InvariantCulture)
+                            : string.Empty,
+                        TaxNumber = NormalizeText(row.TaxNumber),
+                        // 補遺資料沒有上傳檔案欄位，改由海運原單的進口人回填納稅義務人。
+                        TaxPayer = NormalizeText(order?.Importer)
+                    };
                 })
                 .ToList();
 
