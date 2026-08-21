@@ -28,6 +28,12 @@ namespace Service.Services.ReconciliationLogistics.Domain
         /// <summary>到付款金額。</summary>
         public decimal Cc { get; set; }
 
+        /// <summary>運費。</summary>
+        public int? FreightFee { get; set; }
+
+        /// <summary>手續費。</summary>
+        public int? Fee { get; set; }
+
         /// <summary>
         /// 應向物流代收金額。
         /// </summary>

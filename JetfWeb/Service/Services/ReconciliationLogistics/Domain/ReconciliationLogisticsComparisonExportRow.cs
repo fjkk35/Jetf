@@ -32,6 +32,9 @@ namespace Service.Services.ReconciliationLogistics.Domain
         /// <summary>物流貨號。</summary>
         public string DlvInv { get; set; }
 
+        /// <summary>新物流單號。</summary>
+        public string OutboundTrackingNo { get; set; }
+
         /// <summary>物流回款金額。</summary>
         public int? ReceivedAmount { get; set; }
 
@@ -50,11 +53,17 @@ namespace Service.Services.ReconciliationLogistics.Domain
         /// <summary>到付款。</summary>
         public int? Cod { get; set; }
 
+        /// <summary>運費。</summary>
+        public int? FreightFee { get; set; }
+
         /// <summary>手續費。</summary>
         public int? Fee { get; set; }
 
         /// <summary>物流銷帳比對狀態。</summary>
         public string Status { get; set; }
+
+        /// <summary>原納稅義務人。</summary>
+        public string Recipient { get; set; }
 
         /// <summary>納稅義務人。</summary>
         public string TaxPayer { get; set; }

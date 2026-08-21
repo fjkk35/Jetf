@@ -28,6 +28,9 @@ namespace Service.Services.ReconciliationLogistics.Domain
         /// <summary>物流貨號。</summary>
         public string DlvInv { get; set; }
 
+        /// <summary>新物流單號。</summary>
+        public string OutboundTrackingNo { get; set; }
+
         /// <summary>出倉時間。</summary>
         public DateTime? OutDateTime { get; set; }
 
@@ -45,6 +48,9 @@ namespace Service.Services.ReconciliationLogistics.Domain
 
         /// <summary>手續費。</summary>
         public int? Fee { get; set; }
+
+        /// <summary>原納稅義務人。</summary>
+        public string Recipient { get; set; }
 
         /// <summary>納稅義務人。</summary>
         public string TaxPayer { get; set; }

@@ -759,6 +759,7 @@ namespace Service.Services.ReconciliationLogistics
                     BagNumber = feeMaster?.BagNumber ?? feeMasterCod?.BagNumber,
                     TrackingNo = feeMaster?.TrackingNo ?? feeMasterCod?.TrackingNo ?? uploadRow.TrackingNo,
                     DlvInv = feeMaster?.DlvInv ?? feeMasterCod?.DlvInv ?? uploadRow.DlvInv,
+                    OutboundTrackingNo = feeMaster?.OutboundTrackingNo,
                     ReceivedAmount = logisticsRow?.ReceivedAmount,
                     ToDlvCod = feeMaster == null
                         ? feeMasterCod?.ToDlvCod
@@ -769,13 +770,15 @@ namespace Service.Services.ReconciliationLogistics
                     TransCod = feeMaster?.TransCod,
                     Ccfee = feeMaster?.Ccfee,
                     Cod = feeMaster?.Cod ?? feeMasterCodCc,
-                    Fee = feeMaster?.Fee,
+                    FreightFee = feeMasterCod?.FreightFee,
+                    Fee = feeMaster?.Fee ?? feeMasterCod?.Fee,
                     Status = logisticsRow == null
                         ? string.Empty
                         : logisticsRow.Status.HasValue
                             ? logisticsRow.Status.Value.ToDescription()
                             : "未設定",
                     Source = feeMaster?.Source ?? feeMasterCod?.DataType,
+                    Recipient = feeMaster?.Recipient,
                     UploadedValues = rawRowsByRowNo.ContainsKey(uploadRow.RowNo)
                         ? rawRowsByRowNo[uploadRow.RowNo].Values
                         : new List<string>()
@@ -962,12 +965,14 @@ namespace Service.Services.ReconciliationLogistics
                 BagNumber = x.BagNumber,
                 TrackingNo = x.TrackingNo,
                 DlvInv = x.DlvInv,
+                OutboundTrackingNo = x.OutboundTrackingNo,
                 OutDateTime = x.OutDateTime,
                 ToDlvCod = x.ToDlvCod,
                 TransCod = x.TransCod,
                 Ccfee = x.Ccfee,
                 Cod = x.Cod,
                 Fee = x.Fee,
+                Recipient = x.Recipient,
                 TaxPayer = x.TaxPayer,
                 TaxRecId = x.TaxRecId
             };
@@ -1041,6 +1046,8 @@ namespace Service.Services.ReconciliationLogistics
                 TrackingNo = x.TrackingNo,
                 DlvInv = x.DlvInv,
                 Cc = x.Cc,
+                FreightFee = x.FreightFee,
+                Fee = x.Fee,
                 ToDlvCod = x.ToDlvCod,
                 SignOutTime = x.SignOutTime,
                 ReconciliationLogisticsId = x.ReconciliationLogisticsId
@@ -1201,8 +1208,8 @@ namespace Service.Services.ReconciliationLogistics
                 var headers = new[]
                 {
                     "回款日期", "出倉時間", "報關類別", "客戶", "清關袋號", "分提單號",
-                    "物流貨號", "物流回款金額", "捷豐應收總計", "差異金額", "跟派件收",
-                    "報關費", "到付款", "手續費", "狀態", "納稅義務人", "納稅義務人身分證號",
+                    "物流貨號", "新物流單號", "物流回款金額", "捷豐應收總計", "差異金額", "跟派件收",
+                    "報關費", "到付款", "運費", "手續費", "狀態", "原納稅義務人", "納稅義務人", "納稅義務人身分證號",
                     "資料來源(倉別)"
                 };
                 var allHeaders = headers.Concat(uploadedHeaders ?? new List<string>()).ToArray();
@@ -1224,14 +1231,17 @@ namespace Service.Services.ReconciliationLogistics
                     NpoiCell.CreateCell(excelRow, column++, item.BagNumber, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.TrackingNo, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.DlvInv, dataStyle);
+                    NpoiCell.CreateCell(excelRow, column++, item.OutboundTrackingNo, dataStyle);
                     NpoiCell.CreateIntCell(excelRow, column++, item.ReceivedAmount, numberStyle);
                     NpoiCell.CreateIntCell(excelRow, column++, item.ToDlvCod, numberStyle);
                     NpoiCell.CreateIntCell(excelRow, column++, item.DifferenceAmount, numberStyle);
                     NpoiCell.CreateIntCell(excelRow, column++, item.TransCod, numberStyle);
                     NpoiCell.CreateIntCell(excelRow, column++, item.Ccfee, numberStyle);
                     NpoiCell.CreateIntCell(excelRow, column++, item.Cod, numberStyle);
+                    NpoiCell.CreateIntCell(excelRow, column++, item.FreightFee, numberStyle);
                     NpoiCell.CreateIntCell(excelRow, column++, item.Fee, numberStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.Status, dataStyle);
+                    NpoiCell.CreateCell(excelRow, column++, item.Recipient, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.TaxPayer, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.TaxRecId, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.Source, dataStyle);
