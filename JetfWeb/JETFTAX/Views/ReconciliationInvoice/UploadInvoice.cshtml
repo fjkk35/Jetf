@@ -31,8 +31,11 @@
 
         <div class="form-group row" style="margin-bottom:0;">
             <div class="col-lg-offset-2 col-md-offset-3 col-lg-10 col-md-9 col-sm-12" style="margin:0.5rem 0;">
-                <button type="button" class="btn btn-primary confirmbtn" ng-click="uploadFile()" ng-disabled="uploading">
+                <button type="button" class="btn btn-primary confirmbtn" ng-click="uploadFile()" ng-disabled="uploading || deleting">
                     <i class="fas fa-upload"></i> {{ uploading ? '上傳中...' : '上傳' }}
+                </button>
+                <button type="button" class="btn btn-danger confirmbtn" ng-click="deleteFile()" ng-disabled="uploading || deleting">
+                    <i class="fas fa-trash"></i> {{ deleting ? '刪除中...' : '刪除發票' }}
                 </button>
             </div>
         </div>

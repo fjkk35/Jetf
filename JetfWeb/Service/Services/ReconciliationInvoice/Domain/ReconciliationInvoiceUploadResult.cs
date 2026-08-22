@@ -36,6 +36,11 @@ namespace Service.Services.ReconciliationInvoice.Domain
         public int UpdatedCount { get; set; }
 
         /// <summary>
+        /// 刪除筆數。
+        /// </summary>
+        public int DeletedCount { get; set; }
+
+        /// <summary>
         /// 回傳訊息。
         /// </summary>
         public string Message { get; set; }

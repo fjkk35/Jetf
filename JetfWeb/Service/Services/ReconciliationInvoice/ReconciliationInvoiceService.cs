@@ -84,6 +84,59 @@ namespace Service.Services.ReconciliationInvoice
         }
 
         /// <summary>
+        /// 上傳 Excel 並刪除符合分提單號及物流貨號的發票資料。
+        /// </summary>
+        /// <param name="filePath">Excel 檔案路徑。</param>
+        /// <returns>刪除結果。</returns>
+        public ResponseModel DeleteInvoices(string filePath)
+        {
+            try
+            {
+                var uploadRows = ReadDeleteExcelFile(filePath);
+                if (uploadRows.Count == 0)
+                {
+                    return new ResponseModel("Excel 檔案中沒有資料");
+                }
+
+                ValidateDeleteRows(uploadRows);
+                var failRows = uploadRows
+                    .Where(x => !string.IsNullOrWhiteSpace(x.FailReason))
+                    .ToList();
+                if (failRows.Any())
+                {
+                    var failResult = new ReconciliationInvoiceUploadResult
+                    {
+                        Count = uploadRows.Count,
+                        FailCount = failRows.Count,
+                        Message = $"檔案共有 {uploadRows.Count} 筆資料，失敗 {failRows.Count} 筆，整批未刪除資料庫資料",
+                        Data = failRows
+                    };
+
+                    return new ResponseModel
+                    {
+                        IsSuccess = false,
+                        status = Status.error,
+                        msg = failResult.Message,
+                        ReturnObject = failResult
+                    };
+                }
+
+                var result = DeleteInvoiceEntities(uploadRows);
+                return new ResponseModel
+                {
+                    IsSuccess = true,
+                    status = Status.success,
+                    msg = result.Message,
+                    ReturnObject = result
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ResponseModel($"刪除失敗：{ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// 讀取 Excel 檔案內容。
         /// </summary>
         /// <param name="filePath">檔案路徑。</param>
@@ -125,6 +178,103 @@ namespace Service.Services.ReconciliationInvoice
             }
 
             return uploadRows;
+        }
+
+        /// <summary>
+        /// 依表頭名稱讀取刪除發票所需的分提單號及物流貨號。
+        /// </summary>
+        /// <param name="filePath">Excel 檔案路徑。</param>
+        /// <returns>刪除用上傳列資料。</returns>
+        private List<ReconciliationInvoiceUploadRow> ReadDeleteExcelFile(
+            string filePath)
+        {
+            var uploadRows = new List<ReconciliationInvoiceUploadRow>();
+            using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+            {
+                IWorkbook workbook = new XSSFWorkbook(stream);
+                try
+                {
+                    if (workbook.NumberOfSheets == 0)
+                    {
+                        return uploadRows;
+                    }
+
+                    var sheet = workbook.GetSheetAt(0);
+                    var headerRowIndex = -1;
+                    var trackingNoColumnIndex = -1;
+                    var dlvInvColumnIndex = -1;
+                    for (var rowIndex = 0; rowIndex <= sheet.LastRowNum; rowIndex++)
+                    {
+                        var row = sheet.GetRow(rowIndex);
+                        if (row == null)
+                        {
+                            continue;
+                        }
+
+                        var currentTrackingNoColumnIndex = -1;
+                        var currentDlvInvColumnIndex = -1;
+                        for (var columnIndex = 0;
+                             columnIndex < row.LastCellNum;
+                             columnIndex++)
+                        {
+                            var header = row.GetCellData(columnIndex);
+                            if (header == "分提單號")
+                            {
+                                currentTrackingNoColumnIndex = columnIndex;
+                            }
+                            else if (header == "物流貨號")
+                            {
+                                currentDlvInvColumnIndex = columnIndex;
+                            }
+                        }
+
+                        if (currentTrackingNoColumnIndex >= 0 &&
+                            currentDlvInvColumnIndex >= 0)
+                        {
+                            headerRowIndex = rowIndex;
+                            trackingNoColumnIndex = currentTrackingNoColumnIndex;
+                            dlvInvColumnIndex = currentDlvInvColumnIndex;
+                            break;
+                        }
+                    }
+
+                    if (headerRowIndex < 0)
+                    {
+                        throw new InvalidOperationException(
+                            "找不到分提單號及物流貨號表頭，請確認 Excel 格式");
+                    }
+
+                    for (var rowIndex = headerRowIndex + 1;
+                         rowIndex <= sheet.LastRowNum;
+                         rowIndex++)
+                    {
+                        var row = sheet.GetRow(rowIndex);
+                        if (row == null)
+                        {
+                            continue;
+                        }
+
+                        var uploadRow = NormalizeRow(new ReconciliationInvoiceUploadRow
+                        {
+                            RowNo = rowIndex + 1,
+                            TrackingNo = row.GetCellData(trackingNoColumnIndex),
+                            DlvInv = row.GetCellData(dlvInvColumnIndex)
+                        });
+                        if (IsEmptyRow(uploadRow))
+                        {
+                            continue;
+                        }
+
+                        uploadRows.Add(uploadRow);
+                    }
+
+                    return uploadRows;
+                }
+                finally
+                {
+                    workbook.Close();
+                }
+            }
         }
 
         /// <summary>
@@ -213,6 +363,48 @@ namespace Service.Services.ReconciliationInvoice
                 })
                 .Where(g => g.Count() > 1)
                 .ToList();
+
+            foreach (var group in duplicateGroups)
+            {
+                foreach (var row in group)
+                {
+                    AppendFailReason(row, "分提單號及物流貨號重複");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 驗證刪除發票所需的比對欄位。
+        /// </summary>
+        /// <param name="uploadRows">上傳列資料。</param>
+        private static void ValidateDeleteRows(
+            List<ReconciliationInvoiceUploadRow> uploadRows)
+        {
+            foreach (var row in uploadRows)
+            {
+                var failReasons = new List<string>();
+                if (string.IsNullOrWhiteSpace(row.TrackingNo))
+                {
+                    failReasons.Add("分提單號必填");
+                }
+
+                if (string.IsNullOrWhiteSpace(row.DlvInv))
+                {
+                    failReasons.Add("物流貨號必填");
+                }
+
+                row.FailReason = string.Join("；", failReasons);
+            }
+
+            var duplicateGroups = uploadRows
+                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo)
+                    && !string.IsNullOrWhiteSpace(x.DlvInv))
+                .GroupBy(x => new
+                {
+                    TrackingNo = x.TrackingNo.ToUpperInvariant(),
+                    DlvInv = x.DlvInv.ToUpperInvariant()
+                })
+                .Where(x => x.Count() > 1);
 
             foreach (var group in duplicateGroups)
             {
@@ -367,6 +559,77 @@ namespace Service.Services.ReconciliationInvoice
                 CreatedCount = createdCount,
                 UpdatedCount = updatedCount,
                 Message = $"上傳完成，共 {uploadRows.Count} 筆，新增 {createdCount} 筆，更新 {updatedCount} 筆"
+            };
+        }
+
+        /// <summary>
+        /// 依上傳檔案中的分提單號及物流貨號批次刪除發票資料。
+        /// </summary>
+        /// <param name="uploadRows">已通過驗證的上傳列資料。</param>
+        /// <returns>刪除結果。</returns>
+        private ReconciliationInvoiceUploadResult DeleteInvoiceEntities(
+            List<ReconciliationInvoiceUploadRow> uploadRows)
+        {
+            var existingEntities = JetfDb.ReconciliationInvoices
+                .AsNoTracking()
+                .WhereBulkContains(
+                    JetfDb,
+                    uploadRows,
+                    x => new { x.TrackingNo, x.DlvInv },
+                    x => new { x.TrackingNo, x.DlvInv })
+                .ToList();
+            var existingIds = existingEntities
+                .Select(x => x.Id)
+                .Distinct()
+                .ToList();
+            var existingKeys = existingEntities
+                .Select(x => new
+                {
+                    TrackingNo = (x.TrackingNo ?? string.Empty).Trim().ToUpperInvariant(),
+                    DlvInv = (x.DlvInv ?? string.Empty).Trim().ToUpperInvariant()
+                })
+                .ToHashSet();
+            var failRows = uploadRows
+                .Where(x => !existingKeys.Contains(new
+                {
+                    TrackingNo = x.TrackingNo.ToUpperInvariant(),
+                    DlvInv = x.DlvInv.ToUpperInvariant()
+                }))
+                .ToList();
+            foreach (var row in failRows)
+            {
+                AppendFailReason(
+                    row,
+                    "查無發票資料（分提單號 + 物流貨號）");
+            }
+
+            using (var transaction = JetfDb.Database.BeginTransaction())
+            {
+                try
+                {
+                    if (existingIds.Any())
+                    {
+                        JetfDb.DeleteByColumnValues<ReconciliationInvoiceEntity, int>(
+                            existingIds,
+                            x => x.Id);
+                    }
+
+                    transaction.Commit();
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
+
+            return new ReconciliationInvoiceUploadResult
+            {
+                Count = uploadRows.Count,
+                DeletedCount = existingIds.Count,
+                FailCount = failRows.Count,
+                Data = failRows,
+                Message = $"刪除完成，共 {uploadRows.Count} 筆，刪除 {existingIds.Count} 筆，失敗 {failRows.Count} 筆"
             };
         }
 
