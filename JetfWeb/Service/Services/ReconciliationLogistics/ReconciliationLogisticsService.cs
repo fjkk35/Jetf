@@ -66,6 +66,11 @@ namespace Service.Services.ReconciliationLogistics
             "交易金額", "分提單號碼"
         };
 
+        private static readonly string[] FamilyMartHeaders =
+        {
+            "廠商訂單編號", "代收金額", "交易狀態"
+        };
+
         /// <summary>
         /// 建立物流銷帳服務。
         /// </summary>
@@ -605,6 +610,7 @@ namespace Service.Services.ReconciliationLogistics
             ReconciliationLogisticsCompany company,
             ReconciliationLogisticsUploadFormat uploadFormat)
         {
+            var feeMasterCodOnly = IsFeeMasterCodOnlyFormat(uploadFormat);
             var logistics = GetComparisonLogistics(uploadRows, company, uploadFormat);
             var logisticsByUploadRow = uploadRows.ToDictionary(
                 uploadRow => uploadRow,
@@ -618,7 +624,7 @@ namespace Service.Services.ReconciliationLogistics
                 .Select(x => x.Id)
                 .Distinct()
                 .ToList();
-            var feeMasterLinks = logisticsIds.Any()
+            var feeMasterLinks = !feeMasterCodOnly && logisticsIds.Any()
                 ? GetComparisonFeeMasterLinks(logisticsIds)
                 : new List<ReconciliationLogisticsFeeMasterLink>();
             var feeMasterIdByLogisticsId = feeMasterLinks
@@ -667,7 +673,7 @@ namespace Service.Services.ReconciliationLogistics
                             !linkedFeeMasterCodByLogisticsId.ContainsKey(logisticsRow.Id));
                 })
                 .ToList();
-            var feeMasters = uploadRowsWithoutLinkedFee.Any()
+            var feeMasters = !feeMasterCodOnly && uploadRowsWithoutLinkedFee.Any()
                 ? GetComparisonFeeMasters(uploadRowsWithoutLinkedFee, uploadFormat)
                 : new List<ReconciliationLogisticsComparisonFeeMaster>();
             var feeMasterByUploadRow = uploadRowsWithoutLinkedFee.ToDictionary(
@@ -677,7 +683,7 @@ namespace Service.Services.ReconciliationLogistics
                     feeMasters,
                     uploadFormat));
 
-            // 到付款只查詢費用主檔仍找不到的上傳資料，避免將整份上傳檔寫入 COD 批次暫存表。
+            // 全家直接查詢到付款；其他格式只查詢費用主檔仍找不到的上傳資料。
             var feeMasterCodUploadRows = uploadRowsWithoutLinkedFee
                 .Where(uploadRow => feeMasterByUploadRow[uploadRow] == null)
                 .ToList();
@@ -1480,6 +1486,9 @@ namespace Service.Services.ReconciliationLogistics
                         case ReconciliationLogisticsUploadFormat.TradeVan:
                             row = ReadTradeVanRow(excelRow, rowIndex + 1, columnIndexes);
                             break;
+                        case ReconciliationLogisticsUploadFormat.FamilyMart:
+                            row = ReadFamilyMartRow(excelRow, rowIndex + 1, columnIndexes);
+                            break;
                         default:
                             throw new ArgumentOutOfRangeException(
                                 nameof(uploadFormat),
@@ -1606,6 +1615,17 @@ namespace Service.Services.ReconciliationLogistics
                         out columnIndexes))
                     {
                         return ReconciliationLogisticsUploadFormat.TradeVan;
+                    }
+
+                    break;
+                case ReconciliationLogisticsCompany.FamilyMart:
+                    if (TryFindHeaderRow(
+                        sheet,
+                        FamilyMartHeaders,
+                        out headerRowIndex,
+                        out columnIndexes))
+                    {
+                        return ReconciliationLogisticsUploadFormat.FamilyMart;
                     }
 
                     break;
@@ -2046,6 +2066,50 @@ namespace Service.Services.ReconciliationLogistics
         }
 
         /// <summary>
+        /// 讀取一筆全家代收資料；只保留交易成功且代收金額大於 0 的資料。
+        /// </summary>
+        /// <param name="excelRow">Excel 資料列。</param>
+        /// <param name="rowNo">Excel 顯示列號。</param>
+        /// <param name="columnIndexes">欄位索引。</param>
+        /// <returns>符合條件的全家上傳資料；不符合條件時回傳 null。</returns>
+        private static ReconciliationLogisticsUploadRow ReadFamilyMartRow(
+            IRow excelRow,
+            int rowNo,
+            IDictionary<string, int> columnIndexes)
+        {
+            var transactionStatus = excelRow.GetCellData(columnIndexes["交易狀態"]);
+            var amountCellIndex = columnIndexes["代收金額"];
+            var amountCell = excelRow.GetCell(amountCellIndex);
+            var amountText = amountCell?.CellType == CellType.Numeric
+                ? amountCell.NumericCellValue.ToString(CultureInfo.InvariantCulture)
+                : excelRow.GetCellData(amountCellIndex);
+            decimal amount;
+            if (transactionStatus != "1" ||
+                !TryParseDecimal(amountText, out amount) ||
+                amount <= 0)
+            {
+                return null;
+            }
+
+            var failReasons = new List<string>();
+            var row = new ReconciliationLogisticsUploadRow
+            {
+                RowNo = rowNo,
+                TrackingNo = string.Empty,
+                DlvInv = excelRow.GetCellData(columnIndexes["廠商訂單編號"]),
+                ReceivedAmountText = amountText,
+                ReceivedAmount = ParseRequiredAmount(
+                    amountText,
+                    "代收金額",
+                    failReasons)
+            };
+
+            ValidateRequiredDlvInv(row, "廠商訂單編號", failReasons);
+            row.FailReason = string.Join("；", failReasons);
+            return row;
+        }
+
+        /// <summary>
         /// 尋找包含指定文字的 Excel 列。
         /// </summary>
         /// <param name="sheet">Excel 工作表。</param>
@@ -2349,9 +2413,7 @@ namespace Service.Services.ReconciliationLogistics
                 .GroupBy(x => x.DlvInv.Trim(), StringComparer.OrdinalIgnoreCase)
                 .Where(group => group.Count() > 1)
                 .SelectMany(group => group);
-            var duplicateDlvInvName = company == ReconciliationLogisticsCompany.SevenEleven
-                ? "出貨單號"
-                : "物流貨號";
+            var duplicateDlvInvName = GetDlvInvColumnName(company);
             foreach (var row in duplicateDlvInvRows)
             {
                 AppendFailReason(row, $"{duplicateDlvInvName}在檔案內重複");
@@ -2492,11 +2554,27 @@ namespace Service.Services.ReconciliationLogistics
             foreach (var row in uploadRows.Where(
                 x => existingDlvInvs.Contains((x.DlvInv ?? string.Empty).Trim())))
             {
-                var duplicateDlvInvName =
-                    company == ReconciliationLogisticsCompany.SevenEleven
-                        ? "出貨單號"
-                        : "物流貨號";
+                var duplicateDlvInvName = GetDlvInvColumnName(company);
                 AppendFailReason(row, $"{duplicateDlvInvName}已上傳過");
+            }
+        }
+
+        /// <summary>
+        /// 依物流公司取得上傳檔案中的物流貨號欄位名稱。
+        /// </summary>
+        /// <param name="company">物流公司。</param>
+        /// <returns>物流貨號欄位名稱。</returns>
+        private static string GetDlvInvColumnName(
+            ReconciliationLogisticsCompany company)
+        {
+            switch (company)
+            {
+                case ReconciliationLogisticsCompany.SevenEleven:
+                    return "出貨單號";
+                case ReconciliationLogisticsCompany.FamilyMart:
+                    return "廠商訂單編號";
+                default:
+                    return "物流貨號";
             }
         }
 
@@ -2580,6 +2658,7 @@ namespace Service.Services.ReconciliationLogistics
                 case ReconciliationLogisticsUploadFormat.Ktj:
                 case ReconciliationLogisticsUploadFormat.Cash:
                 case ReconciliationLogisticsUploadFormat.Yto:
+                case ReconciliationLogisticsUploadFormat.FamilyMart:
                     feeMasterKeySelector = x => (x.DlvInv ?? string.Empty).Trim();
                     feeMasterCodKeySelector = x => (x.DlvInv ?? string.Empty).Trim();
                     entityKeySelector = x => (x.DlvInv ?? string.Empty).Trim();
@@ -2601,13 +2680,15 @@ namespace Service.Services.ReconciliationLogistics
                         "不支援的物流上傳格式");
             }
 
-            // Step 3：先依原本單號規則取得 FEE_MASTER，再以 OutboundTrackingNo 補查未命中的重出貨件。
-
-            var matchedFeeMasterIds = GetMatchedFeeMasterIds(
-                entities,
-                uploadFormat,
-                feeMasterKeySelector,
-                entityKeySelector);
+            // Step 3：全家略過費用明細，其餘格式先依原本單號規則取得 FEE_MASTER，
+            // 再以 OutboundTrackingNo 補查未命中的重出貨件。
+            var matchedFeeMasterIds = IsFeeMasterCodOnlyFormat(uploadFormat)
+                ? new List<ReconciliationLogisticsFeeMasterMatch>()
+                : GetMatchedFeeMasterIds(
+                    entities,
+                    uploadFormat,
+                    feeMasterKeySelector,
+                    entityKeySelector);
             var feeMasterIds = matchedFeeMasterIds
                 .Select(x => x.FeeMasterId)
                 .Distinct()
@@ -2864,6 +2945,17 @@ namespace Service.Services.ReconciliationLogistics
         }
 
         /// <summary>
+        /// 判斷此物流格式是否只比對到付款資料。
+        /// </summary>
+        /// <param name="uploadFormat">物流上傳格式。</param>
+        /// <returns>是否只查詢及更新 FEE_MASTER_COD。</returns>
+        private static bool IsFeeMasterCodOnlyFormat(
+            ReconciliationLogisticsUploadFormat uploadFormat)
+        {
+            return uploadFormat == ReconciliationLogisticsUploadFormat.FamilyMart;
+        }
+
+        /// <summary>
         /// 依物流公司取得重試銷帳使用的比對格式。
         /// </summary>
         /// <param name="company">物流公司。</param>
@@ -2889,6 +2981,8 @@ namespace Service.Services.ReconciliationLogistics
                     return ReconciliationLogisticsUploadFormat.Yto;
                 case ReconciliationLogisticsCompany.TradeVan:
                     return ReconciliationLogisticsUploadFormat.TradeVan;
+                case ReconciliationLogisticsCompany.FamilyMart:
+                    return ReconciliationLogisticsUploadFormat.FamilyMart;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(company),
@@ -3238,13 +3332,14 @@ namespace Service.Services.ReconciliationLogistics
                             entities,
                             feeMasterCod => feeMasterCod.TrackingNo,
                             entity => entity.TrackingNo);
-                // 新竹物流、客樂得、大榮、現金及圓通使用物流貨號比對。
+                // 新竹物流、客樂得、大榮、現金、圓通及全家使用物流貨號比對。
                 case ReconciliationLogisticsUploadFormat.HctCollection:
                 case ReconciliationLogisticsUploadFormat.HctRemittance:
                 case ReconciliationLogisticsUploadFormat.Kelede:
                 case ReconciliationLogisticsUploadFormat.Ktj:
                 case ReconciliationLogisticsUploadFormat.Cash:
                 case ReconciliationLogisticsUploadFormat.Yto:
+                case ReconciliationLogisticsUploadFormat.FamilyMart:
                     return JetfDb.FeeMasterCods
                         .Where(x => !x.ReconciliationLogisticsId.HasValue)
                         .WhereBulkContains(
@@ -3522,7 +3617,12 @@ namespace Service.Services.ReconciliationLogistics
             /// <summary>
             /// 關貿交易明細格式。
             /// </summary>
-            TradeVan
+            TradeVan,
+
+            /// <summary>
+            /// 全家代收資料格式。
+            /// </summary>
+            FamilyMart
         }
 
     }

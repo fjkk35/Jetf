@@ -53,6 +53,12 @@ namespace Service.EnumTax
         /// 關貿。
         /// </summary>
         [Description("關貿")]
-        TradeVan = 8
+        TradeVan = 8,
+
+        /// <summary>
+        /// 全家。
+        /// </summary>
+        [Description("全家")]
+        FamilyMart = 9
     }
 }

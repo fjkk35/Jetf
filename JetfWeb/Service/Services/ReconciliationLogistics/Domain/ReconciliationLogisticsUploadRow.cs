@@ -20,6 +20,7 @@ namespace Service.Services.ReconciliationLogistics.Domain
         /// <para>超峰：订单号。</para>
         /// <para>圓通：原單號。</para>
         /// <para>關貿：分提單號碼。</para>
+        /// <para>全家：不使用此欄位。</para>
         /// </summary>
         public string TrackingNo { get; set; }
 
@@ -33,6 +34,7 @@ namespace Service.Services.ReconciliationLogistics.Domain
         /// <para>現金：運單號。</para>
         /// <para>圓通：圆通单号。</para>
         /// <para>關貿：不使用此欄位。</para>
+        /// <para>全家：廠商訂單編號。</para>
         /// </summary>
         public string DlvInv { get; set; }
 
@@ -48,6 +50,7 @@ namespace Service.Services.ReconciliationLogistics.Domain
         /// <para>現金：金額。</para>
         /// <para>圓通：合计。</para>
         /// <para>關貿：交易金額。</para>
+        /// <para>全家：交易狀態為 1 且大於 0 的代收金額。</para>
         /// </summary>
         public int? ReceivedAmount { get; set; }
 

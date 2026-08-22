@@ -39,6 +39,7 @@ namespace Service.Data
         /// <para>超峰：订单号。</para>
         /// <para>圓通：原單號。</para>
         /// <para>關貿：分提單號碼。</para>
+        /// <para>全家：不使用此欄位。</para>
         /// </summary>
         [Required]
         [StringLength(50)]
@@ -54,6 +55,7 @@ namespace Service.Data
         /// <para>現金：運單號。</para>
         /// <para>圓通：圆通单号。</para>
         /// <para>關貿：不使用此欄位。</para>
+        /// <para>全家：廠商訂單編號。</para>
         /// </summary>
         [Required]
         [StringLength(50)]
@@ -69,6 +71,7 @@ namespace Service.Data
         /// <para>現金：金額。</para>
         /// <para>圓通：合计。</para>
         /// <para>關貿：交易金額。</para>
+        /// <para>全家：代收金額。</para>
         /// </summary>
         public int ReceivedAmount { get; set; }
 
