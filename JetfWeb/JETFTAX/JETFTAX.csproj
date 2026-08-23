@@ -371,6 +371,7 @@
     <Compile Include="Controllers\ShipmentInboundExceptionRecordController.cs" />
     <Compile Include="Controllers\ShipmentInboundRecordController.cs" />
     <Compile Include="Controllers\ShipmentInboundWarehouseProcessController.cs" />
+    <Compile Include="Controllers\ShipmentInboundWarehouseCodImportController.cs" />
     <Compile Include="Controllers\ShipmentOutboundBatchImportController.cs" />
     <Compile Include="Controllers\ShipmentOutboundBatchImportRevokeController.cs" />
     <Compile Include="Controllers\SjlBatchImportController.cs" />
@@ -892,6 +893,7 @@
     <Content Include="Scripts\ng-controllers\ShipmentInboundRecord\ShipmentInboundRecord.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundRecord\ShipmentInboundRecordDetail.js" />
     <Content Include="Scripts\ng-controllers\ShipmentInboundWarehouseProcess\ShipmentInboundWarehouseProcess.js" />
+    <Content Include="Scripts\ng-controllers\ShipmentInboundWarehouseCodImport\ShipmentInboundWarehouseCodImport.js" />
     <Content Include="Scripts\ng-controllers\ShipmentOutboundBatchImportRevoke\ShipmentOutboundBatchImportRevoke.js" />
     <Content Include="Scripts\ng-controllers\ShipmentOutboundBatchImport\ShipmentOutboundBatchImport.js" />
     <Content Include="Scripts\ng-controllers\SjlBatchImport\SjlBatchImport.js" />
@@ -3022,6 +3024,7 @@
     <Content Include="Views\ShipmentOutboundBatchImport\Index.cshtml" />
     <Content Include="Views\ShipmentInboundLocationTransfer\Index.cshtml" />
     <Content Include="Views\ShipmentInboundWarehouseProcess\Index.cshtml" />
+    <Content Include="Views\ShipmentInboundWarehouseCodImport\Index.cshtml" />
     <Content Include="Views\BatchSearchCargo2\Index.cshtml" />
     <Content Include="Views\BatchSearchShenzhenCargo\Index.cshtml" />
     <Content Include="Views\PdtScanCargoArrivalTime\Index.cshtml" />
@@ -3069,6 +3072,7 @@
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenFeeQuery.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenFeeTransfer.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ShipmentInboundExceptionRecord\ShipmentInboundExceptionRecord.ts" />
+    <TypeScriptCompile Include="Scripts\ng-controllers\ShipmentInboundWarehouseCodImport\ShipmentInboundWarehouseCodImport.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginal.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginalQuery.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenTax.ts" />

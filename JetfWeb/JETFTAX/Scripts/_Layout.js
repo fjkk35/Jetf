@@ -170,6 +170,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'ShipmentOutboundBatchImportRevoke', text: '貨件出庫取消批量上傳', url: '~/ShipmentOutboundBatchImportRevoke/Index', auth: ['ShipmentOutboundBatchImport'] },
                 { id: 'ShipmentInboundLocationTransfer', text: '儲位調撥', url: '~/ShipmentInboundLocationTransfer/Index', auth: ['ShipmentInboundLocationTransfer'] },
                 { id: 'ShipmentInboundWarehouseProcess', text: '倉庫處理狀態', url: '~/ShipmentInboundWarehouseProcess/Index', auth: ['ShipmentInboundWarehouseProcess'] },
+                { id: 'ShipmentInboundWarehouseCodImport', text: '倉庫代收上傳', url: '~/ShipmentInboundWarehouseCodImport/Index', auth: ['ShipmentInboundWarehouseCodImport'] },
             ]
         },
         {

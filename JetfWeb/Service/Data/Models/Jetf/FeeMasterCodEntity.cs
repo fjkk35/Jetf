@@ -42,6 +42,13 @@ namespace Service.Data
         public string Customer { get; set; }
 
         /// <summary>
+        /// 到付款資料類別。
+        /// </summary>
+        [StringLength(20)]
+        [Column("Type")]
+        public string Type { get; set; }
+
+        /// <summary>
         /// 空運袋號或海運分提單號。
         /// </summary>
         [StringLength(100)]

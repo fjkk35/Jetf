@@ -494,6 +494,11 @@ namespace Service.EnumTax
         ShipmentInboundWarehouseProcess,
 
         /// <summary>
+        /// 倉庫代收上傳
+        /// </summary>
+        ShipmentInboundWarehouseCodImport,
+
+        /// <summary>
         /// 批量查詢速派新遞物流貨號
         /// </summary>
         BatchSearchShenzhenCargo,

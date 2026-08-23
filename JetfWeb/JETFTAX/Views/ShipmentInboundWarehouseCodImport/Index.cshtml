@@ -1,0 +1,162 @@
+﻿@{
+    ViewBag.Title = "倉庫代收上傳";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="ShipmentInboundWarehouseCodImportController">
+    <span class="headtype">倉庫代收上傳</span>
+    <hr />
+
+    <div class="containertype">
+        <div class="col-lg-12" style="margin-bottom:0.5rem;">
+            <label for="warehouseCodFile">選擇檔案</label>
+            <input type="file" id="warehouseCodFile" accept=".xlsx" class="form-control" />
+        </div>
+
+        <div class="col-lg-12" style="margin:0.5rem 0;">
+            <a href='@Url.Action("DownloadExample", "ShipmentInboundWarehouseCodImport")' target='_blank'>下載範例</a>
+        </div>
+
+        <div class="col-lg-12" style="margin:0.5rem 0;">
+            <button type="button"
+                    class="btn btn-primary confirmbtn"
+                    ng-click="upload()"
+                    ng-disabled="uploading">
+                <i class="fas fa-upload"></i> {{ uploading ? '上傳中...' : '上傳' }}
+            </button>
+        </div>
+
+        <div class="loader loader-bar"
+             ng-class="{'is-active': uploading}"
+             data-rounded
+             data-text="檔案上傳中"></div>
+
+        <div class="col-lg-12 warehouse-cod-upload-result"
+             ng-if="uploadResult && !uploadResult.ReturnObject">
+            <div class="alert alert-danger">{{ uploadResult.msg }}</div>
+        </div>
+
+        <div class="col-lg-12 warehouse-cod-upload-result"
+             ng-if="uploadResult && uploadResult.ReturnObject">
+            <div class="warehouse-cod-upload-summary">
+                <div class="warehouse-cod-upload-summary-card summary-total">
+                    <span class="label">總筆數</span>
+                    <span class="value">{{ uploadResult.ReturnObject.Count | number:0 }}</span>
+                </div>
+                <div class="warehouse-cod-upload-summary-card summary-success">
+                    <span class="label">成功筆數</span>
+                    <span class="value">{{ uploadResult.ReturnObject.InsertedCount | number:0 }}</span>
+                </div>
+                <div class="warehouse-cod-upload-summary-card summary-failure">
+                    <span class="label">失敗筆數</span>
+                    <span class="value">{{ uploadResult.ReturnObject.FailCount | number:0 }}</span>
+                </div>
+            </div>
+
+            <div ng-if="uploadResult.ReturnObject.Data && uploadResult.ReturnObject.Data.length > 0">
+                <h5>失敗明細（共 {{ uploadResult.ReturnObject.Data.length | number:0 }} 筆）</h5>
+                <div class="table-responsive warehouse-cod-upload-detail">
+                    <table class="table table-bordered table-striped table-hover">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>檔案列號</th>
+                                <th class="warehouse-cod-fail-reason">失敗原因</th>
+                                <th>託運單號</th>
+                                <th>訂單編號</th>
+                                <th>物流貨號</th>
+                                <th>客戶</th>
+                                <th>類別</th>
+                                <th class="text-right">代收款</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="row in uploadResult.ReturnObject.Data track by $index">
+                                <td>{{ row.RowNo }}</td>
+                                <td class="text-danger warehouse-cod-fail-reason">{{ row.FailReason }}</td>
+                                <td>{{ row.ShipmentNo }}</td>
+                                <td>{{ row.OrderNo }}</td>
+                                <td>{{ row.DlvInv }}</td>
+                                <td>{{ row.Customer }}</td>
+                                <td>{{ row.Type }}</td>
+                                <td class="text-right">{{ row.CcText }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="alert alert-info"
+                 ng-if="!uploadResult.ReturnObject.Data || uploadResult.ReturnObject.Data.length === 0">
+                本次上傳沒有失敗資料。
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .warehouse-cod-upload-result {
+        margin-top: 1rem;
+    }
+
+    .warehouse-cod-upload-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .warehouse-cod-upload-summary-card {
+        min-width: 170px;
+        padding: 14px 18px;
+        border: 1px solid #d7dee6;
+        border-left-width: 5px;
+        border-radius: 8px;
+        background: #f5f7fa;
+    }
+
+        .warehouse-cod-upload-summary-card .label {
+            display: block;
+            margin-bottom: 8px;
+            color: #6c757d;
+        }
+
+        .warehouse-cod-upload-summary-card .value {
+            color: #1f2d3d;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .warehouse-cod-upload-summary-card.summary-total {
+            border-left-color: #2f80ed;
+            background: #f2f7ff;
+        }
+
+        .warehouse-cod-upload-summary-card.summary-success {
+            border-left-color: #2fb344;
+            background: #f0fbf3;
+        }
+
+        .warehouse-cod-upload-summary-card.summary-failure {
+            border-left-color: #e83e8c;
+            background: #fff3f8;
+        }
+
+    .warehouse-cod-upload-detail th,
+    .warehouse-cod-upload-detail td {
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .warehouse-cod-upload-detail {
+        max-height: 520px;
+        overflow: auto;
+    }
+
+    .warehouse-cod-upload-detail .warehouse-cod-fail-reason {
+        width: 240px;
+        min-width: 240px;
+        max-width: 240px;
+        white-space: normal;
+        overflow-wrap: break-word;
+    }
+</style>

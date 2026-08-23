@@ -838,6 +838,9 @@
     <Compile Include="Services\ShipmentInboundWarehouseProcess\Domain\ShipmentInboundWarehouseProcessRequest.cs" />
     <Compile Include="Services\ShipmentInboundWarehouseProcess\Domain\ShipmentInboundWarehouseProcessUpdateRequest.cs" />
     <Compile Include="Services\ShipmentInboundWarehouseProcess\ShipmentInboundWarehouseProcessService.cs" />
+    <Compile Include="Services\ShipmentInboundWarehouseCodImport\Domain\ShipmentInboundWarehouseCodImportResult.cs" />
+    <Compile Include="Services\ShipmentInboundWarehouseCodImport\Domain\ShipmentInboundWarehouseCodImportRow.cs" />
+    <Compile Include="Services\ShipmentInboundWarehouseCodImport\ShipmentInboundWarehouseCodImportService.cs" />
     <Compile Include="Services\ShipmentOutboundBatchImportRevoke\Domain\ShipmentOutboundRevokeModel.cs" />
     <Compile Include="Services\ShipmentOutboundBatchImportRevoke\ShipmentOutboundBatchImportRevokeService.cs" />
     <Compile Include="Services\ShipmentOutboundBatchImport\Domain\ShipmentOutboundModel.cs" />
