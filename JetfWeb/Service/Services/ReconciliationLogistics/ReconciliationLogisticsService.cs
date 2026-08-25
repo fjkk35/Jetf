@@ -424,12 +424,16 @@ namespace Service.Services.ReconciliationLogistics
             }
 
             ReconciliationLogisticsComparisonUpload comparisonUpload;
+            // 沿用正式上傳保留的列號；7-11 因此只會保留備註為 1 且訂單金額大於 0 的資料。
+            var includedRowNos = new HashSet<int>(
+                uploadRows.Select(x => x.RowNo));
             using (var rawStream = new MemoryStream(fileBytes))
             {
                 comparisonUpload = ReadComparisonUpload(
                     rawStream,
                     company,
-                    uploadFormat);
+                    uploadFormat,
+                    includedRowNos);
             }
 
             var exportRows = BuildComparisonExportRows(
@@ -448,18 +452,23 @@ namespace Service.Services.ReconciliationLogistics
         /// <param name="stream">檔案串流。</param>
         /// <param name="company">物流公司。</param>
         /// <param name="uploadFormat">已辨識的物流檔案格式。</param>
+        /// <param name="includedRowNos">正式讀取規則保留的 Excel 列號。</param>
         /// <returns>原始欄位與資料列。</returns>
         private static ReconciliationLogisticsComparisonUpload ReadComparisonUpload(
             Stream stream,
             ReconciliationLogisticsCompany company,
-            ReconciliationLogisticsUploadFormat uploadFormat)
+            ReconciliationLogisticsUploadFormat uploadFormat,
+            ISet<int> includedRowNos)
         {
             if (uploadFormat == ReconciliationLogisticsUploadFormat.Ktj)
             {
-                return ReadComparisonCsv(stream);
+                return ReadComparisonCsv(stream, includedRowNos);
             }
 
             var result = new ReconciliationLogisticsComparisonUpload();
+            // 7-11 原始顯示欄位不需依樣式判斷日期，避免附件的無效樣式索引中斷讀取。
+            var formatUploadedDate =
+                uploadFormat != ReconciliationLogisticsUploadFormat.SevenEleven;
             var workbook = new XSSFWorkbook(stream);
             try
             {
@@ -507,6 +516,12 @@ namespace Service.Services.ReconciliationLogistics
                      rowIndex <= sheet.LastRowNum;
                      rowIndex++)
                 {
+                    if (!includedRowNos.Contains(rowIndex + 1))
+                    {
+                        // 比對明細只讀取正式上傳規則保留的資料列，避免兩邊的資料集合不一致。
+                        continue;
+                    }
+
                     var excelRow = sheet.GetRow(rowIndex);
                     if (excelRow == null)
                     {
@@ -514,7 +529,9 @@ namespace Service.Services.ReconciliationLogistics
                     }
 
                     var values = headerIndexes
-                        .Select(index => excelRow.GetCellData(index))
+                        .Select(index => excelRow.GetCellData(
+                            index,
+                            formatUploadedDate))
                         .ToList();
                     if (values.All(string.IsNullOrWhiteSpace))
                     {
@@ -540,9 +557,11 @@ namespace Service.Services.ReconciliationLogistics
         /// 讀取大榮 CSV 的原始欄位與資料值。
         /// </summary>
         /// <param name="stream">CSV 檔案串流。</param>
+        /// <param name="includedRowNos">正式讀取規則保留的 CSV 列號。</param>
         /// <returns>CSV 原始欄位與資料列。</returns>
         private static ReconciliationLogisticsComparisonUpload ReadComparisonCsv(
-            Stream stream)
+            Stream stream,
+            ISet<int> includedRowNos)
         {
             var result = new ReconciliationLogisticsComparisonUpload();
             using (var parser = new TextFieldParser(
@@ -577,6 +596,11 @@ namespace Service.Services.ReconciliationLogistics
                     if (firstColumn.EndsWith("總計", StringComparison.Ordinal))
                     {
                         break;
+                    }
+
+                    if (!includedRowNos.Contains(rowNo))
+                    {
+                        continue;
                     }
 
                     var values = new List<string>();

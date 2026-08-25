@@ -13,28 +13,93 @@ namespace Service.Extensions
 {
     public static class NPOIExtensions
     {
+        /// <summary>
+        /// 讀取 Excel 儲存格內容。
+        /// </summary>
+        /// <param name="row">Excel 資料列。</param>
+        /// <param name="cellIndex">儲存格索引。</param>
+        /// <returns>儲存格內容。</returns>
         public static string GetCellData(this IRow row, int cellIndex)
+        {
+            return GetCellData(row, cellIndex, true);
+        }
+
+        /// <summary>
+        /// 依指定日期格式化方式讀取 Excel 儲存格內容。
+        /// </summary>
+        /// <param name="row">Excel 資料列。</param>
+        /// <param name="cellIndex">儲存格索引。</param>
+        /// <param name="formatDate">是否依儲存格樣式格式化日期。</param>
+        /// <returns>儲存格內容。</returns>
+        public static string GetCellData(
+            this IRow row,
+            int cellIndex,
+            bool formatDate)
         {
             var cell = row.GetCell(cellIndex);
 
             // 確保單元格不為 null
             if (cell != null)
             {
+                if (!formatDate)
+                {
+                    return GetCellDataWithoutStyle(cell);
+                }
+
                 // 檢查是否為日期類型
-                if (cell.CellType == CellType.Numeric && DateUtil.IsCellDateFormatted(cell))
+                if (cell.CellType == CellType.Numeric &&
+                    DateUtil.IsCellDateFormatted(cell))
                 {
                     // 如果是日期類型，返回格式化的日期字串
                     return cell.DateCellValue.ToString("yyyy-MM-dd HH:mm:ss");
                 }
-                else
-                {
-                    // 否則，返回該單元格的文字內容（若為空則返回空字串）
-                    return cell.ToString().Trim();
-                }
+
+                // 否則，返回該單元格的文字內容（若為空則返回空字串）
+                return cell.ToString().Trim();
             }
 
             // 如果單元格為 null，返回空字串
             return string.Empty;
+        }
+
+        /// <summary>
+        /// 不讀取 Excel 樣式，直接依儲存格型別取得內容。
+        /// </summary>
+        /// <param name="cell">Excel 儲存格。</param>
+        /// <returns>儲存格內容。</returns>
+        private static string GetCellDataWithoutStyle(ICell cell)
+        {
+            switch (cell.CellType)
+            {
+                case CellType.Numeric:
+                    return cell.NumericCellValue.ToString(
+                        CultureInfo.InvariantCulture);
+                case CellType.String:
+                    return (cell.StringCellValue ?? string.Empty).Trim();
+                case CellType.Boolean:
+                    return cell.BooleanCellValue.ToString();
+                case CellType.Error:
+                    return cell.ErrorCellValue.ToString(
+                        CultureInfo.InvariantCulture);
+                case CellType.Formula:
+                    switch (cell.CachedFormulaResultType)
+                    {
+                        case CellType.Numeric:
+                            return cell.NumericCellValue.ToString(
+                                CultureInfo.InvariantCulture);
+                        case CellType.String:
+                            return (cell.StringCellValue ?? string.Empty).Trim();
+                        case CellType.Boolean:
+                            return cell.BooleanCellValue.ToString();
+                        case CellType.Error:
+                            return cell.ErrorCellValue.ToString(
+                                CultureInfo.InvariantCulture);
+                        default:
+                            return string.Empty;
+                    }
+                default:
+                    return string.Empty;
+            }
         }
 
         public static void SetNullableCellValue(this ICell cell, double? value)
