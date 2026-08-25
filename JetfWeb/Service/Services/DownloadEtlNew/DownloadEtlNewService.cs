@@ -4,6 +4,7 @@ using Service.Data;
 using Service.Models;
 using Service.Models.DownloadEtlNew;
 using Service.Services.SeaTaxUpload;
+using Service.Services.TaxTransferGuard;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -20,15 +21,21 @@ namespace Service.Services.DownloadEtlNew
         private const int BatchSize = 500;
         private const int CommandTimeoutSeconds = 600;
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private readonly TaxTransferGuardService _taxTransferGuardService;
 
         /// <summary>
         /// 初始化物流代收檔下載服務。
         /// </summary>
         /// <param name="jetfDbContext">JETF 主資料庫內容。</param>
         /// <param name="dataCenterDbContext">DataCenter 資料庫內容。</param>
-        public DownloadEtlNewService(JetfDbContext jetfDbContext, DataCenterDbContext dataCenterDbContext)
+        /// <param name="taxTransferGuardService">稅金轉檔作業日銷帳檢查服務。</param>
+        public DownloadEtlNewService(
+            JetfDbContext jetfDbContext,
+            DataCenterDbContext dataCenterDbContext,
+            TaxTransferGuardService taxTransferGuardService)
             : base(jetfDbContext, dataCenterDbContext)
         {
+            _taxTransferGuardService = taxTransferGuardService;
         }
 
         /// <summary>
@@ -59,6 +66,13 @@ namespace Service.Services.DownloadEtlNew
                 responseModel.status = Status.error;
                 responseModel.msg = "結束時間大於開始時間，請確認";
                 return responseModel;
+            }
+
+            // 同一作業日已有客戶或物流銷帳時，不可重建任何來源的稅金明細。
+            var transferValidation = _taxTransferGuardService.ValidateCanTransfer(dataDate);
+            if (!transferValidation.IsSuccess)
+            {
+                return transferValidation;
             }
 
             try

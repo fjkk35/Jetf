@@ -4,6 +4,7 @@ using NPOI.XSSF.UserModel;
 using Service.Data;
 using Service.Extensions;
 using Service.Models;
+using Service.Services.TaxTransferGuard;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -26,6 +27,7 @@ namespace Service.Services.SeaTaxGUpload
         private const string GClearanceType = "G";
 
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private readonly TaxTransferGuardService _taxTransferGuardService;
 
         private static readonly string[] RequiredHeaders =
         {
@@ -46,11 +48,14 @@ namespace Service.Services.SeaTaxGUpload
         /// </summary>
         /// <param name="jetfDbContext">Jetf 資料庫內容。</param>
         /// <param name="dataCenterDbContext">Data Center 資料庫內容。</param>
+        /// <param name="taxTransferGuardService">稅金轉檔作業日銷帳檢查服務。</param>
         public SeaTaxGUploadService(
             JetfDbContext jetfDbContext,
-            DataCenterDbContext dataCenterDbContext)
+            DataCenterDbContext dataCenterDbContext,
+            TaxTransferGuardService taxTransferGuardService)
             : base(jetfDbContext, dataCenterDbContext)
         {
+            _taxTransferGuardService = taxTransferGuardService;
         }
 
         /// <summary>
@@ -77,6 +82,12 @@ namespace Service.Services.SeaTaxGUpload
                 if (excelStream == null)
                 {
                     return new ResponseModel("未選擇檔案");
+                }
+
+                var transferValidation = _taxTransferGuardService.ValidateCanTransfer(dataDate);
+                if (!transferValidation.IsSuccess)
+                {
+                    return transferValidation;
                 }
 
                 JetfDb.Database.CommandTimeout = CommandTimeoutSeconds;

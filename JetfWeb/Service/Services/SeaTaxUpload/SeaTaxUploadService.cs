@@ -7,6 +7,7 @@ using Service.EnumTax;
 using Service.Models;
 using Service.Models.Tax;
 using Service.Services.Tax;
+using Service.Services.TaxTransferGuard;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -29,12 +30,27 @@ namespace Service.Services.SeaTaxUpload
 
         private readonly DownloadService _downloadService;
         private readonly TaxService _taxService;
+        private readonly TaxTransferGuardService _taxTransferGuardService;
 
-        public SeaTaxUploadService(JetfDbContext jetfDbContext, DataCenterDbContext dataCenterDbContext, DownloadService downloadService, TaxService taxService)
+        /// <summary>
+        /// 建立海運稅金資料上傳服務。
+        /// </summary>
+        /// <param name="jetfDbContext">JETF 資料庫內容。</param>
+        /// <param name="dataCenterDbContext">Data Center 資料庫內容。</param>
+        /// <param name="downloadService">下載資料處理服務。</param>
+        /// <param name="taxService">稅金計算服務。</param>
+        /// <param name="taxTransferGuardService">稅金轉檔作業日銷帳檢查服務。</param>
+        public SeaTaxUploadService(
+            JetfDbContext jetfDbContext,
+            DataCenterDbContext dataCenterDbContext,
+            DownloadService downloadService,
+            TaxService taxService,
+            TaxTransferGuardService taxTransferGuardService)
             : base(jetfDbContext, dataCenterDbContext)
         {
             _downloadService = downloadService;
             _taxService = taxService;
+            _taxTransferGuardService = taxTransferGuardService;
         }
 
         /// <summary>
@@ -47,6 +63,12 @@ namespace Service.Services.SeaTaxUpload
         /// <returns>處理結果。</returns>
         public ResponseModel UploadFile(string dataDate, string filePath, SeaTaxType taxType, string userId)
         {
+            var transferValidation = _taxTransferGuardService.ValidateCanTransfer(dataDate);
+            if (!transferValidation.IsSuccess)
+            {
+                return transferValidation;
+            }
+
             ConfigureCommandTimeout();
 
             Logger.Debug($"step1 開始: 讀取海運稅金 Excel，檔案={filePath}");
