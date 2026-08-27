@@ -341,7 +341,15 @@ namespace Service.Services
                 row = sheet.CreateRow(iRow);
                 row.CreateCell(0).SetCellValue(item.Detail.POUCH_NO);
                 row.CreateCell(1).SetCellValue(item.Detail.QTY);
-                row.CreateCell(2).SetCellValue(item.Detail.WEIGHT);
+                var weightCell = row.CreateCell(2);
+                if (item.Detail.WEIGHT.HasValue)
+                {
+                    weightCell.SetCellValue(item.Detail.WEIGHT.Value);
+                }
+                else
+                {
+                    weightCell.SetCellValue(string.Empty);
+                }
                 row.CreateCell(3).SetCellValue(item.Detail.HAWB);
                 row.CreateCell(4).SetCellValue(item.Detail.REMARK);
                 // 已有任一註記時保留原值；同一主號全空白時統一標示 X。

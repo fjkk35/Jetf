@@ -1,4 +1,4 @@
-namespace Service.Models.CptTradeVan
+﻿namespace Service.Models.CptTradeVan
 {
     /// <summary>
     /// GB350 空運進口貨物新艙單明細資料列。
@@ -13,7 +13,7 @@ namespace Service.Models.CptTradeVan
         /// <summary>
         /// 重量。
         /// </summary>
-        public double WEIGHT { get; set; }
+        public double? WEIGHT { get; set; }
 
         /// <summary>
         /// 袋數。
