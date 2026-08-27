@@ -236,13 +236,13 @@ namespace Service.Services.CptTradeVan
                     }
                     else
                     {
-                        result.Msg = "查詢失敗";
+                        result.Msg = $"(GB350主號)查詢失敗：HTTP {(int)response.StatusCode} ({response.ReasonPhrase})";
                     }
                 }
             }
             catch (Exception ex)
             {
-                result.Msg = ex.Message;
+                result.Msg = $"(GB350主號)查詢失敗：{ex.GetBaseException().Message}";
             }
 
             return result;
@@ -275,13 +275,13 @@ namespace Service.Services.CptTradeVan
                     }
                     else
                     {
-                        result.Msg = "查詢失敗";
+                        result.Msg = $"(GB350明細)查詢失敗：HTTP {(int)response.StatusCode} ({response.ReasonPhrase})";
                     }
                 }
             }
             catch (Exception ex)
             {
-                result.Msg = ex.Message;
+                result.Msg = $"(GB350明細)查詢失敗：{ex.GetBaseException().Message}";
             }
 
             return result;
