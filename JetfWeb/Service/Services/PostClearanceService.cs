@@ -547,16 +547,22 @@ namespace Service.Services
                 #region 機械使用費
                 if (item.ClearanceType == "移倉" || item.ClearanceType == "轉移倉")
                 {
+                    // 到港日自 2026/09/01 起，且客戶非菜鳥網絡(自營海絲達)、淘寶(飛迅馳)時，套用新價格
+                    bool useNewPrice = item.Eta.HasValue &&
+                                       item.Eta.Value.Date > new DateTime(2026, 8, 31) &&
+                                       item.CustName != "菜鳥網絡(自營海絲達)" &&
+                                       item.CustName != "淘寶(飛迅馳)";
+
                     //機械使用費
-                    item.MachineryUsageFee = 70;
+                    item.MachineryUsageFee = useNewPrice ? 100 : 70;
                     //倉租
-                    item.WarehouseRent = 40;
+                    item.WarehouseRent = useNewPrice ? 55 : 40;
                     //移倉費
                     item.RelocationFee = 265;
                     //數量(移倉)
                     item.RelocationCount = item.Volume;
                     //EDI傳輸費
-                    item.EdiShippingFee = 100;
+                    item.EdiShippingFee = useNewPrice ? 200 : 100;
                     //數量(EDI傳輸)
                     item.EdiShippingCount = 1;
                     //處理費
