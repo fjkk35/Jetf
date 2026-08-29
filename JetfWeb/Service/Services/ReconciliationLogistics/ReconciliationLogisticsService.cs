@@ -887,7 +887,6 @@ namespace Service.Services.ReconciliationLogistics
                         uploadRows,
                         x => x.TrackingNo,
                         x => x.TrackingNo);
-                case ReconciliationLogisticsUploadFormat.SevenEleven:
                 case ReconciliationLogisticsUploadFormat.TaixinStar:
                     return query.WhereBulkContains(
                         JetfDb,
@@ -923,7 +922,6 @@ namespace Service.Services.ReconciliationLogistics
                         x => x.TrackingNo,
                         x => x.TrackingNo,
                         selectExpression);
-                case ReconciliationLogisticsUploadFormat.SevenEleven:
                 case ReconciliationLogisticsUploadFormat.TaixinStar:
                     return query.WhereBulkContains(
                         JetfDb,
@@ -1026,7 +1024,6 @@ namespace Service.Services.ReconciliationLogistics
                         x => x.TrackingNo,
                         x => x.TrackingNo,
                         selectExpression);
-                case ReconciliationLogisticsUploadFormat.SevenEleven:
                 case ReconciliationLogisticsUploadFormat.TaixinStar:
                     return query.WhereBulkContains(
                         JetfDb,
@@ -1211,7 +1208,6 @@ namespace Service.Services.ReconciliationLogistics
             {
                 case ReconciliationLogisticsUploadFormat.TradeVan:
                     return trackingMatches;
-                case ReconciliationLogisticsUploadFormat.SevenEleven:
                 case ReconciliationLogisticsUploadFormat.TaixinStar:
                     return trackingMatches && dlvInvMatches;
                 default:
@@ -2675,9 +2671,10 @@ namespace Service.Services.ReconciliationLogistics
                     feeMasterCodKeySelector = x => (x.TrackingNo ?? string.Empty).Trim();
                     entityKeySelector = x => (x.TrackingNo ?? string.Empty).Trim();
                     break;
-                // 新竹物流、客樂得、大榮、現金及圓通以物流貨號比對。
+                // 新竹物流、7-11、客樂得、大榮、現金、圓通及全家以物流貨號比對。
                 case ReconciliationLogisticsUploadFormat.HctCollection:
                 case ReconciliationLogisticsUploadFormat.HctRemittance:
+                case ReconciliationLogisticsUploadFormat.SevenEleven:
                 case ReconciliationLogisticsUploadFormat.Kelede:
                 case ReconciliationLogisticsUploadFormat.Ktj:
                 case ReconciliationLogisticsUploadFormat.Cash:
@@ -2687,8 +2684,7 @@ namespace Service.Services.ReconciliationLogistics
                     feeMasterCodKeySelector = x => (x.DlvInv ?? string.Empty).Trim();
                     entityKeySelector = x => (x.DlvInv ?? string.Empty).Trim();
                     break;
-                // 7-11 及超峰使用分提單號與物流貨號共同比對。
-                case ReconciliationLogisticsUploadFormat.SevenEleven:
+                // 超峰使用分提單號與物流貨號共同比對。
                 case ReconciliationLogisticsUploadFormat.TaixinStar:
                     feeMasterKeySelector = x =>
                         $"{(x.TrackingNo ?? string.Empty).Trim()}|{(x.DlvInv ?? string.Empty).Trim()}";
@@ -3356,9 +3352,10 @@ namespace Service.Services.ReconciliationLogistics
                             entities,
                             feeMasterCod => feeMasterCod.TrackingNo,
                             entity => entity.TrackingNo);
-                // 新竹物流、客樂得、大榮、現金、圓通及全家使用物流貨號比對。
+                // 新竹物流、7-11、客樂得、大榮、現金、圓通及全家使用物流貨號比對。
                 case ReconciliationLogisticsUploadFormat.HctCollection:
                 case ReconciliationLogisticsUploadFormat.HctRemittance:
+                case ReconciliationLogisticsUploadFormat.SevenEleven:
                 case ReconciliationLogisticsUploadFormat.Kelede:
                 case ReconciliationLogisticsUploadFormat.Ktj:
                 case ReconciliationLogisticsUploadFormat.Cash:
@@ -3371,8 +3368,7 @@ namespace Service.Services.ReconciliationLogistics
                             entities,
                             feeMasterCod => feeMasterCod.DlvInv,
                             entity => entity.DlvInv);
-                // 7-11 及超峰使用分提單號與物流貨號共同比對。
-                case ReconciliationLogisticsUploadFormat.SevenEleven:
+                // 超峰使用分提單號與物流貨號共同比對。
                 case ReconciliationLogisticsUploadFormat.TaixinStar:
                     return JetfDb.FeeMasterCods
                         .Where(x => !x.ReconciliationLogisticsId.HasValue)
