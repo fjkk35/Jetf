@@ -64,6 +64,7 @@ namespace Service.Services.ShipmentInboundWarehouseCodImport
                     return new ResponseModel("Excel 無資料");
                 }
 
+                ResolveCustomerCodes(rows);
                 var validationErrors = ValidateRows(rows);
                 // 驗證失敗的資料保留於回傳明細，其餘正確資料仍可繼續上傳。
                 var entities = rows
@@ -108,6 +109,55 @@ namespace Service.Services.ShipmentInboundWarehouseCodImport
             catch (Exception ex)
             {
                 return new ResponseModel($"倉庫代收上傳失敗：{ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 依客戶名稱與類型轉換客戶代號；海運使用 CUST_CODE，空運使用 OLD_CODE。
+        /// 查無對應資料或對應代號為空時保留上傳值。
+        /// </summary>
+        /// <param name="rows">上傳資料列。</param>
+        private void ResolveCustomerCodes(
+            IEnumerable<ShipmentInboundWarehouseCodImportRow> rows)
+        {
+            var uploadRows = (rows ?? Enumerable.Empty<ShipmentInboundWarehouseCodImportRow>())
+                .Where(x => !string.IsNullOrWhiteSpace(x.Customer))
+                .ToList();
+            var customerNames = uploadRows
+                .Select(x => x.Customer)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (customerNames.Count == 0)
+            {
+                return;
+            }
+
+            var customerNameSet = new HashSet<string>(
+                customerNames,
+                StringComparer.OrdinalIgnoreCase);
+            var customerCodeMap = DataCenterDb.SysCusts
+                .AsNoTracking()
+                .Where(x =>
+                    (x.CustType == "SEA" && !string.IsNullOrEmpty(x.CustCode)) ||
+                    (x.CustType == "AIR" && !string.IsNullOrEmpty(x.OldCode)))
+                .ToList()
+                .Where(x => customerNameSet.Contains(x.CustName))
+                .GroupBy(x => x.CustName, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    x => x.Key,
+                    x => x
+                        .OrderBy(y => y.RowId)
+                        .Select(y => y.CustType == "SEA" ? y.CustCode : y.OldCode)
+                        .First(),
+                    StringComparer.OrdinalIgnoreCase);
+
+            foreach (var row in uploadRows)
+            {
+                string customerCode;
+                if (customerCodeMap.TryGetValue(row.Customer, out customerCode))
+                {
+                    row.Customer = customerCode;
+                }
             }
         }
 
