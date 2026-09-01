@@ -239,7 +239,7 @@ namespace Service.Models.PostClearance
             var custNames = new[]
             {
                 "超峰", "深圳超峰", "牽禮馬", "萬達", "天馬", "新遞",
-                "速派", "騰揚","巧巧郎", "台星", "攜誠", "網訊"
+                "速派", "騰揚","巧巧郎", "台星", "穩達達", "攜誠", "網訊"
             };
 
             return custNames.Contains(CustName) 

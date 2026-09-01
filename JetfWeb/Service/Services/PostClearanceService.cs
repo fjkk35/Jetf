@@ -518,6 +518,30 @@ namespace Service.Services
                             break;
                     }
                 }
+                else if (item.CustName == "穩達達")
+                {
+                    switch (item.ClearanceType)
+                    {
+                        case "X2":
+                            item.ClearanceFee = 100;
+                            break;
+                        case "X3":
+                            item.ClearanceFee = 100;
+                            break;
+                        case "G1":
+                            item.ClearanceFee = 450;
+                            break;
+                        case "轉G1":
+                            item.ClearanceFee = 450;
+                            break;
+                        case "移倉":
+                            item.ClearanceFee = 1500;
+                            break;
+                        case "轉移倉":
+                            item.ClearanceFee = 1500;
+                            break;
+                    }
+                }
                 else if (item.CustName == "RINCOS")
                 {
                     switch (item.ClearanceType)
