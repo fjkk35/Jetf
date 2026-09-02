@@ -880,6 +880,10 @@
     <Compile Include="Services\SjlBilling\Domain\SjlBillingQueryRequest.cs" />
     <Compile Include="Services\SjlBilling\Domain\SjlBillingQueryRowModel.cs" />
     <Compile Include="Services\SjlBilling\SjlBillingService.cs" />
+    <Compile Include="Services\SjlTaxResponse\Domain\SjlTaxManualRequestModel.cs" />
+    <Compile Include="Services\SjlTaxResponse\Domain\SjlTaxManualResultItemModel.cs" />
+    <Compile Include="Services\SjlTaxResponse\Domain\SjlTaxManualResultModel.cs" />
+    <Compile Include="Services\SjlTaxResponse\SjlTaxResponseService.cs" />
     <Compile Include="Services\Step\StepService.cs" />
     <Compile Include="Services\Tact\Domain\MainRow.cs" />
     <Compile Include="Services\Tact\Domain\TactBagNoModel.cs" />

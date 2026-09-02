@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Service.Services.TaxJob.Model
 {
+    /// <summary>
+    /// 捷利海運稅金查詢資料。
+    /// </summary>
     public class SeaTaxModel
     {
         public int Id { get; set; }

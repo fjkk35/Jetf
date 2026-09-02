@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Service.Services.TaxJob.Model
 {
+    /// <summary>
+    /// 捷利空運稅金查詢資料。
+    /// </summary>
     public class EtlTaxModel
     {
         public int Id { get; set; }

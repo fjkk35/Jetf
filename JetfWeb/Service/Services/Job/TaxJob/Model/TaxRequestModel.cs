@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Service.Services.TaxJob.Model
 {
+    /// <summary>
+    /// 捷利稅金 API 的請求資料。
+    /// </summary>
     public class TaxRequestModel
     {
         public int FeeMasterId { get; set; }

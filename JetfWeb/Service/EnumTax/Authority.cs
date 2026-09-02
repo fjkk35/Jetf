@@ -534,6 +534,11 @@ namespace Service.EnumTax
         TaxPortalCustomer,
 
         /// <summary>
+        /// 8-1捷利稅金回傳
+        /// </summary>
+        SjlTaxResponse,
+
+        /// <summary>
         /// Ezway電子商務通關平台
         /// </summary>
         Ezway,

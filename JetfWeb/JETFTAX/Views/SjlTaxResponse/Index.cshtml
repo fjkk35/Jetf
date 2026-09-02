@@ -1,0 +1,84 @@
+﻿@{
+    ViewBag.Title = "捷利稅金回傳";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div ng-controller="SjlTaxResponseController" class="container-fluid">
+    <span class="headtype">8-1.捷利稅金回傳</span>
+    <hr />
+
+    <div class="containertype sjl-tax-response-container">
+        <div class="form-group row">
+            <label class="col-sm-1 control-label">物流類型</label>
+            <div class="col-sm-3">
+                <select class="form-control" ng-model="sjlTaxForm.Type">
+                    <option value="海運">海運</option>
+                    <option value="空運">空運</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <label class="col-sm-1 control-label">物流貨號</label>
+            <div class="col-sm-8">
+                <textarea class="form-control sjl-tax-response-textarea"
+                          ng-model="sjlTaxForm.DeliveryNumbers"
+                          rows="10"
+                          placeholder="請輸入物流貨號，每行一筆"></textarea>
+            </div>
+        </div>
+
+        <div class="form-group row">
+            <div class="col-sm-offset-1 col-sm-10">
+                <button type="button"
+                        class="btn btn-primary"
+                        ng-click="sendSjlTax()"
+                        ng-disabled="sendingSjlTax">
+                    <i class="fa fa-spinner fa-spin" ng-show="sendingSjlTax"></i>
+                    {{ sendingSjlTax ? '回傳中...' : '回傳捷利稅金' }}
+                </button>
+            </div>
+        </div>
+
+        <div class="alert alert-info" ng-if="sjlTaxResultMessage">
+            {{ sjlTaxResultMessage }}
+        </div>
+
+        <div class="table-responsive" ng-if="sjlTaxResult && sjlTaxResult.Items.length > 0">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>物流貨號</th>
+                        <th>結果</th>
+                        <th>API 回覆代碼</th>
+                        <th>訊息</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat="item in sjlTaxResult.Items track by $index">
+                        <td>{{ item.DeliveryNumber }}</td>
+                        <td>{{ item.Result }}</td>
+                        <td>{{ item.Code || '-' }}</td>
+                        <td>{{ item.Message || '-' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .sjl-tax-response-container .form-group {
+        margin-bottom: 16px;
+    }
+
+    .sjl-tax-response-container .control-label {
+        padding-top: 7px;
+    }
+
+    .sjl-tax-response-textarea {
+        min-height: 220px;
+        resize: vertical;
+        font-family: Consolas, monospace;
+    }
+</style>

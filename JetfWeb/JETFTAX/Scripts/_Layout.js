@@ -46,6 +46,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'CustomerTaxStatistics', text: '7-3.客戶稅金結算', url: '~/CustomerTaxStatistics/Index', auth: ['CustomerTaxStatistics'] },
                 { id: 'MainTaxSearch', text: '7-4.主號稅金查詢', url: '~/MainTaxSearch/Index', auth: ['MainTaxSearch'] },
                 { id: 'TaxPortalCustomer', text: '7-5.稅金單客戶查詢', url: '~/TaxPortalCustomer/Index', auth: ['TaxPortalCustomer'] },
+                { id: 'SjlTaxResponse', text: '8-1.捷利稅金回傳', url: '~/SjlTaxResponse/Index', auth: ['SjlTaxResponse'] },
                 { id: 'SearchCustomer', text: '客戶查詢', url: '~/Customer/SearchCustomer', auth: ['SearchCustomer'] }
             ]
         },
