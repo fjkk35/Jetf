@@ -273,6 +273,18 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
         return null;
     }
 
+    function getExpectedFileExtensions(
+        company: ReconciliationLogisticsCompanyOption | null
+    ): string[] {
+        if (!company || !company.FileExtension) {
+            return [];
+        }
+
+        return company.FileExtension.split(',').map(function (extension: string): string {
+            return extension.trim().replace(/^\./, '').toLowerCase();
+        });
+    }
+
     function resetUploadResult(): void {
         $scope.uploadResult = null;
         $scope.uploadSummary = null;
@@ -596,11 +608,10 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
         }
 
         var selectedCompany = getSelectedComparisonCompany();
-        var expectedExtension = selectedCompany
-            ? selectedCompany.FileExtension.replace('.', '').toLowerCase()
-            : '';
+        var expectedExtensions = getExpectedFileExtensions(selectedCompany);
+        var expectedExtension = expectedExtensions.join(', ');
         var extension = file.name.split('.').pop().toLowerCase();
-        if (!expectedExtension || extension !== expectedExtension) {
+        if (!expectedExtensions.length || expectedExtensions.indexOf(extension) < 0) {
             clearSelectedComparisonFile();
             showError(
                 (selectedCompany ? selectedCompany.Text : '物流公司') +
@@ -772,11 +783,10 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
         }
 
         var selectedCompany = getSelectedUploadCompany();
-        var expectedExtension = selectedCompany
-            ? selectedCompany.FileExtension.replace('.', '').toLowerCase()
-            : '';
+        var expectedExtensions = getExpectedFileExtensions(selectedCompany);
+        var expectedExtension = expectedExtensions.join(', ');
         var extension = file.name.split('.').pop().toLowerCase();
-        if (!expectedExtension || extension !== expectedExtension) {
+        if (!expectedExtensions.length || expectedExtensions.indexOf(extension) < 0) {
             clearSelectedFile();
             showError(
                 (selectedCompany ? selectedCompany.Text : '物流公司') +

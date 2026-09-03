@@ -59,10 +59,7 @@ namespace JETFTAX.Controllers
                     {
                         Value = ((int)x).ToString(),
                         Text = x.ToDescription(),
-                        FileExtension =
-                            x == ReconciliationLogisticsCompany.Ktj
-                                ? ".csv"
-                                : ".xlsx"
+                        FileExtension = string.Join(",", GetSupportedFileExtensions(x))
                     })
                     .ToList();
 
@@ -164,24 +161,23 @@ namespace JETFTAX.Controllers
                     return Json(new ResponseModel("請選擇檔案"));
                 }
 
-                var expectedExtension =
-                    company.Value == ReconciliationLogisticsCompany.Ktj
-                        ? ".csv"
-                        : ".xlsx";
+                var uploadedExtension = Path.GetExtension(file.FileName);
+                var supportedExtensions = GetSupportedFileExtensions(company.Value);
                 if (!string.Equals(
-                    Path.GetExtension(file.FileName),
-                    expectedExtension,
+                    uploadedExtension,
+                    supportedExtensions.FirstOrDefault(extension =>
+                        string.Equals(extension, uploadedExtension, StringComparison.OrdinalIgnoreCase)),
                     StringComparison.OrdinalIgnoreCase))
                 {
                     return Json(new ResponseModel(
                         $"{company.Value.ToDescription()}上傳檔案副檔名需為 " +
-                        expectedExtension.TrimStart('.')));
+                        string.Join("、", supportedExtensions.Select(extension => extension.TrimStart('.')))));
                 }
 
                 // 保留原始上傳檔案，檔名加入時間避免同名檔案互相覆蓋。
                 var savedFileName =
                     $"{Path.GetFileNameWithoutExtension(file.FileName)}_" +
-                    $"{DateTime.Now:yyyyMMddHHmmssfff}{expectedExtension}";
+                    $"{DateTime.Now:yyyyMMddHHmmssfff}{uploadedExtension.ToLowerInvariant()}";
                 var uploadDirectory = Server.MapPath("~/UploadFIle");
                 Directory.CreateDirectory(uploadDirectory);
                 var savedFilePath = Path.Combine(uploadDirectory, savedFileName);
@@ -286,6 +282,13 @@ namespace JETFTAX.Controllers
         {
             try
             {
+                var expectedExtension = company.HasValue
+                    ? string.Join(
+                        "、",
+                        GetSupportedFileExtensions(company.Value)
+                            .Select(extension => extension.TrimStart('.')))
+                    : string.Empty;
+
                 if (!company.HasValue ||
                     !Enum.IsDefined(typeof(ReconciliationLogisticsCompany), company.Value))
                 {
@@ -297,12 +300,12 @@ namespace JETFTAX.Controllers
                     return Json(new ResponseModel("請選擇檔案"));
                 }
 
-                var expectedExtension = company.Value == ReconciliationLogisticsCompany.Ktj
-                    ? ".csv"
-                    : ".xlsx";
+                var uploadedExtension = Path.GetExtension(file.FileName);
+                var supportedExtensions = GetSupportedFileExtensions(company.Value);
                 if (!string.Equals(
-                    Path.GetExtension(file.FileName),
-                    expectedExtension,
+                    uploadedExtension,
+                    supportedExtensions.FirstOrDefault(extension =>
+                        string.Equals(extension, uploadedExtension, StringComparison.OrdinalIgnoreCase)),
                     StringComparison.OrdinalIgnoreCase))
                 {
                     return Json(new ResponseModel(
@@ -325,6 +328,27 @@ namespace JETFTAX.Controllers
             {
                 return Json(new ResponseModel($"比對明細產生失敗：{ex.GetBaseException().Message}"));
             }
+        }
+
+        /// <summary>
+        /// 取得物流公司支援的上傳檔案副檔名。
+        /// </summary>
+        /// <param name="company">物流公司。</param>
+        /// <returns>支援的檔案副檔名。</returns>
+        private static string[] GetSupportedFileExtensions(
+            ReconciliationLogisticsCompany company)
+        {
+            if (company == ReconciliationLogisticsCompany.Ktj)
+            {
+                return new[] { ".csv" };
+            }
+
+            if (company == ReconciliationLogisticsCompany.Hct)
+            {
+                return new[] { ".xls", ".xlsx" };
+            }
+
+            return new[] { ".xlsx" };
         }
 
     }

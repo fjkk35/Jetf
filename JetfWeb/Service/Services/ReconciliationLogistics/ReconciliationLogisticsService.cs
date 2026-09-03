@@ -469,7 +469,7 @@ namespace Service.Services.ReconciliationLogistics
             // 7-11 原始顯示欄位不需依樣式判斷日期，避免附件的無效樣式索引中斷讀取。
             var formatUploadedDate =
                 uploadFormat != ReconciliationLogisticsUploadFormat.SevenEleven;
-            var workbook = new XSSFWorkbook(stream);
+            var workbook = WorkbookFactory.Create(stream);
             try
             {
                 var sheet = company == ReconciliationLogisticsCompany.Yto
@@ -1432,7 +1432,7 @@ namespace Service.Services.ReconciliationLogistics
                 return ReadKtjRows(stream);
             }
 
-            var workbook = new XSSFWorkbook(stream);
+            var workbook = WorkbookFactory.Create(stream);
             try
             {
                 if (workbook.NumberOfSheets == 0)
