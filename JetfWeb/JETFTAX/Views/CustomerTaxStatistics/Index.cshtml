@@ -16,7 +16,7 @@
                 <div class="col-lg-9">
                     <select class="form-control"
                             ng-model="selectedCustomer"
-                            ng-options="customer.Cust_Code as (customer.Cust_Code + ' - ' + customer.CUST_NAME) for customer in customers track by customer.Cust_Code">
+                            ng-options="customer.Cust_Code as (customer.Cust_Code === 'ALL' ? '全部' : (customer.Cust_Code + ' - ' + customer.CUST_NAME)) for customer in customers track by customer.Cust_Code">
                         <option value="">請選擇客戶</option>
                     </select>
                 </div>

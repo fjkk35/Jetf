@@ -8,6 +8,7 @@ using Service.Services.CustomerTaxStatistics.Domain;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -28,7 +29,7 @@ namespace Service.Services.CustomerTaxStatistics
         public List<CustomerTaxStatisticsCustomerModel> GetCustomers()
         {
             string sql = @"
-                select a.Cust_Code, b.CUST_NAME 
+                select distinct a.Cust_Code, b.CUST_NAME
                 from [jetf].[dbo].[CustomerTaxSetting] a
                 join DATA_CENTER.dbo.SYS_CUST b on a.Cust_Code = b.CUST_CODE
                 order by a.Cust_Code";
@@ -122,7 +123,7 @@ namespace Service.Services.CustomerTaxStatistics
         }
 
         /// <summary>
-        /// 匯出Excel
+        /// 匯出客戶稅金結算壓縮檔
         /// </summary>
         /// <param name="customerCode">客戶代號</param>
         /// <param name="startDate">開始日期</param>
@@ -132,35 +133,105 @@ namespace Service.Services.CustomerTaxStatistics
         {
             try
             {
-                // 取得客戶原始資料稅金
-                var customerTaxData = GetCustomerTaxFeeMasterData(customerCode, startDate, endDate);
+                const string allCustomerCode = "ALL";
 
-                // 取得稅金總表
-                var feeMasterData = GetFeeMasterData(customerCode, startDate, endDate);
-
-                if (!customerTaxData.Any() && !feeMasterData.Any())
+                if (string.IsNullOrWhiteSpace(customerCode))
                 {
                     return new CustomerTaxStatisticsExportResult
                     {
                         Success = false,
-                        Message = $"客戶 {customerCode} 在 {startDate}~{endDate} 期間查無資料可匯出"
+                        Message = "請選擇客戶"
                     };
                 }
 
-                // 取得客戶名稱
-                var customer = GetCustomers().FirstOrDefault(c => c.Cust_Code == customerCode);
-                string customerName = customer?.CUST_NAME ?? customerCode;
+                var isAllCustomers = string.Equals(customerCode, allCustomerCode, StringComparison.OrdinalIgnoreCase);
+                var customers = GetCustomers();
+                var targetCustomers = isAllCustomers
+                    ? customers
+                    : new List<CustomerTaxStatisticsCustomerModel>
+                    {
+                        customers.FirstOrDefault(c => c.Cust_Code == customerCode)
+                            ?? new CustomerTaxStatisticsCustomerModel
+                            {
+                                Cust_Code = customerCode,
+                                CUST_NAME = customerCode
+                            }
+                    };
 
-                // 建立Excel檔案
-                var (fileName, fileData) = CreateTaxStatisticsExcel(customerCode, customerName, startDate, endDate, customerTaxData, feeMasterData);
+                if (!targetCustomers.Any())
+                {
+                    return new CustomerTaxStatisticsExportResult
+                    {
+                        Success = false,
+                        Message = "查無可匯出的客戶"
+                    };
+                }
+
+                var files = new List<(string FileName, byte[] FileData)>();
+                var recordCount = 0;
+
+                foreach (var customer in targetCustomers)
+                {
+                    // 取得客戶原始資料稅金
+                    var customerTaxData = GetCustomerTaxFeeMasterData(customer.Cust_Code, startDate, endDate);
+
+                    // 取得稅金總表
+                    var feeMasterData = GetFeeMasterData(customer.Cust_Code, startDate, endDate);
+
+                    // 全部客戶匯出時，即使該客戶沒有資料，也建立相同格式的空白檔案。
+                    if (!isAllCustomers && !customerTaxData.Any() && !feeMasterData.Any())
+                    {
+                        return new CustomerTaxStatisticsExportResult
+                        {
+                            Success = false,
+                            Message = $"客戶 {customer.Cust_Code} 在 {startDate}~{endDate} 期間查無資料可匯出"
+                        };
+                    }
+
+                    var customerName = customer.CUST_NAME ?? customer.Cust_Code;
+                    var file = CreateTaxStatisticsExcel(
+                        customer.Cust_Code,
+                        customerName,
+                        startDate,
+                        endDate,
+                        customerTaxData,
+                        feeMasterData);
+
+                    files.Add(file);
+                    recordCount += customerTaxData.Count + feeMasterData.Count;
+                }
+
+                if (recordCount == 0)
+                {
+                    return new CustomerTaxStatisticsExportResult
+                    {
+                        Success = false,
+                        Message = $"客戶在 {startDate}~{endDate} 期間查無資料可匯出"
+                    };
+                }
+
+                if (!isAllCustomers)
+                {
+                    return new CustomerTaxStatisticsExportResult
+                    {
+                        Success = true,
+                        FileName = files[0].FileName,
+                        FileData = files[0].FileData,
+                        RecordCount = recordCount,
+                        Message = "匯出成功"
+                    };
+                }
+
+                var zipFileName = $"全部客戶_{startDate.Replace("-", "")}_{endDate.Replace("-", "")}_稅金結算表.zip";
+                var zipFileData = CreateZipArchive(files);
 
                 return new CustomerTaxStatisticsExportResult
                 {
                     Success = true,
-                    FileName = fileName,
-                    FileData = fileData,
-                    RecordCount = customerTaxData.Count + feeMasterData.Count,
-                    Message = "匯出成功"
+                    FileName = zipFileName,
+                    FileData = zipFileData,
+                    RecordCount = recordCount,
+                    Message = $"匯出成功，共 {files.Count} 個檔案"
                 };
             }
             catch (Exception ex)
@@ -206,6 +277,31 @@ namespace Service.Services.CustomerTaxStatistics
             {
                 workbook.Write(fileStream);
                 return (fileName, fileStream.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// 建立包含各客戶Excel檔案的ZIP壓縮檔
+        /// </summary>
+        /// <param name="files">要加入壓縮檔的檔案</param>
+        /// <returns>ZIP檔案資料</returns>
+        private byte[] CreateZipArchive(IEnumerable<(string FileName, byte[] FileData)> files)
+        {
+            using (var zipStream = new MemoryStream())
+            {
+                using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, true))
+                {
+                    foreach (var file in files)
+                    {
+                        var entry = archive.CreateEntry(file.FileName, CompressionLevel.Optimal);
+                        using (var entryStream = entry.Open())
+                        {
+                            entryStream.Write(file.FileData, 0, file.FileData.Length);
+                        }
+                    }
+                }
+
+                return zipStream.ToArray();
             }
         }
 

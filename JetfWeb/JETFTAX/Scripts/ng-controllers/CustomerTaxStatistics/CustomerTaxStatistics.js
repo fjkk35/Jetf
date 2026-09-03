@@ -44,7 +44,7 @@ mainApp.controller('CustomerTaxStatisticsController', function ($scope, $http) {
         $http.get(Router.action('CustomerTaxStatistics', 'GetCustomers'))
             .then(function(response) {
                 if (response.data && Array.isArray(response.data)) {
-                    $scope.customers = response.data;
+                    $scope.customers = [{ Cust_Code: 'ALL', CUST_NAME: '全部' }].concat(response.data);
                 } else if (response.data && response.data.msg) {
                     $scope.customers = [];
                     swal({
@@ -67,7 +67,7 @@ mainApp.controller('CustomerTaxStatisticsController', function ($scope, $http) {
             });
     };
 
-    // 匯出Excel
+    // 匯出壓縮檔
     $scope.exportExcel = function() {
         if (!$scope.selectedCustomer) {
             swal({
@@ -126,10 +126,12 @@ mainApp.controller('CustomerTaxStatisticsController', function ($scope, $http) {
                     window.location = Router.action('Download', 'DownloadFile') + 
                         '?fileGuid=' + response.data.fileGuid + 
                         '&fileName=' + encodeURIComponent(response.data.fileName);
+
+                    var isZipFile = response.data.fileName && /\.zip$/i.test(response.data.fileName);
                     
                     swal({
                         title: "匯出成功",
-                        text: "共處理 " + (response.data.recordCount || 0) + " 筆資料",
+                        text: "共處理 " + (response.data.recordCount || 0) + " 筆資料" + (isZipFile ? "，已下載壓縮檔" : ""),
                         icon: "success"
                     });
                 } else {
