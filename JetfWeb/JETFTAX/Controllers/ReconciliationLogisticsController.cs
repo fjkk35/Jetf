@@ -19,6 +19,7 @@ namespace JETFTAX.Controllers
     /// </summary>
     public sealed class ReconciliationLogisticsController : Controller
     {
+        private const int UploadJsonMaxLength = 10 * 1024 * 1024;
         private readonly ReconciliationLogisticsService _service;
         private static readonly SemaphoreSlim UploadSemaphore =
             new SemaphoreSlim(1, 1);
@@ -220,7 +221,10 @@ namespace JETFTAX.Controllers
                     }
                 }
 
-                return Json(response);
+                // 上傳結果包含整批明細，資料量可能超過 MVC JsonResult 預設的 2 MB 限制。
+                var jsonResult = Json(response);
+                jsonResult.MaxJsonLength = UploadJsonMaxLength;
+                return jsonResult;
             }
             catch (Exception ex)
             {
