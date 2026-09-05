@@ -160,6 +160,12 @@ namespace JETFWebAPI.Services
                                 Model = body.DeclData.Bags[0].HawbList[0].Items[k].Model,
                                 Specification = body.DeclData.Bags[0].HawbList[0].Items[k].Specification,
                                 DesignatedCode = body.DeclData.Bags[0].HawbList[0].Items[k].DesignatedCode,
+                                ElementLabel = body.DeclData.Bags[0].HawbList[0].Items[k].ElementLabel,
+                                ElementModel = body.DeclData.Bags[0].HawbList[0].Items[k].ElementModel,
+                                FrequenctRange = body.DeclData.Bags[0].HawbList[0].Items[k].FrequenctRange,
+                                OutPut = body.DeclData.Bags[0].HawbList[0].Items[k].OutPut,
+                                NccRemark = body.DeclData.Bags[0].HawbList[0].Items[k].NccRemark,
+                                NccUrl = body.DeclData.Bags[0].HawbList[0].Items[k].NccUrl,
                             });
                         }
                         //新增資料
@@ -295,8 +301,8 @@ namespace JETFWebAPI.Services
                 try
                 {
                     StringBuilder sb = new StringBuilder();
-                    sb.Append("insert [DATA_CENTER].[dbo].[ORDER_MANIFEST](SendId,CreateDate,BrokerCode,MawbNo,FlightNo,ImportDate,DeclDate,Currency,OrigPort,DeclType,DeclNo,BagNo,BagWeight,HawbNo,DeliveryType,Ctns,CtnUnit,GrossWeight,NetWeight,TermsSales,FreightAmt,DutyExemption,CTaxNo,CName,CAddr,CTel,SName,SAddr,ItemNo,VendorItemId,CategoryName,GoodsDesc,Uprice,Qty,QtyUnit,TotalPrice,MfrCountry,TaxMethod,CCCCode,LicenseNo1,LicenseNo2,LicenseNo3,Brand,Model,Specification,DesignatedCode,MainHawbNo) ");
-                    sb.Append("values(@SendId,@CreateDate,@BrokerCode,@MawbNo,@FlightNo,@ImportDate,@DeclDate,@Currency,@OrigPort,@DeclType,@DeclNo,@BagNo,@BagWeight,@HawbNo,@DeliveryType,@Ctns,@CtnUnit,@GrossWeight,@NetWeight,@TermsSales,@FreightAmt,@DutyExemption,@CTaxNo,@CName,@CAddr,@CTel,@SName,@SAddr,@ItemNo,@VendorItemId,@CategoryName,@GoodsDesc,@Uprice,@Qty,@QtyUnit,@TotalPrice,@MfrCountry,@TaxMethod,@CCCCode,@LicenseNo1,@LicenseNo2,@LicenseNo3,@Brand,@Model,@Specification,@DesignatedCode,@MainHawbNo) ");
+                    sb.Append("insert [DATA_CENTER].[dbo].[ORDER_MANIFEST](SendId,CreateDate,BrokerCode,MawbNo,FlightNo,ImportDate,DeclDate,Currency,OrigPort,DeclType,DeclNo,BagNo,BagWeight,HawbNo,DeliveryType,Ctns,CtnUnit,GrossWeight,NetWeight,TermsSales,FreightAmt,DutyExemption,CTaxNo,CName,CAddr,CTel,SName,SAddr,ItemNo,VendorItemId,CategoryName,GoodsDesc,Uprice,Qty,QtyUnit,TotalPrice,MfrCountry,TaxMethod,CCCCode,LicenseNo1,LicenseNo2,LicenseNo3,Brand,Model,Specification,DesignatedCode,MainHawbNo,ElementLabel,ElementModel,FrequenctRange,OutPut,NccRemark,NccUrl) ");
+                    sb.Append("values(@SendId,@CreateDate,@BrokerCode,@MawbNo,@FlightNo,@ImportDate,@DeclDate,@Currency,@OrigPort,@DeclType,@DeclNo,@BagNo,@BagWeight,@HawbNo,@DeliveryType,@Ctns,@CtnUnit,@GrossWeight,@NetWeight,@TermsSales,@FreightAmt,@DutyExemption,@CTaxNo,@CName,@CAddr,@CTel,@SName,@SAddr,@ItemNo,@VendorItemId,@CategoryName,@GoodsDesc,@Uprice,@Qty,@QtyUnit,@TotalPrice,@MfrCountry,@TaxMethod,@CCCCode,@LicenseNo1,@LicenseNo2,@LicenseNo3,@Brand,@Model,@Specification,@DesignatedCode,@MainHawbNo,@ElementLabel,@ElementModel,@FrequenctRange,@OutPut,@NccRemark,@NccUrl) ");
                     using (SqlCommand cmd = new SqlCommand(sb.ToString(), conn))
                     {
                         cmd.Transaction = tran;
@@ -350,6 +356,12 @@ namespace JETFWebAPI.Services
                             cmd.Parameters.Add("@Model", SqlDbType.NVarChar).Value = modelList[i].Model ?? (object)DBNull.Value;
                             cmd.Parameters.Add("@Specification", SqlDbType.NVarChar).Value = modelList[i].Specification ?? (object)DBNull.Value;
                             cmd.Parameters.Add("@DesignatedCode", SqlDbType.NVarChar).Value = modelList[i].DesignatedCode ?? (object)DBNull.Value;
+                            cmd.Parameters.Add("@ElementLabel", SqlDbType.NVarChar).Value = modelList[i].ElementLabel ?? (object)DBNull.Value;
+                            cmd.Parameters.Add("@ElementModel", SqlDbType.NVarChar).Value = modelList[i].ElementModel ?? (object)DBNull.Value;
+                            cmd.Parameters.Add("@FrequenctRange", SqlDbType.NVarChar).Value = modelList[i].FrequenctRange ?? (object)DBNull.Value;
+                            cmd.Parameters.Add("@OutPut", SqlDbType.NVarChar).Value = modelList[i].OutPut ?? (object)DBNull.Value;
+                            cmd.Parameters.Add("@NccRemark", SqlDbType.NVarChar).Value = modelList[i].NccRemark ?? (object)DBNull.Value;
+                            cmd.Parameters.Add("@NccUrl", SqlDbType.NVarChar).Value = modelList[i].NccUrl ?? (object)DBNull.Value;
                             cmd.ExecuteNonQuery();
                         }
                         tran.Commit();

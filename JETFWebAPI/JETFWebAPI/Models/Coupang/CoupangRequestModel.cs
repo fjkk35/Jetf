@@ -138,6 +138,12 @@ namespace JETFWebAPI.Models.Coupang
         public string Model { get; set; }
         public string Specification { get; set; }
         public string DesignatedCode { get; set; }
+        public string ElementLabel { get; set; }
+        public string ElementModel { get; set; }
+        public string FrequenctRange { get; set; }
+        public string OutPut { get; set; }
+        public string NccRemark { get; set; }
+        public string NccUrl { get; set; }
     }
 
     public class ItemDto
