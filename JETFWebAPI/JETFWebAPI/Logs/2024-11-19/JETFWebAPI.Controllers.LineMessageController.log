@@ -1,0 +1,4 @@
+2024-11-19 23:22:09.2423 | DEBUG | JETFWebAPI.Controllers.LineMessageController | {"Destination":"U2d86fcf7d5082d4bcba49735abbcbb95","Events":[{"Type":0,"Follow":{"IsUnblocked":false},"WebhookEventId":"01JD2FQPXW2BX9QY6CEJCW9YPR","DeliveryContext":{"IsRedelivery":false},"Timestamp":1732029176260,"Source":{"Type":"user","UserId":"U558a979f4c0d4947b6e77425d3689cd1"},"ReplyToken":"1fd574309bb5493fa18c6f4e40b03bdc","Mode":"active"}]} 
+
+2024-11-19 23:32:50.2353 | DEBUG | JETFWebAPI.Controllers.LineMessageController | {"Destination":"U2d86fcf7d5082d4bcba49735abbcbb95","Events":[{"Type":0,"Follow":{"IsUnblocked":false},"WebhookEventId":"01JD2FQPXW2BX9QY6CEJCW9YPR","DeliveryContext":{"IsRedelivery":false},"Timestamp":1732029176260,"Source":{"Type":"user","UserId":"U558a979f4c0d4947b6e77425d3689cd1"},"ReplyToken":"1fd574309bb5493fa18c6f4e40b03bdc","Mode":"active"}]} 
+
