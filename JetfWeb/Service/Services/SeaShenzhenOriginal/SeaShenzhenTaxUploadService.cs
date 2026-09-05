@@ -565,65 +565,18 @@ namespace Service.Services.SeaShenzhenOriginal
         {
             switch (dataType)
             {
-                case SeaShenzhenTaxDataType.XiangHe:
+                case SeaShenzhenTaxDataType.Jetf:
+                case SeaShenzhenTaxDataType.Shenzhen:
                     return new SeaShenzhenTaxUploadBrokerHeaderDefinition
                     {
                         DisplayName = dataType.ToDescription(),
                         MainNumberHeaders = new[] { "主號" },
                         ClearanceNumberHeaders = new[] { "報單號碼" },
                         TrackingNoHeaders = new[] { "分號" },
-                        TaxNumberHeaders = new[] { "稅單編號" },
-                        TaxHeaders = new[] { "稅費合計" },
-                        TaxPayerHeaders = new[] { "進口納稅義務人" },
-                        TaxRecIdHeaders = new[] { "統一編號" }
-                    };
-                case SeaShenzhenTaxDataType.YinSu:
-                    return new SeaShenzhenTaxUploadBrokerHeaderDefinition
-                    {
-                        DisplayName = dataType.ToDescription(),
-                        MainNumberHeaders = new[] { "主號" },
-                        ClearanceNumberHeaders = new[] { "報單號碼" },
-                        TrackingNoHeaders = new[] { "分號" },
-                        TaxNumberHeaders = new[] { "稅單編號" },
-                        TaxHeaders = new[] { "稅費合計" },
-                        TaxPayerHeaders = new[] { "進口納稅義務人" },
-                        TaxRecIdHeaders = new[] { "統一編號" }
-                    };
-                case SeaShenzhenTaxDataType.HsiangHo:
-                    return new SeaShenzhenTaxUploadBrokerHeaderDefinition
-                    {
-                        DisplayName = dataType.ToDescription(),
-                        MainNumberHeaders = new[] { "主號" },
-                        ClearanceNumberHeaders = new[] { "報單號碼" },
-                        TrackingNoHeaders = new[] { "分號" },
-                        TaxNumberHeaders = new[] { "稅單號碼" },
-                        TaxHeaders = new[] { "稅費合計" },
-                        TaxPayerHeaders = new[] { "進口納稅義務人" },
-                        TaxRecIdHeaders = new[] { "進口納稅義務人身分證號" }
-                    };
-                case SeaShenzhenTaxDataType.Kowloon:
-                    return new SeaShenzhenTaxUploadBrokerHeaderDefinition
-                    {
-                        DisplayName = dataType.ToDescription(),
-                        MainNumberHeaders = new[] { "主號" },
-                        ClearanceNumberHeaders = new[] { "報單號碼" },
-                        TrackingNoHeaders = new[] { "分號" },
-                        TaxNumberHeaders = new[] { "稅單號碼" },
-                        TaxHeaders = new[] { "稅單金額" },
-                        TaxPayerHeaders = new[] { "納稅人" },
-                        TaxRecIdHeaders = new[] { "統編" }
-                    };
-                case SeaShenzhenTaxDataType.YiGuangHang:
-                    return new SeaShenzhenTaxUploadBrokerHeaderDefinition
-                    {
-                        DisplayName = dataType.ToDescription(),
-                        MainNumberHeaders = new[] { "主" },
-                        ClearanceNumberHeaders = new[] { "報單號碼" },
-                        TrackingNoHeaders = new[] { "分號" },
-                        TaxNumberHeaders = new[] { "稅單號碼" },
-                        TaxHeaders = new[] { "稅單金額" },
-                        TaxPayerHeaders = new string[0],
-                        TaxRecIdHeaders = new string[0]
+                        TaxNumberHeaders = new[] { "稅單編號", "稅單號碼" },
+                        TaxHeaders = new[] { "稅費合計", "稅單金額" },
+                        TaxPayerHeaders = new[] { "進口納稅義務人", "納稅人" },
+                        TaxRecIdHeaders = new[] { "統一編號", "統編" }
                     };
                 default:
                     throw new ArgumentOutOfRangeException(nameof(dataType), dataType, "不支援的報關行");

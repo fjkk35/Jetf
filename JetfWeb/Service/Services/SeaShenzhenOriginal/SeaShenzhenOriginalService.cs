@@ -35,6 +35,7 @@ namespace Service.Services.SeaShenzhenOriginal
             "商品名稱",
             "*代收金額",
             "數量",
+            "材積",
             "重量",
             "備註",
             "認領人",
@@ -151,6 +152,7 @@ namespace Service.Services.SeaShenzhenOriginal
                     ItemName = x.ItemName,
                     CcText = x.Cc.HasValue ? x.Cc.Value.ToString("0.##") : string.Empty,
                     QuantityText = x.Quantity.HasValue ? x.Quantity.Value.ToString() : string.Empty,
+                    Volume = x.Volume,
                     GwText = x.Gw.ToString("0.##"),
                     Memo = x.Memo,
                     Claimant = x.Claimant,
@@ -247,10 +249,11 @@ namespace Service.Services.SeaShenzhenOriginal
             NpoiCell.CreateCell(dataRow, 9, "測試商品", dataStyle);
             NpoiCell.CreateDoubleCell(dataRow, 10, 100, dataStyle);
             NpoiCell.CreateIntCell(dataRow, 11, 1, dataStyle);
-            NpoiCell.CreateDoubleCell(dataRow, 12, 1.5, dataStyle);
-            NpoiCell.CreateCell(dataRow, 13, "備註", dataStyle);
-            NpoiCell.CreateCell(dataRow, 14, "認領人", dataStyle);
-            NpoiCell.CreateCell(dataRow, 15, ShenzhenTaxPayment.XD.ToString(), dataStyle);
+            NpoiCell.CreateDoubleCell(dataRow, 12, 1.25, dataStyle);
+            NpoiCell.CreateDoubleCell(dataRow, 13, 1.5, dataStyle);
+            NpoiCell.CreateCell(dataRow, 14, "備註", dataStyle);
+            NpoiCell.CreateCell(dataRow, 15, "認領人", dataStyle);
+            NpoiCell.CreateCell(dataRow, 16, ShenzhenTaxPayment.XD.ToString(), dataStyle);
 
             for (var index = 0; index < RequiredHeaders.Length; index++)
             {
@@ -295,6 +298,7 @@ namespace Service.Services.SeaShenzhenOriginal
                         continue;
                     }
 
+                    var volumeText = GetCellValue(row, headerMap, "材積");
                     var model = new SeaShenzhenOriginalUploadRow
                     {
                         RowNo = i + 1,
@@ -310,6 +314,7 @@ namespace Service.Services.SeaShenzhenOriginal
                         ItemName = GetCellValue(row, headerMap, "商品名稱"),
                         CcText = GetCellValue(row, headerMap, "*代收金額"),
                         QuantityText = GetCellValue(row, headerMap, "數量"),
+                        Volume = ParseNullableDecimal(volumeText),
                         GwText = GetCellValue(row, headerMap, "重量"),
                         Memo = GetCellValue(row, headerMap, "備註"),
                         Claimant = GetCellValue(row, headerMap, "認領人"),
@@ -319,7 +324,7 @@ namespace Service.Services.SeaShenzhenOriginal
                         FailReason = string.Empty
                     };
 
-                    if (IsEmptyRow(model))
+                    if (IsEmptyRow(model, volumeText))
                     {
                         continue;
                     }
@@ -328,6 +333,11 @@ namespace Service.Services.SeaShenzhenOriginal
                     model.Cc = ParseNullableDouble(model.CcText);
                     model.Quantity = ParseNullableInt(model.QuantityText);
                     model.Gw = ParseNullableDecimal(model.GwText);
+
+                    if (!string.IsNullOrWhiteSpace(volumeText) && !model.Volume.HasValue)
+                    {
+                        AddValidationError(model, "材積", "格式錯誤");
+                    }
 
                     result.Add(model);
                 }
@@ -546,6 +556,7 @@ namespace Service.Services.SeaShenzhenOriginal
             entity.ItemName = NullIfEmpty(row.ItemName);
             entity.Cc = row.Cc;
             entity.Quantity = row.Quantity;
+            entity.Volume = row.Volume;
             entity.Gw = row.Gw.Value;
             entity.DlvGw = CalculateDlvGw(row.Gw);
             entity.Memo = NullIfEmpty(row.Memo);
@@ -608,7 +619,7 @@ namespace Service.Services.SeaShenzhenOriginal
         /// <summary>
         /// 判斷 Excel 列是否為空白列。
         /// </summary>
-        private bool IsEmptyRow(SeaShenzhenOriginalUploadRow item)
+        private bool IsEmptyRow(SeaShenzhenOriginalUploadRow item, string volumeText)
         {
             return string.IsNullOrWhiteSpace(item.TrackingNo)
                 && string.IsNullOrWhiteSpace(item.BlNo)
@@ -622,6 +633,7 @@ namespace Service.Services.SeaShenzhenOriginal
                 && string.IsNullOrWhiteSpace(item.ItemName)
                 && string.IsNullOrWhiteSpace(item.CcText)
                 && string.IsNullOrWhiteSpace(item.QuantityText)
+                && string.IsNullOrWhiteSpace(volumeText)
                 && string.IsNullOrWhiteSpace(item.GwText)
                 && string.IsNullOrWhiteSpace(item.Memo)
                 && string.IsNullOrWhiteSpace(item.Claimant)

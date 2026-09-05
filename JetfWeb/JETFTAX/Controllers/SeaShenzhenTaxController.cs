@@ -46,7 +46,6 @@ namespace JETFTAX.Controllers
                 }
                 .Concat(Enum.GetValues(typeof(SeaShenzhenTaxDataType))
                 .Cast<SeaShenzhenTaxDataType>()
-                .Where(x => x != SeaShenzhenTaxDataType.Jetf)
                 .Select(x => new
                 {
                     Value = x.ToString(),
@@ -80,13 +79,6 @@ namespace JETFTAX.Controllers
                 {
                     responseModel.status = Status.error;
                     responseModel.msg = "請選擇報關行";
-                    return Json(responseModel);
-                }
-
-                if (dataTypeValue == SeaShenzhenTaxDataType.Jetf)
-                {
-                    responseModel.status = Status.error;
-                    responseModel.msg = "JETF 僅供系統轉檔使用";
                     return Json(responseModel);
                 }
 

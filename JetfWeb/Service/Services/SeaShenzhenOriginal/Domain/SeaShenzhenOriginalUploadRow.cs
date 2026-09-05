@@ -26,6 +26,11 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
         public double? Cc { get; set; }
         public string QuantityText { get; set; }
         public int? Quantity { get; set; }
+
+        /// <summary>
+        /// 材積。
+        /// </summary>
+        public decimal? Volume { get; set; }
         public string GwText { get; set; }
         public decimal? Gw { get; set; }
         public string Memo { get; set; }

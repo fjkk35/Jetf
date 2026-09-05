@@ -65,6 +65,11 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
 
         public string QuantityText { get; set; }
 
+        /// <summary>
+        /// 材積。
+        /// </summary>
+        public decimal? Volume { get; set; }
+
         public string GwText { get; set; }
 
         public string Memo { get; set; }

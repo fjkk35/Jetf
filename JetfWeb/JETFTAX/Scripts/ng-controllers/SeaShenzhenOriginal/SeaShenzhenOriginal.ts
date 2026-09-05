@@ -30,6 +30,7 @@ interface SeaShenzhenOriginalUploadFailRow {
     ItemName: string;
     CcText: string;
     QuantityText: string;
+    Volume: number | null;
     GwText: string;
     Memo: string;
     Claimant: string;

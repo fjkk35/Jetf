@@ -101,6 +101,12 @@ namespace Service.Data
         public int? Quantity { get; set; }
 
         /// <summary>
+        /// 材積。
+        /// </summary>
+        [Column("Volume")]
+        public decimal? Volume { get; set; }
+
+        /// <summary>
         /// 重量。
         /// </summary>
         [Column("Gw")]

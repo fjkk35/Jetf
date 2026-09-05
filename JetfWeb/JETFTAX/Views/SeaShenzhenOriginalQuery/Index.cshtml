@@ -251,6 +251,7 @@
                         <th>商品名稱</th>
                         <th>代收金額</th>
                         <th>數量</th>
+                        <th>材積</th>
                         <th>重量</th>
                         <th>備註</th>
                         <th>認領人</th>
@@ -259,7 +260,7 @@
                 </thead>
                 <tbody>
                     <tr ng-if="data.length === 0">
-                        <td colspan="19" class="text-center">查無資料</td>
+                        <td colspan="20" class="text-center">查無資料</td>
                     </tr>
                     <tr ng-repeat="item in data track by item.Id">
                         <td>{{(currentPage - 1) * parsePageSize() + $index + 1}}</td>
@@ -277,6 +278,7 @@
                         <td>{{item.ItemName}}</td>
                         <td>{{item.CcText}}</td>
                         <td>{{item.QuantityText}}</td>
+                        <td>{{item.Volume}}</td>
                         <td>{{item.GwText}}</td>
                         <td>{{item.Memo}}</td>
                         <td>{{item.Claimant}}</td>
