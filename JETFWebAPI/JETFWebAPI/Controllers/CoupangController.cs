@@ -40,7 +40,7 @@ namespace JETFWebAPI.Controllers
                     stmReader.Close();
 
                     //紀錄Log
-                    //logger.Info($"Manifest\r\n{strRequest}");
+                    logger.Info($"Manifest\r\n{strRequest}");
                 }
 
                 if (ModelState.IsValid)
@@ -110,7 +110,7 @@ namespace JETFWebAPI.Controllers
                     stmReader.Close();
 
                     //紀錄Log
-                    //logger.Info($"CargoManifest\r\n{strRequest}");
+                    logger.Info($"CargoManifest\r\n{strRequest}");
                 }
                
                 if (ModelState.IsValid)
