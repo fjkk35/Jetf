@@ -32,28 +32,16 @@ namespace Service.Data
         public SeaShenzhenTaxDataType DataType { get; set; }
 
         /// <summary>
-        /// 主號。
-        /// </summary>
-        [Column("MainNumber")]
-        public string MainNumber { get; set; }
-
-        /// <summary>
-        /// 報單號碼。
-        /// </summary>
-        [Column("ClearanceNumber")]
-        public string ClearanceNumber { get; set; }
-
-        /// <summary>
-        /// 分號。
+        /// 託運單號。
         /// </summary>
         [Column("TrackingNo")]
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// 稅單號碼。
+        /// 到付款。
         /// </summary>
-        [Column("TaxNumber")]
-        public string TaxNumber { get; set; }
+        [Column("Cod")]
+        public int Cod { get; set; }
 
         /// <summary>
         /// 稅單金額。
@@ -62,16 +50,10 @@ namespace Service.Data
         public int Tax { get; set; }
 
         /// <summary>
-        /// 納稅人。
+        /// 稅金手續費。
         /// </summary>
-        [Column("TaxPayer")]
-        public string TaxPayer { get; set; }
-
-        /// <summary>
-        /// 統編。
-        /// </summary>
-        [Column("TaxRecId")]
-        public string TaxRecId { get; set; }
+        [Column("Fee")]
+        public int Fee { get; set; }
 
         /// <summary>
         /// 深圳稅金轉檔主檔 Id。

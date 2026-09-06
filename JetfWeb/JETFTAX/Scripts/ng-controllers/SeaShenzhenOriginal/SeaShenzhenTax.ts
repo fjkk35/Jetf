@@ -7,23 +7,19 @@ interface SeaShenzhenTaxUploadFailRow {
     RowNo: number;
     FailFieldName: string;
     FailReason: string;
-    MainNumber: string;
-    ClearanceNumber: string;
     TrackingNo: string;
-    TaxNumber: string;
+    CodText: string;
+    Cod: number | null;
     TaxText: string;
-    TaxPayer: string;
-    TaxRecId: string;
+    FeeText: string;
 }
 
 interface SeaShenzhenTaxTransferExceptionRow {
     Reason: string;
-    MainNumber: string;
     TrackingNo: string;
-    TaxNumber: string;
+    Cod: number;
     Tax: number;
-    TaxPayer: string;
-    TaxRecId: string;
+    Fee: number;
 }
 
 interface SeaShenzhenTaxUploadResult {
@@ -142,7 +138,7 @@ mainApp.controller('SeaShenzhenTaxController', ['$scope', '$http', function (
         }
 
         var lines = [
-            ['Excel列號', '失敗欄位', '失敗原因', '主號', '報單號碼', '分號', '稅單號碼', '稅單金額', '納稅人', '統編'].map(toCsvValue).join(',')
+            ['Excel列號', '失敗欄位', '失敗原因', '託運單號(條碼號)', '到付金額', '稅金金額', '稅金手續費'].map(toCsvValue).join(',')
         ];
 
         angular.forEach($scope.uploadFailData, function (item: SeaShenzhenTaxUploadFailRow): void {
@@ -150,13 +146,10 @@ mainApp.controller('SeaShenzhenTaxController', ['$scope', '$http', function (
                 item.RowNo,
                 item.FailFieldName,
                 item.FailReason,
-                item.MainNumber,
-                item.ClearanceNumber,
                 item.TrackingNo,
-                item.TaxNumber,
+                item.CodText,
                 item.TaxText,
-                item.TaxPayer,
-                item.TaxRecId
+                item.FeeText
             ].map(toCsvValue).join(','));
         });
 

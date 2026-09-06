@@ -11,44 +11,39 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
         public int RowNo { get; set; }
 
         /// <summary>
-        /// 主號。
-        /// </summary>
-        public string MainNumber { get; set; }
-
-        /// <summary>
-        /// 報單號碼。
-        /// </summary>
-        public string ClearanceNumber { get; set; }
-
-        /// <summary>
-        /// 分號。
+        /// 託運單號。
         /// </summary>
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// 稅單號碼。
+        /// 到付金額原始文字。
         /// </summary>
-        public string TaxNumber { get; set; }
+        public string CodText { get; set; }
 
         /// <summary>
-        /// 稅單金額原始文字。
+        /// 到付金額。
+        /// </summary>
+        public int? Cod { get; set; }
+
+        /// <summary>
+        /// 稅金金額原始文字。
         /// </summary>
         public string TaxText { get; set; }
 
         /// <summary>
-        /// 稅單金額。
+        /// 稅金金額。
         /// </summary>
         public int? Tax { get; set; }
 
         /// <summary>
-        /// 納稅人。
+        /// 稅金手續費原始文字。
         /// </summary>
-        public string TaxPayer { get; set; }
+        public string FeeText { get; set; }
 
         /// <summary>
-        /// 統編。
+        /// 稅金手續費。
         /// </summary>
-        public string TaxRecId { get; set; }
+        public int? Fee { get; set; }
 
         /// <summary>
         /// 上傳結果。

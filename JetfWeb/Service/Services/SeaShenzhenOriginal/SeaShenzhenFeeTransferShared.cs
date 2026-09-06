@@ -59,15 +59,19 @@ namespace Service.Services.SeaShenzhenOriginal
             SeaShenzhenTaxDataType dataType,
             int? feeMasterId,
             string userId,
-            DateTime now)
+            DateTime now,
+            int? codOverride = null,
+            int? feeOverride = null)
         {
-            var cod = ToAmount(original.Cc);
+            var cod = codOverride.HasValue && codOverride.Value > 0
+                ? codOverride.Value
+                : ToAmount(original.Cc);
             var includeTax = tax >= 1000
                 ? ShenzhenTaxPayment.C.ToString()
                 : original.TaxPayment;
-            var fee = string.Equals(includeTax, ShenzhenTaxPayment.C.ToString(), StringComparison.OrdinalIgnoreCase)
+            var fee = feeOverride ?? (string.Equals(includeTax, ShenzhenTaxPayment.C.ToString(), StringComparison.OrdinalIgnoreCase)
                 ? FeeWhenTaxPaymentC
-                : 0;
+                : 0);
 
             return new ShenzhenFeeMasterEntity
             {

@@ -133,13 +133,10 @@ namespace Service.Services.SeaShenzhenOriginal
                 {
                     DataDate = dataDate,
                     DataType = dataTypeValue,
-                    MainNumber = NullIfEmpty(row.MainNumber),
-                    ClearanceNumber = NullIfEmpty(row.ClearanceNumber),
                     TrackingNo = row.TrackingNo.Trim(),
-                    TaxNumber = NullIfEmpty(row.TaxNumber),
+                    Cod = row.Cod ?? 0,
                     Tax = row.Tax ?? 0,
-                    TaxPayer = NullIfEmpty(row.TaxPayer),
-                    TaxRecId = NullIfEmpty(row.TaxRecId),
+                    Fee = row.Fee ?? 0,
                     CreatedUser = userId,
                     CreatedTime = now
                 })
@@ -153,6 +150,11 @@ namespace Service.Services.SeaShenzhenOriginal
             foreach (var taxGroup in taxEntities.GroupBy(x => x.TrackingNo, StringComparer.OrdinalIgnoreCase))
             {
                 var totalTax = taxGroup.Sum(x => x.Tax);
+                var cod = taxGroup
+                    .Where(x => x.Cod > 0)
+                    .Select(x => (int?)x.Cod)
+                    .FirstOrDefault();
+                var fee = taxGroup.Sum(x => x.Fee);
                 SeaShenzhenOriginalEntity original;
                 if (!originalLookup.TryGetValue(taxGroup.Key, out original))
                 {
@@ -168,7 +170,9 @@ namespace Service.Services.SeaShenzhenOriginal
                     dataTypeValue,
                     null,
                     userId,
-                    now));
+                    now,
+                    cod,
+                    fee));
             }
 
             int deletedCount;
@@ -273,12 +277,10 @@ namespace Service.Services.SeaShenzhenOriginal
             return new SeaShenzhenTaxTransferExceptionRow
             {
                 Reason = reason,
-                MainNumber = entity.MainNumber,
                 TrackingNo = entity.TrackingNo,
-                TaxNumber = entity.TaxNumber,
+                Cod = entity.Cod,
                 Tax = entity.Tax,
-                TaxPayer = entity.TaxPayer,
-                TaxRecId = entity.TaxRecId
+                Fee = entity.Fee
             };
         }
 
@@ -312,13 +314,10 @@ namespace Service.Services.SeaShenzhenOriginal
                     var model = new SeaShenzhenTaxUploadRow
                     {
                         RowNo = i + 1,
-                        MainNumber = GetCellValue(row, headerMap, definition.MainNumberHeaders),
-                        ClearanceNumber = GetCellValue(row, headerMap, definition.ClearanceNumberHeaders),
                         TrackingNo = GetCellValue(row, headerMap, definition.TrackingNoHeaders),
-                        TaxNumber = GetCellValue(row, headerMap, definition.TaxNumberHeaders),
+                        CodText = GetCellValue(row, headerMap, definition.CodHeaders),
                         TaxText = GetCellValue(row, headerMap, definition.TaxHeaders),
-                        TaxPayer = GetCellValue(row, headerMap, definition.TaxPayerHeaders),
-                        TaxRecId = GetCellValue(row, headerMap, definition.TaxRecIdHeaders),
+                        FeeText = GetCellValue(row, headerMap, definition.FeeHeaders),
                         UploadStatus = "成功",
                         FailFieldName = string.Empty,
                         FailReason = string.Empty
@@ -329,7 +328,9 @@ namespace Service.Services.SeaShenzhenOriginal
                         continue;
                     }
 
-                    model.Tax = ParseNullableTax(model.TaxText);
+                    model.Cod = ParseNullableAmount(model.CodText);
+                    model.Tax = ParseNullableAmount(model.TaxText);
+                    model.Fee = ParseNullableAmount(model.FeeText);
                     result.Add(model);
                 }
             }
@@ -377,24 +378,9 @@ namespace Service.Services.SeaShenzhenOriginal
         {
             foreach (var item in uploadRows)
             {
-                if (string.IsNullOrWhiteSpace(item.MainNumber))
-                {
-                    AddValidationError(item, definition.MainNumberHeaders[0], "必填");
-                }
-
-                if (string.IsNullOrWhiteSpace(item.ClearanceNumber))
-                {
-                    AddValidationError(item, definition.ClearanceNumberHeaders[0], "必填");
-                }
-
                 if (string.IsNullOrWhiteSpace(item.TrackingNo))
                 {
                     AddValidationError(item, definition.TrackingNoHeaders[0], "必填");
-                }
-
-                if (string.IsNullOrWhiteSpace(item.TaxNumber))
-                {
-                    AddValidationError(item, definition.TaxNumberHeaders[0], "必填");
                 }
 
                 if (string.IsNullOrWhiteSpace(item.TaxText))
@@ -404,6 +390,16 @@ namespace Service.Services.SeaShenzhenOriginal
                 else if (!item.Tax.HasValue)
                 {
                     AddValidationError(item, definition.TaxHeaders[0], "格式錯誤");
+                }
+
+                if (!string.IsNullOrWhiteSpace(item.CodText) && !item.Cod.HasValue)
+                {
+                    AddValidationError(item, definition.CodHeaders[0], "格式錯誤");
+                }
+
+                if (!string.IsNullOrWhiteSpace(item.FeeText) && !item.Fee.HasValue)
+                {
+                    AddValidationError(item, definition.FeeHeaders[0], "格式錯誤");
                 }
             }
 
@@ -435,13 +431,10 @@ namespace Service.Services.SeaShenzhenOriginal
         /// </summary>
         private static bool IsEmptyRow(SeaShenzhenTaxUploadRow item)
         {
-            return string.IsNullOrWhiteSpace(item.MainNumber)
-                && string.IsNullOrWhiteSpace(item.ClearanceNumber)
-                && string.IsNullOrWhiteSpace(item.TrackingNo)
-                && string.IsNullOrWhiteSpace(item.TaxNumber)
+            return string.IsNullOrWhiteSpace(item.TrackingNo)
+                && string.IsNullOrWhiteSpace(item.CodText)
                 && string.IsNullOrWhiteSpace(item.TaxText)
-                && string.IsNullOrWhiteSpace(item.TaxPayer)
-                && string.IsNullOrWhiteSpace(item.TaxRecId);
+                && string.IsNullOrWhiteSpace(item.FeeText);
         }
 
         /// <summary>
@@ -449,14 +442,13 @@ namespace Service.Services.SeaShenzhenOriginal
         /// </summary>
         private static bool HasRequiredTransferKeys(SeaShenzhenTaxUploadRow item)
         {
-            return !string.IsNullOrWhiteSpace(item.TrackingNo)
-                && !string.IsNullOrWhiteSpace(item.TaxNumber);
+            return !string.IsNullOrWhiteSpace(item.TrackingNo);
         }
 
         /// <summary>
-        /// 將稅單金額文字轉成整數金額。
+        /// 將金額文字轉成整數金額。
         /// </summary>
-        private static int? ParseNullableTax(string value)
+        private static int? ParseNullableAmount(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
             {
@@ -472,16 +464,6 @@ namespace Service.Services.SeaShenzhenOriginal
             }
 
             return null;
-        }
-
-        /// <summary>
-        /// 將空白字串轉成 null。
-        /// </summary>
-        private static string NullIfEmpty(string value)
-        {
-            return string.IsNullOrWhiteSpace(value)
-                ? null
-                : value.Trim();
         }
 
         /// <summary>
@@ -522,12 +504,10 @@ namespace Service.Services.SeaShenzhenOriginal
             var headers = new[]
             {
                 "原因",
-                "主號",
-                "分號",
-                "稅單號碼",
-                "稅單金額",
-                "納稅人",
-                "統編"
+                "託運單號(條碼號)",
+                "到付金額",
+                "稅金金額",
+                "稅金手續費"
             };
 
             var headerRow = sheet.CreateRow(0);
@@ -538,12 +518,10 @@ namespace Service.Services.SeaShenzhenOriginal
             {
                 var row = sheet.CreateRow(rowIndex++);
                 NpoiCell.CreateCell(row, 0, item.Reason, dataStyle);
-                NpoiCell.CreateCell(row, 1, item.MainNumber, dataStyle);
-                NpoiCell.CreateCell(row, 2, item.TrackingNo, dataStyle);
-                NpoiCell.CreateCell(row, 3, item.TaxNumber, dataStyle);
-                NpoiCell.CreateIntCell(row, 4, item.Tax, dataStyle);
-                NpoiCell.CreateCell(row, 5, item.TaxPayer, dataStyle);
-                NpoiCell.CreateCell(row, 6, item.TaxRecId, dataStyle);
+                NpoiCell.CreateCell(row, 1, item.TrackingNo, dataStyle);
+                NpoiCell.CreateIntCell(row, 2, item.Cod, dataStyle);
+                NpoiCell.CreateIntCell(row, 3, item.Tax, dataStyle);
+                NpoiCell.CreateIntCell(row, 4, item.Fee, dataStyle);
             }
 
             for (var index = 0; index < headers.Length; index++)
@@ -570,13 +548,10 @@ namespace Service.Services.SeaShenzhenOriginal
                     return new SeaShenzhenTaxUploadBrokerHeaderDefinition
                     {
                         DisplayName = dataType.ToDescription(),
-                        MainNumberHeaders = new[] { "主號" },
-                        ClearanceNumberHeaders = new[] { "報單號碼" },
-                        TrackingNoHeaders = new[] { "分號" },
-                        TaxNumberHeaders = new[] { "稅單編號", "稅單號碼" },
-                        TaxHeaders = new[] { "稅費合計", "稅單金額" },
-                        TaxPayerHeaders = new[] { "進口納稅義務人", "納稅人" },
-                        TaxRecIdHeaders = new[] { "統一編號", "統編" }
+                        TrackingNoHeaders = new[] { "託運單號(條碼號)" },
+                        CodHeaders = new[] { "到付金额", "到付金額" },
+                        TaxHeaders = new[] { "税金金额", "稅金金額" },
+                        FeeHeaders = new[] { "税金手续费", "稅金手續費" }
                     };
                 default:
                     throw new ArgumentOutOfRangeException(nameof(dataType), dataType, "不支援的報關行");

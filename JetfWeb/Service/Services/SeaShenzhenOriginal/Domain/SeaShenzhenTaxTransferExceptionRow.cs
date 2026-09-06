@@ -11,33 +11,23 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
         public string Reason { get; set; }
 
         /// <summary>
-        /// 主號。
-        /// </summary>
-        public string MainNumber { get; set; }
-
-        /// <summary>
-        /// 分號。
+        /// 託運單號。
         /// </summary>
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// 稅單號碼。
+        /// 到付金額。
         /// </summary>
-        public string TaxNumber { get; set; }
+        public int Cod { get; set; }
 
         /// <summary>
-        /// 稅單金額。
+        /// 稅金金額。
         /// </summary>
         public int Tax { get; set; }
 
         /// <summary>
-        /// 納稅人。
+        /// 稅金手續費。
         /// </summary>
-        public string TaxPayer { get; set; }
-
-        /// <summary>
-        /// 統編。
-        /// </summary>
-        public string TaxRecId { get; set; }
+        public int Fee { get; set; }
     }
 }

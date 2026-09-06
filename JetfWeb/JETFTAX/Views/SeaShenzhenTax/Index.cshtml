@@ -190,13 +190,10 @@
                             <th>Excel列號</th>
                             <th>失敗欄位</th>
                             <th>失敗原因</th>
-                            <th>主號</th>
-                            <th>報單號碼</th>
-                            <th>分號</th>
-                            <th>稅單號碼</th>
-                            <th>稅單金額</th>
-                            <th>納稅人</th>
-                            <th>統編</th>
+                            <th>託運單號(條碼號)</th>
+                            <th>到付金額</th>
+                            <th>稅金金額</th>
+                            <th>稅金手續費</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -204,13 +201,10 @@
                             <td>{{ item.RowNo }}</td>
                             <td>{{ item.FailFieldName }}</td>
                             <td>{{ item.FailReason }}</td>
-                            <td>{{ item.MainNumber }}</td>
-                            <td>{{ item.ClearanceNumber }}</td>
                             <td>{{ item.TrackingNo }}</td>
-                            <td>{{ item.TaxNumber }}</td>
+                            <td>{{ item.CodText }}</td>
                             <td>{{ item.TaxText }}</td>
-                            <td>{{ item.TaxPayer }}</td>
-                            <td>{{ item.TaxRecId }}</td>
+                            <td>{{ item.FeeText }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -233,23 +227,19 @@
                     <thead class="thead-dark">
                         <tr>
                             <th>原因</th>
-                            <th>主號</th>
-                            <th>分號</th>
-                            <th>稅單號碼</th>
-                            <th>稅單金額</th>
-                            <th>納稅人</th>
-                            <th>統編</th>
+                            <th>託運單號(條碼號)</th>
+                            <th>到付金額</th>
+                            <th>稅金金額</th>
+                            <th>稅金手續費</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr ng-repeat="item in transferExceptions track by $index">
                             <td>{{ item.Reason }}</td>
-                            <td>{{ item.MainNumber }}</td>
                             <td>{{ item.TrackingNo }}</td>
-                            <td>{{ item.TaxNumber }}</td>
+                            <td>{{ item.Cod }}</td>
                             <td>{{ item.Tax }}</td>
-                            <td>{{ item.TaxPayer }}</td>
-                            <td>{{ item.TaxRecId }}</td>
+                            <td>{{ item.Fee }}</td>
                         </tr>
                     </tbody>
                 </table>

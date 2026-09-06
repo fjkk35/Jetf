@@ -52,20 +52,17 @@ mainApp.controller('SeaShenzhenTaxController', ['$scope', '$http', function ($sc
                 return;
             }
             var lines = [
-                ['Excel列號', '失敗欄位', '失敗原因', '主號', '報單號碼', '分號', '稅單號碼', '稅單金額', '納稅人', '統編'].map(toCsvValue).join(',')
+            ['Excel列號', '失敗欄位', '失敗原因', '託運單號(條碼號)', '到付金額', '稅金金額', '稅金手續費'].map(toCsvValue).join(',')
             ];
             angular.forEach($scope.uploadFailData, function (item) {
                 lines.push([
                     item.RowNo,
                     item.FailFieldName,
                     item.FailReason,
-                    item.MainNumber,
-                    item.ClearanceNumber,
-                    item.TrackingNo,
-                    item.TaxNumber,
-                    item.TaxText,
-                    item.TaxPayer,
-                    item.TaxRecId
+                item.TrackingNo,
+                item.CodText,
+                item.TaxText,
+                item.FeeText
                 ].map(toCsvValue).join(','));
             });
             var blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
