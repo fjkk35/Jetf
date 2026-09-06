@@ -53,7 +53,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
         {
             id: 'seaShenzhen', title: '新遞', icon: 'fas fa-fw fa-truck', children: [
                 { id: 'SeaShenzhenOriginal', text: '上傳託運資料', url: '~/SeaShenzhenOriginal/Index', auth: ['SeaShenzhenOriginalUpload'] },
-                { id: 'SeaShenzhenTax', text: '上傳稅金資料', url: '~/SeaShenzhenTax/Index', auth: ['SeaShenzhenOriginalUpload'] },
+                //{ id: 'SeaShenzhenTax', text: '上傳稅金資料', url: '~/SeaShenzhenTax/Index', auth: ['SeaShenzhenOriginalUpload'] },
                 { id: 'SeaShenzhenFeeTransfer', text: '捷豐稅金轉檔', url: '~/SeaShenzhenFeeTransfer/Index', auth: ['SeaShenzhenOriginalUpload'] },
                 { id: 'SeaShenzhenOriginalQuery', text: '託運資料查詢', url: '~/SeaShenzhenOriginalQuery/Index', auth: ['SeaShenzhenOriginalUpload'] },
                 { id: 'SeaShenzhenFeeManualToDlvCod', text: '代收金額人工調整', url: '~/SeaShenzhenFeeManualToDlvCod/Index', auth: ['SeaShenzhenOriginalUpload'] },

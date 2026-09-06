@@ -45,7 +45,7 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
-        /// 依資料日期匯出 IncludeTax = C 的深圳物流代收檔。
+        /// 依資料日期匯出 IncludeTax = C 或 Cod > 0 的深圳物流代收檔。
         /// </summary>
         public byte[] ExportCollectibleExcel(SeaShenzhenFeeTransferRequest request)
         {
@@ -69,7 +69,7 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
-        /// 依資料日期整理可下載的物流代收資料，人工調整命中的資料會強制視為 C。
+        /// 依資料日期整理可下載的物流代收資料，符合 IncludeTax = C 或 Cod > 0 的資料才可下載。
         /// </summary>
         private List<SeaShenzhenFeeDownloadRow> GetCollectibleRows(string dataDate)
         {
@@ -100,10 +100,8 @@ namespace Service.Services.SeaShenzhenOriginal
                 ShenzhenFeeMasterManualToDlvCodEntity manualRow;
                 manualByTrackingNo.TryGetValue(feeRow.TrackingNo, out manualRow);
 
-                // 下載條件：
-                // 1. 原始轉檔稅金類別為 C；或
-                // 2. 人工代收金額調整表命中，此時需強制視為 C 並使用人工 ToDlvCod。
-                if (feeRow.IncludeTax != collectibleTaxPayment && manualRow == null)
+                // 下載條件：IncludeTax = C 或 Cod > 0。
+                if (feeRow.IncludeTax != collectibleTaxPayment && feeRow.Cod <= 0)
                 {
                     continue;
                 }

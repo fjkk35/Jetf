@@ -1,4 +1,4 @@
-using Service.EnumTax;
+﻿using Service.EnumTax;
 using Service.Extensions;
 using Service.Models;
 using Service.Services.SeaShenzhenOriginal;
@@ -46,6 +46,7 @@ namespace JETFTAX.Controllers
                 }
                 .Concat(Enum.GetValues(typeof(SeaShenzhenTaxDataType))
                 .Cast<SeaShenzhenTaxDataType>()
+                .Where(x => x != SeaShenzhenTaxDataType.Jetf)
                 .Select(x => new
                 {
                     Value = x.ToString(),
