@@ -69,52 +69,61 @@ namespace Service.Services.SeaShenzhenOriginal
             var taxPayment = NullIfEmpty(request.TaxPayment);
             var dataType = NullIfEmpty(request.DataType);
 
-            var query = JetfDb.SeaShenzhenOriginals.AsNoTracking().AsQueryable();
+            var query =
+                from original in JetfDb.SeaShenzhenOriginals.AsNoTracking()
+                join feeMaster in JetfDb.ShenzhenFeeMasters.AsNoTracking()
+                    on original.JetfSerial equals feeMaster.DlvInv into feeMasterGroup
+                from feeMaster in feeMasterGroup.DefaultIfEmpty()
+                select new
+                {
+                    Original = original,
+                    FeeMaster = feeMaster
+                };
 
             if (startDate.HasValue)
             {
-                query = query.Where(x => x.DataDate >= startDate.Value);
+                query = query.Where(x => x.Original.DataDate >= startDate.Value);
             }
 
             if (endDate.HasValue)
             {
                 var endDateExclusive = endDate.Value.AddDays(1);
-                query = query.Where(x => x.DataDate < endDateExclusive);
+                query = query.Where(x => x.Original.DataDate < endDateExclusive);
             }
 
             if (!string.IsNullOrWhiteSpace(trackingNo))
             {
-                query = query.Where(x => x.TrackingNo.Contains(trackingNo));
+                query = query.Where(x => x.Original.TrackingNo.Contains(trackingNo));
             }
 
             if (!string.IsNullOrWhiteSpace(blNo))
             {
-                query = query.Where(x => x.BlNo.Contains(blNo));
+                query = query.Where(x => x.Original.BlNo.Contains(blNo));
             }
 
             if (!string.IsNullOrWhiteSpace(orderNo))
             {
-                query = query.Where(x => x.OrderNo.Contains(orderNo));
+                query = query.Where(x => x.Original.OrderNo.Contains(orderNo));
             }
 
             if (!string.IsNullOrWhiteSpace(jetfSerial))
             {
-                query = query.Where(x => x.JetfSerial.Contains(jetfSerial));
+                query = query.Where(x => x.Original.JetfSerial.Contains(jetfSerial));
             }
 
             if (!string.IsNullOrWhiteSpace(importer))
             {
-                query = query.Where(x => x.Importer.Contains(importer));
+                query = query.Where(x => x.Original.Importer.Contains(importer));
             }
 
             if (!string.IsNullOrWhiteSpace(importerPhone))
             {
-                query = query.Where(x => x.ImporterPhone.Contains(importerPhone));
+                query = query.Where(x => x.Original.ImporterPhone.Contains(importerPhone));
             }
 
             if (!string.IsNullOrWhiteSpace(taxPayment))
             {
-                query = query.Where(x => x.TaxPayment == taxPayment);
+                query = query.Where(x => x.Original.TaxPayment == taxPayment);
             }
 
             if (!string.IsNullOrWhiteSpace(dataType))
@@ -125,38 +134,42 @@ namespace Service.Services.SeaShenzhenOriginal
                     throw new Exception("報關行格式錯誤");
                 }
 
-                query = query.Where(x => x.DataType == dataTypeValue);
+                query = query.Where(x => x.Original.DataType == dataTypeValue);
             }
 
             var totalCount = query.Count();
             var data = query
-                .OrderByDescending(x => x.DataDate)
-                .ThenByDescending(x => x.Id)
+                .OrderByDescending(x => x.Original.DataDate)
+                .ThenByDescending(x => x.Original.Id)
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
                 .ToList()
                 .Select(x => new SeaShenzhenOriginalQueryRow
                 {
-                    Id = x.Id,
-                    DataDateText = x.DataDate.ToString("yyyy-MM-dd"),
-                    DataTypeDisplay = x.DataType.ToDescription(),
-                    TrackingNo = x.TrackingNo,
-                    BlNo = x.BlNo,
-                    OrderNo = x.OrderNo,
-                    JetfSerial = x.JetfSerial,
-                    TransTimeText = x.TransTime.HasValue ? x.TransTime.Value.ToString("yyyy-MM-dd HH:mm:ss") : string.Empty,
-                    TransName = x.TransName,
-                    Importer = x.Importer,
-                    ImporterAddress = x.ImporterAddress,
-                    ImporterPhone = x.ImporterPhone,
-                    ItemName = x.ItemName,
-                    CcText = x.Cc.HasValue ? x.Cc.Value.ToString("0.##") : string.Empty,
-                    QuantityText = x.Quantity.HasValue ? x.Quantity.Value.ToString() : string.Empty,
-                    Volume = x.Volume,
-                    GwText = x.Gw.ToString("0.##"),
-                    Memo = x.Memo,
-                    Claimant = x.Claimant,
-                    TaxPayment = GetTaxPaymentDescription(x.TaxPayment)
+                    Id = x.Original.Id,
+                    DataDateText = x.Original.DataDate.ToString("yyyy-MM-dd"),
+                    DataTypeDisplay = x.Original.DataType.ToDescription(),
+                    TrackingNo = x.Original.TrackingNo,
+                    BlNo = x.Original.BlNo,
+                    OrderNo = x.Original.OrderNo,
+                    JetfSerial = x.Original.JetfSerial,
+                    TransTimeText = x.Original.TransTime.HasValue ? x.Original.TransTime.Value.ToString("yyyy-MM-dd HH:mm:ss") : string.Empty,
+                    TransName = x.Original.TransName,
+                    Importer = x.Original.Importer,
+                    ImporterAddress = x.Original.ImporterAddress,
+                    ImporterPhone = x.Original.ImporterPhone,
+                    ItemName = x.Original.ItemName,
+                    CcText = x.FeeMaster != null
+                        ? x.FeeMaster.Cod.ToString()
+                        : (x.Original.Cc.HasValue ? x.Original.Cc.Value.ToString("0.##") : string.Empty),
+                    Tax = x.FeeMaster != null ? (int?)x.FeeMaster.Tax : null,
+                    Fee = x.FeeMaster != null ? (int?)x.FeeMaster.Fee : null,
+                    QuantityText = x.Original.Quantity.HasValue ? x.Original.Quantity.Value.ToString() : string.Empty,
+                    Volume = x.Original.Volume,
+                    GwText = x.Original.Gw.ToString("0.##"),
+                    Memo = x.Original.Memo,
+                    Claimant = x.Original.Claimant,
+                    TaxPayment = GetTaxPaymentDescription(x.Original.TaxPayment)
                 })
                 .ToList();
 

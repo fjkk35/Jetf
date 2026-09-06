@@ -31,6 +31,8 @@ interface SeaShenzhenOriginalQueryRow {
     ImporterPhone: string;
     ItemName: string;
     CcText: string;
+    Tax: number | null;
+    Fee: number | null;
     QuantityText: string;
     Volume: number | null;
     GwText: string;

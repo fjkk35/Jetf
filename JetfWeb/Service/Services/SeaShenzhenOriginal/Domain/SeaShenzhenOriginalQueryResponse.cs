@@ -63,6 +63,16 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
 
         public string CcText { get; set; }
 
+        /// <summary>
+        /// 稅金。
+        /// </summary>
+        public int? Tax { get; set; }
+
+        /// <summary>
+        /// 手續費。
+        /// </summary>
+        public int? Fee { get; set; }
+
         public string QuantityText { get; set; }
 
         /// <summary>

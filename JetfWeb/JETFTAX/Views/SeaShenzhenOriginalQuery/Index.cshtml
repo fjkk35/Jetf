@@ -250,6 +250,8 @@
                         <th>收件人電話</th>
                         <th>商品名稱</th>
                         <th>代收金額</th>
+                        <th>稅金</th>
+                        <th>手續費</th>
                         <th>數量</th>
                         <th>材積</th>
                         <th>重量</th>
@@ -260,7 +262,7 @@
                 </thead>
                 <tbody>
                     <tr ng-if="data.length === 0">
-                        <td colspan="20" class="text-center">查無資料</td>
+                        <td colspan="22" class="text-center">查無資料</td>
                     </tr>
                     <tr ng-repeat="item in data track by item.Id">
                         <td>{{(currentPage - 1) * parsePageSize() + $index + 1}}</td>
@@ -277,6 +279,8 @@
                         <td>{{item.ImporterPhone}}</td>
                         <td>{{item.ItemName}}</td>
                         <td>{{item.CcText}}</td>
+                        <td>{{item.Tax}}</td>
+                        <td>{{item.Fee}}</td>
                         <td>{{item.QuantityText}}</td>
                         <td>{{item.Volume}}</td>
                         <td>{{item.GwText}}</td>
