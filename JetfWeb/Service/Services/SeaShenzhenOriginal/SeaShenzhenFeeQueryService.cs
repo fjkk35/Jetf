@@ -88,7 +88,6 @@ namespace Service.Services.SeaShenzhenOriginal
             var dlvInv = NullIfEmpty(request.DlvInv);
             var includeTax = NullIfEmpty(request.IncludeTax);
             var dataType = NullIfEmpty(request.DataType);
-            var manualToDlvCods = JetfDb.ShenzhenFeeMasterManualToDlvCods.AsNoTracking();
 
             var query = JetfDb.ShenzhenFeeMasters.AsNoTracking().AsQueryable();
 
@@ -125,14 +124,7 @@ namespace Service.Services.SeaShenzhenOriginal
 
             if (!string.IsNullOrWhiteSpace(includeTax))
             {
-                if (includeTax == ShenzhenTaxPayment.C.ToString())
-                {
-                    query = query.Where(x => x.IncludeTax == includeTax || manualToDlvCods.Any(y => y.TrackingNo == x.TrackingNo));
-                }
-                else
-                {
-                    query = query.Where(x => x.IncludeTax == includeTax && !manualToDlvCods.Any(y => y.TrackingNo == x.TrackingNo));
-                }
+                query = query.Where(x => x.IncludeTax == includeTax);
             }
 
             return query;
@@ -144,7 +136,6 @@ namespace Service.Services.SeaShenzhenOriginal
         private List<SeaShenzhenFeeQueryRow> BuildQueryRows(IList<ShenzhenFeeMasterEntity> feeRows)
         {
             var customerNameLookup = GetCustomerNameLookup(feeRows);
-            var manualToDlvCodLookup = GetManualToDlvCodLookup(feeRows);
 
             return (feeRows ?? Array.Empty<ShenzhenFeeMasterEntity>())
                 .Select(x => new SeaShenzhenFeeQueryRow
@@ -156,41 +147,13 @@ namespace Service.Services.SeaShenzhenOriginal
                     DlvCom = x.DlvCom,
                     TrackingNo = x.TrackingNo,
                     DlvInv = x.DlvInv,
-                    IncludeTaxDisplay = GetTaxPaymentDisplay(GetEffectiveIncludeTax(x.IncludeTax, x.TrackingNo, manualToDlvCodLookup)),
+                    IncludeTaxDisplay = GetTaxPaymentDisplay(x.IncludeTax),
                     Tax = x.Tax,
                     Cod = x.Cod,
                     Fee = x.Fee,
-                    ToDlvCod = x.ToDlvCod,
-                    ManualToDlvCod = GetManualToDlvCod(x.TrackingNo, manualToDlvCodLookup)
+                    ToDlvCod = x.ToDlvCod
                 })
                 .ToList();
-        }
-
-        /// <summary>
-        /// 依查詢結果補齊 TrackingNo 對應的人工調整物流代收金額。
-        /// </summary>
-        private Dictionary<string, int> GetManualToDlvCodLookup(IEnumerable<ShenzhenFeeMasterEntity> feeRows)
-        {
-            var trackingNos = (feeRows ?? Enumerable.Empty<ShenzhenFeeMasterEntity>())
-                .Select(x => x.TrackingNo)
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            if (trackingNos.Count == 0)
-            {
-                return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            }
-
-            return JetfDb.ShenzhenFeeMasterManualToDlvCods
-                .AsNoTracking()
-                .WhereBulkContains(JetfDb, trackingNos, row => row.TrackingNo, key => key)
-                .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
-                .GroupBy(x => x.TrackingNo, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(
-                    group => group.Key,
-                    group => group.OrderByDescending(x => x.Id).Select(x => x.ToDlvCod).FirstOrDefault(),
-                    StringComparer.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -289,35 +252,6 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
-        /// 取得指定 TrackingNo 的人工調整物流代收金額。
-        /// </summary>
-        private static int? GetManualToDlvCod(string trackingNo, Dictionary<string, int> manualToDlvCodLookup)
-        {
-            if (string.IsNullOrWhiteSpace(trackingNo) || manualToDlvCodLookup == null)
-            {
-                return null;
-            }
-
-            int manualToDlvCod;
-            return manualToDlvCodLookup.TryGetValue(trackingNo, out manualToDlvCod)
-                ? manualToDlvCod
-                : (int?)null;
-        }
-
-        /// <summary>
-        /// 取得指定 TrackingNo 生效中的稅金支付方式。
-        /// </summary>
-        private static string GetEffectiveIncludeTax(string includeTax, string trackingNo, Dictionary<string, int> manualToDlvCodLookup)
-        {
-            if (!string.IsNullOrWhiteSpace(trackingNo) && manualToDlvCodLookup != null && manualToDlvCodLookup.ContainsKey(trackingNo))
-            {
-                return ShenzhenTaxPayment.C.ToString();
-            }
-
-            return includeTax;
-        }
-
-        /// <summary>
         /// 將稅金支付方式代碼轉成顯示用文字。
         /// </summary>
         private static string GetTaxPaymentDisplay(string includeTax)
@@ -357,8 +291,7 @@ namespace Service.Services.SeaShenzhenOriginal
                 "稅金",
                 "到付款",
                 "手續費",
-                "物流代收金額",
-                "人工調整物流代收金額"
+                "物流代收金額"
             };
 
             var headerRow = sheet.CreateRow(0);
@@ -381,7 +314,6 @@ namespace Service.Services.SeaShenzhenOriginal
                 NpoiCell.CreateIntCell(row, 9, item.Cod, dataStyle);
                 NpoiCell.CreateIntCell(row, 10, item.Fee, dataStyle);
                 NpoiCell.CreateIntCell(row, 11, item.ToDlvCod, dataStyle);
-                NpoiCell.CreateCell(row, 12, item.ManualToDlvCod.HasValue ? item.ManualToDlvCod.Value.ToString() : string.Empty, dataStyle);
             }
 
             for (var index = 0; index < headers.Length; index++)

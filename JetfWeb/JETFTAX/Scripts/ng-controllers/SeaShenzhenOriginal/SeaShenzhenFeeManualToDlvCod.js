@@ -14,7 +14,7 @@ mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http',
         $scope.totalCount = 0;
         $scope.totalPages = 0;
         $scope.searchForm = {
-            trackingNo: ''
+            dlvInv: ''
         };
         $scope.uploadFailData = [];
         $scope.uploadResult = null;
@@ -29,7 +29,7 @@ mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http',
         };
         $scope.clearSearch = function () {
             $scope.searchForm = {
-                trackingNo: ''
+                dlvInv: ''
             };
             $scope.data = [];
             $scope.isSearched = false;
@@ -175,7 +175,7 @@ mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http',
         }
         function buildRequest(pageIndex, pageSize) {
             return {
-                TrackingNo: $scope.searchForm.trackingNo,
+                DlvInv: $scope.searchForm.dlvInv,
                 PageIndex: pageIndex,
                 PageSize: pageSize
             };

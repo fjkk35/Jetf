@@ -1,5 +1,5 @@
 ﻿@{
-    ViewBag.Title = "代收金額人工調整";
+    ViewBag.Title = "金額人工調整";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
@@ -50,18 +50,18 @@
 </style>
 
 <div ng-controller="SeaShenzhenFeeManualToDlvCodController">
-    <span class="headtype">代收金額人工調整</span>
+    <span class="headtype">金額人工調整</span>
     <hr />
 
     <div class="card bg-light rounded p-4 mb-4" style="border:none">
         <div class="row mb-3 align-items-center">
             <div class="form-group row col-lg-3 mb-0">
-                <label for="seaShenzhenManualTrackingNo" class="col-lg-4 col-form-label text-right">託運單號</label>
+                <label for="seaShenzhenManualDlvInv" class="col-lg-4 col-form-label text-right">託運單號</label>
                 <div class="col-lg-8">
                     <input type="text"
-                           id="seaShenzhenManualTrackingNo"
+                           id="seaShenzhenManualDlvInv"
                            class="form-control"
-                           ng-model="searchForm.trackingNo"
+                           ng-model="searchForm.dlvInv"
                            placeholder="請輸入託運單號" />
                 </div>
             </div>
@@ -122,20 +122,24 @@
                 <thead class="thead-dark">
                     <tr>
                         <th>序號</th>
-                        <th>分提單號</th>
-                        <th>代收金額</th>
+                        <th>託運單號</th>
+                        <th>到付金額</th>
+                        <th>稅金金額</th>
+                        <th>稅金手續費</th>
                         <th>上傳時間</th>
                         <th>上傳人員</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr ng-if="data.length === 0">
-                        <td colspan="5" class="text-center">查無資料</td>
+                        <td colspan="7" class="text-center">查無資料</td>
                     </tr>
                     <tr ng-repeat="item in data track by item.Id">
                         <td>{{(currentPage - 1) * parsePageSize() + $index + 1}}</td>
-                        <td>{{ item.TrackingNo }}</td>
-                        <td>{{ item.ToDlvCod }}</td>
+                        <td>{{ item.DlvInv }}</td>
+                        <td>{{ item.Cod }}</td>
+                        <td>{{ item.Tax }}</td>
+                        <td>{{ item.Fee }}</td>
                         <td>{{ item.CreatedTimeText }}</td>
                         <td>{{ item.CreatedUser }}</td>
                     </tr>
@@ -166,7 +170,7 @@
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">代收金額人工調整上傳</h5>
+                    <h5 class="modal-title">金額人工調整上傳</h5>
                     <button type="button" class="close" data-dismiss="modal">
                         <span>&times;</span>
                     </button>
@@ -192,9 +196,10 @@
                                         <th>Excel列號</th>
                                         <th>失敗欄位</th>
                                         <th>失敗原因</th>
-                                        <th>分提單號</th>
-                                        <th>物流貨號</th>
-                                        <th>代收金額</th>
+                                        <th>託運單號</th>
+                                        <th>到付金額</th>
+                                        <th>稅金金額</th>
+                                        <th>稅金手續費</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -202,9 +207,10 @@
                                         <td>{{ item.RowNo }}</td>
                                         <td>{{ item.FailFieldName }}</td>
                                         <td>{{ item.FailReason }}</td>
-                                        <td>{{ item.TrackingNo }}</td>
                                         <td>{{ item.DlvInv }}</td>
-                                        <td>{{ item.ToDlvCodText }}</td>
+                                        <td>{{ item.CodText }}</td>
+                                        <td>{{ item.TaxText }}</td>
+                                        <td>{{ item.FeeText }}</td>
                                     </tr>
                                 </tbody>
                             </table>

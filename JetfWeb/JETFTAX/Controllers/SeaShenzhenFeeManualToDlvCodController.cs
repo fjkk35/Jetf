@@ -11,7 +11,7 @@ using static JETFTAX.Controllers.AccountController;
 namespace JETFTAX.Controllers
 {
     /// <summary>
-    /// 新遞代收金額人工調整控制器。
+    /// 新遞金額人工調整控制器。
     /// </summary>
     public class SeaShenzhenFeeManualToDlvCodController : Controller
     {
@@ -96,7 +96,7 @@ namespace JETFTAX.Controllers
         public ActionResult DownloadTemplate()
         {
             var fileBytes = _seaShenzhenFeeManualToDlvCodService.ExportTemplate();
-            return File(fileBytes, "application/octet-stream", "新遞代收金額人工調整_範例.xlsx");
+            return File(fileBytes, "application/octet-stream", "新遞金額人工調整_範例.xlsx");
         }
     }
 }

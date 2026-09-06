@@ -25,7 +25,6 @@ interface SeaShenzhenFeeQueryRow {
     Cod: number;
     Fee: number;
     ToDlvCod: number;
-    ManualToDlvCod: number | null;
 }
 
 interface SeaShenzhenFeeQueryResponse {

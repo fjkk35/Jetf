@@ -1,7 +1,7 @@
 namespace Service.Services.SeaShenzhenOriginal.Domain
 {
     /// <summary>
-    /// 代收金額人工調整上傳列。
+    /// 金額人工調整上傳列。
     /// </summary>
     public class SeaShenzhenFeeManualToDlvCodUploadRow
     {
@@ -11,24 +11,44 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
         public int RowNo { get; set; }
 
         /// <summary>
-        /// 物流貨號。
+        /// 託運單號或條碼號。
         /// </summary>
         public string DlvInv { get; set; }
 
         /// <summary>
-        /// 原始文字代收金額。
-        /// </summary>
-        public string ToDlvCodText { get; set; }
-
-        /// <summary>
-        /// 解析後的代收金額。
-        /// </summary>
-        public int? ToDlvCod { get; set; }
-
-        /// <summary>
-        /// 對應的分提單號。
+        /// 分提單號。
         /// </summary>
         public string TrackingNo { get; set; }
+
+        /// <summary>
+        /// 到付款原始文字。
+        /// </summary>
+        public string CodText { get; set; }
+
+        /// <summary>
+        /// 到付款。
+        /// </summary>
+        public int? Cod { get; set; }
+
+        /// <summary>
+        /// 稅金金額原始文字。
+        /// </summary>
+        public string TaxText { get; set; }
+
+        /// <summary>
+        /// 稅金金額。
+        /// </summary>
+        public int? Tax { get; set; }
+
+        /// <summary>
+        /// 稅金手續費原始文字。
+        /// </summary>
+        public string FeeText { get; set; }
+
+        /// <summary>
+        /// 稅金手續費。
+        /// </summary>
+        public int? Fee { get; set; }
 
         /// <summary>
         /// 上傳狀態。

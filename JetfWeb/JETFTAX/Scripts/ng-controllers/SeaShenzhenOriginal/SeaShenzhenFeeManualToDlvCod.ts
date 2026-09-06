@@ -13,15 +13,18 @@ interface SeaShenzhenFeeManualToDlvCodUploadFailRow {
     RowNo: number;
     FailFieldName: string;
     FailReason: string;
-    TrackingNo: string;
     DlvInv: string;
-    ToDlvCodText: string;
+    CodText: string;
+    TaxText: string;
+    FeeText: string;
 }
 
 interface SeaShenzhenFeeManualToDlvCodQueryRow {
     Id: number;
-    TrackingNo: string;
-    ToDlvCod: number;
+    DlvInv: string;
+    Cod: number;
+    Tax: number;
+    Fee: number;
     CreatedTimeText: string;
     CreatedUser: string;
 }
@@ -43,7 +46,7 @@ interface SeaShenzhenFeeManualToDlvCodScope extends ng.IScope {
     totalCount: number;
     totalPages: number;
     searchForm: {
-        trackingNo: string;
+        dlvInv: string;
     };
     uploadFailData: SeaShenzhenFeeManualToDlvCodUploadFailRow[];
     uploadResult: {
@@ -83,7 +86,7 @@ mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http',
     $scope.totalCount = 0;
     $scope.totalPages = 0;
     $scope.searchForm = {
-        trackingNo: ''
+        dlvInv: ''
     };
     $scope.uploadFailData = [];
     $scope.uploadResult = null;
@@ -101,7 +104,7 @@ mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http',
 
     $scope.clearSearch = function (): void {
         $scope.searchForm = {
-            trackingNo: ''
+            dlvInv: ''
         };
         $scope.data = [];
         $scope.isSearched = false;
@@ -275,7 +278,7 @@ mainApp.controller('SeaShenzhenFeeManualToDlvCodController', ['$scope', '$http',
 
     function buildRequest(pageIndex: number, pageSize: number): any {
         return {
-            TrackingNo: $scope.searchForm.trackingNo,
+            DlvInv: $scope.searchForm.dlvInv,
             PageIndex: pageIndex,
             PageSize: pageSize
         };

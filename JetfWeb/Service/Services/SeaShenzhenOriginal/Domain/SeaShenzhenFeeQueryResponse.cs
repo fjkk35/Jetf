@@ -63,14 +63,24 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
         /// </summary>
         public string IncludeTaxDisplay { get; set; }
 
+        /// <summary>
+        /// 稅金金額。
+        /// </summary>
         public int Tax { get; set; }
 
+        /// <summary>
+        /// 到付款。
+        /// </summary>
         public int Cod { get; set; }
 
+        /// <summary>
+        /// 稅金手續費。
+        /// </summary>
         public int Fee { get; set; }
 
+        /// <summary>
+        /// 物流代收金額。
+        /// </summary>
         public int ToDlvCod { get; set; }
-
-        public int? ManualToDlvCod { get; set; }
     }
 }

@@ -86,20 +86,9 @@ namespace Service.Services.SeaShenzhenOriginal
                 return new List<SeaShenzhenFeeDownloadRow>();
             }
 
-            var trackingNos = dateFeeRows
-                .Select(x => x.TrackingNo)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            var manualByTrackingNo = GetManualToDlvCodRows(trackingNos)
-                .ToDictionary(x => x.TrackingNo, x => x, StringComparer.OrdinalIgnoreCase);
-
             var result = new List<SeaShenzhenFeeDownloadRow>();
             foreach (var feeRow in dateFeeRows)
             {
-                ShenzhenFeeMasterManualToDlvCodEntity manualRow;
-                manualByTrackingNo.TryGetValue(feeRow.TrackingNo, out manualRow);
-
                 // 下載條件：IncludeTax = C 或 Cod > 0。
                 if (feeRow.IncludeTax != collectibleTaxPayment && feeRow.Cod <= 0)
                 {
@@ -111,33 +100,15 @@ namespace Service.Services.SeaShenzhenOriginal
                     Customer = feeRow.Customer,
                     TrackingNo = feeRow.TrackingNo,
                     DlvInv = feeRow.DlvInv,
-                    ToDlvCod = manualRow != null ? manualRow.ToDlvCod : feeRow.ToDlvCod,
+                    ToDlvCod = feeRow.ToDlvCod,
                     Recipient = feeRow.Recipient,
                     RecPhone = feeRow.RecPhone,
                     DlvCom = feeRow.DlvCom,
-                    IncludeTax = manualRow != null ? collectibleTaxPayment : feeRow.IncludeTax
+                    IncludeTax = feeRow.IncludeTax
                 });
             }
 
             return result;
-        }
-
-        /// <summary>
-        /// 依 TrackingNo 批次載入人工代收金額調整資料。
-        /// 使用 WhereBulkContains 將 TrackingNo 一次寫入暫存表比對，避免大量 Contains 產生過長 IN 條件或參數限制。
-        /// </summary>
-        private List<ShenzhenFeeMasterManualToDlvCodEntity> GetManualToDlvCodRows(List<string> trackingNos)
-        {
-            if (trackingNos == null || trackingNos.Count == 0)
-            {
-                return new List<ShenzhenFeeMasterManualToDlvCodEntity>();
-            }
-
-            return JetfDb.ShenzhenFeeMasterManualToDlvCods
-                .AsNoTracking()
-                .WhereBulkContains(JetfDb, trackingNos, row => row.TrackingNo, key => key)
-                .OrderBy(x => x.Id)
-                .ToList();
         }
 
         /// <summary>

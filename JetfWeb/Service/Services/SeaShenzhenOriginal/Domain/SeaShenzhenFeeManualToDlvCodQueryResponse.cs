@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace Service.Services.SeaShenzhenOriginal.Domain
 {
     /// <summary>
-    /// 代收金額人工調整查詢結果。
+    /// 金額人工調整查詢結果。
     /// </summary>
     public class SeaShenzhenFeeManualToDlvCodQueryResponse
     {
@@ -19,7 +19,7 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
     }
 
     /// <summary>
-    /// 代收金額人工調整查詢列資料。
+    /// 金額人工調整查詢列資料。
     /// </summary>
     public class SeaShenzhenFeeManualToDlvCodQueryRow
     {
@@ -29,14 +29,24 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
         public int Id { get; set; }
 
         /// <summary>
-        /// 託運單號。
+        /// 託運單號或條碼號。
         /// </summary>
-        public string TrackingNo { get; set; }
+        public string DlvInv { get; set; }
 
         /// <summary>
-        /// 代收金額。
+        /// 到付款。
         /// </summary>
-        public int ToDlvCod { get; set; }
+        public int Cod { get; set; }
+
+        /// <summary>
+        /// 稅金金額。
+        /// </summary>
+        public int Tax { get; set; }
+
+        /// <summary>
+        /// 稅金手續費。
+        /// </summary>
+        public int Fee { get; set; }
 
         /// <summary>
         /// 上傳時間。

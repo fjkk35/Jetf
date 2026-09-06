@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Service.Data
 {
     /// <summary>
-    /// 新遞深圳物流代收金額人工調整。
+    /// 新遞深圳金額人工調整。
     /// </summary>
     [Table("ShenzhenFeeMasterManualToDlvCod", Schema = "dbo")]
     public class ShenzhenFeeMasterManualToDlvCodEntity
@@ -22,16 +22,28 @@ namespace Service.Data
         public string TrackingNo { get; set; }
 
         /// <summary>
-        /// 物流貨號。
+        /// 託運單號或條碼號。
         /// </summary>
         [Column("DlvInv")]
         public string DlvInv { get; set; }
 
         /// <summary>
-        /// 應向物流代收金額。
+        /// 到付款。
         /// </summary>
-        [Column("ToDlvCod")]
-        public int ToDlvCod { get; set; }
+        [Column("Cod")]
+        public int Cod { get; set; }
+
+        /// <summary>
+        /// 稅金金額。
+        /// </summary>
+        [Column("Tax")]
+        public int Tax { get; set; }
+
+        /// <summary>
+        /// 稅金手續費。
+        /// </summary>
+        [Column("Fee")]
+        public int Fee { get; set; }
 
         /// <summary>
         /// 修改人員。

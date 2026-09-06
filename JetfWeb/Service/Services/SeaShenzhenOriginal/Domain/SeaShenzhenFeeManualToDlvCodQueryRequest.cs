@@ -1,14 +1,14 @@
 namespace Service.Services.SeaShenzhenOriginal.Domain
 {
     /// <summary>
-    /// 代收金額人工調整查詢條件。
+    /// 金額人工調整查詢條件。
     /// </summary>
     public class SeaShenzhenFeeManualToDlvCodQueryRequest
     {
         /// <summary>
-        /// 託運單號。
+        /// 託運單號或條碼號。
         /// </summary>
-        public string TrackingNo { get; set; }
+        public string DlvInv { get; set; }
 
         /// <summary>
         /// 每頁筆數。
