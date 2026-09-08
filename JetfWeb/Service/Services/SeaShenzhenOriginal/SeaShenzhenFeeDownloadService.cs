@@ -73,8 +73,6 @@ namespace Service.Services.SeaShenzhenOriginal
         /// </summary>
         private List<SeaShenzhenFeeDownloadRow> GetCollectibleRows(string dataDate)
         {
-            var collectibleTaxPayment = ShenzhenTaxPayment.C.ToString();
-
             var dateFeeRows = JetfDb.ShenzhenFeeMasters
                 .AsNoTracking()
                 .Where(x => x.DataDate == dataDate)
@@ -90,7 +88,7 @@ namespace Service.Services.SeaShenzhenOriginal
             foreach (var feeRow in dateFeeRows)
             {
                 // 下載條件：IncludeTax = C 或 Cod > 0。
-                if (feeRow.IncludeTax != collectibleTaxPayment && feeRow.Cod <= 0)
+                if (feeRow.IncludeTax != ShenzhenTaxPayment.C.ToString() && feeRow.Cod <= 0)
                 {
                     continue;
                 }
@@ -100,7 +98,10 @@ namespace Service.Services.SeaShenzhenOriginal
                     Customer = feeRow.Customer,
                     TrackingNo = feeRow.TrackingNo,
                     DlvInv = feeRow.DlvInv,
-                    ToDlvCod = feeRow.ToDlvCod,
+                    // 包稅資料不向物流收取稅金，因此只加總到付款與手續費。
+                    ToDlvCod = feeRow.IncludeTax == ShenzhenTaxPayment.XD.ToString()
+                        ? feeRow.Cod + feeRow.Fee
+                        : feeRow.ToDlvCod,
                     Recipient = feeRow.Recipient,
                     RecPhone = feeRow.RecPhone,
                     DlvCom = feeRow.DlvCom,
