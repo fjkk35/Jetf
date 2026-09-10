@@ -429,7 +429,11 @@ namespace Service.Services.SeaShenzhenOriginal
                             feeMaster.Cod = row.Cod ?? 0;
                             feeMaster.Tax = row.Tax ?? 0;
                             feeMaster.Fee = row.Fee ?? 0;
-                            feeMaster.ToDlvCod = feeMaster.Cod + feeMaster.Tax + feeMaster.Fee;
+                            feeMaster.ToDlvCod = SeaShenzhenFeeTransferShared.CalculateToDlvCod(
+                                feeMaster.IncludeTax,
+                                feeMaster.Tax,
+                                feeMaster.Cod,
+                                feeMaster.Fee);
                             feeMaster.ModifiedUser = userId;
                             feeMaster.ModifiedTime = now;
                         }

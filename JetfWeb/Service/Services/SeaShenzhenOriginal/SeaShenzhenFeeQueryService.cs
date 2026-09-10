@@ -151,7 +151,7 @@ namespace Service.Services.SeaShenzhenOriginal
                     Tax = x.Tax,
                     Cod = x.Cod,
                     Fee = x.Fee,
-                    ToDlvCod = x.ToDlvCod
+                    ToDlvCod = SeaShenzhenFeeTransferShared.CalculateToDlvCod(x.IncludeTax, x.Tax, x.Cod, x.Fee)
                 })
                 .ToList();
         }

@@ -456,9 +456,17 @@ namespace Service.Services.SeaShenzhenOriginal
                 {
                     AddValidationError(item, "稅金支付方式", "必填");
                 }
-                else if (!EnumerableExtensions.TryParseCode<ShenzhenTaxPayment>(item.TaxPayment, out _))
+                else
                 {
-                    AddValidationError(item, "稅金支付方式", "僅支援 XD 或 C");
+                    ShenzhenTaxPayment taxPayment;
+                    if (!EnumerableExtensions.TryParseCode(item.TaxPayment, out taxPayment))
+                    {
+                        AddValidationError(item, "稅金支付方式", "僅支援 XD 或 C");
+                    }
+                    else
+                    {
+                        item.TaxPayment = taxPayment.ToString();
+                    }
                 }
             }
 

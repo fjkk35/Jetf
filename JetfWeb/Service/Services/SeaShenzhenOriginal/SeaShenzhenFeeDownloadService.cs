@@ -98,10 +98,7 @@ namespace Service.Services.SeaShenzhenOriginal
                     Customer = feeRow.Customer,
                     TrackingNo = feeRow.TrackingNo,
                     DlvInv = feeRow.DlvInv,
-                    // 包稅資料不向物流收取稅金，因此只加總到付款與手續費。
-                    ToDlvCod = feeRow.IncludeTax == ShenzhenTaxPayment.XD.ToString()
-                        ? feeRow.Cod + feeRow.Fee
-                        : feeRow.ToDlvCod,
+                    ToDlvCod = feeRow.ToDlvCod,
                     Recipient = feeRow.Recipient,
                     RecPhone = feeRow.RecPhone,
                     DlvCom = feeRow.DlvCom,

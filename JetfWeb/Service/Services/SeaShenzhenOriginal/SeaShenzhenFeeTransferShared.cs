@@ -89,12 +89,27 @@ namespace Service.Services.SeaShenzhenOriginal
                 Recipient = original.Importer,
                 RecPhone = original.ImporterPhone,
                 RecAddress = original.ImporterAddress,
-                ToDlvCod = tax + cod + fee,
+                ToDlvCod = CalculateToDlvCod(includeTax, tax, cod, fee),
                 CreatedUser = userId,
                 CreatedTime = now,
                 ModifiedUser = userId,
                 ModifiedTime = now
             };
+        }
+
+        /// <summary>
+        /// 計算應向物流代收的金額；包稅資料不向物流收取稅金。
+        /// </summary>
+        /// <param name="includeTax">稅金支付方式代碼。</param>
+        /// <param name="tax">稅金。</param>
+        /// <param name="cod">到付款金額。</param>
+        /// <param name="fee">手續費。</param>
+        /// <returns>應向物流代收金額。</returns>
+        public static int CalculateToDlvCod(string includeTax, int tax, int cod, int fee)
+        {
+            return includeTax == ShenzhenTaxPayment.XD.ToString()
+                ? cod + fee
+                : tax + cod + fee;
         }
 
         /// <summary>
