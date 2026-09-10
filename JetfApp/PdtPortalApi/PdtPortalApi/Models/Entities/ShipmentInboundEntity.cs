@@ -114,6 +114,30 @@ public sealed class ShipmentInboundEntity
 	public string? Importer { get; set; } = string.Empty;
 
 	/// <summary>
+	/// 製單資料中的進口人證號或收件人證號。
+	/// </summary>
+	[Column("OrderImporterId")]
+	public string? OrderImporterId { get; set; } = string.Empty;
+
+	/// <summary>
+	/// 製單資料中的進口人或收件人名稱。
+	/// </summary>
+	[Column("OrderImporter")]
+	public string? OrderImporter { get; set; } = string.Empty;
+
+	/// <summary>
+	/// 原單資料中的進口人證號或收件人證號。
+	/// </summary>
+	[Column("OriginalImporterId")]
+	public string? OriginalImporterId { get; set; } = string.Empty;
+
+	/// <summary>
+	/// 原單資料中的進口人或收件人名稱。
+	/// </summary>
+	[Column("OriginalImporter")]
+	public string? OriginalImporter { get; set; } = string.Empty;
+
+	/// <summary>
 	/// 進口人或收件人電話。
 	/// </summary>
 	[Column("ImporterPhone")]

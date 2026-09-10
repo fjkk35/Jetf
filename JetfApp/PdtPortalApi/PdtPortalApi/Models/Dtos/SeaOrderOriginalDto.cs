@@ -41,6 +41,11 @@ public sealed class SeaOrderOriginalDto
     public string Importer { get; set; } = string.Empty;
 
     /// <summary>
+    /// 進口人證號。
+    /// </summary>
+    public string ImporterId { get; set; } = string.Empty;
+
+    /// <summary>
     /// 客戶代碼（CustCode）。
     /// </summary>
     public string CustCode { get; set; } = string.Empty;

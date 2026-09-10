@@ -51,6 +51,12 @@ public sealed class SeaOrderOriginalEntity
     public string Importer { get; set; } = string.Empty;
 
     /// <summary>
+    /// 進口人證號。
+    /// </summary>
+    [Column("IMPORTER_ID")]
+    public string ImporterId { get; set; } = string.Empty;
+
+    /// <summary>
     /// 客戶代碼（CustCode）。
     /// </summary>
     [Column("DESPATCH_NAME")]

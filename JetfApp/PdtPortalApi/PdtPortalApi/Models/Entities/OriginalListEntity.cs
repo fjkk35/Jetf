@@ -39,6 +39,12 @@ public sealed class OriginalListEntity
     public string? Importer { get; set; }
 
     /// <summary>
+    /// 收件人證號。
+    /// </summary>
+    [Column("RECID")]
+    public string? ImporterId { get; set; }
+
+    /// <summary>
     /// 進口人或收件人電話。
     /// </summary>
     [Column("RECPHONE")]

@@ -31,6 +31,11 @@ public sealed class AirOrderOriginalDto
     public string Importer { get; set; } = string.Empty;
 
     /// <summary>
+    /// 收件人證號。
+    /// </summary>
+    public string ImporterId { get; set; } = string.Empty;
+
+    /// <summary>
     /// 進口人或收件人電話。
     /// </summary>
     public string ImporterPhone { get; set; } = string.Empty;

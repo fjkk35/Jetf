@@ -179,6 +179,12 @@ public sealed class PortalService(
             var airData = seaData is null
                 ? await GetAirDataAsync(request.TrackingNo, cancellationToken)
                 : null;
+            var seaOrderEditData = seaData is null
+                ? null
+                : await GetSeaOrderEditDataAsync(request.TrackingNo, cancellationToken);
+            var airMakeListData = airData is null
+                ? null
+                : await GetAirMakeListDataAsync(airData.TrackingNo, cancellationToken);
 
             var hasOriginalData = seaData is not null || airData is not null;
             var dataType = seaData is not null ? "海運" : airData is not null ? "空運" : string.Empty;
@@ -193,6 +199,10 @@ public sealed class PortalService(
             var importer = string.Empty;
             var importerPhone = string.Empty;
             var importerAddr = string.Empty;
+            var orderImporterId = string.Empty;
+            var orderImporter = string.Empty;
+            var originalImporterId = string.Empty;
+            var originalImporter = string.Empty;
             var sourceCod = 0;
 
             switch (dataType)
@@ -206,6 +216,10 @@ public sealed class PortalService(
                     importer = seaData?.Importer ?? string.Empty;
                     importerPhone = seaData?.ImporterPhone ?? string.Empty;
                     importerAddr = seaData?.ImporterAddr ?? string.Empty;
+                    orderImporterId = seaOrderEditData?.ImporterId ?? string.Empty;
+                    orderImporter = seaOrderEditData?.Importer ?? string.Empty;
+                    originalImporterId = seaData?.ImporterId ?? string.Empty;
+                    originalImporter = seaData?.Importer ?? string.Empty;
                     sourceCod = seaData?.Cc ?? 0;
                     break;
 
@@ -218,6 +232,10 @@ public sealed class PortalService(
                     importer = airData?.Importer ?? string.Empty;
                     importerPhone = airData?.ImporterPhone ?? string.Empty;
                     importerAddr = airData?.ImporterAddr ?? string.Empty;
+                    orderImporterId = airMakeListData?.ImporterId ?? string.Empty;
+                    orderImporter = airMakeListData?.Importer ?? string.Empty;
+                    originalImporterId = airData?.ImporterId ?? string.Empty;
+                    originalImporter = airData?.Importer ?? string.Empty;
                     sourceCod = airData?.Cc ?? 0;
                     break;
             }
@@ -245,6 +263,10 @@ public sealed class PortalService(
  				TransNo = transNo,
  				TransName = transName,
 				Importer = importer,
+				OrderImporterId = orderImporterId,
+				OrderImporter = orderImporter,
+				OriginalImporterId = originalImporterId,
+				OriginalImporter = originalImporter,
 				ImporterPhone = importerPhone,
 				ImporterAddr = importerAddr,
 				IsOrderOriginal = hasOriginalData,
@@ -617,6 +639,7 @@ public sealed class PortalService(
                     OriginalJetfSerial = entity.JetfSerial,
                     MainNumber = entity.MainNumber,
                     OriginalTrackingNo = entity.BlNo,
+                    ImporterId = entity.ImporterId,
                     ImporterAddr = entity.ImporterAddr,
                     ImporterPhone = entity.ImporterPhone,
                     Importer = entity.Importer,
@@ -637,6 +660,7 @@ public sealed class PortalService(
                 OriginalJetfSerial = seaData.OriginalJetfSerial,
                 MainNumber = seaData.MainNumber,
                 OriginalTrackingNo = seaData.OriginalTrackingNo,
+                ImporterId = seaData.ImporterId,
                 ImporterAddr = seaData.ImporterAddr,
                 ImporterPhone = seaData.ImporterPhone,
                 Importer = seaData.Importer,
@@ -671,6 +695,7 @@ public sealed class PortalService(
                     OriginalJetfSerial = entity.DeliveryNo,
                     MainNumber = entity.MainNumber,
                     OriginalTrackingNo = entity.TrackingNo,
+                    ImporterId = entity.ImporterId,
                     Importer = entity.Importer,
                     ImporterPhone = entity.ImporterPhone,
                     ImporterAddr = entity.ImporterAddr,
@@ -691,6 +716,7 @@ public sealed class PortalService(
                      OriginalJetfSerial = entity.DeliveryNo,
                      MainNumber = entity.MainNumber,
                      OriginalTrackingNo = entity.TrackingNo,
+                     ImporterId = entity.ImporterId,
                      Importer = entity.Importer,
                      ImporterPhone = entity.ImporterPhone,
                      ImporterAddr = entity.ImporterAddr,
@@ -712,6 +738,7 @@ public sealed class PortalService(
                 OriginalJetfSerial = airData.OriginalJetfSerial ?? string.Empty,
                 MainNumber = airData.MainNumber ?? string.Empty,
                 OriginalTrackingNo = airData.OriginalTrackingNo ?? string.Empty,
+                ImporterId = airData.ImporterId ?? string.Empty,
                 Importer = airData.Importer ?? string.Empty,
                 ImporterPhone = airData.ImporterPhone ?? string.Empty,
                 ImporterAddr = airData.ImporterAddr ?? string.Empty,
@@ -728,9 +755,68 @@ public sealed class PortalService(
     }
 
     /// <summary>
+    /// 依物流貨號查詢海運製單中的進口人資訊。
+    /// </summary>
+    /// <param name="trackingNo">物流貨號。</param>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>海運製單進口人資料；查無資料時回傳 null。</returns>
+    private async Task<ShipmentImporterDataDto?> GetSeaOrderEditDataAsync(
+        string trackingNo,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _dataCenterDbContext.SeaOrderEdits
+                .AsNoTracking()
+                .Where(entity => entity.JetfSerial == trackingNo)
+                .OrderByDescending(entity => entity.Gw)
+                .Select(entity => new ShipmentImporterDataDto
+                {
+                    ImporterId = entity.ImporterId,
+                    Importer = entity.Importer
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "查詢海運製單進口人資料失敗，TrackingNo: {TrackingNo}", trackingNo);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 依追蹤單號查詢空運製單中的收件人資訊。
+    /// </summary>
+    /// <param name="trackingNo">追蹤單號。</param>
+    /// <param name="cancellationToken">取消權杖。</param>
+    /// <returns>空運製單收件人資料；查無資料時回傳 null。</returns>
+    private async Task<ShipmentImporterDataDto?> GetAirMakeListDataAsync(
+        string trackingNo,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _dataCenterDbContext.MakeLists
+                .AsNoTracking()
+                .Where(entity => entity.TrackingNo == trackingNo)
+                .Select(entity => new ShipmentImporterDataDto
+                {
+                    ImporterId = entity.RecId,
+                    Importer = entity.Recipient
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "查詢空運製單收件人資料失敗，TrackingNo: {TrackingNo}", trackingNo);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// 查詢費用資料。
     /// </summary>
-    /// <param name="trackingNo">單號。</param>
+    /// <param name="dlvInv">費用資料的發票號碼。</param>
     /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>費用資料；若不存在則回傳 null。</returns>
     private async Task<FeeMasterDto?> GetFeeDataAsync(string dlvInv, CancellationToken cancellationToken)

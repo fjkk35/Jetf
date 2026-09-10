@@ -7,5 +7,9 @@ public sealed class DataCenterDbContext(DbContextOptions<DataCenterDbContext> op
 {
 	public DbSet<SeaOrderOriginalEntity> SeaOrderOriginals => Set<SeaOrderOriginalEntity>();
 
+	public DbSet<SeaOrderEditEntity> SeaOrderEdits => Set<SeaOrderEditEntity>();
+
 	public DbSet<OriginalListEntity> OriginalLists => Set<OriginalListEntity>();
+
+	public DbSet<MakeListEntity> MakeLists => Set<MakeListEntity>();
 }
