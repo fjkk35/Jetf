@@ -42,6 +42,34 @@ namespace Service.Data
         public string Customer { get; set; }
 
         /// <summary>
+        /// 製單資料中的進口人證號或收件人證號。
+        /// </summary>
+        [StringLength(100)]
+        [Column("OrderImporterId")]
+        public string OrderImporterId { get; set; }
+
+        /// <summary>
+        /// 製單資料中的進口人或收件人名稱。
+        /// </summary>
+        [StringLength(200)]
+        [Column("OrderImporter")]
+        public string OrderImporter { get; set; }
+
+        /// <summary>
+        /// 原單資料中的進口人證號或收件人證號。
+        /// </summary>
+        [StringLength(100)]
+        [Column("OriginalImporterId")]
+        public string OriginalImporterId { get; set; }
+
+        /// <summary>
+        /// 原單資料中的進口人或收件人名稱。
+        /// </summary>
+        [StringLength(200)]
+        [Column("OriginalImporter")]
+        public string OriginalImporter { get; set; }
+
+        /// <summary>
         /// 到付款資料類別。
         /// </summary>
         [StringLength(20)]
