@@ -1124,6 +1124,10 @@ namespace Service.Services.ShipmentInboundRecord
                 entity.TransNo = shipment.TransNo;
                 entity.TransName = shipment.TransName;
                 entity.Importer = shipment.Importer;
+                entity.OrderImporterId = shipment.OrderImporterId;
+                entity.OrderImporter = shipment.OrderImporter;
+                entity.OriginalImporterId = shipment.OriginalImporterId;
+                entity.OriginalImporter = shipment.OriginalImporter;
                 entity.ImporterPhone = shipment.ImporterPhone;
                 entity.ImporterAddr = shipment.ImporterAddr;
                 entity.Tax = shipment.Tax;

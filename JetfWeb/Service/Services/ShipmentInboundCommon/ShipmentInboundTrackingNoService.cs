@@ -35,8 +35,16 @@ namespace Service.Services.ShipmentInboundCommon
             }
 
             var seaData = QuerySeaOrderData(trackingNos);
+            var seaOrderEditData = QuerySeaOrderEditData(trackingNos);
             var airData = QueryAirOrderData(trackingNos);
             var airDataByDeliveryNo = QueryAirOrderDataByDeliveryNo(trackingNos);
+            // 空運上傳單號可能是 ORIGINALLIST.DELIVERYNO，需將原單查出的 TRACKINGNO 一併帶入，才能回查 MAKELIST 製單資料。
+            var airMakeListLookupKeys = trackingNos
+                .Concat(airData.Values.Concat(airDataByDeliveryNo.Values).Select(x => x.TrackingNo))
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+            var airMakeListData = QueryAirMakeListData(airMakeListLookupKeys);
             var originalJetfSerials = seaData.Values
                 .Concat(airData.Values)
                 .Concat(airDataByDeliveryNo.Values)
@@ -70,6 +78,8 @@ namespace Service.Services.ShipmentInboundCommon
                     shipment.MainNumber = seaOrder.MainNumber;
                     shipment.OriginalJetfSerial = seaOrder.OriginalJetfSerial;
                     shipment.OriginalTrackingNo = seaOrder.OriginalTrackingNo;
+                    shipment.OriginalImporterId = seaOrder.ImporterId;
+                    shipment.OriginalImporter = seaOrder.Importer;
                     shipment.ImporterAddr = seaOrder.ImporterAddr;
                     shipment.ImporterPhone = seaOrder.ImporterPhone;
                     shipment.Importer = seaOrder.Importer;
@@ -85,6 +95,8 @@ namespace Service.Services.ShipmentInboundCommon
                     shipment.MainNumber = airOrder.MainNumber;
                     shipment.OriginalJetfSerial = airOrder.OriginalJetfSerial;
                     shipment.OriginalTrackingNo = airOrder.OriginalTrackingNo;
+                    shipment.OriginalImporterId = airOrder.ImporterId;
+                    shipment.OriginalImporter = airOrder.Importer;
                     shipment.Importer = airOrder.Importer;
                     shipment.ImporterPhone = airOrder.ImporterPhone;
                     shipment.ImporterAddr = airOrder.ImporterAddr;
@@ -100,11 +112,38 @@ namespace Service.Services.ShipmentInboundCommon
                     shipment.MainNumber = airOrder.MainNumber;
                     shipment.OriginalJetfSerial = airOrder.OriginalJetfSerial;
                     shipment.OriginalTrackingNo = airOrder.OriginalTrackingNo;
+                    shipment.OriginalImporterId = airOrder.ImporterId;
+                    shipment.OriginalImporter = airOrder.Importer;
                     shipment.Importer = airOrder.Importer;
                     shipment.ImporterPhone = airOrder.ImporterPhone;
                     shipment.ImporterAddr = airOrder.ImporterAddr;
                     shipment.CustCode = airOrder.CustCode;
                     shipment.TransNo = airOrder.TransNo;
+                }
+
+                // 依運輸類型查詢製單資料；海運直接使用上傳單號，空運需使用原單解析出的實際追蹤單號。
+                ShipmentOrderData orderEditData = null;
+                if (shipment.DataType == "海運")
+                {
+                    seaOrderEditData.TryGetValue(trackingNo, out orderEditData);
+                }
+                else if (shipment.DataType == "空運")
+                {
+                    var makeListTrackingNo = orderData?.TrackingNo;
+                    if (string.IsNullOrWhiteSpace(makeListTrackingNo))
+                    {
+                        // 若無法由原單取得實際追蹤號，則退回使用上傳單號查詢。
+                        makeListTrackingNo = trackingNo;
+                    }
+
+                    airMakeListData.TryGetValue(makeListTrackingNo, out orderEditData);
+                }
+
+                if (orderEditData != null)
+                {
+                    // 將製單資料的進口人/收件人資訊保存至 ShipmentInbound。
+                    shipment.OrderImporterId = orderEditData.ImporterId;
+                    shipment.OrderImporter = orderEditData.Importer;
                 }
 
                 if (!string.IsNullOrWhiteSpace(shipment.OriginalJetfSerial)
@@ -308,6 +347,10 @@ namespace Service.Services.ShipmentInboundCommon
             }
         }
 
+        /// <summary>
+        /// 清除依單號查詢取得的貨件資料，避免重複使用模型時殘留上一筆內容。
+        /// </summary>
+        /// <param name="shipment">待清除的貨件資料。</param>
         private void ResetResolvedFields(ShipmentInboundModel shipment)
         {
             shipment.DataType = null;
@@ -318,6 +361,10 @@ namespace Service.Services.ShipmentInboundCommon
             shipment.TransNo = null;
             shipment.TransName = null;
             shipment.Importer = null;
+            shipment.OrderImporterId = null;
+            shipment.OrderImporter = null;
+            shipment.OriginalImporterId = null;
+            shipment.OriginalImporter = null;
             shipment.ImporterPhone = null;
             shipment.ImporterAddr = null;
             shipment.IsOrderOriginal = false;
@@ -327,6 +374,11 @@ namespace Service.Services.ShipmentInboundCommon
             shipment.Fee = 0;
         }
 
+        /// <summary>
+        /// 依物流貨號查詢海運原單資料。
+        /// </summary>
+        /// <param name="trackingNos">要查詢的物流貨號。</param>
+        /// <returns>以物流貨號索引的海運原單資料。</returns>
         private Dictionary<string, ShipmentOrderData> QuerySeaOrderData(List<string> trackingNos)
         {
             {
@@ -338,6 +390,7 @@ namespace Service.Services.ShipmentInboundCommon
                         x.JetfSerial,
                         x.MainNumber,
                         x.BlNo,
+                        x.ImporterId,
                         x.ImporterAddress,
                         x.ImporterPhone,
                         x.Importer,
@@ -357,6 +410,7 @@ namespace Service.Services.ShipmentInboundCommon
                             MainNumber = x.MainNumber,
                             OriginalJetfSerial = x.JetfSerial,
                             OriginalTrackingNo = x.BlNo,
+                            ImporterId = x.ImporterId,
                             ImporterAddr = x.ImporterAddress,
                             ImporterPhone = x.ImporterPhone,
                             Importer = x.Importer,
@@ -369,6 +423,11 @@ namespace Service.Services.ShipmentInboundCommon
             }
         }
 
+        /// <summary>
+        /// 依追蹤單號查詢空運原單資料。
+        /// </summary>
+        /// <param name="trackingNos">要查詢的追蹤單號。</param>
+        /// <returns>以追蹤單號索引的空運原單資料。</returns>
         private Dictionary<string, ShipmentOrderData> QueryAirOrderData(List<string> trackingNos)
         {
             {
@@ -380,6 +439,7 @@ namespace Service.Services.ShipmentInboundCommon
                         x.MainNumber,
                         x.TrackingNo,
                         x.DeliveryNo,
+                        x.RecId,
                         x.Recipient,
                         x.RecPhone,
                         x.RecAddress,
@@ -397,6 +457,7 @@ namespace Service.Services.ShipmentInboundCommon
                         TrackingNo = x.TrackingNo,
                         OriginalJetfSerial = x.DeliveryNo,
                         OriginalTrackingNo = x.TrackingNo,
+                        ImporterId = x.RecId,
                         Importer = x.Recipient,
                         ImporterPhone = x.RecPhone,
                         ImporterAddr = x.RecAddress,
@@ -408,6 +469,11 @@ namespace Service.Services.ShipmentInboundCommon
             }
         }
 
+        /// <summary>
+        /// 依派送單號查詢空運原單資料。
+        /// </summary>
+        /// <param name="trackingNos">要查詢的派送單號。</param>
+        /// <returns>以派送單號索引的空運原單資料。</returns>
         private Dictionary<string, ShipmentOrderData> QueryAirOrderDataByDeliveryNo(List<string> trackingNos)
         {
             {
@@ -419,6 +485,7 @@ namespace Service.Services.ShipmentInboundCommon
                         x.MainNumber,
                         x.DeliveryNo,
                         x.TrackingNo,
+                        x.RecId,
                         x.Recipient,
                         x.RecPhone,
                         x.RecAddress,
@@ -437,6 +504,7 @@ namespace Service.Services.ShipmentInboundCommon
                         TrackingNo = x.TrackingNo,
                         OriginalJetfSerial = x.DeliveryNo,
                         OriginalTrackingNo = x.TrackingNo,
+                        ImporterId = x.RecId,
                         Importer = x.Recipient,
                         ImporterPhone = x.RecPhone,
                         ImporterAddr = x.RecAddress,
@@ -448,6 +516,82 @@ namespace Service.Services.ShipmentInboundCommon
             }
         }
 
+        /// <summary>
+        /// 依物流貨號查詢海運製單資料中的進口人資訊。
+        /// </summary>
+        /// <param name="trackingNos">要查詢的物流貨號。</param>
+        /// <returns>以物流貨號索引的海運製單進口人資料。</returns>
+        private Dictionary<string, ShipmentOrderData> QuerySeaOrderEditData(List<string> trackingNos)
+        {
+            if (trackingNos == null || trackingNos.Count == 0)
+            {
+                return new Dictionary<string, ShipmentOrderData>();
+            }
+
+            var data = DataCenterDb.SeaOrderEdits
+                .AsNoTracking()
+                .Where(x => trackingNos.Contains(x.JetfSerial))
+                .Select(x => new
+                {
+                    x.JetfSerial,
+                    x.ImporterId,
+                    x.Importer,
+                    x.Gw
+                })
+                .ToList();
+
+            return data
+                .GroupBy(x => x.JetfSerial)
+                .Select(g => g.OrderByDescending(x => x.Gw ?? 0)
+                    .Select(x => new ShipmentOrderData
+                    {
+                        TrackingNo = x.JetfSerial,
+                        ImporterId = x.ImporterId,
+                        Importer = x.Importer
+                    })
+                    .FirstOrDefault())
+                .ToDictionary(x => x.TrackingNo, x => x);
+        }
+
+        /// <summary>
+        /// 依追蹤單號查詢空運製單資料中的收件人資訊。
+        /// </summary>
+        /// <param name="trackingNos">要查詢的追蹤單號。</param>
+        /// <returns>以追蹤單號索引的空運製單收件人資料。</returns>
+        private Dictionary<string, ShipmentOrderData> QueryAirMakeListData(List<string> trackingNos)
+        {
+            if (trackingNos == null || trackingNos.Count == 0)
+            {
+                return new Dictionary<string, ShipmentOrderData>();
+            }
+
+            var data = DataCenterDb.MakeLists
+                .AsNoTracking()
+                .Where(x => trackingNos.Contains(x.TrackingNo))
+                .Select(x => new
+                {
+                    x.TrackingNo,
+                    x.RecId,
+                    x.Recipient
+                })
+                .ToList();
+
+            return data
+                .GroupBy(x => x.TrackingNo)
+                .Select(g => g.Select(x => new ShipmentOrderData
+                {
+                    TrackingNo = x.TrackingNo,
+                    ImporterId = x.RecId,
+                    Importer = x.Recipient
+                }).FirstOrDefault())
+                .ToDictionary(x => x.TrackingNo, x => x);
+        }
+
+        /// <summary>
+        /// 依原始物流貨號查詢費用資料。
+        /// </summary>
+        /// <param name="originalJetfSerials">要查詢的原始物流貨號。</param>
+        /// <returns>以原始物流貨號索引的費用資料。</returns>
         private Dictionary<string, ShipmentFeeData> QueryFeeData(List<string> originalJetfSerials)
         {
             if (originalJetfSerials == null || originalJetfSerials.Count == 0)
@@ -476,16 +620,31 @@ namespace Service.Services.ShipmentInboundCommon
             }
         }
 
+        /// <summary>
+        /// 將 decimal 金額截去小數後轉換為整數。
+        /// </summary>
+        /// <param name="amount">待轉換的金額。</param>
+        /// <returns>轉換後的整數金額；沒有值時回傳 0。</returns>
         private int ParseAmountToInt(decimal? amount)
         {
             return amount.HasValue ? decimal.ToInt32(decimal.Truncate(amount.Value)) : 0;
         }
 
+        /// <summary>
+        /// 將 double 金額截去小數後轉換為整數。
+        /// </summary>
+        /// <param name="amount">待轉換的金額。</param>
+        /// <returns>轉換後的整數金額；沒有值時回傳 0。</returns>
         private int ParseAmountToInt(double? amount)
         {
             return amount.HasValue ? decimal.ToInt32(decimal.Truncate(Convert.ToDecimal(amount.Value))) : 0;
         }
 
+        /// <summary>
+        /// 將字串金額依目前文化或不變文化解析為整數。
+        /// </summary>
+        /// <param name="amount">待解析的金額字串。</param>
+        /// <returns>解析後的整數金額；無法解析時回傳 0。</returns>
         private int ParseAmountToInt(string amount)
         {
             if (string.IsNullOrWhiteSpace(amount))

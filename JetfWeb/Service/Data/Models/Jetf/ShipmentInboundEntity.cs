@@ -109,6 +109,30 @@ namespace Service.Data
         public string Importer { get; set; }
 
         /// <summary>
+        /// 製單資料中的進口人證號或收件人證號。
+        /// </summary>
+        [Column("OrderImporterId")]
+        public string OrderImporterId { get; set; }
+
+        /// <summary>
+        /// 製單資料中的進口人或收件人名稱。
+        /// </summary>
+        [Column("OrderImporter")]
+        public string OrderImporter { get; set; }
+
+        /// <summary>
+        /// 原單資料中的進口人證號或收件人證號。
+        /// </summary>
+        [Column("OriginalImporterId")]
+        public string OriginalImporterId { get; set; }
+
+        /// <summary>
+        /// 原單資料中的進口人或收件人名稱。
+        /// </summary>
+        [Column("OriginalImporter")]
+        public string OriginalImporter { get; set; }
+
+        /// <summary>
         /// 進口人或收件人電話。
         /// </summary>
         [Column("ImporterPhone")]

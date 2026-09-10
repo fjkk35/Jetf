@@ -93,6 +93,26 @@ namespace Service.Services.ShipmentInboundBatchImport.Domain
         public string Importer { get; set; }
 
         /// <summary>
+        /// 製單資料中的進口人證號或收件人證號。
+        /// </summary>
+        public string OrderImporterId { get; set; }
+
+        /// <summary>
+        /// 製單資料中的進口人或收件人名稱。
+        /// </summary>
+        public string OrderImporter { get; set; }
+
+        /// <summary>
+        /// 原單資料中的進口人證號或收件人證號。
+        /// </summary>
+        public string OriginalImporterId { get; set; }
+
+        /// <summary>
+        /// 原單資料中的進口人或收件人名稱。
+        /// </summary>
+        public string OriginalImporter { get; set; }
+
+        /// <summary>
         /// 進口人或收件人電話。
         /// </summary>
         public string ImporterPhone { get; set; }

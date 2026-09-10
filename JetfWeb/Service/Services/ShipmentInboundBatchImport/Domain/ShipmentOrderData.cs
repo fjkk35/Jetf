@@ -10,6 +10,12 @@
         public string TrackingNo { get; set; }
         public string OriginalJetfSerial { get; set; }
         public string OriginalTrackingNo { get; set; }
+
+        /// <summary>
+        /// 進口人證號或收件人證號。
+        /// </summary>
+        public string ImporterId { get; set; }
+
         public string ImporterAddr { get; set; }
         public string ImporterPhone { get; set; }
         public string Importer { get; set; }
