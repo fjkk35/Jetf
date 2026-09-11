@@ -96,9 +96,9 @@ namespace Service.Services.Receivable.Domain
         public int TransCod { get; set; }
 
         /// <summary>
-        /// 捷豐支付，目前保留空白。
+        /// 捷豐支付金額。
         /// </summary>
-        public string JetfPayment { get; set; }
+        public int JetfPayment { get; set; }
 
         /// <summary>
         /// 報關費。

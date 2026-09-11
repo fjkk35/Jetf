@@ -19,7 +19,7 @@ interface ReceivableRow {
     UnreceivedAmount: number;
     CustomerCod: number;
     TransCod: number;
-    JetfPayment: string;
+    JetfPayment: number;
     Ccfee: number;
     RedispatchFreight: string;
     Cod: number;
@@ -30,6 +30,18 @@ interface ReceivableRow {
 interface ReceivableQueryResponse {
     TotalCount: number;
     Data: ReceivableRow[];
+}
+
+interface ReceivableEditForm {
+    Id: number;
+    CustomerCod: number;
+    TransCod: number;
+    JetfPayment: number;
+    Ccfee: number;
+    Cod: number;
+    Fee: number;
+    UnreceivedReason: string;
+    OriginalCollectionTotal: number;
 }
 
 interface ReceivableSelectionMap {
@@ -58,6 +70,9 @@ interface ReceivableScope extends ng.IScope {
     totalPages: number;
     recordsInfo: string;
     selectedCustomerMap: ReceivableSelectionMap;
+    editingRow: ReceivableRow | null;
+    editForm: ReceivableEditForm | null;
+    savingEdit: boolean;
     init: () => void;
     openStartDatePopup: () => void;
     openEndDatePopup: () => void;
@@ -69,6 +84,9 @@ interface ReceivableScope extends ng.IScope {
     nextPage: () => void;
     getPageNumbers: () => number[];
     exportExcel: () => void;
+    openEdit: (row: ReceivableRow) => void;
+    closeEdit: () => void;
+    saveEdit: () => void;
 }
 
 mainApp.controller('ReceivableController', ['$scope', '$http', function (
@@ -86,6 +104,46 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
 
     function showError(message: string): void {
         swal({ title: message, icon: 'error' });
+    }
+
+    function toAmount(value: any): number {
+        var amount = Number(value);
+        return isFinite(amount) ? amount : 0;
+    }
+
+    function validateEditAmounts(form: ReceivableEditForm): boolean {
+        var fields = [
+            { name: '跟廠商收', value: form.CustomerCod },
+            { name: '跟派件收', value: form.TransCod },
+            { name: '捷豐支付', value: form.JetfPayment },
+            { name: '報關費', value: form.Ccfee },
+            { name: '到付款', value: form.Cod },
+            { name: '手續費', value: form.Fee }
+        ];
+
+        for (var index = 0; index < fields.length; index++) {
+            var rawValue: any = fields[index].value;
+            if (rawValue === null || rawValue === undefined || rawValue === '') {
+                showError(fields[index].name + '金額必須為非負整數');
+                return false;
+            }
+
+            var value = Number(rawValue);
+            if (!isFinite(value) || value < 0 || Math.floor(value) !== value) {
+                showError(fields[index].name + '金額必須為非負整數');
+                return false;
+            }
+        }
+
+        var total = Number(form.CustomerCod) + Number(form.TransCod) + Number(form.JetfPayment);
+        if (total !== form.OriginalCollectionTotal) {
+            showError(
+                '跟廠商收、跟派件收、捷豐支付合計必須與原始金額 ' +
+                form.OriginalCollectionTotal.toLocaleString() + ' 相同');
+            return false;
+        }
+
+        return true;
     }
 
     function parseNullableNumber(value: string): number | null {
@@ -214,6 +272,9 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
     $scope.totalPages = 0;
     $scope.recordsInfo = '';
     $scope.selectedCustomerMap = {};
+    $scope.editingRow = null;
+    $scope.editForm = null;
+    $scope.savingEdit = false;
 
     $scope.init = function (): void {
         angular.element('#Receivable').addClass('active');
@@ -323,5 +384,66 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
             }).finally(function (): void {
                 $scope.exporting = false;
             });
+    };
+
+    $scope.openEdit = function (row: ReceivableRow): void {
+        $scope.editingRow = row;
+        $scope.editForm = {
+            Id: row.Id,
+            CustomerCod: toAmount(row.CustomerCod),
+            TransCod: toAmount(row.TransCod),
+            JetfPayment: toAmount(row.JetfPayment),
+            Ccfee: toAmount(row.Ccfee),
+            Cod: toAmount(row.Cod),
+            Fee: toAmount(row.Fee),
+            UnreceivedReason: row.UnreceivedReason || '',
+            OriginalCollectionTotal: toAmount(row.CustomerCod) +
+                toAmount(row.TransCod) +
+                toAmount(row.JetfPayment)
+        };
+        $scope.savingEdit = false;
+        $('#receivableEditModal').modal('show');
+    };
+
+    $scope.closeEdit = function (): void {
+        $('#receivableEditModal').modal('hide');
+        $scope.editingRow = null;
+        $scope.editForm = null;
+    };
+
+    $scope.saveEdit = function (): void {
+        var form = $scope.editForm;
+        if (!form || !validateEditAmounts(form)) {
+            return;
+        }
+
+        $scope.savingEdit = true;
+        $http.post(Router.action('Receivable', 'Update'), {
+            Id: form.Id,
+            CustomerCod: form.CustomerCod,
+            TransCod: form.TransCod,
+            JetfPayment: form.JetfPayment,
+            Ccfee: form.Ccfee,
+            Cod: form.Cod,
+            Fee: form.Fee,
+            UnreceivedReason: form.UnreceivedReason
+        }).then(function (response: ng.IHttpResponse<ApiResponse<any>>): void {
+            if (redirectIfNeeded(response.data)) {
+                return;
+            }
+
+            if (response.data.status === 'error' || !response.data.ReturnObject) {
+                showError(response.data.msg || '修改失敗');
+                return;
+            }
+
+            $scope.closeEdit();
+            swal({ title: '修改成功', icon: 'success' });
+            loadData();
+        }).catch(function (): void {
+            showError('修改失敗，請稍後再試');
+        }).finally(function (): void {
+            $scope.savingEdit = false;
+        });
     };
 }]);

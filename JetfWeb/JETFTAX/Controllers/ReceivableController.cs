@@ -54,6 +54,25 @@ namespace JETFTAX.Controllers
         }
 
         /// <summary>
+        /// 修改應收未收明細金額及未回收原因。
+        /// </summary>
+        /// <param name="request">修改內容。</param>
+        /// <returns>修改結果。</returns>
+        [HttpPost]
+        [UserAuthorize(Authority.Receivable)]
+        public JsonResult Update(ReceivableEditRequest request)
+        {
+            try
+            {
+                return Json(new ResponseModel(_service.Update(request)));
+            }
+            catch (Exception ex)
+            {
+                return Json(new ResponseModel(ex.Message));
+            }
+        }
+
+        /// <summary>
         /// 取得客戶及客戶群組選項。
         /// </summary>
         /// <returns>客戶選擇彈窗資料。</returns>

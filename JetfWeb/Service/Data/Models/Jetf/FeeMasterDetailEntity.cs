@@ -139,6 +139,19 @@ namespace Service.Data
         public int? CustomerCod { get; set; }
 
         /// <summary>
+        /// 捷豐支付金額。
+        /// </summary>
+        [Column("JETF_PAYMENT")]
+        public int? JetfPayment { get; set; }
+
+        /// <summary>
+        /// 未回收原因。
+        /// </summary>
+        [StringLength(500)]
+        [Column("UNRECEIVED_REASON")]
+        public string UnreceivedReason { get; set; }
+
+        /// <summary>
         /// 已向客戶收回的代收金額。
         /// </summary>
         [Column("RECEIVED_CUSTOMER_COD")]

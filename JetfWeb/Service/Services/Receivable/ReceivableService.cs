@@ -8,6 +8,7 @@ using Service.Services.ReconciliationCustomerSelection.Domain;
 using Service.Services.Receivable.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Entity;
 using System.Globalization;
 using System.IO;
@@ -62,6 +63,97 @@ namespace Service.Services.Receivable
                 TotalCount = totalCount,
                 Data = BuildListItems(rows)
             };
+        }
+
+        /// <summary>
+        /// 修改應收未收明細的金額及未回收原因。
+        /// </summary>
+        /// <param name="request">修改內容。</param>
+        /// <returns>修改結果。</returns>
+        public ReceivableEditResult Update(ReceivableEditRequest request)
+        {
+            if (request == null || request.Id <= 0)
+            {
+                throw new ArgumentException("缺少有效的應收未收明細識別碼。");
+            }
+
+            var userId = GetUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                throw new InvalidOperationException("無法取得目前登入人員。");
+            }
+
+            var customerCod = GetAmount(request.CustomerCod, "跟廠商收");
+            var transCod = GetAmount(request.TransCod, "跟派件收");
+            var jetfPayment = GetAmount(request.JetfPayment, "捷豐支付");
+            var ccfee = GetAmount(request.Ccfee, "報關費");
+            var cod = GetAmount(request.Cod, "到付款");
+            var fee = GetAmount(request.Fee, "手續費");
+            var unreceivedReason = request.UnreceivedReason?.Trim();
+            if (unreceivedReason?.Length > 500)
+            {
+                throw new ArgumentException("未回收原因不可超過 500 個字元。");
+            }
+
+            using (var transaction = JetfDb.Database.BeginTransaction(IsolationLevel.Serializable))
+            {
+                var detail = JetfDb.FeeMasterDetails
+                    .SingleOrDefault(x => x.Id == request.Id && x.FeeMaster.Download == "1");
+                if (detail == null)
+                {
+                    throw new InvalidOperationException("查無應收未收明細，請重新查詢。");
+                }
+
+                var oldCustomerCod = detail.CustomerCod ?? 0;
+                var oldTransCod = detail.TransCod ?? 0;
+                var oldJetfPayment = detail.JetfPayment ?? 0;
+                var oldCcfee = detail.Ccfee ?? 0;
+                var oldCod = detail.Cod ?? 0;
+                var oldFee = detail.Fee ?? 0;
+                var originalCollectionTotal = (long)oldCustomerCod + oldTransCod + oldJetfPayment;
+                var updatedCollectionTotal = (long)customerCod + transCod + jetfPayment;
+                if (originalCollectionTotal != updatedCollectionTotal)
+                {
+                    throw new InvalidOperationException(
+                        $"跟廠商收、跟派件收、捷豐支付合計必須與原始金額 {originalCollectionTotal:N0} 相同。");
+                }
+
+                var modifiedTime = DateTime.Now;
+                detail.CustomerCod = customerCod;
+                detail.TransCod = transCod;
+                detail.JetfPayment = jetfPayment;
+                detail.Ccfee = ccfee;
+                detail.Cod = cod;
+                detail.Fee = fee;
+                detail.UnreceivedReason = unreceivedReason;
+
+                var modifyLogs = new List<FeeMasterDetailModifyLogEntity>();
+                AddModifyLogIfChanged(
+                    modifyLogs, request.Id, "跟廠商收", oldCustomerCod, customerCod, userId, modifiedTime);
+                AddModifyLogIfChanged(
+                    modifyLogs, request.Id, "跟派件收", oldTransCod, transCod, userId, modifiedTime);
+                AddModifyLogIfChanged(
+                    modifyLogs, request.Id, "捷豐支付", oldJetfPayment, jetfPayment, userId, modifiedTime);
+                AddModifyLogIfChanged(
+                    modifyLogs, request.Id, "報關費", oldCcfee, ccfee, userId, modifiedTime);
+                AddModifyLogIfChanged(
+                    modifyLogs, request.Id, "到付款", oldCod, cod, userId, modifiedTime);
+                AddModifyLogIfChanged(
+                    modifyLogs, request.Id, "手續費", oldFee, fee, userId, modifiedTime);
+                if (modifyLogs.Any())
+                {
+                    JetfDb.FeeMasterDetailModifyLogs.AddRange(modifyLogs);
+                }
+
+                JetfDb.SaveChanges();
+                transaction.Commit();
+
+                return new ReceivableEditResult
+                {
+                    Id = request.Id,
+                    ModifiedTime = modifiedTime
+                };
+            }
         }
 
         /// <summary>
@@ -183,9 +275,11 @@ namespace Service.Services.Receivable
                 Fee = x.Fee ?? 0,
                 CustomerCod = x.CustomerCod ?? 0,
                 TransCod = x.TransCod ?? 0,
+                JetfPayment = x.JetfPayment ?? 0,
                 ToDlvCod = x.ToDlvCod,
                 ReceivedCustomerCod = x.ReceivedCustomerCod ?? 0,
-                ReceivedToDlvCod = x.ReceivedToDlvCod ?? 0
+                ReceivedToDlvCod = x.ReceivedToDlvCod ?? 0,
+                UnreceivedReason = x.UnreceivedReason
             });
         }
 
@@ -250,14 +344,90 @@ namespace Service.Services.Receivable
                     UnreceivedAmount = codSubtotal - receivedAmount,
                     CustomerCod = row.CustomerCod,
                     TransCod = transCod,
-                    JetfPayment = string.Empty,
+                    JetfPayment = row.JetfPayment,
                     Ccfee = row.Ccfee,
                     RedispatchFreight = string.Empty,
                     Cod = row.Cod,
                     Fee = row.Fee,
-                    UnreceivedReason = string.Empty
+                    UnreceivedReason = row.UnreceivedReason
                 };
             }).ToList();
+        }
+
+        /// <summary>
+        /// 驗證並取得修改請求中的金額。
+        /// </summary>
+        /// <param name="value">待驗證金額。</param>
+        /// <param name="fieldName">欄位名稱。</param>
+        /// <returns>驗證後的金額。</returns>
+        private static int GetAmount(int? value, string fieldName)
+        {
+            if (!value.HasValue)
+            {
+                throw new ArgumentException($"{fieldName}金額格式不正確。");
+            }
+
+            if (value.Value < 0)
+            {
+                throw new ArgumentException($"{fieldName}金額不可小於 0。");
+            }
+
+            return value.Value;
+        }
+
+        /// <summary>
+        /// 建立單一金額欄位的修改紀錄。
+        /// </summary>
+        /// <param name="detailId">費用主檔明細識別碼。</param>
+        /// <param name="fieldName">金額欄位名稱。</param>
+        /// <param name="oldValue">修改前金額。</param>
+        /// <param name="newValue">修改後金額。</param>
+        /// <param name="userId">修改人員。</param>
+        /// <param name="modifiedTime">修改時間。</param>
+        /// <returns>修改紀錄。</returns>
+        private static FeeMasterDetailModifyLogEntity CreateModifyLog(
+            int detailId,
+            string fieldName,
+            int oldValue,
+            int newValue,
+            string userId,
+            DateTime modifiedTime)
+        {
+            return new FeeMasterDetailModifyLogEntity
+            {
+                FeeMasterDetailId = detailId,
+                FieldName = fieldName,
+                OldValue = oldValue,
+                NewValue = newValue,
+                ModifiedUserId = userId,
+                ModifiedTime = modifiedTime
+            };
+        }
+
+        /// <summary>
+        /// 只有金額異動時才加入修改紀錄。
+        /// </summary>
+        /// <param name="modifyLogs">修改紀錄集合。</param>
+        /// <param name="detailId">費用主檔明細識別碼。</param>
+        /// <param name="fieldName">金額欄位名稱。</param>
+        /// <param name="oldValue">修改前金額。</param>
+        /// <param name="newValue">修改後金額。</param>
+        /// <param name="userId">修改人員。</param>
+        /// <param name="modifiedTime">修改時間。</param>
+        private static void AddModifyLogIfChanged(
+            ICollection<FeeMasterDetailModifyLogEntity> modifyLogs,
+            int detailId,
+            string fieldName,
+            int oldValue,
+            int newValue,
+            string userId,
+            DateTime modifiedTime)
+        {
+            if (oldValue != newValue)
+            {
+                modifyLogs.Add(CreateModifyLog(
+                    detailId, fieldName, oldValue, newValue, userId, modifiedTime));
+            }
         }
 
         /// <summary>
@@ -478,7 +648,7 @@ namespace Service.Services.Receivable
                 NpoiCell.CreateIntCell(row, column++, item.UnreceivedAmount, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.CustomerCod, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.TransCod, numberStyle);
-                NpoiCell.CreateCell(row, column++, item.JetfPayment, dataStyle);
+                NpoiCell.CreateIntCell(row, column++, item.JetfPayment, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.Ccfee, numberStyle);
                 NpoiCell.CreateCell(row, column++, item.RedispatchFreight, dataStyle);
                 NpoiCell.CreateIntCell(row, column++, item.Cod, numberStyle);

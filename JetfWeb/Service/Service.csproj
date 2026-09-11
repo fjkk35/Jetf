@@ -318,6 +318,7 @@
     <Compile Include="Data\Models\Jetf\ReconciliationLogisticsEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterDlvInvModifyEntity.cs" />
     <Compile Include="Data\Models\Jetf\FeeMasterCustomerModifyEntity.cs" />
+    <Compile Include="Data\Models\Jetf\FeeMasterDetailModifyLogEntity.cs" />
     <Compile Include="Data\Models\Jetf\TelegramGroupEntity.cs" />
     <Compile Include="Data\Models\Jetf\StepConditionEntity.cs" />
     <Compile Include="Data\Models\Jetf\StepDetailEntity.cs" />
@@ -746,6 +747,8 @@
     <Compile Include="Services\Receivable\Domain\ReceivableListItem.cs" />
     <Compile Include="Services\Receivable\Domain\ReceivableQueryRequest.cs" />
     <Compile Include="Services\Receivable\Domain\ReceivableQueryResponse.cs" />
+    <Compile Include="Services\Receivable\Domain\ReceivableEditRequest.cs" />
+    <Compile Include="Services\Receivable\Domain\ReceivableEditResult.cs" />
     <Compile Include="Services\Receivable\ReceivableService.cs" />
     <Compile Include="Services\ReceivableCod\Domain\ReceivableCodDataRow.cs" />
     <Compile Include="Services\ReceivableCod\Domain\ReceivableCodListItem.cs" />

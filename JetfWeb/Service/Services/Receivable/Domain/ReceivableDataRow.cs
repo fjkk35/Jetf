@@ -83,6 +83,11 @@ namespace Service.Services.Receivable.Domain
         public int CustomerCod { get; set; }
 
         /// <summary>
+        /// 捷豐支付金額。
+        /// </summary>
+        public int JetfPayment { get; set; }
+
+        /// <summary>
         /// 派件收金額。
         /// </summary>
         public int TransCod { get; set; }
@@ -101,5 +106,10 @@ namespace Service.Services.Receivable.Domain
         /// 已向物流公司收回應收金額。
         /// </summary>
         public int ReceivedToDlvCod { get; set; }
+
+        /// <summary>
+        /// 未回收原因。
+        /// </summary>
+        public string UnreceivedReason { get; set; }
     }
 }

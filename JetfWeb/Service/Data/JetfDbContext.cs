@@ -161,5 +161,7 @@ namespace Service.Data
         public DbSet<FeeMasterDlvInvModifyEntity> FeeMasterDlvInvModifies { get; set; }
 
         public DbSet<FeeMasterCustomerModifyEntity> FeeMasterCustomerModifies { get; set; }
+
+        public DbSet<FeeMasterDetailModifyLogEntity> FeeMasterDetailModifyLogs { get; set; }
     }
 }
