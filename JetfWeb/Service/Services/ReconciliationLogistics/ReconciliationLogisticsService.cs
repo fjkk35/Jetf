@@ -1240,7 +1240,7 @@ namespace Service.Services.ReconciliationLogistics
                 {
                     "回款日期", "出倉時間", "報關類別", "客戶", "清關袋號", "分提單號",
                     "物流貨號", "新物流單號", "物流回款金額", "捷豐應收總計", "差異金額", "跟派件收",
-                    "報關費", "到付款", "運費", "手續費", "狀態", "原納稅義務人", "納稅義務人", "制單納稅義務人", "制單身份證字號", "納稅義務人身分證號",
+                    "報關費", "到付款", "運費", "手續費", "狀態", "原納稅義務人", "納稅義務人", "納稅義務人身分證號", "制單納稅義務人", "制單身份證字號",
                     "資料來源(倉別)"
                 };
                 var allHeaders = headers.Concat(uploadedHeaders ?? new List<string>()).ToArray();
@@ -1274,9 +1274,9 @@ namespace Service.Services.ReconciliationLogistics
                     NpoiCell.CreateCell(excelRow, column++, item.Status, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.Recipient, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.TaxPayer, dataStyle);
+                    NpoiCell.CreateCell(excelRow, column++, item.TaxRecId, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.OrderImporter, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.OrderImporterId, dataStyle);
-                    NpoiCell.CreateCell(excelRow, column++, item.TaxRecId, dataStyle);
                     NpoiCell.CreateCell(excelRow, column++, item.Source, dataStyle);
                     foreach (var value in item.UploadedValues ?? new List<string>())
                     {
