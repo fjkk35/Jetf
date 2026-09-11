@@ -39,6 +39,15 @@ namespace Service.Services.ReconciliationLogistics.Domain
         /// </summary>
         public int? ToDlvCod { get; set; }
 
+        /// <summary>制單納稅義務人。</summary>
+        public string OrderImporter { get; set; }
+
+        /// <summary>制單身份證字號。</summary>
+        public string OrderImporterId { get; set; }
+
+        /// <summary>原納稅義務人。</summary>
+        public string OriginalImporter { get; set; }
+
         /// <summary>出倉時間。</summary>
         public DateTime SignOutTime { get; set; }
 

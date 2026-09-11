@@ -68,6 +68,12 @@ namespace Service.Services.ReconciliationLogistics.Domain
         /// <summary>納稅義務人。</summary>
         public string TaxPayer { get; set; }
 
+        /// <summary>制單納稅義務人。</summary>
+        public string OrderImporter { get; set; }
+
+        /// <summary>制單身份證字號。</summary>
+        public string OrderImporterId { get; set; }
+
         /// <summary>納稅義務人身分證號。</summary>
         public string TaxRecId { get; set; }
 
