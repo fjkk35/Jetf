@@ -20,17 +20,17 @@ public sealed class MakeListEntity
     /// 追蹤單號。
     /// </summary>
     [Column("TRACKINGNO")]
-    public string TrackingNo { get; set; } = string.Empty;
+    public string? TrackingNo { get; set; }
 
     /// <summary>
     /// 收件人證號。
     /// </summary>
     [Column("RECID")]
-    public string RecId { get; set; } = string.Empty;
+    public string? RecId { get; set; }
 
     /// <summary>
     /// 收件人名稱。
     /// </summary>
     [Column("RECIPIENT")]
-    public string Recipient { get; set; } = string.Empty;
+    public string? Recipient { get; set; }
 }

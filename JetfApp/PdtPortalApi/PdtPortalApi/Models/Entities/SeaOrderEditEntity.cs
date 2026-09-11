@@ -34,9 +34,4 @@ public sealed class SeaOrderEditEntity
     [Column("IMPORTER")]
     public string Importer { get; set; } = string.Empty;
 
-    /// <summary>
-    /// 毛重。
-    /// </summary>
-    [Column("GW")]
-    public decimal? Gw { get; set; }
 }

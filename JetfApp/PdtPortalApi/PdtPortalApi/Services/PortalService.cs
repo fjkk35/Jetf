@@ -769,7 +769,7 @@ public sealed class PortalService(
             return await _dataCenterDbContext.SeaOrderEdits
                 .AsNoTracking()
                 .Where(entity => entity.JetfSerial == trackingNo)
-                .OrderByDescending(entity => entity.Gw)
+                .OrderByDescending(entity => entity.Id)
                 .Select(entity => new ShipmentImporterDataDto
                 {
                     ImporterId = entity.ImporterId,
@@ -801,8 +801,8 @@ public sealed class PortalService(
                 .Where(entity => entity.TrackingNo == trackingNo)
                 .Select(entity => new ShipmentImporterDataDto
                 {
-                    ImporterId = entity.RecId,
-                    Importer = entity.Recipient
+                    ImporterId = entity.RecId ?? string.Empty,
+                    Importer = entity.Recipient ?? string.Empty
                 })
                 .FirstOrDefaultAsync(cancellationToken);
         }
