@@ -101,8 +101,11 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
             var end = Math.min($scope.currentPage * pageSize, $scope.totalCount);
             $scope.recordsInfo = '顯示 ' + start + ' 至 ' + end + ' 筆，共 ' + $scope.totalCount + ' 筆';
         }
-        function loadData() {
-            $scope.loading = true;
+        function loadData(showLoading) {
+            if (showLoading === void 0) { showLoading = true; }
+            if (showLoading) {
+                $scope.loading = true;
+            }
             $http.post(Router.action('Receivable', 'Search'), buildRequest(true))
                 .then(function (response) {
                 if (redirectIfNeeded(response.data)) {
@@ -120,12 +123,14 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
                 updateRecordsInfo();
                 if ($scope.totalPages > 0 && $scope.currentPage > $scope.totalPages) {
                     $scope.currentPage = $scope.totalPages;
-                    loadData();
+                    loadData(showLoading);
                 }
             }).catch(function () {
                 showError('查詢失敗，請稍後再試');
             }).finally(function () {
-                $scope.loading = false;
+                if (showLoading) {
+                    $scope.loading = false;
+                }
             });
         }
         $scope.searchForm = {
@@ -295,7 +300,7 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
                 }
                 $scope.closeEdit();
                 swal({ title: '修改成功', icon: 'success' });
-                loadData();
+                loadData(false);
             }).catch(function () {
                 showError('修改失敗，請稍後再試');
             }).finally(function () {

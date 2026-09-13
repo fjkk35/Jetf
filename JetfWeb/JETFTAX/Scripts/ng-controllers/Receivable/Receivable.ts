@@ -216,8 +216,11 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
         $scope.recordsInfo = '顯示 ' + start + ' 至 ' + end + ' 筆，共 ' + $scope.totalCount + ' 筆';
     }
 
-    function loadData(): void {
-        $scope.loading = true;
+    function loadData(showLoading: boolean = true): void {
+        if (showLoading) {
+            $scope.loading = true;
+        }
+
         $http.post(Router.action('Receivable', 'Search'), buildRequest(true))
             .then(function (response: ng.IHttpResponse<ApiResponse<ReceivableQueryResponse>>): void {
                 if (redirectIfNeeded(response.data)) {
@@ -239,12 +242,14 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
 
                 if ($scope.totalPages > 0 && $scope.currentPage > $scope.totalPages) {
                     $scope.currentPage = $scope.totalPages;
-                    loadData();
+                    loadData(showLoading);
                 }
             }).catch(function (): void {
                 showError('查詢失敗，請稍後再試');
             }).finally(function (): void {
-                $scope.loading = false;
+                if (showLoading) {
+                    $scope.loading = false;
+                }
             });
     }
 
@@ -439,7 +444,7 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function (
 
             $scope.closeEdit();
             swal({ title: '修改成功', icon: 'success' });
-            loadData();
+            loadData(false);
         }).catch(function (): void {
             showError('修改失敗，請稍後再試');
         }).finally(function (): void {
