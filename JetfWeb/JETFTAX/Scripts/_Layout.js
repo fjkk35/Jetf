@@ -15,7 +15,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 //{ id: 'DownloadSea', text: '3-1.物流代收檔下載-海運', url: '~/Download/DownloadSea', auth: ['DownloadSeaTax'] },
                 { id: 'DownloadSeaNew', text: '3-1.物流代收檔下載-海運', url: '~/DownloadSeaNew/Index', auth: ['DownloadSeaTax'] },
                 { id: 'CainiaoSevenElevenSeaTax', text: '3-1-1.菜鳥7-11海運稅金', url: '~/CainiaoSevenElevenSeaTax/Index', auth: ['CainiaoSevenElevenSeaTax'] },
-                { id: 'CainiaoYtoSeaTax', text: '3-1-2.菜鳥圓通海運稅金', url: '~/CainiaoYtoSeaTax/Index', auth: ['CainiaoSevenElevenSeaTax'] },
+                { id: 'CainiaoYtoSeaTax', text: '3-1-2.淘寶圓通海運稅金', url: '~/CainiaoYtoSeaTax/Index', auth: ['CainiaoSevenElevenSeaTax'] },
                 { id: 'CainiaoFamilySeaTax', text: '3-1-3.菜鳥全家海運稅金', url: '~/CainiaoFamilySeaTax/Index', auth: ['CainiaoFamilySeaTax'] },
                 { id: 'CompanySeaTax', text: '3-1-4.物流公司海運稅金', url: '~/CompanySeaTax/Index', auth: ['DownloadSeaTax'] },
                 { id: 'CainiaoTaixinStarSeaTax', text: '3-1-5.菜鳥海運超峰稅金', url: '~/CainiaoTaixinStarSeaTax/Index', auth: ['CainiaoTaixinStarSeaTax'] },

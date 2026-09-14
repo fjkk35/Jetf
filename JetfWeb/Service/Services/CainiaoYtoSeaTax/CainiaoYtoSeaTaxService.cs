@@ -32,7 +32,7 @@ namespace Service.Services.CainiaoYtoSeaTax
                             select b.CUST_NAME,a.TRACKINGNO,a.DLV_INV,a.TO_DLV_COD,a.RECIPIENT,a.RECPHONE,a.INCLUDE_TAX,a.COMBINE,a.TYPE,a.DLV_COM,a.FEE,a.TRANS_COD from jetf.dbo.FEE_MASTER a 
                             left join Data_center.dbo.sys_cust b on a.CUSTOMER=b.CUST_CODE 
                             where DATADATE=@DATADATE and a.INCLUDE_TAX ='N' and SOURCE_TYPE = '1' and Download='1' 
-                            and a.DLV_COM in (N'淘寶圓通','N淘寶圓通C',N'淘寶圓通P')
+                            and a.DLV_COM in (N'淘寶圓通','N淘寶圓通C',N'淘寶圓通P',N'菜鳥圓通', N'菜鳥圓通C', N'菜鳥圓通P')
                          ";
 
             using (SqlDataAdapter da = new SqlDataAdapter(sql, conn))
