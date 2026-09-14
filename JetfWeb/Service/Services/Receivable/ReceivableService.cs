@@ -306,7 +306,7 @@ namespace Service.Services.Receivable
             return rows.Select(row =>
             {
                 var transCod = row.TransCod;
-                var codSubtotal = row.CustomerCod + row.ToDlvCod.ToInt();
+                var codSubtotal = row.CustomerCod + row.TransCod + row.Ccfee + row.Cod + row.Fee;
                 var receivedAmount = row.ReceivedCustomerCod + row.ReceivedToDlvCod;
                 string customerName;
                 customerNames.TryGetValue(row.CustomerCode ?? string.Empty, out customerName);
