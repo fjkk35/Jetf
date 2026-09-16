@@ -322,6 +322,7 @@ API 文件頁面:
 ### 寫入規則
 
 - 先檢查重複資料
+- 相同 `TrackingNo` 的寫入請求於 10 秒內不得重複送出
 - 若 `ShipmentInbound` 中已存在相同 `TrackingNo`，且 `OutboundDate < 現在時間 - 3天`，則視為重複
 - 會優先查海運原單，海運查無才查空運原單
 - 若海運有資料，`dataType = 海運`
@@ -369,3 +370,10 @@ API 文件頁面:
 | GET | `/api/shipmentinbound/source-types` | 取得貨件來源 |
 | POST | `/api/shipmentinbound/check` | 檢查是否有原單資料 |
 | POST | `/api/shipmentinbound` | 寫入入庫資料 |
+
+## API 日誌
+
+- 所有 Controller API 會依 `logs/yyyy-MM-dd/{帳號}.log` 紀錄 Request、Response、HTTP 狀態碼及 `cost: {毫秒}ms` 執行時間
+- 帳號依序取自 `UploadOpe`、`EditUser`、`Account`、登入身分或 `X-Account`；無法取得時使用 `Unknown`
+- `X-Signature`、密碼、Token 與照片 Base64 等敏感或大型欄位不會寫入日誌
+- 檔案下載回應只記錄 Content-Type 與下載檔名，不記錄檔案內容

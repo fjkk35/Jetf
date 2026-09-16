@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using PdtPortalApi.Data;
 using PdtPortalApi.Models.Dtos;
@@ -15,12 +16,17 @@ namespace PdtPortalApi.Services;
 public sealed class PortalService(
     JetfDbContext jetfDbContext,
     DataCenterDbContext dataCenterDbContext,
+    IMemoryCache memoryCache,
     IOptions<ShipmentInboundPhotoSftpOptions> shipmentInboundPhotoSftpOptions,
     ILogger<PortalService> logger) : IPortalService
 {
     private const string LocationFieldName = "儲位";
+    private const string ShipmentInboundTrackingNoCacheKeyPrefix = "ShipmentInbound:TrackingNo:";
+    private static readonly TimeSpan ShipmentInboundTrackingNoCacheDuration = TimeSpan.FromSeconds(10);
+    private static readonly object ShipmentInboundTrackingNoCacheLock = new();
     private readonly JetfDbContext _jetfDbContext = jetfDbContext;
     private readonly DataCenterDbContext _dataCenterDbContext = dataCenterDbContext;
+    private readonly IMemoryCache _memoryCache = memoryCache;
     private readonly ShipmentInboundPhotoSftpOptions _shipmentInboundPhotoSftpOptions = shipmentInboundPhotoSftpOptions.Value;
     private readonly ILogger<PortalService> _logger = logger;
 
@@ -162,6 +168,15 @@ public sealed class PortalService(
                 return ServiceResult.Fail(
                     "DUPLICATE_SEQ_NO",
                     "流水編號已存在，請確認後再寫入",
+                    StatusCodes.Status409Conflict);
+            }
+
+            if (!TryReserveShipmentInboundTrackingNo(request.TrackingNo))
+            {
+                _logger.LogDebug("10 秒內收到重複 TrackingNo: {TrackingNo}", request.TrackingNo);
+                return ServiceResult.Fail(
+                    "DUPLICATE_TRACKING_NO",
+                    "相同 TrackingNo 於 10 秒內不可重複送出",
                     StatusCodes.Status409Conflict);
             }
 
@@ -887,6 +902,28 @@ public sealed class PortalService(
         {
             _logger.LogError(exception, "檢查入庫重複資料失敗，TrackingNo: {TrackingNo}", trackingNo);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// 嘗試保留 TrackingNo 十秒，避免同一執行個體同時處理重複請求。
+    /// </summary>
+    /// <param name="trackingNo">單號。</param>
+    /// <returns>保留成功時回傳 true；十秒內已有相同單號時回傳 false。</returns>
+    private bool TryReserveShipmentInboundTrackingNo(string trackingNo)
+    {
+        var normalizedTrackingNo = trackingNo.Trim().ToUpperInvariant();
+        var cacheKey = $"{ShipmentInboundTrackingNoCacheKeyPrefix}{normalizedTrackingNo}";
+
+        lock (ShipmentInboundTrackingNoCacheLock)
+        {
+            if (_memoryCache.TryGetValue(cacheKey, out _))
+            {
+                return false;
+            }
+
+            _memoryCache.Set(cacheKey, true, ShipmentInboundTrackingNoCacheDuration);
+            return true;
         }
     }
 

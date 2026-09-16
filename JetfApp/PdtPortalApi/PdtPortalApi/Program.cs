@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PdtPortalApi.Data;
+using PdtPortalApi.Filters;
 using PdtPortalApi.Models.Responses;
 using PdtPortalApi.Options;
 using PdtPortalApi.Services;
@@ -35,7 +36,7 @@ builder.Host.UseSerilog((context, _, configuration) =>
 });
 
 builder.Services
-    .AddControllers()
+    .AddControllers(options => options.Filters.AddService<ApiRequestTraceFilter>(int.MinValue))
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
@@ -75,12 +76,15 @@ builder.Services.AddDbContext<JetfDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddDbContext<DataCenterDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DataCenterConnection")));
+builder.Services.AddMemoryCache();
 
 builder.Services.Configure<AppVersionOptions>(builder.Configuration.GetSection(AppVersionOptions.SectionName));
 builder.Services.Configure<HmacOptions>(builder.Configuration.GetSection(HmacOptions.SectionName));
 builder.Services.Configure<ShipmentInboundPhotoSftpOptions>(builder.Configuration.GetSection(ShipmentInboundPhotoSftpOptions.SectionName));
 builder.Services.AddSingleton<IAppVersionService, AppVersionService>();
 builder.Services.AddSingleton<IHmacSignatureService, HmacSignatureService>();
+builder.Services.AddSingleton<IApiAuditLogger, ApiAuditLogger>();
+builder.Services.AddScoped<ApiRequestTraceFilter>();
 builder.Services.AddScoped<IPortalService, PortalService>();
 
 var app = builder.Build();
