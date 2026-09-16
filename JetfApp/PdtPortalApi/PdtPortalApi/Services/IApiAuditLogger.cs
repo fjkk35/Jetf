@@ -2,14 +2,15 @@ namespace PdtPortalApi.Services;
 
 public interface IApiAuditLogger
 {
-    void Log(
+    void LogRequestBegin(
         string account,
         string httpMethod,
         string path,
-        string controller,
-        string action,
-        int statusCode,
-        long elapsedMilliseconds,
-        string request,
-        string response);
+        string request);
+
+    void LogRequestEnd(
+        string account,
+        string httpMethod,
+        string path,
+        long elapsedMilliseconds);
 }

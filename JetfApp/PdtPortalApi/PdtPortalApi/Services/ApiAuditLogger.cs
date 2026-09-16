@@ -30,47 +30,48 @@ public sealed class ApiAuditLogger : IApiAuditLogger
                 logDirectory,
                 "${shortdate}",
                 "${event-properties:item=AccountFileName}.log"),
-            Layout = "${longdate}|${uppercase:${level}}|account=${event-properties:item=Account}" +
-                     "|method=${event-properties:item=HttpMethod}|path=${event-properties:item=Path}" +
-                     "|controller=${event-properties:item=Controller}|action=${event-properties:item=Action}" +
-                     "|statusCode=${event-properties:item=StatusCode}" +
-                     "|cost: ${event-properties:item=ElapsedMilliseconds}ms" +
-                     "|request=${event-properties:item=Request}|response=${event-properties:item=Response}",
+            Layout = "${date:format=HH\\:mm\\:ss.ffff} | [${threadid}] | ${message}",
             Encoding = Encoding.UTF8,
             KeepFileOpen = false
         };
 
         var nlogConfiguration = new LoggingConfiguration();
-        nlogConfiguration.AddRule(NLog.LogLevel.Info, NLog.LogLevel.Fatal, fileTarget, AuditLoggerName);
+        nlogConfiguration.AddRule(NLog.LogLevel.Debug, NLog.LogLevel.Fatal, fileTarget, AuditLoggerName);
         LogManager.Configuration = nlogConfiguration;
         _logger = LogManager.GetLogger(AuditLoggerName);
     }
 
-    public void Log(
+    public void LogRequestBegin(
         string account,
         string httpMethod,
         string path,
-        string controller,
-        string action,
-        int statusCode,
-        long elapsedMilliseconds,
-        string request,
-        string response)
+        string request)
+    {
+        Write(
+            account,
+            path,
+            $"Request_Begin[Debug] - [{httpMethod}] {path} | Params={request}");
+    }
+
+    public void LogRequestEnd(
+        string account,
+        string httpMethod,
+        string path,
+        long elapsedMilliseconds)
+    {
+        Write(
+            account,
+            path,
+            $"Request_End[Debug] - [{httpMethod}] {path} | cost: {elapsedMilliseconds}ms");
+    }
+
+    private void Write(string account, string path, string message)
     {
         try
         {
             var normalizedAccount = string.IsNullOrWhiteSpace(account) ? "Unknown" : account.Trim();
-            var logEvent = new LogEventInfo(NLog.LogLevel.Info, AuditLoggerName, "API request completed");
-            logEvent.Properties["Account"] = normalizedAccount;
+            var logEvent = new LogEventInfo(NLog.LogLevel.Debug, AuditLoggerName, message);
             logEvent.Properties["AccountFileName"] = SanitizeFileName(normalizedAccount);
-            logEvent.Properties["HttpMethod"] = httpMethod;
-            logEvent.Properties["Path"] = path;
-            logEvent.Properties["Controller"] = controller;
-            logEvent.Properties["Action"] = action;
-            logEvent.Properties["StatusCode"] = statusCode;
-            logEvent.Properties["ElapsedMilliseconds"] = elapsedMilliseconds;
-            logEvent.Properties["Request"] = request;
-            logEvent.Properties["Response"] = response;
             _logger.Log(logEvent);
         }
         catch (Exception exception)

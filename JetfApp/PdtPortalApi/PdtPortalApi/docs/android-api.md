@@ -373,7 +373,6 @@ API 文件頁面:
 
 ## API 日誌
 
-- 所有 Controller API 會依 `logs/yyyy-MM-dd/{帳號}.log` 紀錄 Request、Response、HTTP 狀態碼及 `cost: {毫秒}ms` 執行時間
+- 所有 Controller API 會依 `logs/yyyy-MM-dd/{帳號}.log` 分別紀錄 `Request_Begin[Debug]` 的 Params，以及 `Request_End[Debug]` 的 `cost: {毫秒}ms` 執行時間
 - 帳號依序取自 `UploadOpe`、`EditUser`、`Account`、登入身分或 `X-Account`；無法取得時使用 `Unknown`
 - `X-Signature`、密碼、Token 與照片 Base64 等敏感或大型欄位不會寫入日誌
-- 檔案下載回應只記錄 Content-Type 與下載檔名，不記錄檔案內容

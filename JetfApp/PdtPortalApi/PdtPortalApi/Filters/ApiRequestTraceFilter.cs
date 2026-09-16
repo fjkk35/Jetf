@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using PdtPortalApi.Services;
 
@@ -38,36 +37,25 @@ public sealed class ApiRequestTraceFilter(
         var stopwatch = Stopwatch.StartNew();
         var account = ResolveAccount(context);
         var requestPayload = SerializeSafely(BuildRequestPayload(context.ActionArguments));
-        ActionExecutedContext? executedContext = null;
+        var httpMethod = context.HttpContext.Request.Method;
+        var path = $"{context.HttpContext.Request.PathBase}{context.HttpContext.Request.Path}";
+
+        _apiAuditLogger.LogRequestBegin(account, httpMethod, path, requestPayload);
 
         try
         {
-            executedContext = await next();
+            await next();
         }
         finally
         {
             stopwatch.Stop();
             try
             {
-                var controller = context.ActionDescriptor.RouteValues.TryGetValue("controller", out var controllerName)
-                    ? controllerName ?? string.Empty
-                    : string.Empty;
-                var action = context.ActionDescriptor.RouteValues.TryGetValue("action", out var actionName)
-                    ? actionName ?? string.Empty
-                    : string.Empty;
-                var statusCode = ResolveStatusCode(context, executedContext);
-                var responsePayload = SerializeSafely(BuildResponsePayload(executedContext, statusCode));
-
-                _apiAuditLogger.Log(
+                _apiAuditLogger.LogRequestEnd(
                     account,
-                    context.HttpContext.Request.Method,
-                    context.HttpContext.Request.Path,
-                    controller,
-                    action,
-                    statusCode,
-                    stopwatch.ElapsedMilliseconds,
-                    requestPayload,
-                    responsePayload);
+                    httpMethod,
+                    path,
+                    stopwatch.ElapsedMilliseconds);
             }
             catch (Exception exception)
             {
@@ -130,63 +118,6 @@ public sealed class ApiRequestTraceFilter(
                 argument => SensitiveNames.Contains(argument.Key)
                     ? "***"
                     : SanitizeValue(argument.Value, argument.Key, 0));
-    }
-
-    private static object? BuildResponsePayload(ActionExecutedContext? context, int statusCode)
-    {
-        if (context is null)
-        {
-            return new { StatusCode = statusCode, Error = "Action execution failed" };
-        }
-
-        if (context.Exception is not null && !context.ExceptionHandled)
-        {
-            return new
-            {
-                StatusCode = statusCode,
-                Exception = context.Exception.GetType().Name,
-                context.Exception.Message
-            };
-        }
-
-        return context.Result switch
-        {
-            ObjectResult result => SanitizeValue(result.Value, "Response", 0),
-            JsonResult result => SanitizeValue(result.Value, "Response", 0),
-            ContentResult result => new
-            {
-                result.StatusCode,
-                result.ContentType,
-                Content = Truncate(result.Content)
-            },
-            FileResult result => new
-            {
-                Type = result.GetType().Name,
-                result.ContentType,
-                result.FileDownloadName
-            },
-            StatusCodeResult result => new { result.StatusCode },
-            EmptyResult => null,
-            null => new { StatusCode = statusCode },
-            _ => new { Type = context.Result.GetType().Name, StatusCode = statusCode }
-        };
-    }
-
-    private static int ResolveStatusCode(ActionExecutingContext context, ActionExecutedContext? executedContext)
-    {
-        if (executedContext is null || executedContext.Exception is not null && !executedContext.ExceptionHandled)
-        {
-            return StatusCodes.Status500InternalServerError;
-        }
-
-        return executedContext.Result switch
-        {
-            ObjectResult result when result.StatusCode.HasValue => result.StatusCode.Value,
-            StatusCodeResult result => result.StatusCode,
-            _ => context.HttpContext.Response.StatusCode > 0
-                ? context.HttpContext.Response.StatusCode
-                : StatusCodes.Status200OK
-        };
     }
 
     private static object? SanitizeValue(object? value, string propertyName, int depth)
