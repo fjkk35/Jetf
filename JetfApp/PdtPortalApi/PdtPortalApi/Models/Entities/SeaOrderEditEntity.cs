@@ -20,18 +20,18 @@ public sealed class SeaOrderEditEntity
     /// 物流貨號。
     /// </summary>
     [Column("JETF_SERIAL")]
-    public string JetfSerial { get; set; } = string.Empty;
+    public string? JetfSerial { get; set; }
 
     /// <summary>
     /// 進口人證號。
     /// </summary>
     [Column("IMPORTER_ID")]
-    public string ImporterId { get; set; } = string.Empty;
+    public string? ImporterId { get; set; }
 
     /// <summary>
     /// 進口人名稱。
     /// </summary>
     [Column("IMPORTER")]
-    public string Importer { get; set; } = string.Empty;
+    public string? Importer { get; set; }
 
 }

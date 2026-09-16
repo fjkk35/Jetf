@@ -671,16 +671,16 @@ public sealed class PortalService(
 
             return new SeaOrderOriginalDto
             {
-                TrackingNo = seaData.TrackingNo,
-                OriginalJetfSerial = seaData.OriginalJetfSerial,
-                MainNumber = seaData.MainNumber,
-                OriginalTrackingNo = seaData.OriginalTrackingNo,
-                ImporterId = seaData.ImporterId,
-                ImporterAddr = seaData.ImporterAddr,
-                ImporterPhone = seaData.ImporterPhone,
-                Importer = seaData.Importer,
-                CustCode = seaData.CustCode,
-                TransName = seaData.TransName,
+                TrackingNo = seaData.TrackingNo ?? string.Empty,
+                OriginalJetfSerial = seaData.OriginalJetfSerial ?? string.Empty,
+                MainNumber = seaData.MainNumber ?? string.Empty,
+                OriginalTrackingNo = seaData.OriginalTrackingNo ?? string.Empty,
+                ImporterId = seaData.ImporterId ?? string.Empty,
+                ImporterAddr = seaData.ImporterAddr ?? string.Empty,
+                ImporterPhone = seaData.ImporterPhone ?? string.Empty,
+                Importer = seaData.Importer ?? string.Empty,
+                CustCode = seaData.CustCode ?? string.Empty,
+                TransName = seaData.TransName ?? string.Empty,
                 Cc = ConvertCcToCod(seaData.Cc)
             };
         }
@@ -787,8 +787,8 @@ public sealed class PortalService(
                 .OrderByDescending(entity => entity.Id)
                 .Select(entity => new ShipmentImporterDataDto
                 {
-                    ImporterId = entity.ImporterId,
-                    Importer = entity.Importer
+                    ImporterId = entity.ImporterId ?? string.Empty,
+                    Importer = entity.Importer ?? string.Empty
                 })
                 .FirstOrDefaultAsync(cancellationToken);
         }

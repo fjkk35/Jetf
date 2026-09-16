@@ -18,61 +18,61 @@ public sealed class SeaOrderOriginalEntity
     /// 主號
     /// </summary>
     [Column("MAINNUMBER")]
-    public string MainNumber { get; set; }
+    public string? MainNumber { get; set; }
 
     /// <summary>
     /// 分提單號
     /// </summary>
     [Column("BL_NO")]
-    public string BlNo { get; set; } = string.Empty;
+    public string? BlNo { get; set; }
 
     /// <summary>
     /// 單號。
     /// </summary>
     [Column("JETF_SERIAL")]
-    public string JetfSerial { get; set; } = string.Empty;
+    public string? JetfSerial { get; set; }
 
     /// <summary>
     /// 進口人或收件人地址。
     /// </summary>
     [Column("IM_ADD")]
-    public string ImporterAddr { get; set; } = string.Empty;
+    public string? ImporterAddr { get; set; }
 
     /// <summary>
     /// 進口人或收件人電話。
     /// </summary>
     [Column("IM_PHONENO")]
-    public string ImporterPhone { get; set; } = string.Empty;
+    public string? ImporterPhone { get; set; }
 
     /// <summary>
     /// 進口人姓名或收件人名稱。
     /// </summary>
     [Column("IMPORTER")]
-    public string Importer { get; set; } = string.Empty;
+    public string? Importer { get; set; }
 
     /// <summary>
     /// 進口人證號。
     /// </summary>
     [Column("IMPORTER_ID")]
-    public string ImporterId { get; set; } = string.Empty;
+    public string? ImporterId { get; set; }
 
     /// <summary>
     /// 客戶代碼（CustCode）。
     /// </summary>
     [Column("DESPATCH_NAME")]
-    public string CustCode { get; set; } = string.Empty;
+    public string? CustCode { get; set; }
 
     /// <summary>
     /// 承運商名稱。
     /// </summary>
     [Column("TRANS_NAME")]
-    public string TransName { get; set; } = string.Empty;
+    public string? TransName { get; set; }
 
     /// <summary>
     /// 毛重。
     /// </summary>
     [Column("GW", TypeName = "numeric(18, 3)")]
-    public decimal Gw { get; set; }
+    public decimal? Gw { get; set; }
 
     /// <summary>
     /// 到付款。

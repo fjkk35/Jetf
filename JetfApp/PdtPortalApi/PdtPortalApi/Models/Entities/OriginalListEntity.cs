@@ -11,7 +11,7 @@ namespace PdtPortalApi.Models.Entities;
 public sealed class OriginalListEntity
 {
     [Key]
-    [Column("ROW_ID")]
+    [Column("ID")]
     public int Id { get; set; }
 
     /// <summary>
