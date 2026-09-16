@@ -533,16 +533,16 @@ namespace Service.Services.ShipmentInboundCommon
                 .Where(x => trackingNos.Contains(x.JetfSerial))
                 .Select(x => new
                 {
+                    x.RowId,
                     x.JetfSerial,
                     x.ImporterId,
-                    x.Importer,
-                    x.Gw
+                    x.Importer
                 })
                 .ToList();
 
             return data
                 .GroupBy(x => x.JetfSerial)
-                .Select(g => g.OrderByDescending(x => x.Gw ?? 0)
+                .Select(g => g.OrderByDescending(x => x.RowId)
                     .Select(x => new ShipmentOrderData
                     {
                         TrackingNo = x.JetfSerial,
@@ -570,6 +570,7 @@ namespace Service.Services.ShipmentInboundCommon
                 .Where(x => trackingNos.Contains(x.TrackingNo))
                 .Select(x => new
                 {
+                    x.Id,
                     x.TrackingNo,
                     x.RecId,
                     x.Recipient
@@ -578,12 +579,14 @@ namespace Service.Services.ShipmentInboundCommon
 
             return data
                 .GroupBy(x => x.TrackingNo)
-                .Select(g => g.Select(x => new ShipmentOrderData
-                {
-                    TrackingNo = x.TrackingNo,
-                    ImporterId = x.RecId,
-                    Importer = x.Recipient
-                }).FirstOrDefault())
+                .Select(g => g.OrderByDescending(x => x.Id)
+                    .Select(x => new ShipmentOrderData
+                    {
+                        TrackingNo = x.TrackingNo,
+                        ImporterId = x.RecId,
+                        Importer = x.Recipient
+                    })
+                    .FirstOrDefault())
                 .ToDictionary(x => x.TrackingNo, x => x);
         }
 
