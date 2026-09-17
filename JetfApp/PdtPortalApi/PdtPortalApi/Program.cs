@@ -1,39 +1,30 @@
-using System.Text;
 using System.Reflection;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NLog;
+using NLog.Config;
+using NLog.Web;
 using PdtPortalApi.Data;
 using PdtPortalApi.Filters;
 using PdtPortalApi.Models.Responses;
 using PdtPortalApi.Options;
 using PdtPortalApi.Services;
-using Serilog;
-using Serilog.Events;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+var logDirectory = ResolveLogDirectory(builder.Configuration["FileLogging:Path"]);
+Directory.CreateDirectory(logDirectory);
 
-builder.Host.UseSerilog((context, _, configuration) =>
-{
-    var minimumLevel = ResolveLogLevel(context.Configuration["Logging:LogLevel:Default"], LogEventLevel.Information);
-    var microsoftLevel = ResolveLogLevel(context.Configuration["Logging:LogLevel:Microsoft.AspNetCore"], LogEventLevel.Warning);
-    var logDirectory = ResolveLogDirectory(context.Configuration["FileLogging:Path"]);
-    Directory.CreateDirectory(logDirectory);
+var nlogConfigPath = Path.Combine(builder.Environment.ContentRootPath, "NLog.config");
+var nlogConfiguration = new XmlLoggingConfiguration(nlogConfigPath);
+nlogConfiguration.Variables["logDirectory"] = logDirectory;
+LogManager.Configuration = nlogConfiguration;
 
-    configuration
-        .MinimumLevel.Is(minimumLevel)
-        .MinimumLevel.Override("Microsoft", microsoftLevel)
-        .Enrich.FromLogContext()
-        .WriteTo.Console()
-        .WriteTo.File(
-            Path.Combine(logDirectory, "log-.txt"),
-            rollingInterval: RollingInterval.Day,
-            retainedFileCountLimit: 7,
-            shared: true,
-            encoding: Encoding.UTF8);
-});
+builder.Logging.ClearProviders();
+builder.Host.UseNLog();
+var startupLogger = LogManager.GetCurrentClassLogger();
 
 builder.Services
     .AddControllers(options => options.Filters.AddService<ApiRequestTraceFilter>(int.MinValue))
@@ -98,7 +89,7 @@ app.UseExceptionHandler(errorApp =>
         var exceptionFeature = context.Features.Get<IExceptionHandlerFeature>();
         if (exceptionFeature?.Error is not null)
         {
-            Log.Error(exceptionFeature.Error, "Unhandled exception occurred while processing request {Path}", context.Request.Path);
+            startupLogger.Error(exceptionFeature.Error, "Unhandled exception occurred while processing request {Path}", context.Request.Path);
         }
 
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
@@ -129,23 +120,16 @@ app.MapControllers();
 
 try
 {
-    Log.Information("Starting Pdt Portal API");
+    startupLogger.Info("Starting Pdt Portal API");
     app.Run();
 }
 catch (Exception exception)
 {
-    Log.Fatal(exception, "Pdt Portal API terminated unexpectedly");
+    startupLogger.Fatal(exception, "Pdt Portal API terminated unexpectedly");
 }
 finally
 {
-    Log.CloseAndFlush();
-}
-
-static LogEventLevel ResolveLogLevel(string? configuredLevel, LogEventLevel fallbackLevel)
-{
-    return Enum.TryParse<LogEventLevel>(configuredLevel, ignoreCase: true, out var level)
-        ? level
-        : fallbackLevel;
+    LogManager.Shutdown();
 }
 
 static string ResolveLogDirectory(string? configuredPath)

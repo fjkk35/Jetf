@@ -1,7 +1,4 @@
-using System.Text;
 using NLog;
-using NLog.Config;
-using NLog.Targets;
 
 namespace PdtPortalApi.Services;
 
@@ -18,26 +15,9 @@ public sealed class ApiAuditLogger : IApiAuditLogger
     private readonly Logger _logger;
     private readonly ILogger<ApiAuditLogger> _systemLogger;
 
-    public ApiAuditLogger(
-        IConfiguration configuration,
-        ILogger<ApiAuditLogger> systemLogger)
+    public ApiAuditLogger(ILogger<ApiAuditLogger> systemLogger)
     {
         _systemLogger = systemLogger;
-        var logDirectory = ResolveLogDirectory(configuration["FileLogging:Path"]);
-        var fileTarget = new FileTarget("apiAccountFile")
-        {
-            FileName = Path.Combine(
-                logDirectory,
-                "${shortdate}",
-                "${event-properties:item=AccountFileName}.log"),
-            Layout = "${date:format=HH\\:mm\\:ss.ffff} | [${threadid}] | ${message}",
-            Encoding = Encoding.UTF8,
-            KeepFileOpen = false
-        };
-
-        var nlogConfiguration = new LoggingConfiguration();
-        nlogConfiguration.AddRule(NLog.LogLevel.Debug, NLog.LogLevel.Fatal, fileTarget, AuditLoggerName);
-        LogManager.Configuration = nlogConfiguration;
         _logger = LogManager.GetLogger(AuditLoggerName);
     }
 
@@ -82,18 +62,6 @@ public sealed class ApiAuditLogger : IApiAuditLogger
                 account,
                 path);
         }
-    }
-
-    private static string ResolveLogDirectory(string? configuredPath)
-    {
-        if (string.IsNullOrWhiteSpace(configuredPath))
-        {
-            return Path.Combine(AppContext.BaseDirectory, "logs");
-        }
-
-        return Path.IsPathRooted(configuredPath)
-            ? configuredPath
-            : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, configuredPath));
     }
 
     private static string SanitizeFileName(string account)

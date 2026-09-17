@@ -1,4 +1,4 @@
-using Serilog;
+using NLog;
 
 namespace PdtPortalApi.Models.Responses;
 
@@ -7,6 +7,8 @@ namespace PdtPortalApi.Models.Responses;
 /// </summary>
 public class ApiResponse
 {
+    protected static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// 是否成功。
     /// </summary>
@@ -48,7 +50,7 @@ public class ApiResponse
         }
         catch (Exception exception)
         {
-            Log.Error(exception, "建立 ApiResponse 成功回應失敗");
+            Logger.Error(exception, "建立 ApiResponse 成功回應失敗");
             throw;
         }
     }
@@ -69,7 +71,7 @@ public class ApiResponse
         }
         catch (Exception exception)
         {
-            Log.Error(exception, "建立 ApiResponse 失敗回應失敗");
+            Logger.Error(exception, "建立 ApiResponse 失敗回應失敗");
             throw;
         }
     }
@@ -91,7 +93,7 @@ public class ApiResponse
         }
         catch (Exception exception)
         {
-            Log.Error(exception, "建立 ApiResponse 錯誤碼回應失敗");
+            Logger.Error(exception, "建立 ApiResponse 錯誤碼回應失敗");
             throw;
         }
     }
@@ -125,7 +127,7 @@ public class ApiResponse<T> : ApiResponse
         }
         catch (Exception exception)
         {
-            Log.Error(exception, "建立 ApiResponse<T> 成功回應失敗");
+            Logger.Error(exception, "建立 ApiResponse<T> 成功回應失敗");
             throw;
         }
     }
@@ -146,7 +148,7 @@ public class ApiResponse<T> : ApiResponse
         }
         catch (Exception exception)
         {
-            Log.Error(exception, "建立 ApiResponse<T> 失敗回應失敗");
+            Logger.Error(exception, "建立 ApiResponse<T> 失敗回應失敗");
             throw;
         }
     }
@@ -168,7 +170,7 @@ public class ApiResponse<T> : ApiResponse
         }
         catch (Exception exception)
         {
-            Log.Error(exception, "建立 ApiResponse<T> 錯誤碼回應失敗");
+            Logger.Error(exception, "建立 ApiResponse<T> 錯誤碼回應失敗");
             throw;
         }
     }

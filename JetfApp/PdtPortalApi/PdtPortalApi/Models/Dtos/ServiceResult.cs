@@ -1,4 +1,4 @@
-using Serilog;
+using NLog;
 
 namespace PdtPortalApi.Models.Dtos;
 
@@ -7,6 +7,8 @@ namespace PdtPortalApi.Models.Dtos;
 /// </summary>
 public sealed class ServiceResult
 {
+    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
     /// <summary>
     /// 是否成功。
     /// </summary>
@@ -45,7 +47,7 @@ public sealed class ServiceResult
         }
         catch (Exception exception)
         {
-            Log.Error(exception, "建立 ServiceResult 成功結果失敗");
+            Logger.Error(exception, "建立 ServiceResult 成功結果失敗");
             throw;
         }
     }
@@ -71,7 +73,7 @@ public sealed class ServiceResult
         }
         catch (Exception exception)
         {
-            Log.Error(exception, "建立 ServiceResult 失敗結果失敗");
+            Logger.Error(exception, "建立 ServiceResult 失敗結果失敗");
             throw;
         }
     }
