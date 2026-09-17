@@ -411,7 +411,7 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
             var rows = JetfDb.FeeMasters
                 .AsNoTracking()
                 .Where(x => x.Download == "1")
-                .Where(x => x.IncludeTax == "C")
+                .Where(x => x.IncludeTax == "C" || x.CustomerCod > 0)
                 .Where(x => x.OutDateTime.HasValue &&
                             x.OutDateTime >= startDate &&
                             x.OutDateTime < endDateExclusive)

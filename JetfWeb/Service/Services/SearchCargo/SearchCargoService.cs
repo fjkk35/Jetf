@@ -770,7 +770,8 @@ namespace Service.Services.SearchCargo
                 .AsNoTracking()
                 .Where(x =>
                     x.TrackingNo == normalizedTrackingNo &&
-                    x.DlvInv == normalizedDeliveryNo)
+                    x.DlvInv == normalizedDeliveryNo &&
+                    x.Download =="1")
                 .OrderBy(x => x.Id)
                 .FirstOrDefault();
         }
