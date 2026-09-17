@@ -70,6 +70,7 @@ namespace JETFWebAPI.Models.Coupang
         [Required(ErrorMessage = "HawbList.HawbNo is null")]
         public string HawbNo { get; set; }
         public string MainHawbNo { get; set; }
+        public string OrderNo { get; set; }
         public string DeliveryType { get; set; }
         [Required(ErrorMessage = "HawbList.Ctns is null")]
         public string Ctns { get; set; }

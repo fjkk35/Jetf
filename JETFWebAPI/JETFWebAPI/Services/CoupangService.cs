@@ -125,6 +125,7 @@ namespace JETFWebAPI.Services
 
                                 HawbNo = body.DeclData.Bags[0].HawbList[0].HawbNo,
                                 MainHawbNo = body.DeclData.Bags[0].HawbList[0].MainHawbNo,
+                                OrderNo = body.DeclData.Bags[0].HawbList[0].OrderNo,
                                 DeliveryType = body.DeclData.Bags[0].HawbList[0].DeliveryType,
                                 Ctns = body.DeclData.Bags[0].HawbList[0].Ctns,
                                 CtnUnit = body.DeclData.Bags[0].HawbList[0].CtnUnit,
@@ -301,8 +302,8 @@ namespace JETFWebAPI.Services
                 try
                 {
                     StringBuilder sb = new StringBuilder();
-                    sb.Append("insert [DATA_CENTER].[dbo].[ORDER_MANIFEST](SendId,CreateDate,BrokerCode,MawbNo,FlightNo,ImportDate,DeclDate,Currency,OrigPort,DeclType,DeclNo,BagNo,BagWeight,HawbNo,DeliveryType,Ctns,CtnUnit,GrossWeight,NetWeight,TermsSales,FreightAmt,DutyExemption,CTaxNo,CName,CAddr,CTel,SName,SAddr,ItemNo,VendorItemId,CategoryName,GoodsDesc,Uprice,Qty,QtyUnit,TotalPrice,MfrCountry,TaxMethod,CCCCode,LicenseNo1,LicenseNo2,LicenseNo3,Brand,Model,Specification,DesignatedCode,MainHawbNo,ElementLabel,ElementModel,FrequenctRange,OutPut,NccRemark,NccUrl) ");
-                    sb.Append("values(@SendId,@CreateDate,@BrokerCode,@MawbNo,@FlightNo,@ImportDate,@DeclDate,@Currency,@OrigPort,@DeclType,@DeclNo,@BagNo,@BagWeight,@HawbNo,@DeliveryType,@Ctns,@CtnUnit,@GrossWeight,@NetWeight,@TermsSales,@FreightAmt,@DutyExemption,@CTaxNo,@CName,@CAddr,@CTel,@SName,@SAddr,@ItemNo,@VendorItemId,@CategoryName,@GoodsDesc,@Uprice,@Qty,@QtyUnit,@TotalPrice,@MfrCountry,@TaxMethod,@CCCCode,@LicenseNo1,@LicenseNo2,@LicenseNo3,@Brand,@Model,@Specification,@DesignatedCode,@MainHawbNo,@ElementLabel,@ElementModel,@FrequenctRange,@OutPut,@NccRemark,@NccUrl) ");
+                    sb.Append("insert [DATA_CENTER].[dbo].[ORDER_MANIFEST](SendId,CreateDate,BrokerCode,MawbNo,FlightNo,ImportDate,DeclDate,Currency,OrigPort,DeclType,DeclNo,BagNo,BagWeight,HawbNo,OrderNo,DeliveryType,Ctns,CtnUnit,GrossWeight,NetWeight,TermsSales,FreightAmt,DutyExemption,CTaxNo,CName,CAddr,CTel,SName,SAddr,ItemNo,VendorItemId,CategoryName,GoodsDesc,Uprice,Qty,QtyUnit,TotalPrice,MfrCountry,TaxMethod,CCCCode,LicenseNo1,LicenseNo2,LicenseNo3,Brand,Model,Specification,DesignatedCode,MainHawbNo,ElementLabel,ElementModel,FrequenctRange,OutPut,NccRemark,NccUrl) ");
+                    sb.Append("values(@SendId,@CreateDate,@BrokerCode,@MawbNo,@FlightNo,@ImportDate,@DeclDate,@Currency,@OrigPort,@DeclType,@DeclNo,@BagNo,@BagWeight,@HawbNo,@OrderNo,@DeliveryType,@Ctns,@CtnUnit,@GrossWeight,@NetWeight,@TermsSales,@FreightAmt,@DutyExemption,@CTaxNo,@CName,@CAddr,@CTel,@SName,@SAddr,@ItemNo,@VendorItemId,@CategoryName,@GoodsDesc,@Uprice,@Qty,@QtyUnit,@TotalPrice,@MfrCountry,@TaxMethod,@CCCCode,@LicenseNo1,@LicenseNo2,@LicenseNo3,@Brand,@Model,@Specification,@DesignatedCode,@MainHawbNo,@ElementLabel,@ElementModel,@FrequenctRange,@OutPut,@NccRemark,@NccUrl) ");
                     using (SqlCommand cmd = new SqlCommand(sb.ToString(), conn))
                     {
                         cmd.Transaction = tran;
@@ -324,6 +325,7 @@ namespace JETFWebAPI.Services
                             cmd.Parameters.Add("@BagNo", SqlDbType.NVarChar).Value = modelList[i].BagNo ?? (object)DBNull.Value;
                             cmd.Parameters.Add("@BagWeight", SqlDbType.NVarChar).Value = modelList[i].BagWeight ?? (object)DBNull.Value;
                             cmd.Parameters.Add("@HawbNo", SqlDbType.NVarChar).Value = modelList[i].HawbNo ?? (object)DBNull.Value;
+                            cmd.Parameters.Add("@OrderNo", SqlDbType.NVarChar).Value = modelList[i].OrderNo ?? (object)DBNull.Value;
                             cmd.Parameters.Add("@DeliveryType", SqlDbType.NVarChar).Value = modelList[i].DeliveryType ?? (object)DBNull.Value;
                             cmd.Parameters.Add("@Ctns", SqlDbType.NVarChar).Value = modelList[i].Ctns ?? (object)DBNull.Value;
                             cmd.Parameters.Add("@CtnUnit", SqlDbType.NVarChar).Value = modelList[i].CtnUnit ?? (object)DBNull.Value;

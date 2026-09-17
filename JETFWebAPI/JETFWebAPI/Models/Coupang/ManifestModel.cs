@@ -23,6 +23,7 @@ namespace JETFWebAPI.Models.Coupang
         public string BagWeight { get; set; }
 
         public string HawbNo { get; set; }
+        public string OrderNo { get; set; }
         public string MainHawbNo { get; set; }
         public string DeliveryType { get; set; }
         public string Ctns { get; set; }
