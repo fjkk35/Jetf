@@ -1388,13 +1388,9 @@ namespace Service.Services.DownloadEtlNew
         {
             var normalizedPhone = NormalizeSpecialPhone(phone);
 
-            // NOTE: 這裡保留舊系統判斷式，不直接修正。
-            // company 同時等於三個不同名稱的條件理論上不會成立，後續若要調整需先確認既有報表與帳務結果。
             return !string.IsNullOrWhiteSpace(normalizedPhone)
                 && specialPhones.Contains(normalizedPhone)
-                && company == "新竹物流"
-                && company == "新瑞宅配"
-                && company == "捷豐";
+                && (company == "新竹物流" || company == "新瑞宅配" || company == "捷豐");
         }
 
         /// <summary>
