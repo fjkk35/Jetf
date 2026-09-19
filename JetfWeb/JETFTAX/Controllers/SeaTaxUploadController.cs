@@ -50,7 +50,8 @@ namespace JETFTAX.Controllers
                 { SeaTaxType.WAHA, new SeaTaxValidationRule("萬海", "萬海") },
                 { SeaTaxType.UNIJ, new SeaTaxValidationRule("連捷", "連捷") },
                 { SeaTaxType.JFKL, new SeaTaxValidationRule("基隆港務(捷豐)", "基隆港") },
-                { SeaTaxType.DTKL, new SeaTaxValidationRule("DTKL-TPCT(鼎泰)", "DTKL", "鼎泰") }
+                { SeaTaxType.DTKL, new SeaTaxValidationRule("DTKL-TPCT(鼎泰)", "DTKL", "鼎泰") },
+                { SeaTaxType.JSTC, new SeaTaxValidationRule("台中港", "jstc", "JSTC", "台中港") }
             };
 
         /// <summary>
@@ -63,7 +64,7 @@ namespace JETFTAX.Controllers
         }
 
         [HttpGet]
-        [UserAuthorize(Authority.UploadSeaTax)]
+        [UserAuthorize(Authority.UploadSeaTax, Authority.DownloadSeaTax)]
         public JsonResult GetSeaTaxTypeList()
         {
             var list = _dropDownListService.GetSeaTaxTypeList();

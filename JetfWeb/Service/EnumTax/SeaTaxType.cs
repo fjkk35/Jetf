@@ -35,5 +35,8 @@ namespace Service.EnumTax
 
         [Description("DTKL-TPCT(鼎泰)")]
         DTKL,
+
+        [Description("JSTC-台中港")]
+        JSTC,
     }
 }

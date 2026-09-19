@@ -491,6 +491,8 @@ namespace Service.Services.DownloadSeaNew
                     return string.Format("{0}-基隆港務(捷豐)-{1}票.xlsx", dataDate, count);
                 case "DTKL":
                     return string.Format("{0}-鼎泰新竹-{1}票.xlsx", dataDate, count);
+                case "JSTC":
+                    return string.Format("{0}-JSTC-台中港-{1}票.xlsx", dataDate, count);
                 default:
                     return string.Format("{0}-{1}-{2}票.xlsx", dataDate, taxType, count);
             }
@@ -523,6 +525,8 @@ namespace Service.Services.DownloadSeaNew
                     return string.Format("{0}-連捷-無客戶{1}票.xlsx", dataDate, count);
                 case "DTKL":
                     return string.Format("{0}-鼎泰新竹-無客戶{1}票.xlsx", dataDate, count);
+                case "JSTC":
+                    return string.Format("{0}-JSTC-台中港-無客戶{1}票.xlsx", dataDate, count);
                 default:
                     return string.Format("{0}-{1}-無客戶{2}票.xlsx", dataDate, taxType, count);
             }
@@ -555,6 +559,8 @@ namespace Service.Services.DownloadSeaNew
                     return string.Format("{0}-連捷-特殊客戶(收客匯款){1}票.xlsx", dataDate, count);
                 case "DTKL":
                     return string.Format("{0}-鼎泰新竹-特殊客戶(收客匯款){1}票.xlsx", dataDate, count);
+                case "JSTC":
+                    return string.Format("{0}-JSTC-台中港-特殊客戶(收客匯款){1}票.xlsx", dataDate, count);
                 default:
                     return string.Format("{0}-{1}-特殊客戶(收客匯款){2}票.xlsx", dataDate, taxType, count);
             }
@@ -577,6 +583,8 @@ namespace Service.Services.DownloadSeaNew
                     return string.Format("{0}-港務新竹-特殊客戶(客戶付款){1}-票.xlsx", dataDate, count);
                 case "IPOST":
                     return string.Format("{0}-高雄新竹-特殊客戶(客戶付款){1}-票.xlsx", dataDate, count);
+                case "JSTC":
+                    return string.Format("{0}-JSTC-台中港-特殊客戶(客戶付款){1}票.xlsx", dataDate, count);
                 default:
                     return string.Format("{0}-{1}-特殊客戶(客戶付款){2}票.xlsx", dataDate, taxType, count);
             }
