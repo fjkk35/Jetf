@@ -283,11 +283,30 @@ namespace Service.Services.DownloadEtlNew
                 var latestRow = orderedRows[0];
                 var draft = CreateFeeMasterDraft(latestRow, orderedRows);
 
-                // step4: 套用舊系統稅金邏輯，計算 customer_cod、trans_cod、to_dlv_cod 等欄位。
-                ApplyTaxRule(draft, latestRow, specialPhones);
+                // step4: 指定客戶及納稅義務人清單固定優先套用 D 類規則，未命中再判斷萬事達規則。
+                // 00078 - 禎濠
+                // 00019 - 廣東捷利
+                // 00022 - 萬事達
+                var specialCustomerCodes = new[] { "00078", "00019", "00022" };
+                var isSpecialCustomer = specialCustomerCodes.Contains(draft.Customer);
 
-                // step5: 主檔只保留彙總金額，明細仍要保留同 tracking 下每一張稅單。
-                draft.DetailRows = CreateFeeMasterDetailRows(orderedRows, specialPhones);
+                // 指定客戶且納稅義務人完全符合指定名單時，優先套用 D 類規則。
+                if (isSpecialCustomer && ContainsSpecifiedTaxPayer(orderedRows))
+                {
+                    ApplySpecifiedTaxPayerRule(draft, orderedRows);
+                }
+                // 未符合指定名單，但納稅義務人包含萬事達識別文字時，套用萬事達稅金規則。
+                else if (isSpecialCustomer && ContainsMastercardTaxPayer(orderedRows))
+                {
+                    ApplyMastercardTaxRule(draft, orderedRows);
+                }
+                // 非指定客戶或未符合特殊納稅義務人條件時，維持原有稅金流程。
+                else
+                {
+                    ApplyTaxRule(draft, latestRow, specialPhones);
+                    draft.DetailRows = CreateFeeMasterDetailRows(orderedRows, specialPhones);
+                }
+
                 drafts.Add(draft);
             }
 
@@ -1259,6 +1278,115 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
+        /// 套用萬事達納稅義務人的主檔與明細特殊規則。
+        /// </summary>
+        /// <param name="draft">待計算的 fee master 草稿。</param>
+        /// <param name="sourceRows">同一 tracking 的來源資料。</param>
+        private static void ApplyMastercardTaxRule(FeeMasterDraft draft, List<CombinedRow> sourceRows)
+        {
+            // 萬事達固定使用客戶代號 00022，且不收取手續費。
+            draft.Customer = "00022";
+            draft.Fee = 0;
+
+            // 使用主檔彙總後的稅金判斷類別：未滿十萬元為 C，十萬元以上（含）為 D。
+            var amounts = new TaxAmountSet
+            {
+                Tax1 = draft.Tax1,
+                Tax2 = draft.Tax2,
+                Cod = draft.Cod,
+                Fee = 0
+            };
+            var isPaidByCustomer = amounts.Tax1 + amounts.Tax2 < 100000;
+            TaxCalculationResult taxData;
+
+            // C 稅金跟客戶收
+            // D 稅金跟派件收
+            if (isPaidByCustomer)
+            {
+                draft.IncludeTax = "C";
+                taxData = CalculateTaxC(amounts);
+            }
+            else
+            {
+                draft.IncludeTax = "D";
+                taxData = CalculateTaxD(amounts);
+            }
+
+            ApplyTaxData(draft, taxData);
+
+            draft.DetailRows = CreateSpecialTaxDetailRows(sourceRows, isPaidByCustomer);
+        }
+
+        /// <summary>
+        /// 將指定納稅義務人的主檔與明細固定套用 D 類規則。
+        /// </summary>
+        /// <param name="draft">待計算的 fee master 草稿。</param>
+        /// <param name="sourceRows">同一 tracking 的來源資料。</param>
+        private static void ApplySpecifiedTaxPayerRule(FeeMasterDraft draft, List<CombinedRow> sourceRows)
+        {
+            // 指定納稅義務人固定使用客戶代號 00022、套用 D 類，且不收取手續費。
+            draft.Customer = "00022";
+            draft.Fee = 0;
+            draft.IncludeTax = "D";
+
+            var amounts = new TaxAmountSet
+            {
+                Tax1 = draft.Tax1,
+                Tax2 = draft.Tax2,
+                Cod = draft.Cod,
+                Fee = 0
+            };
+
+            ApplyTaxData(draft, CalculateTaxD(amounts));
+            draft.DetailRows = CreateSpecialTaxDetailRows(sourceRows, false);
+        }
+
+        /// <summary>
+        /// 依特殊規則的 C/D 類別建立同一 tracking 下的稅金明細。
+        /// </summary>
+        /// <param name="sourceRows">同一 tracking 的來源資料。</param>
+        /// <param name="isPaidByCustomer">是否為 C 類並由客戶負擔稅金。</param>
+        /// <returns>特殊規則的明細資料。</returns>
+        private static List<FeeMasterDetailRow> CreateSpecialTaxDetailRows(
+            List<CombinedRow> sourceRows,
+            bool isPaidByCustomer)
+        {
+            var detailRows = new List<FeeMasterDetailRow>();
+
+            for (var i = 0; i < sourceRows.Count; i++)
+            {
+                var sourceRow = sourceRows[i];
+                var codAmount = i == 0 ? ToInt(sourceRow.Cc) : 0;
+                var detailAmounts = new TaxAmountSet
+                {
+                    Tax1 = ToInt(sourceRow.TaxAmount),
+                    Cod = codAmount,
+                    Fee = 0
+                };
+                TaxCalculationResult detailTaxData;
+
+                if (isPaidByCustomer)
+                {
+                    detailTaxData = CalculateTaxC(detailAmounts);
+                }
+                else
+                {
+                    detailTaxData = CalculateTaxD(detailAmounts);
+                }
+
+                detailRows.Add(CreateFeeMasterDetailRow(
+                    sourceRow,
+                    codAmount,
+                    0,
+                    detailTaxData.ToDlvCod,
+                    detailTaxData.TransCod,
+                    detailTaxData.CustomerCod));
+            }
+
+            return detailRows;
+        }
+
+        /// <summary>
         /// 建立空運一般明細資料。
         /// </summary>
         /// <param name="row">空運來源資料。</param>
@@ -1391,6 +1519,36 @@ namespace Service.Services.DownloadEtlNew
             return !string.IsNullOrWhiteSpace(normalizedPhone)
                 && specialPhones.Contains(normalizedPhone)
                 && (company == "新竹物流" || company == "新瑞宅配" || company == "捷豐");
+        }
+
+        /// <summary>
+        /// 判斷納稅義務人是否符合優先套用 D 類的特殊規則。
+        /// </summary>
+        /// <param name="sourceRows">同一 tracking 的來源資料。</param>
+        /// <returns>是否優先套用 D 類特殊規則。</returns>
+        private static bool ContainsSpecifiedTaxPayer(IEnumerable<CombinedRow> sourceRows)
+        {
+            var taxPayers = new[]
+            {
+                "康健生醫科技股份有限公司（万事达）",
+                "加高電子股份有限公司",
+                "昱宣有限公司",
+                "英屬維京群島商曉龍電子股份有限公司台灣分公司",
+                "實英實業股份有限公司",
+                "翰緯國際股份有限公司（万事达）"
+            };
+
+            return sourceRows.Any(row => taxPayers.Contains(row.TaxPayer));
+        }
+
+        /// <summary>
+        /// 判斷納稅義務人是否包含萬事達識別文字。
+        /// </summary>
+        /// <param name="sourceRows">同一 tracking 的來源資料。</param>
+        /// <returns>是否包含萬事達納稅義務人。</returns>
+        private static bool ContainsMastercardTaxPayer(IEnumerable<CombinedRow> sourceRows)
+        {
+            return sourceRows.Any(row => row.TaxPayer?.Contains("(万事达)") == true);
         }
 
         /// <summary>
