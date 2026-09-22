@@ -160,7 +160,9 @@ mainApp.controller('EzwaySeaController', ['$scope', '$http', function (
         { key: 'VirtualZone', label: '虛擬關區', companyId: '24951752', account: 'ECC0248' },
         { key: 'AllOne', label: '全旺', companyId: '24951752', account: 'ECC0197' },
         { key: 'TPCT', label: 'TPCT', companyId: '82953146', account: 'ECC0091' },
-        { key: 'KaohsiungBranch', label: '捷豐高雄分公司', companyId: '90276915', account: 'ECC0188' }
+        { key: 'KaohsiungBranch', label: '捷豐高雄分公司', companyId: '90276915', account: 'ECC0188' },
+        { key: 'DingTaiBroker', label: '鼎泰報關', companyId: '28755422', account: 'ECC0327' },
+        { key: 'ZhongXinBroker', label: '眾信報關', companyId: '25065710', account: 'ECC0334' }
     ];
 
     function isSeaAccount(account?: EzwayLoggedInAccountResponse | null): boolean {
