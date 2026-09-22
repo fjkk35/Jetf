@@ -33,12 +33,13 @@ namespace JETFTAX.Controllers
         public ActionResult Download(CainiaoYtoSeaTaxViewModel vm)
         {
             var handle = Guid.NewGuid().ToString();
-            var fileName = $"菜鳥圓通海運稅金{DateTime.Now.ToString("yyyyMMddHHmmss")}.xlsx";
+            var fileName = string.Empty;
             var msg = "";
             try
             {
                 string dataDate = Convert.ToDateTime(vm.DataDate).ToString("yyyyMMdd");
-                var workbook = _cainiaoYtoSeaTaxService.GetCainiaoYtoSeaTax(dataDate);
+                var workbook = _cainiaoYtoSeaTaxService.GetCainiaoYtoSeaTax(dataDate, out var count);
+                fileName = $"{dataDate}-淘寶圓通-{count}票.xlsx";
                 using (MemoryStream fileStream = new MemoryStream())
                 {
                     workbook.Write(fileStream);

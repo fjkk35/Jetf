@@ -16,10 +16,11 @@ namespace Service.Services.CainiaoYtoSeaTax
             _globalService = globalService;
         }
 
-        public IWorkbook GetCainiaoYtoSeaTax(string dataDate)
+        public IWorkbook GetCainiaoYtoSeaTax(string dataDate, out int count)
         {
 
             DataTable dt = GetData(dataDate);
+            count = dt.Rows.Count;
            
             var workbook = GetSeaWorkbook(dt);
 
