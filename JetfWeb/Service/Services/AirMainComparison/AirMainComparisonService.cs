@@ -100,7 +100,8 @@ namespace Service.Services.AirMainComparison
         public void ApplyComparison(
             IList<IAirMainComparisonItem> results,
             IEnumerable<AirMainUploadExcelRow> uploadRows,
-            bool excludeZzzaFromUnreceivedB6F = false)
+            bool excludeZzzaFromUnreceivedB6F = false,
+            bool useUploadBagCountForNoTransName = false)
         {
             if (results == null)
             {
@@ -176,7 +177,10 @@ namespace Service.Services.AirMainComparison
                 item.NotGciTotal = item.NotGciTotal - item.ZzzaReceivedCount;
 
                 // 派件公司統計同樣排除 ZZZA收單及 ZZZA未收單，匯出直接使用此計算結果。
-                item.TransNameCounts = BuildTransNameCounts(item, unreceivedRows);
+                item.TransNameCounts = BuildTransNameCounts(
+                    item,
+                    unreceivedRows,
+                    useUploadBagCountForNoTransName);
                 item.TransNameSummary = BuildTransNameSummary(item.TransNameCounts);
             }
         }
@@ -191,7 +195,8 @@ namespace Service.Services.AirMainComparison
         public IWorkbook CreateExportWorkbook(
             string mainSheetName,
             IEnumerable<IAirMainComparisonItem> results,
-            AirMainUploadExcelData uploadData)
+            AirMainUploadExcelData uploadData,
+            bool useUploadBagCountForUnreceivedDeclaredPiece = false)
         {
             // 主號查詢階段已完成 ZZZA 統計與扣除，匯出只負責寫入計算完成的資料。
             var resultList = (results ?? Enumerable.Empty<IAirMainComparisonItem>()).ToList();
@@ -218,7 +223,12 @@ namespace Service.Services.AirMainComparison
                 dataStyle,
                 numberStyle);
 
-            CreateNotGciDetailSheet(workbook, resultList, headerStyle, dataStyle);
+            CreateNotGciDetailSheet(
+                workbook,
+                resultList,
+                headerStyle,
+                dataStyle,
+                useUploadBagCountForUnreceivedDeclaredPiece);
             return workbook;
         }
 
@@ -236,7 +246,7 @@ namespace Service.Services.AirMainComparison
             }
 
             // 先定位表頭，之後才能依欄名讀取主號、袋號與收單註記。
-            var requiredHeaders = new[] { "袋號", "主號", "分艙單收單註記", "1分號多件之分號", "備註" };
+            var requiredHeaders = new[] { "袋號", "袋數", "主號", "分艙單收單註記", "1分號多件之分號", "備註" };
             var headerInfo = FindUploadHeader(sheet, requiredHeaders);
             var headerMap = headerInfo.Item2;
             var missingHeaders = requiredHeaders.Where(header => !headerMap.ContainsKey(header)).ToList();
@@ -255,6 +265,7 @@ namespace Service.Services.AirMainComparison
                 }
 
                 var bagNo = row.GetCellData(headerMap["袋號"]);
+                var bagCount = row.GetCellData(headerMap["袋數"]);
                 var mwb = row.GetCellData(headerMap["主號"]);
                 var receiptMark = row.GetCellData(headerMap["分艙單收單註記"]);
                 var oneHwbMultiPieceHwb = row.GetCellData(headerMap["1分號多件之分號"]);
@@ -272,6 +283,7 @@ namespace Service.Services.AirMainComparison
                 uploadRows.Add(new AirMainUploadExcelRow
                 {
                     BagNo = bagNo.Trim(),
+                    BagCount = (bagCount ?? "").Trim(),
                     Mwb = mwb.Trim(),
                     ReceiptMark = receiptMark.Trim(),
                     OneHwbMultiPieceHwb = (oneHwbMultiPieceHwb ?? "").Trim(),
@@ -977,7 +989,8 @@ namespace Service.Services.AirMainComparison
         /// </summary>
         private Dictionary<string, int> BuildTransNameCounts(
             IAirMainComparisonItem item,
-            IEnumerable<AirMainUploadExcelRow> unreceivedRows)
+            IEnumerable<AirMainUploadExcelRow> unreceivedRows,
+            bool useUploadBagCountForNoTransName)
         {
             var uploadRows = (unreceivedRows ?? Enumerable.Empty<AirMainUploadExcelRow>()).ToList();
             var transNames = (item.NotGciDetails ?? Enumerable.Empty<IAirMainDetailRow>())
@@ -989,22 +1002,60 @@ namespace Service.Services.AirMainComparison
 
             return transNames.ToDictionary(
                 transName => transName,
-                transName => GetNotGciTransNameCount(item, transName) +
-                    uploadRows.Count(row => !IsZzzaUploadRow(row) && IsSameTransName(row.TransName, transName)),
+                transName => GetNotGciTransNameCount(
+                    item,
+                    transName,
+                    useUploadBagCountForNoTransName) +
+                    GetUploadTransNameCount(
+                        uploadRows,
+                        transName,
+                        useUploadBagCountForNoTransName),
                 StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 計算上傳檔未收單資料的派件公司件數。
+        /// 無派件公司使用上傳明細的袋數；其他派件公司維持每筆一件。
+        /// </summary>
+        private int GetUploadTransNameCount(
+            IEnumerable<AirMainUploadExcelRow> uploadRows,
+            string transName,
+            bool useUploadBagCountForNoTransName)
+        {
+            var rows = (uploadRows ?? Enumerable.Empty<AirMainUploadExcelRow>())
+                .Where(row => !IsZzzaUploadRow(row) && IsSameTransName(row.TransName, transName))
+                .ToList();
+
+            if (!useUploadBagCountForNoTransName || !IsSameTransName(transName, NoTransName))
+            {
+                return rows.Count;
+            }
+
+            return rows.Sum(row => ParseCountOrOne(row.BagCount));
         }
 
         /// <summary>
         /// 計算未進倉明細中指定派件公司的申報件數。
         /// </summary>
-        private int GetNotGciTransNameCount(IAirMainComparisonItem item, string transName)
+        private int GetNotGciTransNameCount(
+            IAirMainComparisonItem item,
+            string transName,
+            bool useUploadBagCountForNoTransName)
         {
             // 派件公司欄位數量以明細頁「未進倉申報」為準；同報單號碼重複時只取第一筆。
             // 單筆申報大於 1 時，先扣除進倉件數，再進行派件公司加總。
             // 未收單沒有報單號碼，就使用分號「申報」= 1 計算。
-            return (item?.NotGciDetails ?? Enumerable.Empty<IAirMainDetailRow>())
+            var details = (item?.NotGciDetails ?? Enumerable.Empty<IAirMainDetailRow>())
                 .Where(row => string.IsNullOrEmpty(row.ZzzaRemark))
                 .Where(row => IsSameTransName(row.TransName, transName))
+                .ToList();
+
+            if (useUploadBagCountForNoTransName && IsSameTransName(transName, NoTransName))
+            {
+                return details.Sum(row => row.DeclaredPiece == 0 ? 1 : row.DeclaredPiece);
+            }
+
+            return details
                 .Select(row => new
                 {
                     Row = row,
@@ -1013,6 +1064,32 @@ namespace Service.Services.AirMainComparison
                 .GroupBy(value => value.Key, StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.First().Row)
                 .Sum(row => row.DeclaredPiece > 1 ? row.DeclaredPiece - row.GciPiece : row.DeclaredPiece);
+        }
+
+        /// <summary>
+        /// 將上傳檔袋數轉為件數；空白或非數字時以 1 計算。
+        /// </summary>
+        private int ParseCountOrOne(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return 1;
+            }
+
+            var normalizedValue = value.Trim().Replace(",", "");
+            int intValue;
+            if (int.TryParse(normalizedValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out intValue))
+            {
+                return intValue;
+            }
+
+            decimal decimalValue;
+            if (decimal.TryParse(normalizedValue, NumberStyles.Number, CultureInfo.InvariantCulture, out decimalValue))
+            {
+                return Convert.ToInt32(decimalValue);
+            }
+
+            return 1;
         }
 
         /// <summary>
@@ -1196,7 +1273,7 @@ namespace Service.Services.AirMainComparison
                 NpoiCell.CreateIntCell(row, column++, item.UnreceivedB6FCount, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.GTypeNoIdCount, numberStyle);
 
-                // 派件公司統計：未進倉明細用「申報」加總，未收單補列每筆算 1。
+                // 派件公司統計：未進倉明細用「申報」加總；無派件公司的未收單改用上傳檔袋數。
                 foreach (var transName in transNames)
                 {
                     int count;
@@ -1220,7 +1297,8 @@ namespace Service.Services.AirMainComparison
             IWorkbook workbook,
             IEnumerable<IAirMainComparisonItem> results,
             ICellStyle headerStyle,
-            ICellStyle dataStyle)
+            ICellStyle dataStyle,
+            bool useUploadBagCountForUnreceivedDeclaredPiece)
         {
             // ========== 第二個頁籤：未進倉明細 ==========
             var sheet = workbook.CreateSheet("未進倉明細");
@@ -1285,7 +1363,13 @@ namespace Service.Services.AirMainComparison
                     NpoiCell.CreateCell(row, 1, uploadRow.Mwb ?? "", dataStyle);
                     NpoiCell.CreateCell(row, 2, uploadRow.BagNo ?? "", dataStyle);
                     NpoiCell.CreateCell(row, 3, "未收單", dataStyle);
-                    CreateBlankCells(row, 4, 9, dataStyle);
+                    CreateBlankCells(row, 4, 4, dataStyle);
+                    NpoiCell.CreateIntCell(
+                        row,
+                        5,
+                        useUploadBagCountForUnreceivedDeclaredPiece ? uploadRow.BagCount ?? "" : "",
+                        dataStyle);
+                    CreateBlankCells(row, 6, 9, dataStyle);
                     NpoiCell.CreateCell(row, 10, uploadRow.OneHwbMultiPieceHwb ?? "", dataStyle);
                     NpoiCell.CreateCell(row, 11, errorReasons, dataStyle);
                     NpoiCell.CreateCell(row, 12, errorHawbs, dataStyle);

@@ -76,7 +76,8 @@ namespace Service.Services.Tact
                 _airMainComparisonService.ApplyComparison(
                     results.Cast<IAirMainComparisonItem>().ToList(),
                     uploadRows,
-                    excludeZzzaFromUnreceivedB6F: true);
+                    excludeZzzaFromUnreceivedB6F: true,
+                    useUploadBagCountForNoTransName: true);
 
                 return new ResponseModel(results);
             }
@@ -294,7 +295,8 @@ namespace Service.Services.Tact
             return _airMainComparisonService.CreateExportWorkbook(
                 "Tact主號查詢結果",
                 results,
-                uploadData);
+                uploadData,
+                useUploadBagCountForUnreceivedDeclaredPiece: true);
         }
 
         // 舊版「確認是否為 B6F」與「查詢客代」已依需求移除；

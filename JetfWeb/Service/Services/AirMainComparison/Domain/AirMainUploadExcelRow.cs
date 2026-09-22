@@ -26,6 +26,11 @@ namespace Service.Services.AirMainComparison.Domain
         public string BagNo { get; set; }
 
         /// <summary>
+        /// 上傳明細的袋數，未收單補列時作為申報件數。
+        /// </summary>
+        public string BagCount { get; set; }
+
+        /// <summary>
         /// 分艙單收單註記。
         /// </summary>
         public string ReceiptMark { get; set; }

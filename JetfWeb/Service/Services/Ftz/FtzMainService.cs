@@ -77,7 +77,8 @@ namespace Service.Services.Ftz
                 _airMainComparisonService.ApplyComparison(
                     results.Cast<IAirMainComparisonItem>().ToList(),
                     uploadRows,
-                    excludeZzzaFromUnreceivedB6F: true);
+                    excludeZzzaFromUnreceivedB6F: true,
+                    useUploadBagCountForNoTransName: true);
 
                 return new ResponseModel { ReturnObject = results };
             }
@@ -222,7 +223,8 @@ namespace Service.Services.Ftz
             return _airMainComparisonService.CreateExportWorkbook(
                 "Ftz主號查詢結果",
                 results,
-                uploadData);
+                uploadData,
+                useUploadBagCountForUnreceivedDeclaredPiece: true);
         }
 
     }
