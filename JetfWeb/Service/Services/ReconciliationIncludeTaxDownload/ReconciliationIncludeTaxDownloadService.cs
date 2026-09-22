@@ -430,7 +430,7 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
                     DlvInv = detail.DlvInv,
                     TaxPayer = detail.TaxPayer,
                     OriginalTaxPayer = detail.Recipient,
-                    Tax = detail.Tax,
+                    CustomerCod = detail.CustomerCod,
                     TaxBase = detail.TaxBase,
                     Ccfee = detail.Ccfee
                 }))
@@ -583,7 +583,7 @@ namespace Service.Services.ReconciliationIncludeTaxDownload
                 case ReconciliationIncludeTaxField.FeeMasterDetail_Recipient:
                     return row.OriginalTaxPayer ?? string.Empty;
                 case ReconciliationIncludeTaxField.FeeMasterDetail_Tax:
-                    return row.Tax;
+                    return row.CustomerCod;
                 case ReconciliationIncludeTaxField.FeeMasterDetail_TaxBase:
                     return row.TaxBase;
                 case ReconciliationIncludeTaxField.FeeMasterDetail_Ccfee:

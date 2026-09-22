@@ -73,9 +73,9 @@ namespace Service.Services.ReconciliationIncludeTaxDownload.Domain
         public string OriginalTaxPayer { get; set; }
 
         /// <summary>
-        /// 稅金。
+        /// 客戶代收金額，來源為 FEE_MASTER.CUSTOMER_COD。
         /// </summary>
-        public int? Tax { get; set; }
+        public int? CustomerCod { get; set; }
 
         /// <summary>
         /// 稅基。
