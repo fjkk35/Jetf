@@ -57,5 +57,12 @@ namespace Service.Data
         /// </summary>
         [Column("MODIFIED_TIME")]
         public DateTime ModifiedTime { get; set; }
+
+        /// <summary>
+        /// 金額修改備註。
+        /// </summary>
+        [StringLength(500)]
+        [Column("MEMO")]
+        public string Memo { get; set; }
     }
 }

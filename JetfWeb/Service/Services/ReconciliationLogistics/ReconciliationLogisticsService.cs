@@ -8,6 +8,7 @@ using Service.Models;
 using Service.Services.ReconciliationLogistics.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -209,7 +210,7 @@ namespace Service.Services.ReconciliationLogistics
                 }
 
                 ValidateFileDuplicates(uploadRows, company, uploadFormat);
-                using (var transaction = JetfDb.Database.BeginTransaction())
+                using (var transaction = JetfDb.Database.BeginTransaction(IsolationLevel.Serializable))
                 {
                     try
                     {
@@ -335,7 +336,7 @@ namespace Service.Services.ReconciliationLogistics
                     };
                 }
 
-                using (var transaction = JetfDb.Database.BeginTransaction())
+                using (var transaction = JetfDb.Database.BeginTransaction(IsolationLevel.Serializable))
                 {
                     try
                     {
@@ -2817,6 +2818,78 @@ namespace Service.Services.ReconciliationLogistics
                     }
                 }
 
+                // 現金件先將客戶應收轉為物流應收；整批更新與後續銷帳共用同一交易。
+                if (uploadFormat == ReconciliationLogisticsUploadFormat.Cash)
+                {
+                    var cashMasters = new List<FeeMasterEntity>();
+                    var cashDetails = new List<FeeMasterDetailEntity>();
+                    var cashModifyLogs = new List<FeeMasterDetailModifyLogEntity>();
+                    var modifiedTime = DateTime.Now;
+
+                    // 主檔客戶應收金額大於零時才需要轉換；有既有銷帳紀錄則略過該筆。
+                    foreach (var match in entityByFeeMasterId.ToList())
+                    {
+                        if (feeMasterById[match.Key].CustomerCod.GetValueOrDefault() <= 0)
+                        {
+                            continue;
+                        }
+
+                        if (!JetfDb.FeeMasterDetails.Any(detail =>
+                            detail.FeeMasterId == match.Key &&
+                            detail.CustomerCod > 0 &&
+                            (detail.ReceivedCustomerCod.HasValue ||
+                             detail.ReceivedToDlvCod.HasValue)))
+                        {
+                            continue;
+                        }
+
+                        resultByEntity[match.Value].Status =
+                            ReconciliationLogisticsResultStatus.CashReceivableAlreadyReconciled;
+                        entityByFeeMasterId.Remove(match.Key);
+                    }
+
+                    foreach (var detailGroup in feeMasterDetails.GroupBy(x => x.FeeMasterId))
+                    {
+                        if (!entityByFeeMasterId.ContainsKey(detailGroup.Key))
+                        {
+                            continue;
+                        }
+
+                        var feeMaster = feeMasterById[detailGroup.Key];
+                        if (feeMaster.CustomerCod.GetValueOrDefault() <= 0)
+                        {
+                            continue;
+                        }
+
+                        var details = detailGroup
+                            .Where(detail => detail.CustomerCod.GetValueOrDefault() > 0)
+                            .ToList();
+                        ConvertCashReceivable(
+                            feeMaster,
+                            details,
+                            cashModifyLogs,
+                            currentUserId,
+                            modifiedTime);
+                        cashMasters.Add(feeMaster);
+                        cashDetails.AddRange(details);
+                    }
+
+                    if (cashMasters.Any())
+                    {
+                        JetfDb.BulkUpdate(cashMasters);
+                    }
+
+                    if (cashDetails.Any())
+                    {
+                        JetfDb.BulkUpdate(cashDetails);
+                    }
+
+                    if (cashModifyLogs.Any())
+                    {
+                        JetfDb.BulkInsert(cashModifyLogs);
+                    }
+                }
+
                 // Step 5：依費用主檔分組計算應收金額，並將回款依序分配至各筆明細。
                 foreach (var detailGroup in feeMasterDetails.GroupBy(x => x.FeeMasterId))
                 {
@@ -3452,6 +3525,77 @@ namespace Service.Services.ReconciliationLogistics
                     feeMasterIds,
                     detail => detail.FeeMasterId,
                     feeMasterId => feeMasterId);
+        }
+
+        /// <summary>
+        /// 現金件將客戶應收金額轉入物流應收金額，並記錄明細金額異動。
+        /// </summary>
+        /// <param name="feeMaster">費用主檔。</param>
+        /// <param name="details">主檔下客戶應收金額大於零且尚未物流銷帳的明細。</param>
+        /// <param name="modifyLogs">本次產生的修改紀錄。</param>
+        /// <param name="userId">操作人員。</param>
+        /// <param name="modifiedTime">修改時間。</param>
+        private static void ConvertCashReceivable(
+            FeeMasterEntity feeMaster,
+            IList<FeeMasterDetailEntity> details,
+            ICollection<FeeMasterDetailModifyLogEntity> modifyLogs,
+            string userId,
+            DateTime modifiedTime)
+        {
+            var masterCustomerCod = feeMaster.CustomerCod.GetValueOrDefault();
+            feeMaster.IncludeTax = "D";
+            feeMaster.TransCod = feeMaster.TransCod.GetValueOrDefault() + masterCustomerCod;
+            feeMaster.ToDlvCod = (feeMaster.ToDlvCod.ToInt() + masterCustomerCod).ToString();
+            feeMaster.CustomerCod = 0;
+
+            foreach (var detail in details)
+            {
+                var oldCustomerCod = detail.CustomerCod.GetValueOrDefault();
+                var oldTransCod = detail.TransCod.GetValueOrDefault();
+                var oldToDlvCod = detail.ToDlvCod.ToInt();
+                var newTransCod = oldTransCod + oldCustomerCod;
+                var newToDlvCod = oldToDlvCod + oldCustomerCod;
+
+                AddCashModifyLogIfChanged(
+                    modifyLogs, detail.Id, "跟廠商收", oldCustomerCod, 0, userId, modifiedTime);
+                AddCashModifyLogIfChanged(
+                    modifyLogs, detail.Id, "跟派件收", oldTransCod, newTransCod, userId, modifiedTime);
+                AddCashModifyLogIfChanged(
+                    modifyLogs, detail.Id, "應向物流代收", oldToDlvCod, newToDlvCod, userId, modifiedTime);
+
+                detail.TransCod = newTransCod;
+                detail.ToDlvCod = newToDlvCod.ToString();
+                detail.CustomerCod = 0;
+            }
+        }
+
+        /// <summary>
+        /// 金額有異動時加入備註為現金的修改紀錄。
+        /// </summary>
+        private static void AddCashModifyLogIfChanged(
+            ICollection<FeeMasterDetailModifyLogEntity> modifyLogs,
+            int detailId,
+            string fieldName,
+            int oldValue,
+            int newValue,
+            string userId,
+            DateTime modifiedTime)
+        {
+            if (oldValue == newValue)
+            {
+                return;
+            }
+
+            modifyLogs.Add(new FeeMasterDetailModifyLogEntity
+            {
+                FeeMasterDetailId = detailId,
+                FieldName = fieldName,
+                OldValue = oldValue,
+                NewValue = newValue,
+                ModifiedUserId = userId,
+                ModifiedTime = modifiedTime,
+                Memo = "現金"
+            });
         }
 
         /// <summary>

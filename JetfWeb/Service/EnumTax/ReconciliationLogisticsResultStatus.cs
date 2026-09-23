@@ -41,6 +41,12 @@ namespace Service.EnumTax
         /// 物流貨號仍對應多筆費用資料。
         /// </summary>
         [Description("物流貨號重複")]
-        DlvInvDuplicate = 5
+        DlvInvDuplicate = 5,
+
+        /// <summary>
+        /// 現金件已有客戶或物流銷帳紀錄，不能轉換應收金額。
+        /// </summary>
+        [Description("已有客戶或物流銷帳紀錄")]
+        CashReceivableAlreadyReconciled = 6
     }
 }
