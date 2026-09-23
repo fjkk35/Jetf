@@ -104,6 +104,12 @@ namespace Service.Services.EtlClearanceDetails
                 Model = t["Model"].ToString(),
                 Specification = t["Specification"].ToString(),
                 DesignatedCode = t["DesignatedCode"].ToString(),
+                NccRemark = t["NccRemark"].ToString(),
+                ElementLabel = t["ElementLabel"].ToString(),
+                ElementModel = t["ElementModel"].ToString(),
+                FrequenctRange = t["FrequenctRange"].ToString(),
+                OutPut = t["OutPut"].ToString(),
+                NccUrl = t["NccUrl"].ToString(),
             }).ToList();
 
             // 預先處理 CoupangGoods 比對邏輯（只查詢一次）
@@ -592,6 +598,12 @@ namespace Service.Services.EtlClearanceDetails
             row.CreateCell(45).SetCellValue("MainHawbNo");
             row.CreateCell(46).SetCellValue("對應產地");
             row.CreateCell(47).SetCellValue("對應中文品名");
+            row.CreateCell(48).SetCellValue("是否NCC註記");
+            row.CreateCell(49).SetCellValue("品牌");
+            row.CreateCell(50).SetCellValue("型號");
+            row.CreateCell(51).SetCellValue("工作頻率");
+            row.CreateCell(52).SetCellValue("輸出功率");
+            row.CreateCell(53).SetCellValue("商品資訊的連結");
 
             sheet.SetColumnWidth(0, 4000);
             sheet.SetColumnWidth(1, 4000);
@@ -641,6 +653,12 @@ namespace Service.Services.EtlClearanceDetails
             sheet.SetColumnWidth(45, 5000);
             sheet.SetColumnWidth(46, 5000);
             sheet.SetColumnWidth(47, 5000);
+            sheet.SetColumnWidth(48, 5000);
+            sheet.SetColumnWidth(49, 5000);
+            sheet.SetColumnWidth(50, 5000);
+            sheet.SetColumnWidth(51, 5000);
+            sheet.SetColumnWidth(52, 5000);
+            sheet.SetColumnWidth(53, 10000);
 
             int irow = 1;
             foreach (var item in dt_Details)
@@ -696,6 +714,12 @@ namespace Service.Services.EtlClearanceDetails
                 // 直接使用預先處理好的比對結果
                 row.CreateCell(46).SetCellValue(item.MatchedCountry ?? "");
                 row.CreateCell(47).SetCellValue(item.MatchedProductName ?? "");
+                row.CreateCell(48).SetCellValue(item.NccRemark ?? "");
+                row.CreateCell(49).SetCellValue(item.ElementLabel ?? "");
+                row.CreateCell(50).SetCellValue(item.ElementModel ?? "");
+                row.CreateCell(51).SetCellValue(item.FrequenctRange ?? "");
+                row.CreateCell(52).SetCellValue(item.OutPut ?? "");
+                row.CreateCell(53).SetCellValue(item.NccUrl ?? "");
                 irow++;
             }
         }

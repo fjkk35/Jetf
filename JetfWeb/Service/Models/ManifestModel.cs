@@ -1,6 +1,9 @@
 ﻿namespace Service.Models
 {
-   public class ManifestModel
+    /// <summary>
+    /// 空快清關明細資料。
+    /// </summary>
+    public class ManifestModel
     {
         public string SendId { get; set; }
 
@@ -105,5 +108,35 @@
         /// 對應中文品名（用於 G 類資料 Excel 欄位 47）
         /// </summary>
         public string MatchedProductName { get; set; }
+
+        /// <summary>
+        /// 是否有 NCC 註記。
+        /// </summary>
+        public string NccRemark { get; set; }
+
+        /// <summary>
+        /// NCC 商品品牌。
+        /// </summary>
+        public string ElementLabel { get; set; }
+
+        /// <summary>
+        /// NCC 商品型號。
+        /// </summary>
+        public string ElementModel { get; set; }
+
+        /// <summary>
+        /// NCC 商品工作頻率。
+        /// </summary>
+        public string FrequenctRange { get; set; }
+
+        /// <summary>
+        /// NCC 商品輸出功率。
+        /// </summary>
+        public string OutPut { get; set; }
+
+        /// <summary>
+        /// NCC 商品資訊連結。
+        /// </summary>
+        public string NccUrl { get; set; }
     }
 }
