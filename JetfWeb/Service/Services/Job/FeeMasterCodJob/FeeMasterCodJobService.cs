@@ -36,7 +36,7 @@ namespace Service.Services.Job.FeeMasterCodJob
         /// 依系統時間查詢前 3 個完整日，每次只處理一天的空運及海運到付款資料。
         /// 空運已存在 CLEARANCE_TAX 的資料不會寫入。
         /// 海運僅在當日已有來源為 1 的 FEE_MASTER 時處理，且物流貨號已存在 FEE_MASTER 時不會寫入。
-        /// 空運主號與追蹤號、海運主號與分提單號已存在 FEE_MASTER_COD 時不會再次寫入。
+        /// 空運主號與追蹤號、海運主號與物流貨號已存在 FEE_MASTER_COD 時不會再次寫入。
         /// </summary>
         /// <returns>非同步排程工作。</returns>
         public async Task RunFeeMasterCodJobAsync()
@@ -240,7 +240,7 @@ WHERE c.DATA_TYPE IS NOT NULL
         }
 
         /// <summary>
-        /// 依主號與袋號去除海運重複資料，保留出倉時間最新的一筆。
+        /// 依主號與物流貨號去除海運重複資料，保留出倉時間最新的一筆。
         /// </summary>
         /// <param name="rows">海運來源資料。</param>
         /// <returns>去重後的海運資料。</returns>
@@ -249,7 +249,7 @@ WHERE c.DATA_TYPE IS NOT NULL
             return DeduplicateRows(
                 rows,
                 IsValidSeaRow,
-                x => BuildKey(x.MainNumber, x.BagNumber));
+                x => BuildKey(x.MainNumber, x.DlvInv));
         }
 
         /// <summary>
@@ -308,7 +308,7 @@ WHERE c.DATA_TYPE IS NOT NULL
         {
             var existingKeys = LoadExistingSeaKeys(rows);
             var entities = rows
-                .Where(x => !existingKeys.Contains(BuildKey(x.MainNumber, x.BagNumber)))
+                .Where(x => !existingKeys.Contains(BuildKey(x.MainNumber, x.DlvInv)))
                 .Select(CreateEntity)
                 .ToList();
 
@@ -365,7 +365,7 @@ WHERE c.DATA_TYPE IS NOT NULL
         }
 
         /// <summary>
-        /// 批次查詢目標表既有的海運主號與袋號。
+        /// 批次查詢目標表既有的海運主號與物流貨號。
         /// </summary>
         /// <param name="rows">待比對的海運資料。</param>
         /// <returns>既有海運防重鍵集合。</returns>
@@ -377,9 +377,9 @@ WHERE c.DATA_TYPE IS NOT NULL
                 .WhereBulkContains(
                     JetfDb,
                     rows,
-                    entity => new { entity.MainNumber, entity.BagNumber },
-                    row => new { row.MainNumber, row.BagNumber })
-                .Select(x => BuildKey(x.MainNumber, x.BagNumber))
+                    entity => new { entity.MainNumber, entity.DlvInv },
+                    row => new { row.MainNumber, row.DlvInv })
+                .Select(x => BuildKey(x.MainNumber, x.DlvInv))
                 .ToHashSet(StringComparer.Ordinal);
         }
 
@@ -480,6 +480,7 @@ WHERE c.DATA_TYPE IS NOT NULL
             return row != null
                 && !string.IsNullOrWhiteSpace(row.MainNumber)
                 && !string.IsNullOrWhiteSpace(row.BagNumber)
+                && !string.IsNullOrWhiteSpace(row.DlvInv)
                 && row.Cc > 0;
         }
 
