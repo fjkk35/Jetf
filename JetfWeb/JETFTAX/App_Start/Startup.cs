@@ -76,9 +76,13 @@ namespace JETFTAX.App_Start
                 Cron.Daily(1, 0),
                 timeZoneOptions);
 
-            RecurringJob.AddOrUpdate<IncomeJobService>("營收轉檔",
-                  service => service.InsertIncomeReport(), Cron.Daily(08, 30),
-                    timeZoneOptions);
+            RecurringJob.AddOrUpdate<IncomeJobService>("海運營收轉檔",
+                service => service.InsertIncomeReportSea(), Cron.Daily(08, 00),
+                timeZoneOptions);
+
+            RecurringJob.AddOrUpdate<IncomeJobService>("空快營收轉檔",
+                service => service.InsertIncomeReportAir(), Cron.Daily(08, 30),
+                timeZoneOptions);
 
             RecurringJob.AddOrUpdate<IncomeJobService>("營收報表",
                 service => service.RunIncomeJobAsync(),

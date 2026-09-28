@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using NLog;
 using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using NPOI.XSSF.UserModel;
@@ -8,6 +9,7 @@ using Spire.Xls;
 using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -18,6 +20,7 @@ namespace Service.Services.Job.IncomeJob
 {
     public class IncomeJobService : _BaseService
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private readonly TelegramBot _telegramBot;
 
         IFont fontB;
@@ -486,9 +489,6 @@ namespace Service.Services.Job.IncomeJob
         /// <param name="filePath"></param>
         void GetIncomeReportExcel(string sDate, string eDate, string filePath)
         {
-            //轉入資料
-            //InsertIncomeReport(sDate, eDate);
-
             IWorkbook workbook = new XSSFWorkbook();
             //日倉儲營收
             GetIncomeReportDaySheet(workbook, sDate, eDate);
@@ -1464,38 +1464,95 @@ namespace Service.Services.Job.IncomeJob
         }
 
         /// <summary>
-        /// 營收轉檔
+        /// 海運營收轉檔，重轉昨天起算的最近七個完整日。
         /// </summary>
-        public void InsertIncomeReport()
+        public void InsertIncomeReportSea()
         {
             try
             {
-                DateTime now = DateTime.Now;
-                string sDate = now.AddDays(-1).ToString("yyyyMM") + "01";
-                string eDate = now.AddDays(-1).ToString("yyyyMMdd");
-
-                int days = Convert.ToInt32((DateTime.ParseExact(eDate, "yyyyMMdd", null) - DateTime.ParseExact(sDate, "yyyyMMdd", null)).TotalDays) + 1;
-                DateTime date = DateTime.ParseExact(eDate, "yyyyMMdd", null);
+                DateTime lastCompleteDate = DateTime.Today.AddDays(-1);
                 conn.Open();
-                for (int i = 0; i < days; i++)
+                for (int dayOffset = 0; dayOffset < 7; dayOffset++)
                 {
-                    using (SqlCommand cmd = new SqlCommand("jetf.dbo.SP_Insert_Income_Report", conn))
+                    DateTime date = lastCompleteDate.AddDays(-dayOffset);
+                    using (SqlCommand cmd = new SqlCommand("jetf.dbo.SP_Insert_Income_Report_Sea", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.Clear();
-                        cmd.Parameters.Add("@DataDate", SqlDbType.NVarChar).Value = date.AddDays(-i).ToString("yyyyMMdd");
-                        cmd.Parameters.Add("@SDate_ETL", SqlDbType.DateTime).Value = $"{date.AddDays(-i).ToString("yyyy-MM-dd")} 09:00:00";
-                        cmd.Parameters.Add("@EDate_ETL", SqlDbType.DateTime).Value = $"{date.AddDays(-i + 1).ToString("yyyy-MM-dd")} 08:59:59";
-                        cmd.Parameters.Add("@SDate", SqlDbType.DateTime).Value = $"{date.AddDays(-i).ToString("yyyy-MM-dd")} 00:00:00";
-                        cmd.Parameters.Add("@EDate", SqlDbType.DateTime).Value = $"{date.AddDays(-i).ToString("yyyy-MM-dd")} 23:59:59";
+                        cmd.Parameters.Add("@DataDate", SqlDbType.NVarChar, 8).Value = date.ToString("yyyyMMdd");
+                        cmd.Parameters.Add("@StartDate", SqlDbType.Date).Value = date;
+                        cmd.Parameters.Add("@EndDate", SqlDbType.Date).Value = date.AddDays(1);
                         cmd.CommandTimeout = 600;
-                        cmd.ExecuteNonQuery();
+
+                        Stopwatch stopwatch = Stopwatch.StartNew();
+                        try
+                        {
+                            cmd.ExecuteNonQuery();
+                            stopwatch.Stop();
+                            Logger.Info($"海運營收轉檔完成，資料日期={date:yyyyMMdd}，耗時={stopwatch.Elapsed.TotalSeconds:F2} 秒");
+                        }
+                        catch (Exception ex)
+                        {
+                            stopwatch.Stop();
+                            Logger.Error(ex, $"海運營收轉檔失敗，資料日期={date:yyyyMMdd}，耗時={stopwatch.Elapsed.TotalSeconds:F2} 秒");
+                            throw;
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                WriteJobErrorLog("營收轉檔", ex);
+                WriteJobErrorLog("海運營收轉檔", ex);
+                throw;
+            }
+            finally
+            {
+                if (conn.State == ConnectionState.Open)
+                {
+                    conn.Close();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 空快營收轉檔，重轉昨天起算的最近七個完整日。
+        /// </summary>
+        public void InsertIncomeReportAir()
+        {
+            try
+            {
+                DateTime lastCompleteDate = DateTime.Today.AddDays(-1);
+                conn.Open();
+                for (int dayOffset = 0; dayOffset < 7; dayOffset++)
+                {
+                    DateTime date = lastCompleteDate.AddDays(-dayOffset);
+                    using (SqlCommand cmd = new SqlCommand("jetf.dbo.SP_Insert_Income_Report_Air", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.Add("@DataDate", SqlDbType.NVarChar, 8).Value = date.ToString("yyyyMMdd");
+                        cmd.Parameters.Add("@SDate_ETL", SqlDbType.DateTime).Value = date.AddHours(9);
+                        cmd.Parameters.Add("@EDate_ETL", SqlDbType.DateTime).Value = date.AddDays(1).AddHours(9).AddSeconds(-1);
+                        cmd.CommandTimeout = 600;
+
+                        Stopwatch stopwatch = Stopwatch.StartNew();
+                        try
+                        {
+                            cmd.ExecuteNonQuery();
+                            stopwatch.Stop();
+                            Logger.Info($"空快營收轉檔完成，資料日期={date:yyyyMMdd}，耗時={stopwatch.Elapsed.TotalSeconds:F2} 秒");
+                        }
+                        catch (Exception ex)
+                        {
+                            stopwatch.Stop();
+                            Logger.Error(ex, $"空快營收轉檔失敗，資料日期={date:yyyyMMdd}，耗時={stopwatch.Elapsed.TotalSeconds:F2} 秒");
+                            throw;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteJobErrorLog("空快營收轉檔", ex);
+                throw;
             }
             finally
             {

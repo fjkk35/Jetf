@@ -34,15 +34,25 @@ namespace Service.Services
                 conn.Open();
                 for (int i = 0; i < days; i++)
                 {
-                    using (SqlCommand cmd = new SqlCommand("jetf.dbo.SP_Insert_Income_Report", conn))
+                    DateTime currentDate = date.AddDays(i).Date;
+                    string dataDate = currentDate.ToString("yyyyMMdd");
+
+                    using (SqlCommand cmd = new SqlCommand("jetf.dbo.SP_Insert_Income_Report_Air", conn))
                     {
                         cmd.CommandType = CommandType.StoredProcedure;
-                        cmd.Parameters.Clear();
-                        cmd.Parameters.Add("@DataDate", SqlDbType.NVarChar).Value = date.AddDays(i).ToString("yyyyMMdd");
-                        cmd.Parameters.Add("@SDate_ETL", SqlDbType.DateTime).Value = $"{date.AddDays(i).ToString("yyyy-MM-dd")} 09:00:00";
-                        cmd.Parameters.Add("@EDate_ETL", SqlDbType.DateTime).Value = $"{date.AddDays(i + 1).ToString("yyyy-MM-dd")} 08:59:59";
-                        cmd.Parameters.Add("@SDate", SqlDbType.DateTime).Value = $"{date.AddDays(i).ToString("yyyy-MM-dd")} 00:00:00";
-                        cmd.Parameters.Add("@EDate", SqlDbType.DateTime).Value = $"{date.AddDays(i).ToString("yyyy-MM-dd")} 23:59:59";
+                        cmd.Parameters.Add("@DataDate", SqlDbType.NVarChar, 8).Value = dataDate;
+                        cmd.Parameters.Add("@SDate_ETL", SqlDbType.DateTime).Value = currentDate.AddHours(9);
+                        cmd.Parameters.Add("@EDate_ETL", SqlDbType.DateTime).Value = currentDate.AddDays(1).AddHours(9).AddSeconds(-1);
+                        cmd.CommandTimeout = 600;
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    using (SqlCommand cmd = new SqlCommand("jetf.dbo.SP_Insert_Income_Report_Sea", conn))
+                    {
+                        cmd.CommandType = CommandType.StoredProcedure;
+                        cmd.Parameters.Add("@DataDate", SqlDbType.NVarChar, 8).Value = dataDate;
+                        cmd.Parameters.Add("@StartDate", SqlDbType.Date).Value = currentDate;
+                        cmd.Parameters.Add("@EndDate", SqlDbType.Date).Value = currentDate.AddDays(1);
                         cmd.CommandTimeout = 600;
                         cmd.ExecuteNonQuery();
                     }
