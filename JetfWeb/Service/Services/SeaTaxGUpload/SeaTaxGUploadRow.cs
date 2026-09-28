@@ -81,9 +81,29 @@ namespace Service.Services.SeaTaxGUpload
         public string Recipient { get; set; }
 
         /// <summary>
-        /// 收件人欄位內容，寫入納稅義務人。
+        /// 納稅義務人。
         /// </summary>
         public string TaxPayer { get; set; }
+
+        /// <summary>
+        /// 三聯稅單金額。
+        /// </summary>
+        public int ThreePartTax { get; set; }
+
+        /// <summary>
+        /// 四聯稅單金額。
+        /// </summary>
+        public int FourPartTax { get; set; }
+
+        /// <summary>
+        /// 原物流貨號。
+        /// </summary>
+        public string OriginalDlvInv { get; set; }
+
+        /// <summary>
+        /// 電話。
+        /// </summary>
+        public string Phone { get; set; }
 
     }
 }

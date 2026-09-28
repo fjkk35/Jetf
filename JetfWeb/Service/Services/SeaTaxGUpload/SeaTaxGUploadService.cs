@@ -172,11 +172,22 @@ namespace Service.Services.SeaTaxGUpload
             int rowNumber,
             IDictionary<string, int> columnIndexes)
         {
-            int taxPayerColumnIndex;
-            var taxPayer = columnIndexes.TryGetValue(
-                "收件人",
-                out taxPayerColumnIndex)
-                ? excelRow.GetCellData(taxPayerColumnIndex)
+            int columnIndex;
+            var taxPayer = columnIndexes.TryGetValue("納稅義務人", out columnIndex)
+                ? excelRow.GetCellData(columnIndex)
+                : string.Empty;
+
+            var threePartTax = columnIndexes.TryGetValue("三聯稅單", out columnIndex)
+                ? excelRow.GetCellData(columnIndex)
+                : string.Empty;
+            var fourPartTax = columnIndexes.TryGetValue("四聯稅單", out columnIndex)
+                ? excelRow.GetCellData(columnIndex)
+                : string.Empty;
+            var originalDlvInv = columnIndexes.TryGetValue("原物流貨號", out columnIndex)
+                ? excelRow.GetCellData(columnIndex)
+                : string.Empty;
+            var phone = columnIndexes.TryGetValue("電話", out columnIndex)
+                ? excelRow.GetCellData(columnIndex)
                 : string.Empty;
 
             var uploadRow = new SeaTaxGUploadRow
@@ -192,7 +203,11 @@ namespace Service.Services.SeaTaxGUpload
                 IncludeTax = excelRow.GetCellData(columnIndexes["稅金類別"]),
                 Recipient = excelRow.GetCellData(columnIndexes["客戶名"]),
                 TaxPayer = taxPayer,
-                CustomerName = excelRow.GetCellData(columnIndexes["客戶"])
+                CustomerName = excelRow.GetCellData(columnIndexes["客戶"]),
+                ThreePartTax = ParseAmount(threePartTax, rowNumber, "三聯稅單"),
+                FourPartTax = ParseAmount(fourPartTax, rowNumber, "四聯稅單"),
+                OriginalDlvInv = originalDlvInv,
+                Phone = phone
             };
 
             if (uploadRow.IncludeTax == "C")
@@ -270,7 +285,6 @@ namespace Service.Services.SeaTaxGUpload
                    string.IsNullOrWhiteSpace(row.DlvInv) &&
                    string.IsNullOrWhiteSpace(row.IncludeTax) &&
                    string.IsNullOrWhiteSpace(row.Recipient) &&
-                   string.IsNullOrWhiteSpace(row.TaxPayer) &&
                    string.IsNullOrWhiteSpace(row.CustomerName) &&
                    row.Tax == 0 &&
                    row.ClearanceFee == 0 &&
@@ -417,6 +431,8 @@ namespace Service.Services.SeaTaxGUpload
                 .Append("select * from [jetf].[dbo].[FEE_MASTER] where SOURCE_TYPE='2' and DLV_INV=@DLV_INV ")
                 .Append("if @@ROWCOUNT>0 ")
                 .Append("begin ")
+                .Append("insert jetf.dbo.FEE_MASTER_LOG([ID], [DATADATE], [SOURCE], [SOURCE_TYPE], [TYPE], [CUSTOMER], [MAIN_NUMBER], [TRACKINGNO], [CLEARANCE_NUMBER], [BAG_NUMBER], [TAX_NUMBER], [DLV_INV], [IN_DATE], [IN_DATETIME], [OUT_DATETIME], [COMBINE], [TAX_BASE], [TAX1], [TAX2], [CCFEE], [COD], [FEE], [INCLUDE_TAX], [RECIPIENT], [RECPHONE], [RECADDRESS], [RECID], [TO_DLV_COD], [DLV_COM], [DLV_COM_STN], [DLV_COD], [DLV_COD_CODE], [DLV_COD_TIME], [DLV_COD_OPE], [DLV_REMIT_DATE], [DLV_REMIT_AMOUT], [DLV_REMIT_AMOUT_FEE], [DLV_REMIT_CODE], [DLV_REMIT_TIME], [DLV_REMIT_OPE], [UPDATEDATE], [MODIFTYDATE], [Download], [RECORD_FEE_MASTER], [TAX_PAYER], [INS_TIME],[ARRIVAL],[CUSTOMER_COD],[TRANS_COD], [THREE_PART_TAX], [FOUR_PART_TAX], [ORIGINAL_DLV_INV]) ")
+                .Append("select [ID], [DATADATE], [SOURCE], [SOURCE_TYPE], [TYPE], [CUSTOMER], [MAIN_NUMBER], [TRACKINGNO], [CLEARANCE_NUMBER], [BAG_NUMBER], [TAX_NUMBER], [DLV_INV], [IN_DATE], [IN_DATETIME], [OUT_DATETIME], [COMBINE], [TAX_BASE], [TAX1], [TAX2], [CCFEE], [COD], [FEE], [INCLUDE_TAX], [RECIPIENT], [RECPHONE], [RECADDRESS], [RECID], [TO_DLV_COD], [DLV_COM], [DLV_COM_STN], [DLV_COD], [DLV_COD_CODE], [DLV_COD_TIME], [DLV_COD_OPE], [DLV_REMIT_DATE], [DLV_REMIT_AMOUT], [DLV_REMIT_AMOUT_FEE], [DLV_REMIT_CODE], [DLV_REMIT_TIME], [DLV_REMIT_OPE], [UPDATEDATE], [MODIFTYDATE], [Download], [RECORD_FEE_MASTER], [TAX_PAYER],getdate() as [INS_TIME],[ARRIVAL],[CUSTOMER_COD],[TRANS_COD], [THREE_PART_TAX], [FOUR_PART_TAX], [ORIGINAL_DLV_INV] from jetf.dbo.FEE_MASTER where SOURCE_TYPE='2' and DLV_INV=@DLV_INV ")
                 .Append("    delete detail from [jetf].[dbo].[FEE_MASTER_DETAIL] detail ")
                 .Append("    inner join [jetf].[dbo].[FEE_MASTER] master on master.ID=detail.FEE_MASTER_ID ")
                 .Append("    where master.SOURCE_TYPE='2' and master.DLV_INV=@DLV_INV ")
@@ -426,19 +442,24 @@ namespace Service.Services.SeaTaxGUpload
                 .Append("from [jetf].[dbo].[FEE_MASTER] where SOURCE_TYPE='1' and DLV_INV=@DLV_INV ")
                 .Append("if @@ROWCOUNT>0 ")
                 .Append("begin ")
-                .Append("    insert FEE_MASTER_MODIFY_G([MODIFY_DATADATE], [ID], [DATADATE], [SOURCE], [SOURCE_TYPE], [TYPE], [CUSTOMER], [MAIN_NUMBER], [TRACKINGNO], [CLEARANCE_NUMBER], [BAG_NUMBER], [TAX_NUMBER], [DLV_INV], [IN_DATE], [IN_DATETIME], [OUT_DATETIME], [COMBINE], [TAX_BASE], [TAX1], [TAX2], [CCFEE], [COD], [FEE], [INCLUDE_TAX], [RECIPIENT], [RECPHONE], [RECADDRESS], [RECID], [TO_DLV_COD], [DLV_COM], [DLV_COM_STN], [DLV_COD], [DLV_COD_CODE], [DLV_COD_TIME], [DLV_COD_OPE], [DLV_REMIT_DATE], [DLV_REMIT_AMOUT], [DLV_REMIT_AMOUT_FEE], [DLV_REMIT_CODE], [DLV_REMIT_TIME], [DLV_REMIT_OPE], [UPDATEDATE], [MODIFTYDATE], [Download], [RECORD_FEE_MASTER], [TAX_PAYER], [MEMO], [INS_TIME], [ARRIVAL], [CUSTOMER_COD], [TRANS_COD]) ")
-                .Append("    select @MODIFY_DATADATE, [ID], [DATADATE], [SOURCE], [SOURCE_TYPE], [TYPE], [CUSTOMER], [MAIN_NUMBER], [TRACKINGNO], [CLEARANCE_NUMBER], [BAG_NUMBER], [TAX_NUMBER], [DLV_INV], [IN_DATE], [IN_DATETIME], [OUT_DATETIME], [COMBINE], [TAX_BASE], [TAX1], [TAX2], [CCFEE], [COD], [FEE], [INCLUDE_TAX], [RECIPIENT], [RECPHONE], [RECADDRESS], [RECID], [TO_DLV_COD], [DLV_COM], [DLV_COM_STN], [DLV_COD], [DLV_COD_CODE], [DLV_COD_TIME], [DLV_COD_OPE], [DLV_REMIT_DATE], [DLV_REMIT_AMOUT], [DLV_REMIT_AMOUT_FEE], [DLV_REMIT_CODE], [DLV_REMIT_TIME], [DLV_REMIT_OPE], [UPDATEDATE], [MODIFTYDATE], [Download], [RECORD_FEE_MASTER], [TAX_PAYER], '刪除', getdate(), [ARRIVAL], [CUSTOMER_COD], [TRANS_COD] ")
+                .Append("    insert FEE_MASTER_MODIFY_G([MODIFY_DATADATE], [ID], [DATADATE], [SOURCE], [SOURCE_TYPE], [TYPE], [CUSTOMER], [MAIN_NUMBER], [TRACKINGNO], [CLEARANCE_NUMBER], [BAG_NUMBER], [TAX_NUMBER], [DLV_INV], [IN_DATE], [IN_DATETIME], [OUT_DATETIME], [COMBINE], [TAX_BASE], [TAX1], [TAX2], [CCFEE], [COD], [FEE], [INCLUDE_TAX], [RECIPIENT], [RECPHONE], [RECADDRESS], [RECID], [TO_DLV_COD], [DLV_COM], [DLV_COM_STN], [DLV_COD], [DLV_COD_CODE], [DLV_COD_TIME], [DLV_COD_OPE], [DLV_REMIT_DATE], [DLV_REMIT_AMOUT], [DLV_REMIT_AMOUT_FEE], [DLV_REMIT_CODE], [DLV_REMIT_TIME], [DLV_REMIT_OPE], [UPDATEDATE], [MODIFTYDATE], [Download], [RECORD_FEE_MASTER], [TAX_PAYER], [MEMO], [INS_TIME], [ARRIVAL], [CUSTOMER_COD], [TRANS_COD], [THREE_PART_TAX], [FOUR_PART_TAX], [ORIGINAL_DLV_INV]) ")
+                .Append("    select @MODIFY_DATADATE, [ID], [DATADATE], [SOURCE], [SOURCE_TYPE], [TYPE], [CUSTOMER], [MAIN_NUMBER], [TRACKINGNO], [CLEARANCE_NUMBER], [BAG_NUMBER], [TAX_NUMBER], [DLV_INV], [IN_DATE], [IN_DATETIME], [OUT_DATETIME], [COMBINE], [TAX_BASE], [TAX1], [TAX2], [CCFEE], [COD], [FEE], [INCLUDE_TAX], [RECIPIENT], [RECPHONE], [RECADDRESS], [RECID], [TO_DLV_COD], [DLV_COM], [DLV_COM_STN], [DLV_COD], [DLV_COD_CODE], [DLV_COD_TIME], [DLV_COD_OPE], [DLV_REMIT_DATE], [DLV_REMIT_AMOUT], [DLV_REMIT_AMOUT_FEE], [DLV_REMIT_CODE], [DLV_REMIT_TIME], [DLV_REMIT_OPE], [UPDATEDATE], [MODIFTYDATE], [Download], [RECORD_FEE_MASTER], [TAX_PAYER], '刪除', getdate(), [ARRIVAL], [CUSTOMER_COD], [TRANS_COD], [THREE_PART_TAX], [FOUR_PART_TAX], [ORIGINAL_DLV_INV] ")
                 .Append("    from jetf.dbo.FEE_MASTER where SOURCE_TYPE='1' and DLV_INV=@DLV_INV ")
                 .Append("    update [jetf].[dbo].[FEE_MASTER] set Download='0' where SOURCE_TYPE='1' and DLV_INV=@DLV_INV ")
                 .Append("end ")
-                .Append("insert [jetf].[dbo].[FEE_MASTER](DATADATE, SOURCE, SOURCE_TYPE, CUSTOMER, TRACKINGNO, TYPE, DLV_INV, OUT_DATETIME, TAX1, FEE, CCFEE, COD, INCLUDE_TAX, TO_DLV_COD, RECIPIENT, TAX_PAYER, TRANS_COD, CUSTOMER_COD) ")
-                .Append("values(@DATADATE, @SOURCE, @SOURCE_TYPE, @CUSTOMER, @TRACKINGNO, @TYPE, @DLV_INV, @OUT_DATETIME, @TAX1, @FEE, @CCFEE, @COD, @INCLUDE_TAX, @TO_DLV_COD, @RECIPIENT, @TAX_PAYER, @TRANS_COD, @CUSTOMER_COD) ")
+                .Append("if @ORIGINAL_DLV_INV<>'' ")
+                .Append("begin ")
+                .Append("    update [jetf].[dbo].[FEE_MASTER] set [Download]='0' ")
+                .Append("    where DATADATE=@DATADATE and DLV_INV=@ORIGINAL_DLV_INV and SOURCE_TYPE='1' ")
+                .Append("end ")
+                .Append("insert [jetf].[dbo].[FEE_MASTER](DATADATE, SOURCE, SOURCE_TYPE, CUSTOMER, TRACKINGNO, TYPE, DLV_INV, OUT_DATETIME, TAX1, FEE, CCFEE, COD, INCLUDE_TAX, TO_DLV_COD, RECIPIENT, TAX_PAYER, RECPHONE, TRANS_COD, CUSTOMER_COD, THREE_PART_TAX, FOUR_PART_TAX, ORIGINAL_DLV_INV) ")
+                .Append("values(@DATADATE, @SOURCE, @SOURCE_TYPE, @CUSTOMER, @TRACKINGNO, @TYPE, @DLV_INV, @OUT_DATETIME, @TAX1, @FEE, @CCFEE, @COD, @INCLUDE_TAX, @TO_DLV_COD, @RECIPIENT, @TAX_PAYER, @RECPHONE, @TRANS_COD, @CUSTOMER_COD, @THREE_PART_TAX, @FOUR_PART_TAX, @ORIGINAL_DLV_INV) ")
                 .Append("declare @FeeMasterId int=cast(scope_identity() as int) ")
-                .Append("insert [jetf].[dbo].[FEE_MASTER_DETAIL](FEE_MASTER_ID, MAIN_NUMBER, TRACKINGNO, CLEARANCE_NUMBER, BAG_NUMBER, TAX_NUMBER, TAX_PAYER, TAX_RECID, DLV_INV, TAX_BASE, TAX, CCFEE, COD, FEE, RECIPIENT, RECPHONE, RECADDRESS, TO_DLV_COD, TRANS_COD, CUSTOMER_COD) ")
-                .Append("select ID, MAIN_NUMBER, TRACKINGNO, CLEARANCE_NUMBER, BAG_NUMBER, TAX_NUMBER, TAX_PAYER, TAX_RECID, DLV_INV, TAX_BASE, TAX1, CCFEE, COD, FEE, RECIPIENT, RECPHONE, RECADDRESS, TO_DLV_COD, TRANS_COD, CUSTOMER_COD ")
+                .Append("insert [jetf].[dbo].[FEE_MASTER_DETAIL](FEE_MASTER_ID, MAIN_NUMBER, TRACKINGNO, CLEARANCE_NUMBER, BAG_NUMBER, TAX_NUMBER, TAX_PAYER, TAX_RECID, DLV_INV, TAX_BASE, TAX, CCFEE, COD, FEE, RECIPIENT, RECPHONE, RECADDRESS, TO_DLV_COD, TRANS_COD, CUSTOMER_COD, THREE_PART_TAX, FOUR_PART_TAX, ORIGINAL_DLV_INV) ")
+                .Append("select ID, MAIN_NUMBER, TRACKINGNO, CLEARANCE_NUMBER, BAG_NUMBER, TAX_NUMBER, TAX_PAYER, TAX_RECID, DLV_INV, TAX_BASE, TAX1, CCFEE, COD, FEE, RECIPIENT, RECPHONE, RECADDRESS, TO_DLV_COD, TRANS_COD, CUSTOMER_COD, THREE_PART_TAX, FOUR_PART_TAX, ORIGINAL_DLV_INV ")
                 .Append("from [jetf].[dbo].[FEE_MASTER] where ID=@FeeMasterId ")
-                .Append("insert FEE_MASTER_MODIFY_G([MODIFY_DATADATE], [ID], [DATADATE], [SOURCE], [SOURCE_TYPE], [TYPE], [CUSTOMER], [MAIN_NUMBER], [TRACKINGNO], [CLEARANCE_NUMBER], [BAG_NUMBER], [TAX_NUMBER], [DLV_INV], [IN_DATE], [IN_DATETIME], [OUT_DATETIME], [COMBINE], [TAX_BASE], [TAX1], [TAX2], [CCFEE], [COD], [FEE], [INCLUDE_TAX], [RECIPIENT], [RECPHONE], [RECADDRESS], [RECID], [TO_DLV_COD], [DLV_COM], [DLV_COM_STN], [DLV_COD], [DLV_COD_CODE], [DLV_COD_TIME], [DLV_COD_OPE], [DLV_REMIT_DATE], [DLV_REMIT_AMOUT], [DLV_REMIT_AMOUT_FEE], [DLV_REMIT_CODE], [DLV_REMIT_TIME], [DLV_REMIT_OPE], [UPDATEDATE], [MODIFTYDATE], [Download], [RECORD_FEE_MASTER], [TAX_PAYER], [MEMO], [INS_TIME], [ARRIVAL], [CUSTOMER_COD], [TRANS_COD]) ")
-                .Append("select @MODIFY_DATADATE, [ID], [DATADATE], [SOURCE], [SOURCE_TYPE], [TYPE], [CUSTOMER], [MAIN_NUMBER], [TRACKINGNO], [CLEARANCE_NUMBER], [BAG_NUMBER], [TAX_NUMBER], [DLV_INV], [IN_DATE], [IN_DATETIME], [OUT_DATETIME], [COMBINE], [TAX_BASE], [TAX1], [TAX2], [CCFEE], [COD], [FEE], [INCLUDE_TAX], [RECIPIENT], [RECPHONE], [RECADDRESS], [RECID], [TO_DLV_COD], [DLV_COM], [DLV_COM_STN], [DLV_COD], [DLV_COD_CODE], [DLV_COD_TIME], [DLV_COD_OPE], [DLV_REMIT_DATE], [DLV_REMIT_AMOUT], [DLV_REMIT_AMOUT_FEE], [DLV_REMIT_CODE], [DLV_REMIT_TIME], [DLV_REMIT_OPE], [UPDATEDATE], [MODIFTYDATE], [Download], [RECORD_FEE_MASTER], [TAX_PAYER], '新增', getdate(), [ARRIVAL], [CUSTOMER_COD], [TRANS_COD] ")
+                .Append("insert FEE_MASTER_MODIFY_G([MODIFY_DATADATE], [ID], [DATADATE], [SOURCE], [SOURCE_TYPE], [TYPE], [CUSTOMER], [MAIN_NUMBER], [TRACKINGNO], [CLEARANCE_NUMBER], [BAG_NUMBER], [TAX_NUMBER], [DLV_INV], [IN_DATE], [IN_DATETIME], [OUT_DATETIME], [COMBINE], [TAX_BASE], [TAX1], [TAX2], [CCFEE], [COD], [FEE], [INCLUDE_TAX], [RECIPIENT], [RECPHONE], [RECADDRESS], [RECID], [TO_DLV_COD], [DLV_COM], [DLV_COM_STN], [DLV_COD], [DLV_COD_CODE], [DLV_COD_TIME], [DLV_COD_OPE], [DLV_REMIT_DATE], [DLV_REMIT_AMOUT], [DLV_REMIT_AMOUT_FEE], [DLV_REMIT_CODE], [DLV_REMIT_TIME], [DLV_REMIT_OPE], [UPDATEDATE], [MODIFTYDATE], [Download], [RECORD_FEE_MASTER], [TAX_PAYER], [MEMO], [INS_TIME], [ARRIVAL], [CUSTOMER_COD], [TRANS_COD], [THREE_PART_TAX], [FOUR_PART_TAX], [ORIGINAL_DLV_INV]) ")
+                .Append("select @MODIFY_DATADATE, [ID], [DATADATE], [SOURCE], [SOURCE_TYPE], [TYPE], [CUSTOMER], [MAIN_NUMBER], [TRACKINGNO], [CLEARANCE_NUMBER], [BAG_NUMBER], [TAX_NUMBER], [DLV_INV], [IN_DATE], [IN_DATETIME], [OUT_DATETIME], [COMBINE], [TAX_BASE], [TAX1], [TAX2], [CCFEE], [COD], [FEE], [INCLUDE_TAX], [RECIPIENT], [RECPHONE], [RECADDRESS], [RECID], [TO_DLV_COD], [DLV_COM], [DLV_COM_STN], [DLV_COD], [DLV_COD_CODE], [DLV_COD_TIME], [DLV_COD_OPE], [DLV_REMIT_DATE], [DLV_REMIT_AMOUT], [DLV_REMIT_AMOUT_FEE], [DLV_REMIT_CODE], [DLV_REMIT_TIME], [DLV_REMIT_OPE], [UPDATEDATE], [MODIFTYDATE], [Download], [RECORD_FEE_MASTER], [TAX_PAYER], '新增', getdate(), [ARRIVAL], [CUSTOMER_COD], [TRANS_COD], [THREE_PART_TAX], [FOUR_PART_TAX], [ORIGINAL_DLV_INV] ")
                 .Append("from jetf.dbo.FEE_MASTER where SOURCE_TYPE='2' and DLV_INV=@DLV_INV ")
                 .ToString();
 
@@ -484,6 +505,10 @@ namespace Service.Services.SeaTaxGUpload
                                 command.Parameters.Add("@TO_DLV_COD", SqlDbType.NVarChar).Value = row.ToDlvCod.ToString(CultureInfo.InvariantCulture);
                                 command.Parameters.Add("@RECIPIENT", SqlDbType.NVarChar).Value = row.Recipient;
                                 command.Parameters.Add("@TAX_PAYER", SqlDbType.NVarChar).Value = row.TaxPayer;
+                                command.Parameters.Add("@RECPHONE", SqlDbType.NVarChar).Value = row.Phone;
+                                command.Parameters.Add("@THREE_PART_TAX", SqlDbType.Int).Value = row.ThreePartTax;
+                                command.Parameters.Add("@FOUR_PART_TAX", SqlDbType.Int).Value = row.FourPartTax;
+                                command.Parameters.Add("@ORIGINAL_DLV_INV", SqlDbType.NVarChar).Value = row.OriginalDlvInv;
                                 command.Parameters.Add("@TRANS_COD", SqlDbType.Int).Value = row.TransCod;
                                 command.Parameters.Add("@CUSTOMER_COD", SqlDbType.Int).Value =
                                     row.CustomerCod.HasValue

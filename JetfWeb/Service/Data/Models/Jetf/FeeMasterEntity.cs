@@ -85,6 +85,13 @@ namespace Service.Data
         public string DlvInv { get; set; }
 
         /// <summary>
+        /// 原物流貨號。
+        /// </summary>
+        [StringLength(100)]
+        [Column("ORIGINAL_DLV_INV")]
+        public string OriginalDlvInv { get; set; }
+
+        /// <summary>
         /// 出庫單號。
         /// </summary>
         [StringLength(50)]
@@ -132,6 +139,18 @@ namespace Service.Data
         /// </summary>
         [Column("TAX2")]
         public int? Tax2 { get; set; }
+
+        /// <summary>
+        /// 三聯稅單金額。
+        /// </summary>
+        [Column("THREE_PART_TAX")]
+        public int? ThreePartTax { get; set; }
+
+        /// <summary>
+        /// 四聯稅單金額。
+        /// </summary>
+        [Column("FOUR_PART_TAX")]
+        public int? FourPartTax { get; set; }
 
         /// <summary>
         /// 報關費。
