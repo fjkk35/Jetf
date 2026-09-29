@@ -283,24 +283,24 @@ namespace Service.Services.DownloadEtlNew
                 var latestRow = orderedRows[0];
                 var draft = CreateFeeMasterDraft(latestRow, orderedRows);
 
-                // step4: 指定客戶及納稅義務人清單固定優先套用 D 類規則，未命中再判斷萬事達規則。
+                // step4: 指定客戶及收件人清單固定優先套用 D 類規則，未命中再判斷萬事達規則。
                 // 00078 - 禎濠
                 // 00019 - 廣東捷利
                 // 00022 - 萬事達
                 var specialCustomerCodes = new[] { "00078", "00019", "00022" };
                 var isSpecialCustomer = specialCustomerCodes.Contains(draft.Customer);
 
-                // 指定客戶且納稅義務人完全符合指定名單時，優先套用 D 類規則。
-                if (isSpecialCustomer && ContainsSpecifiedTaxPayer(orderedRows))
+                // 指定客戶且收件人完全符合指定名單時，優先套用 D 類規則。
+                if (isSpecialCustomer && ContainsSpecifiedRecipient(orderedRows))
                 {
-                    ApplySpecifiedTaxPayerRule(draft, orderedRows);
+                    ApplySpecifiedRecipientRule(draft, orderedRows);
                 }
-                // 未符合指定名單，但納稅義務人包含萬事達識別文字時，套用萬事達稅金規則。
-                else if (isSpecialCustomer && ContainsMastercardTaxPayer(orderedRows))
+                // 未符合指定名單，但收件人包含萬事達識別文字時，套用萬事達稅金規則。
+                else if (isSpecialCustomer && ContainsMastercardRecipient(orderedRows))
                 {
                     ApplyMastercardTaxRule(draft, orderedRows);
                 }
-                // 非指定客戶或未符合特殊納稅義務人條件時，維持原有稅金流程。
+                // 非指定客戶或未符合特殊收件人條件時，維持原有稅金流程。
                 else
                 {
                     ApplyTaxRule(draft, latestRow, specialPhones);
@@ -1278,7 +1278,7 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 套用萬事達納稅義務人的主檔與明細特殊規則。
+        /// 套用萬事達收件人的主檔與明細特殊規則。
         /// </summary>
         /// <param name="draft">待計算的 fee master 草稿。</param>
         /// <param name="sourceRows">同一 tracking 的來源資料。</param>
@@ -1318,13 +1318,13 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 將指定納稅義務人的主檔與明細固定套用 D 類規則。
+        /// 將指定收件人的主檔與明細固定套用 D 類規則。
         /// </summary>
         /// <param name="draft">待計算的 fee master 草稿。</param>
         /// <param name="sourceRows">同一 tracking 的來源資料。</param>
-        private static void ApplySpecifiedTaxPayerRule(FeeMasterDraft draft, List<CombinedRow> sourceRows)
+        private static void ApplySpecifiedRecipientRule(FeeMasterDraft draft, List<CombinedRow> sourceRows)
         {
-            // 指定納稅義務人固定使用客戶代號 00022、套用 D 類，且不收取手續費。
+            // 指定收件人固定使用客戶代號 00022、套用 D 類，且不收取手續費。
             draft.Customer = "00022";
             draft.Fee = 0;
             draft.IncludeTax = "D";
@@ -1522,13 +1522,13 @@ namespace Service.Services.DownloadEtlNew
         }
 
         /// <summary>
-        /// 判斷納稅義務人是否符合優先套用 D 類的特殊規則。
+        /// 判斷收件人是否符合優先套用 D 類的特殊規則。
         /// </summary>
         /// <param name="sourceRows">同一 tracking 的來源資料。</param>
         /// <returns>是否優先套用 D 類特殊規則。</returns>
-        private static bool ContainsSpecifiedTaxPayer(IEnumerable<CombinedRow> sourceRows)
+        private static bool ContainsSpecifiedRecipient(IEnumerable<CombinedRow> sourceRows)
         {
-            var taxPayers = new[]
+            var recipients = new[]
             {
                 "康健生醫科技股份有限公司（万事达）",
                 "加高電子股份有限公司",
@@ -1538,17 +1538,17 @@ namespace Service.Services.DownloadEtlNew
                 "翰緯國際股份有限公司（万事达）"
             };
 
-            return sourceRows.Any(row => taxPayers.Contains(row.TaxPayer));
+            return sourceRows.Any(row => recipients.Contains(row.Recipient));
         }
 
         /// <summary>
-        /// 判斷納稅義務人是否包含萬事達識別文字。
+        /// 判斷收件人是否包含萬事達識別文字。
         /// </summary>
         /// <param name="sourceRows">同一 tracking 的來源資料。</param>
-        /// <returns>是否包含萬事達納稅義務人。</returns>
-        private static bool ContainsMastercardTaxPayer(IEnumerable<CombinedRow> sourceRows)
+        /// <returns>是否包含萬事達收件人。</returns>
+        private static bool ContainsMastercardRecipient(IEnumerable<CombinedRow> sourceRows)
         {
-            return sourceRows.Any(row => row.TaxPayer?.Contains("(万事达)") == true);
+            return sourceRows.Any(row => row.Recipient?.Contains("（万事达）") == true);
         }
 
         /// <summary>
