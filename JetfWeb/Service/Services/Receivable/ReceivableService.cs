@@ -275,11 +275,14 @@ namespace Service.Services.Receivable
                 Fee = x.Fee ?? 0,
                 CustomerCod = x.CustomerCod ?? 0,
                 TransCod = x.TransCod ?? 0,
+                ThreePartTax = x.ThreePartTax,
+                FourPartTax = x.FourPartTax,
                 JetfPayment = x.JetfPayment ?? 0,
                 ToDlvCod = x.ToDlvCod,
                 ReceivedCustomerCod = x.ReceivedCustomerCod ?? 0,
                 ReceivedToDlvCod = x.ReceivedToDlvCod ?? 0,
-                UnreceivedReason = x.UnreceivedReason
+                UnreceivedReason = x.UnreceivedReason,
+                TaxPayer = x.TaxPayer
             });
         }
 
@@ -303,7 +306,7 @@ namespace Service.Services.Receivable
             // 空運派件公司主檔資料量小，直接一次載入全部代號與中文名稱供 tact、FTZ 資料使用。
             var airTransNames = GetAllAirTransNames();
 
-            return rows.Select(row =>
+            var data = rows.Select(row =>
             {
                 var transCod = row.TransCod;
                 var codSubtotal = row.CustomerCod + row.ToDlvCod.ToInt();
@@ -312,7 +315,7 @@ namespace Service.Services.Receivable
                 customerNames.TryGetValue(row.CustomerCode ?? string.Empty, out customerName);
                 var dlvCom = row.DlvCom;
 
-                if (row.Source == "tact" || row.Source == "FTZ")
+                if (IsAirSource(row.Source))
                 {
                     string transName;
                     if (airTransNames.TryGetValue(row.DlvCom ?? string.Empty, out transName) &&
@@ -344,14 +347,73 @@ namespace Service.Services.Receivable
                     UnreceivedAmount = codSubtotal - receivedAmount,
                     CustomerCod = row.CustomerCod,
                     TransCod = transCod,
+                    ThreePartTax = row.ThreePartTax,
+                    FourPartTax = row.FourPartTax,
                     JetfPayment = row.JetfPayment,
                     Ccfee = row.Ccfee,
                     RedispatchFreight = string.Empty,
                     Cod = row.Cod,
                     Fee = row.Fee,
-                    UnreceivedReason = row.UnreceivedReason
+                    UnreceivedReason = row.UnreceivedReason,
+                    OriginalTaxPayer = IsAirSource(row.Source) ? null : row.TaxPayer
                 };
             }).ToList();
+
+            PopulateAirOriginalTaxPayers(data);
+            return data;
+        }
+
+        /// <summary>
+        /// 判斷費用資料是否為空運來源。
+        /// </summary>
+        /// <param name="source">費用主檔來源。</param>
+        /// <returns>是否使用原始貨件清單的收件人。</returns>
+        private static bool IsAirSource(string source)
+        {
+            return string.Equals(source, "FTZ", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(source, "tact", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 依單號批次取得空運原始貨件清單的收件人。
+        /// </summary>
+        /// <param name="data">查詢或匯出的明細。</param>
+        private void PopulateAirOriginalTaxPayers(List<ReceivableListItem> data)
+        {
+            var trackingNumbers = data
+                .Where(item => IsAirSource(item.Source) && !string.IsNullOrWhiteSpace(item.TrackingNo))
+                .Select(item => item.TrackingNo)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (!trackingNumbers.Any())
+            {
+                return;
+            }
+
+            var recipients = DataCenterDb.OriginalLists
+                .AsNoTracking()
+                .WhereBulkContains(
+                    DataCenterDb,
+                    trackingNumbers,
+                    original => original.TrackingNo,
+                    trackingNo => trackingNo,
+                    original => new { original.Id, original.TrackingNo, original.Recipient })
+                .Where(original => !string.IsNullOrWhiteSpace(original.TrackingNo))
+                .GroupBy(original => original.TrackingNo, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.OrderByDescending(original => original.Id).First().Recipient,
+                    StringComparer.OrdinalIgnoreCase);
+
+            foreach (var item in data.Where(item => IsAirSource(item.Source)))
+            {
+                if (!string.IsNullOrWhiteSpace(item.TrackingNo) &&
+                    recipients.TryGetValue(item.TrackingNo, out var recipient))
+                {
+                    item.OriginalTaxPayer = recipient;
+                }
+            }
         }
 
         /// <summary>
@@ -546,9 +608,19 @@ namespace Service.Services.Receivable
             {
                 "序號", "掛帳日", "客戶銷帳日", "物流銷帳日", "資料來源", "報關類別", "客戶", "派件公司", "出倉時間",
                 "分提單號", "物流貨號", "稅單號碼", "代收小計", "已收金額", "未收金額",
-                "跟廠商收", "跟派件收", "捷豐支付", "報關費", "重派運費", "到付款",
-                "手續費", "未回收原因"
+                "跟廠商收", "跟派件收", "三聯稅單", "四聯稅單", "捷豐支付", "報關費", "重派運費", "到付款",
+                "手續費", "未回收原因", "原單納稅義務人"
             };
+
+            CreateSummarySheet(workbook, data, headerStyle, dataStyle, numberStyle);
+            CreateExcelSheet(
+                workbook,
+                "全部明細",
+                data,
+                headers,
+                headerStyle,
+                dataStyle,
+                numberStyle);
 
             var usedSheetNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var sheetGroups = data
@@ -588,20 +660,62 @@ namespace Service.Services.Receivable
                     numberStyle);
             }
 
-            if (!sheetGroups.Any())
+            return workbook;
+        }
+
+        /// <summary>
+        /// 建立依掛帳日與資料來源彙總的第一個頁籤。
+        /// </summary>
+        /// <param name="workbook">Excel 活頁簿。</param>
+        /// <param name="data">要匯出的全部明細。</param>
+        /// <param name="headerStyle">標題儲存格樣式。</param>
+        /// <param name="dataStyle">一般資料儲存格樣式。</param>
+        /// <param name="numberStyle">金額儲存格樣式。</param>
+        private static void CreateSummarySheet(
+            IWorkbook workbook,
+            IReadOnlyList<ReceivableListItem> data,
+            ICellStyle headerStyle,
+            ICellStyle dataStyle,
+            ICellStyle numberStyle)
+        {
+            var sheet = workbook.CreateSheet("總表");
+            var headers = new[] { "項次", "日期", "資料來源", "跟廠商收", "跟派件收", "稅金合計" };
+            NpoiCell.CreateHeaderCells(sheet.CreateRow(0), headers, headerStyle);
+
+            var groups = data
+                .GroupBy(item => new { item.PostingDate, item.Source })
+                .Select(group => new
+                {
+                    group.Key.PostingDate,
+                    group.Key.Source,
+                    CustomerCod = group.Sum(item => (long)item.CustomerCod),
+                    TransCod = group.Sum(item => (long)item.TransCod)
+                })
+                .ToList();
+            long totalCustomerCod = 0;
+            long totalTransCod = 0;
+            for (var index = 0; index < groups.Count; index++)
             {
-                // NPOI 活頁簿至少需要一個頁籤，查無資料時建立空白頁籤。
-                CreateExcelSheet(
-                    workbook,
-                    "無資料",
-                    new List<ReceivableListItem>(),
-                    headers,
-                    headerStyle,
-                    dataStyle,
-                    numberStyle);
+                var group = groups[index];
+                totalCustomerCod += group.CustomerCod;
+                totalTransCod += group.TransCod;
+                var row = sheet.CreateRow(index + 1);
+
+                NpoiCell.CreateIntCell(row, 0, index + 1, dataStyle);
+                NpoiCell.CreateCell(row, 1, group.PostingDate?.Replace("/", string.Empty), dataStyle);
+                NpoiCell.CreateCell(row, 2, group.Source, dataStyle);
+                NpoiCell.CreateDoubleCell(row, 3, group.CustomerCod, numberStyle);
+                NpoiCell.CreateDoubleCell(row, 4, group.TransCod, numberStyle);
+                NpoiCell.CreateDoubleCell(row, 5, group.CustomerCod + group.TransCod, numberStyle);
             }
 
-            return workbook;
+            var totalRow = sheet.CreateRow(groups.Count + 1);
+            NpoiCell.CreateCell(totalRow, 0, "合計", headerStyle);
+            NpoiCell.CreateDoubleCell(totalRow, 3, totalCustomerCod, numberStyle);
+            NpoiCell.CreateDoubleCell(totalRow, 4, totalTransCod, numberStyle);
+            NpoiCell.CreateDoubleCell(totalRow, 5, totalCustomerCod + totalTransCod, numberStyle);
+
+            sheet.AutoSizeColumns(headers.Length, scale: 1.2, minWidth: 12);
         }
 
         /// <summary>
@@ -648,12 +762,15 @@ namespace Service.Services.Receivable
                 NpoiCell.CreateIntCell(row, column++, item.UnreceivedAmount, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.CustomerCod, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.TransCod, numberStyle);
+                NpoiCell.CreateIntCell(row, column++, item.ThreePartTax, numberStyle);
+                NpoiCell.CreateIntCell(row, column++, item.FourPartTax, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.JetfPayment, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.Ccfee, numberStyle);
                 NpoiCell.CreateCell(row, column++, item.RedispatchFreight, dataStyle);
                 NpoiCell.CreateIntCell(row, column++, item.Cod, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.Fee, numberStyle);
-                NpoiCell.CreateCell(row, column, item.UnreceivedReason, dataStyle);
+                NpoiCell.CreateCell(row, column++, item.UnreceivedReason, dataStyle);
+                NpoiCell.CreateCell(row, column, item.OriginalTaxPayer, dataStyle);
             }
 
             sheet.AutoSizeColumns(headers.Length, scale: 1.2, minWidth: 12);

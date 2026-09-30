@@ -93,6 +93,16 @@ namespace Service.Services.Receivable.Domain
         public int TransCod { get; set; }
 
         /// <summary>
+        /// 三聯稅單金額。
+        /// </summary>
+        public int? ThreePartTax { get; set; }
+
+        /// <summary>
+        /// 四聯稅單金額。
+        /// </summary>
+        public int? FourPartTax { get; set; }
+
+        /// <summary>
         /// 代收小計使用的應向物流公司收取金額。
         /// </summary>
         public string ToDlvCod { get; set; }
@@ -111,5 +121,10 @@ namespace Service.Services.Receivable.Domain
         /// 未回收原因。
         /// </summary>
         public string UnreceivedReason { get; set; }
+
+        /// <summary>
+        /// 費用明細中的納稅義務人。
+        /// </summary>
+        public string TaxPayer { get; set; }
     }
 }

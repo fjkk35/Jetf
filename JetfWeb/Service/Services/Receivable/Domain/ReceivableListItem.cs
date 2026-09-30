@@ -96,6 +96,16 @@ namespace Service.Services.Receivable.Domain
         public int TransCod { get; set; }
 
         /// <summary>
+        /// 三聯稅單金額。
+        /// </summary>
+        public int? ThreePartTax { get; set; }
+
+        /// <summary>
+        /// 四聯稅單金額。
+        /// </summary>
+        public int? FourPartTax { get; set; }
+
+        /// <summary>
         /// 捷豐支付金額。
         /// </summary>
         public int JetfPayment { get; set; }
@@ -121,8 +131,13 @@ namespace Service.Services.Receivable.Domain
         public int Fee { get; set; }
 
         /// <summary>
-        /// 未回收原因，目前保留空白。
+        /// 未回收原因。
         /// </summary>
         public string UnreceivedReason { get; set; }
+
+        /// <summary>
+        /// 原單納稅義務人。
+        /// </summary>
+        public string OriginalTaxPayer { get; set; }
     }
 }
