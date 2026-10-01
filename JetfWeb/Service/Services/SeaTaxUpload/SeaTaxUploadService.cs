@@ -1190,7 +1190,8 @@ and not exists (
                 Combine = NormalizeText(row.Combine),
                 InDate = NormalizeText(row.InDate),
                 InDateTime = ParseDateTime(row.InDateTime),
-                OutDateTime = ParseDateTime(row.OutDateTime),
+                OutDateTime = ParseDateTime(row.OutDateTime)
+                    ?? DateTime.ParseExact($"{dataDate}235959", "yyyyMMddHHmmss", CultureInfo.InvariantCulture),
                 TaxBase = ParseNullableInt(row.TaxBase),
                 Tax1 = ParseNullableInt(row.Tax1),
                 Tax2 = ParseAmountOrZero(row.Tax2),
