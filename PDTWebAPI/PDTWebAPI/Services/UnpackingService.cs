@@ -398,7 +398,11 @@ namespace PDTWebAPI.Services
                 }
                 else if (body.DataType == "海快報單狀態(資料庫)")
                 {
-                    response = GetSeaDeclarationStatusByDB(trackingNo);
+                    response = GetSeaDeclarationStatusByDB(trackingNo, "TPCT");
+                }
+                else if (body.DataType == "海快報單狀態台中港(資料庫)")
+                {
+                    response = GetSeaDeclarationStatusByDB(trackingNo, "JSTC");
                 }
                 else if (body.DataType == "空快報單狀態")
                 {
@@ -654,7 +658,7 @@ namespace PDTWebAPI.Services
         /// </summary>
         /// <param name="trackingNo"></param>
         /// <returns></returns>
-        public UnpackingResponseModel GetSeaDeclarationStatusByDB(string trackingNo)
+        public UnpackingResponseModel GetSeaDeclarationStatusByDB(string trackingNo, string portCode)
         {
             ///是否連線收單建檔
             var result = GetGb321ByDB(trackingNo);
@@ -674,7 +678,7 @@ namespace PDTWebAPI.Services
             if (result.Item1.Value)
             {
                 //是否溢卸
-                var isUnload = IsUnload(dt);
+                var isUnload = IsUnload(dt, portCode);
 
                 return new UnpackingResponseModel()
                 {
@@ -896,7 +900,7 @@ namespace PDTWebAPI.Services
         /// 是否為溢卸
         /// </summary>
         /// <returns></returns>
-        bool IsUnload(DataTable dt)
+        bool IsUnload(DataTable dt, string portCode = "TPCT")
         {
             var result = dt.AsEnumerable().Any(r => r.Field<string>("MAINNUMBER").Contains("溢卸"));
 
@@ -905,14 +909,14 @@ namespace PDTWebAPI.Services
                 //如果筆數等於一筆
                 if (dt.AsEnumerable().Count() == 1)
                 {
-                    //找不到TPCT，就是高雄港
-                    result = dt.AsEnumerable().Any(r => r.Field<string>("MODIFYBY") != null && !r.Field<string>("MODIFYBY").Contains("TPCT"));
+                    //找不到指定港口代碼，就是高雄港
+                    result = dt.AsEnumerable().Any(r => r.Field<string>("MODIFYBY") != null && !r.Field<string>("MODIFYBY").Contains(portCode));
                 }
             }
             else
             {
-                //找不到溢卸，再判斷MODIFYBY是不是有TPCT，如果找不到TPCT，就是高雄港
-                result = dt.AsEnumerable().Any(r => r.Field<string>("MODIFYBY") != null && !r.Field<string>("MODIFYBY").Contains("TPCT"));
+                //找不到溢卸，再判斷MODIFYBY是不是有指定港口代碼，如果找不到，就是高雄港
+                result = dt.AsEnumerable().Any(r => r.Field<string>("MODIFYBY") != null && !r.Field<string>("MODIFYBY").Contains(portCode));
             }
             return result;
         }

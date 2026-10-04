@@ -104,6 +104,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Lib\TelegramLibrary\TelegramLibrary.csproj">
+      <Project>{032C4F4D-E742-46B2-ABD7-FBA58D2F52B3}</Project>
+      <Name>TelegramLibrary</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="Global.asax" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>
