@@ -387,6 +387,20 @@
                 </div>
             </div>
 
+            <!-- 退貨單號 -->
+            <div class="form-group row col-lg-3 mb-0">
+                <label for="returnTrackingNoInput" class="col-lg-4 col-form-label text-right">退貨單號</label>
+                <div class="col-lg-8">
+                    <input type="text"
+                           id="returnTrackingNoInput"
+                           class="form-control"
+                           ng-model="searchForm.returnTrackingNo"
+                           placeholder="請輸入退貨單號" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3 align-items-center">
             <!-- 處理方式 -->
             <div class="form-group row col-lg-3 mb-0">
                 <label for="processType" class="col-lg-4 col-form-label text-right">處理方式</label>
@@ -399,9 +413,6 @@
                     </select>
                 </div>
             </div>
-        </div>
-
-        <div class="row mb-3 align-items-center">
             <!-- 儲位 -->
             <div class="form-group row col-lg-3 mb-0">
                 <label for="locationCode" class="col-lg-4 col-form-label text-right">儲位</label>
@@ -550,6 +561,7 @@
                                     <th class="col-location" ng-show="visibleColumns.locationCode">儲位</th>
                                     <th ng-show="visibleColumns.size">尺寸</th>
                                     <th class="col-outbound-no" ng-show="visibleColumns.outboundTrackingNo">重出單號</th>
+                                    <th class="col-tracking-no" ng-show="visibleColumns.returnTrackingNo">退貨單號</th>
                                     <th ng-show="visibleColumns.cod">到付款</th>
                                     <th ng-show="visibleColumns.freightFee">運費</th>
                                     <th ng-show="visibleColumns.tax">稅金</th>
@@ -559,7 +571,7 @@
                             </thead>
                             <tbody>
                                 <tr ng-if="data.length === 0">
-                                    <td colspan="35" class="text-center">查無資料</td>
+                                    <td colspan="36" class="text-center">查無資料</td>
                                 </tr>
                                 <tr ng-repeat="item in data">
                                     <td class="col-seq" ng-show="visibleColumns.seq">{{(currentPage - 1) * pageSize + $index + 1}}</td>
@@ -637,6 +649,7 @@
                                             簽
                                         </a>
                                     </td>
+                                    <td class="col-tracking-no" ng-show="visibleColumns.returnTrackingNo">{{item.ReturnTrackingNo}}</td>
                                     <td ng-show="visibleColumns.cod">{{item.Cod | number}}</td>
                                     <td ng-show="visibleColumns.freightFee">{{item.FreightFee | number}}</td>
                                     <td ng-show="visibleColumns.tax">{{item.Tax | number}}</td>

@@ -317,6 +317,11 @@ namespace Service.Services.ShipmentInboundRecord
                 query = query.WhereIf(true, x => x.OutboundTrackingNo.Contains(request.OutboundTrackingNo));
             }
 
+            if (!string.IsNullOrWhiteSpace(request.ReturnTrackingNo))
+            {
+                query = query.WhereIf(true, x => x.ReturnTrackingNo.Contains(request.ReturnTrackingNo));
+            }
+
             return query;
         }
 
@@ -563,6 +568,7 @@ namespace Service.Services.ShipmentInboundRecord
                 SourceType = request.SourceType,
                 TrackingNo = request.TrackingNo,
                 OutboundTrackingNo = request.OutboundTrackingNo,
+                ReturnTrackingNo = request.ReturnTrackingNo,
                 DataType = request.DataType,
                 WarehouseProcessType = request.WarehouseProcessType,
                 WarehouseProcessTypeIsEmpty = request.WarehouseProcessTypeIsEmpty,
@@ -616,6 +622,7 @@ namespace Service.Services.ShipmentInboundRecord
                 "尺寸",
                 "重出日期",
                 "重出單號",
+                "退貨單號",
                 "到付款",
                 "運費",
                 "稅金",
@@ -670,6 +677,7 @@ namespace Service.Services.ShipmentInboundRecord
 
                 NpoiCell.CreateDateTimeCell(row, c++, item.OutboundDate, dateStyle);
                 NpoiCell.CreateCell(row, c++, item.OutboundTrackingNo, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.ReturnTrackingNo, dataStyle);
 
                 NpoiCell.CreateIntCell(row, c++, item.Cod, numberStyle);
                 NpoiCell.CreateIntCell(row, c++, item.FreightFee, numberStyle);
@@ -722,6 +730,7 @@ namespace Service.Services.ShipmentInboundRecord
                 SourceType = request.SourceType,
                 TrackingNo = request.TrackingNo,
                 OutboundTrackingNo = request.OutboundTrackingNo,
+                ReturnTrackingNo = request.ReturnTrackingNo,
                 DataType = request.DataType,
                 WarehouseProcessType = request.WarehouseProcessType,
                 WarehouseProcessTypeIsEmpty = request.WarehouseProcessTypeIsEmpty,
@@ -764,6 +773,7 @@ namespace Service.Services.ShipmentInboundRecord
                 "倉庫狀態",
                 "出庫日期",
                 "重出單號",
+                "退貨單號",
                 "備註"
             };
 
@@ -797,6 +807,7 @@ namespace Service.Services.ShipmentInboundRecord
                 NpoiCell.CreateCell(row, c++, item.WarehouseProcessName, dataStyle);
                 NpoiCell.CreateDateTimeCell(row, c++, item.OutboundDate, dateStyle);
                 NpoiCell.CreateCell(row, c++, item.OutboundTrackingNo, dataStyle);
+                NpoiCell.CreateCell(row, c++, item.ReturnTrackingNo, dataStyle);
                 NpoiCell.CreateCell(row, c++, item.Remark, dataStyle);
             }
 

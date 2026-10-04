@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace Service.Services.ShipmentInboundRecord.Domain
 {
+    /// <summary>
+    /// 貨件紀錄查詢條件。
+    /// </summary>
     public class ShipmentInboundRecordRequest
     {
         /// <summary>
@@ -64,6 +67,11 @@ namespace Service.Services.ShipmentInboundRecord.Domain
         /// 重出單號
         /// </summary>
         public string OutboundTrackingNo { get; set; }
+
+        /// <summary>
+        /// 退貨單號。
+        /// </summary>
+        public string ReturnTrackingNo { get; set; }
 
         /// <summary>
         /// 進口方式(海運/空運)

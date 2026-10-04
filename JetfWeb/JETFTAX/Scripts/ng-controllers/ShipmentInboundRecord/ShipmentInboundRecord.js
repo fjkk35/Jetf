@@ -45,6 +45,7 @@
         { key: 'locationCode', title: '儲位', locked: false },
         { key: 'size', title: '尺寸', locked: false },
         { key: 'outboundTrackingNo', title: '重出單號', locked: false },
+        { key: 'returnTrackingNo', title: '退貨單號', locked: false },
         { key: 'cod', title: '到付款', locked: false },
         { key: 'freightFee', title: '運費', locked: false },
         { key: 'tax', title: '稅金', locked: false },
@@ -129,7 +130,7 @@
             '?trackingNo=' + encodeURIComponent(normalizeText(trackingNo));
     };
 
-    $scope.visibleColumns = loadColumnSettingFromCookie() || getDefaultVisibleColumns();
+    $scope.visibleColumns = angular.extend(getDefaultVisibleColumns(), loadColumnSettingFromCookie() || {});
 
     // 每次勾選立即保存
     $scope.$watch('visibleColumns', function () {
@@ -191,6 +192,7 @@
         sourceType: '',
         trackingNo: '',
         outboundTrackingNo: '',
+        returnTrackingNo: '',
         processType: '',
         locationCode: '',
         dataType: '',
@@ -311,6 +313,7 @@
             sourceType: '',
             trackingNo: '',
             outboundTrackingNo: '',
+            returnTrackingNo: '',
             processType: '',
             locationCode: '',
             dataType: '',
@@ -349,6 +352,7 @@
             SourceType: $scope.searchForm.sourceType,
             TrackingNo: $scope.searchForm.trackingNo,
             OutboundTrackingNo: $scope.searchForm.outboundTrackingNo,
+            ReturnTrackingNo: $scope.searchForm.returnTrackingNo,
             ProcessType: $scope.searchForm.processType,
             LocationCode: $scope.searchForm.locationCode,
             DataType: $scope.searchForm.dataType,
@@ -401,6 +405,7 @@
             SourceType: $scope.searchForm.sourceType,
             TrackingNo: $scope.searchForm.trackingNo,
             OutboundTrackingNo: $scope.searchForm.outboundTrackingNo,
+            ReturnTrackingNo: $scope.searchForm.returnTrackingNo,
             ProcessType: $scope.searchForm.processType,
             LocationCode: $scope.searchForm.locationCode,
             DataType: $scope.searchForm.dataType,
@@ -464,6 +469,7 @@
             SourceType: $scope.searchForm.sourceType,
             TrackingNo: $scope.searchForm.trackingNo,
             OutboundTrackingNo: $scope.searchForm.outboundTrackingNo,
+            ReturnTrackingNo: $scope.searchForm.returnTrackingNo,
             ProcessType: $scope.searchForm.processType,
             LocationCode: $scope.searchForm.locationCode,
             DataType: $scope.searchForm.dataType,

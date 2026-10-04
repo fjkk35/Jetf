@@ -5,6 +5,9 @@ using System.Collections.Generic;
 
 namespace Service.Services.ShipmentInboundRecord.Domain
 {
+    /// <summary>
+    /// 貨件紀錄查詢結果。
+    /// </summary>
     public class ShipmentInboundRecordModel
     {
         /// <summary>
@@ -98,7 +101,7 @@ namespace Service.Services.ShipmentInboundRecord.Domain
         public string ProcessTypeName => ProcessType?.ToDescription();
 
         /// <summary>
-        /// 重出單號
+        /// 退貨單號。
         /// </summary>
         public string ReturnTrackingNo { get; set; }
 
