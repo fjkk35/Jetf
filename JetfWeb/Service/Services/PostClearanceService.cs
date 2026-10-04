@@ -423,6 +423,11 @@ namespace Service.Services
                 #endregion
 
                 #region 報關費1
+                // CN00132 新遞到港日自 2026/10/01 起，報關費1比照台星。
+                bool useXindiNewPrice = item.CustName == "新遞" &&
+                                       item.Eta.HasValue &&
+                                       item.Eta.Value.Date >= new DateTime(2026, 10, 1);
+
                 //報關費1
                 if (item.CustName == "捷利" ||
                     item.CustName == "巧巧郎")
@@ -462,7 +467,7 @@ namespace Service.Services
                          item.CustName == "速派" ||
                          item.CustName == "牽禮馬" ||
                          item.CustName == "天馬" ||
-                         item.CustName == "新遞" ||
+                         (item.CustName == "新遞" && !useXindiNewPrice) ||
                          item.CustName == "攜誠" ||
                          item.CustName == "騰揚" ||
                          item.CustName == "金祥富(海絲)" ||
@@ -492,6 +497,7 @@ namespace Service.Services
                     }
                 }
                 else if (
+                    useXindiNewPrice ||
                     item.CustName == "超峰" ||
                     item.CustName == "深圳超峰" ||
                     item.CustName == "台星")
