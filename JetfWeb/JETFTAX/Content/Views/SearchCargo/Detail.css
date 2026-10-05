@@ -7,7 +7,7 @@ body {
 
 .detail-container {
     background: #ffffff;
-    padding: 30px;
+    padding: 0 12px;
     border-radius: 10px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
     max-width: 1400px;
@@ -15,27 +15,42 @@ body {
 }
 
 /* 標題區域 */
+.detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+}
+
+.topbar.mb-4 {
+    margin-bottom: 4px !important;
+}
+
 .headtype {
     color: #334155;
     font-size: 28px;
     font-weight: 600;
+    line-height: 1.2;
     letter-spacing: 0.5px;
 }
 
 /* 區塊樣式 */
 .detail-section {
-    margin-bottom: 30px;
+    margin: 0;
     border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border-radius: 0;
     overflow: hidden;
     background: #ffffff;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.detail-section + .detail-section {
+    border-top: 0;
 }
 
 /* 區塊標題 */
 .section-title {
     background: #f1f5f9;
-    padding: 18px 24px;
+    padding: 6px 12px;
     margin: 0;
     font-size: 19px;
     font-weight: 600;
@@ -43,10 +58,21 @@ body {
     border-bottom: 2px solid #cbd5e1;
 }
 
-.section-title h5 {
-    color: #475569;
-    margin: 0;
-    font-size: 19px;
+.process-section-header {
+    position: relative;
+}
+
+.process-section-header .section-title {
+    padding-right: 240px;
+}
+
+.process-section-actions {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 6px;
 }
 
 /* 表格樣式 */
@@ -70,10 +96,10 @@ body {
 }
 
 .detail-table td {
-    padding: 18px 24px;
+    padding: 6px 12px;
     color: #475569;
     font-size: 16px;
-    line-height: 1.7;
+    line-height: 1.4;
 }
 
 .detail-table td.label {
@@ -126,9 +152,9 @@ body {
 .table-bordered th,
 .table-bordered td {
     border-color: #e2e8f0;
-    padding: 18px 24px;
+    padding: 6px 12px;
     font-size: 16px;
-    line-height: 1.7;
+    line-height: 1.4;
     color: #475569;
 }
 
@@ -136,7 +162,7 @@ body {
     background: #f8fafc;
     color: #475569;
     font-weight: 600;
-    padding: 18px 24px;
+    padding: 6px 12px;
     border-bottom: 2px solid #cbd5e1;
     text-align: center;
     font-size: 16px;
@@ -154,7 +180,7 @@ body {
 }
 
 .status-table th {
-    padding: 18px 24px;
+    padding: 6px 12px;
     text-align: left;
     font-weight: 600;
     color: #475569;
@@ -163,11 +189,11 @@ body {
 }
 
 .status-table td {
-    padding: 18px 24px;
+    padding: 6px 12px;
     border-bottom: 1px solid #f1f5f9;
     color: #475569;
     font-size: 16px;
-    line-height: 1.7;
+    line-height: 1.4;
 }
 
 .status-table tbody tr {
@@ -280,16 +306,21 @@ body {
 }
 
 .btn-sm {
-    padding: 8px 14px;
+    padding: 4px 10px;
     font-size: 14px;
 }
 
 /* 按鈕區域 */
 .button-section {
-    margin-top: 40px;
+    max-width: 1400px;
+    margin: 0 auto;
     text-align: center;
-    padding: 20px 0;
-    border-top: 1px solid #e2e8f0;
+    padding: 8px 12px;
+}
+
+#content-wrapper > footer.sticky-footer.bg-white {
+    background-color: transparent !important;
+    padding: 8px 0;
 }
 
 /* 載入動畫 */
@@ -353,6 +384,13 @@ body {
     color: #334155;
 }
 
+#processModal #processType {
+    width: 100%;
+    height: calc(1.5em + 18px);
+    padding: 8px 12px;
+    line-height: 1.5;
+}
+
 .form-control:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -390,30 +428,54 @@ body {
 /* 分隔線 */
 hr {
     border-top: 1px solid #e2e8f0;
-    margin: 24px 0;
+    margin: 16px 0;
 }
 
 /* 響應式設計 */
 @media (max-width: 768px) {
     .detail-container {
-        padding: 20px 15px;
+        padding: 0 8px;
     }
 
     .detail-table {
         font-size: 15px;
     }
 
-    .detail-table td {
-        padding: 14px 18px;
+    .detail-table td,
+    .table-bordered th,
+    .table-bordered td,
+    .status-table th,
+    .status-table td {
+        padding: 4px 8px;
     }
 
     .section-title {
         font-size: 17px;
-        padding: 16px 20px;
+        padding: 6px 8px;
+    }
+
+    .process-section-actions {
+        right: 8px;
     }
 
     .headtype {
         font-size: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .process-section-header .section-title {
+        padding-right: 8px;
+    }
+
+    .process-section-actions {
+        position: static;
+        transform: none;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        padding: 4px 8px;
+        background: #f1f5f9;
+        border-bottom: 1px solid #cbd5e1;
     }
 }
 
@@ -437,6 +499,6 @@ hr {
 }
 
 /* 優化間距 */
-.detail-section + .detail-section {
-    margin-top: 25px;
+.detail-section > .table {
+    margin-bottom: 0;
 }

@@ -6,13 +6,12 @@
 @Html.Css("~/Content/Views/SearchCargo/Detail.css")
 
 <div ng-app="mainApp" ng-controller="SearchCargoDetailController">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <div class="detail-header">
         <span class="headtype">貨況明細</span>
         <button class="btn btn-info btn-sm" ng-click="showLogCargoStatus()">
             <i class="fa fa-history"></i> 查詢紀錄
         </button>
     </div>
-    <hr />
 
     <!-- 載入中 -->
     <div ng-if="loading" class="loading-container">
@@ -62,7 +61,7 @@
                             </a>
                             <button class="btn btn-info btn-sm"
                                     ng-click="showShenzhenCargoDetail()"
-                                    style="margin-left: 10px;">
+                                    style="margin-left: 6px;">
                                 速派新遞貨號
                             </button>
                         </td>
@@ -95,6 +94,60 @@
                         <td>{{detailData.Trans_Name_New}}</td>
                         <td class="label">尾程單號</td>
                         <td>{{detailData.Express_No}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 處置說明 -->
+        <div class="detail-section">
+            <div class="process-section-header">
+                <h5 class="section-title">處置說明</h5>
+                <div class="process-section-actions">
+                    <button class="btn btn-primary btn-sm" ng-click="showAddProcessDialog()">
+                        <i class="fas fa-plus"></i> 新增
+                    </button>
+                    <button class="btn btn-success btn-sm" ng-click="finishProcess()">
+                        <i class="fa fa-check"></i> 處置說明結案
+                    </button>
+                </div>
+            </div>
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">分類</th>
+                        <th style="width: 30%;">處置說明</th>
+                        <th style="width: 12%;">檔案</th>
+                        <th style="width: 8%;">人員</th>
+                        <th style="width: 13%;">時間</th>
+                        <th style="width: 5%;">結案</th>
+                        <th style="width: 10%;">結案人員</th>
+                        <th style="width: 7%;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-if="!processList || processList.length == 0">
+                        <td colspan="8" style="text-align: center;">無處置說明</td>
+                    </tr>
+                    <tr ng-repeat="item in processList">
+                        <td>{{item.PROCESS_TYPE}}</td>
+                        <td>{{item.REMARK}}</td>
+                        <td>
+                            <a ng-if="item.FILENAME" href="/Cargo/DownloadFile?filePath={{item.FILEPATH}}&fileName={{item.FILENAME}}" target="_blank">
+                                {{item.FILENAME}}
+                            </a>
+                        </td>
+                        <td>{{item.USER_NAME}}</td>
+                        <td>{{item.FormatCrtDateTime}}</td>
+                        <td>{{item.FINISH}}</td>
+                        <td>{{item.FINISH_USER_NAME}}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm"
+                                    ng-click="deleteProcess(item.ID)"
+                                    title="刪除">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -170,18 +223,18 @@
                                     <a href="javascript:void(0);"
                                        ng-if="detailData.ActualItemNameList.length > 1"
                                        ng-click="toggleShowAllItems()"
-                                       style="color: #007bff; margin-top: 10px; display: inline-block; text-decoration: underline; ">
+                                       style="color: #007bff; margin-top: 4px; display: inline-block; text-decoration: underline; ">
                                         顯示更多 (共 {{detailData.ActualItemNameList.length}} 筆)
                                     </a>
                                 </div>
                                 <!-- 顯示所有品名 -->
                                 <div ng-if="showAllItems">
-                                    <div ng-repeat="item in detailData.ActualItemNameList track by $index" style="margin-bottom: 5px;">
+                                    <div ng-repeat="item in detailData.ActualItemNameList track by $index" style="margin-bottom: 2px;">
                                         <span>{{$index+1}}.{{item}}</span>
                                     </div>
                                     <a href="javascript:void(0);"
                                        ng-click="toggleShowAllItems()"
-                                       style="color: #007bff; margin-top: 10px; display: inline-block; text-decoration: underline;">
+                                       style="color: #007bff; margin-top: 4px; display: inline-block; text-decoration: underline;">
                                         收合
                                     </a>
                                 </div>
@@ -301,60 +354,6 @@
                 </tbody>
             </table>
         </div>
-        <!-- 處置說明 -->
-        <div class="detail-section">
-            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
-                <h5 style="margin: 0;">處置說明</h5>
-                <div>
-                    <button class="btn btn-primary btn-sm" ng-click="showAddProcessDialog()">
-                        <i class="fas fa-plus"></i> 新增
-                    </button>
-                    <button class="btn btn-success btn-sm" ng-click="finishProcess()">
-                        <i class="fa fa-check"></i> 處置說明結案
-                    </button>
-                </div>
-            </div>
-            <table class="table table-striped table-bordered" style="margin-top: 10px;">
-                <thead>
-                    <tr>
-                        <th style="width: 10%;">分類</th>
-                        <th style="width: 30%;">處置說明</th>
-                        <th style="width: 12%;">檔案</th>
-                        <th style="width: 8%;">人員</th>
-                        <th style="width: 13%;">時間</th>
-                        <th style="width: 5%;">結案</th>
-                        <th style="width: 10%;">結案人員</th>
-                        <th style="width: 7%;">操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr ng-if="!processList || processList.length == 0">
-                        <td colspan="8" style="text-align: center;">無處置說明</td>
-                    </tr>
-                    <tr ng-repeat="item in processList">
-                        <td>{{item.PROCESS_TYPE}}</td>
-                        <td>{{item.REMARK}}</td>
-                        <td>
-                            <a ng-if="item.FILENAME" href="/Cargo/DownloadFile?filePath={{item.FILEPATH}}&fileName={{item.FILENAME}}" target="_blank">
-                                {{item.FILENAME}}
-                            </a>
-                        </td>
-                        <td>{{item.USER_NAME}}</td>
-                        <td>{{item.FormatCrtDateTime}}</td>
-                        <td>{{item.FINISH}}</td>
-                        <td>{{item.FINISH_USER_NAME}}</td>
-                        <td>
-                            <button class="btn btn-danger btn-sm"
-                                    ng-click="deleteProcess(item.ID)"
-                                    title="刪除">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
         <!-- 配送進度 -->
         <div class="detail-section">
             <h5 class="section-title">配送進度</h5>
@@ -377,12 +376,13 @@
             </table>
         </div>
 
-        <!-- 操作按鈕 -->
-        <div class="button-section">
-            <button class="btn btn-secondary" ng-click="closeWindow()">
-                <i class="fas fa-times"></i> 關閉
-            </button>
-        </div>
+    </div>
+
+    <!-- 操作按鈕 -->
+    <div ng-if="!loading && detailData" class="button-section">
+        <button class="btn btn-secondary btn-sm" ng-click="closeWindow()">
+            <i class="fas fa-times"></i> 關閉
+        </button>
     </div>
 
     <!-- 新增處置說明 Modal -->
