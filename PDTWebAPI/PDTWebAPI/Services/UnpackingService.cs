@@ -402,7 +402,7 @@ namespace PDTWebAPI.Services
                 }
                 else if (body.DataType == "海快報單狀態台中港(資料庫)")
                 {
-                    response = GetSeaDeclarationStatusByDB(trackingNo, "JSTC");
+                    response = GetSeaDeclarationStatusByDB(trackingNo, "華揚(眾信)");
                 }
                 else if (body.DataType == "空快報單狀態")
                 {
