@@ -162,7 +162,12 @@ namespace Service.Services.SearchCargo.Domain
         public string To_Dlv_Cod { get; set; }
 
         /// <summary>
-        /// 客戶代收貨款
+        /// 跟廠商收稅金，來源為 FEE_MASTER.CUSTOMER_TAX，不含報關費。
+        /// </summary>
+        public string CustomerTax { get; set; }
+
+        /// <summary>
+        /// 跟廠商收合計，來源為 FEE_MASTER.CUSTOMER_COD。
         /// </summary>
         public string CustomerCod { get; set; }
 

@@ -242,6 +242,7 @@ namespace Service.Services.SearchCargo
                 detail.Fee = (feeMaster.Fee ?? 0).ToString();
                 detail.Cod = (feeMaster.Cod ?? 0).ToString();
                 detail.To_Dlv_Cod = feeMaster.ToDlvCod.ToInt().ToString();
+                detail.CustomerTax = (feeMaster.CustomerTax ?? 0).ToString();
                 detail.CustomerCod = (feeMaster.CustomerCod ?? 0).ToString();
                 detail.TransCod = (feeMaster.TransCod ?? 0).ToString();
             }
