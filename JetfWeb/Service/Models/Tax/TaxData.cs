@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Service.Models.Tax
 {
+    /// <summary>
+    /// 稅金與代收金額的分攤結果。
+    /// </summary>
     public class TaxData
     {
         /// <summary>
@@ -17,6 +20,11 @@ namespace Service.Models.Tax
         /// 跟客戶收
         /// </summary>
         public int CustomerCod { get; set; }
+
+        /// <summary>
+        /// 向客戶收取的稅金合計，不含報關費。
+        /// </summary>
+        public int CustomerTax { get; set; }
 
         /// <summary>
         /// 物流代收款

@@ -1103,6 +1103,7 @@ namespace Service.Services.DownloadEtlNew
                 DlvCom = NormalizeText(draft.DlvCom),
                 Arrival = NormalizeText(draft.Arrival),
                 CustomerCod = draft.CustomerCod,
+                CustomerTax = draft.CustomerTax,
                 TransCod = draft.TransCod,
                 ModiftyDate = createTime,
                 Download = "1"
@@ -1148,6 +1149,7 @@ namespace Service.Services.DownloadEtlNew
             entity.TaxRecId = null;
             entity.Arrival = NormalizeText(draft.Arrival);
             entity.CustomerCod = draft.CustomerCod;
+            entity.CustomerTax = draft.CustomerTax;
             entity.TransCod = draft.TransCod;
             entity.UpdateDate = updateTime;
             entity.Download = "1";
@@ -1380,7 +1382,8 @@ namespace Service.Services.DownloadEtlNew
                     0,
                     detailTaxData.ToDlvCod,
                     detailTaxData.TransCod,
-                    detailTaxData.CustomerCod));
+                    detailTaxData.CustomerCod,
+                    detailTaxData.CustomerTax));
             }
 
             return detailRows;
@@ -1430,7 +1433,7 @@ namespace Service.Services.DownloadEtlNew
                 taxData = CalculateTaxN(amounts);
             }
 
-            return CreateFeeMasterDetailRow(row, codAmount, detailFee, taxData.ToDlvCod, taxData.TransCod, taxData.CustomerCod);
+            return CreateFeeMasterDetailRow(row, codAmount, detailFee, taxData.ToDlvCod, taxData.TransCod, taxData.CustomerCod, taxData.CustomerTax);
         }
 
         /// <summary>
@@ -1443,10 +1446,10 @@ namespace Service.Services.DownloadEtlNew
         /// <returns>FEE_MASTER_DETAIL 明細資料。</returns>
         private static FeeMasterDetailRow CreateFeeMasterDetailRow(CombinedRow row, int codAmount, int feeAmount, int toDlvCod)
         {
-            return CreateFeeMasterDetailRow(row, codAmount, feeAmount, toDlvCod, 0, 0);
+            return CreateFeeMasterDetailRow(row, codAmount, feeAmount, toDlvCod, 0, 0, 0);
         }
 
-        private static FeeMasterDetailRow CreateFeeMasterDetailRow(CombinedRow row, int codAmount, int feeAmount, int toDlvCod, int transCod, int customerCod)
+        private static FeeMasterDetailRow CreateFeeMasterDetailRow(CombinedRow row, int codAmount, int feeAmount, int toDlvCod, int transCod, int customerCod, int customerTax)
         {
             return new FeeMasterDetailRow
             {
@@ -1468,7 +1471,8 @@ namespace Service.Services.DownloadEtlNew
                 RecAddress = row.RecAddress,
                 ToDlvCod = toDlvCod.ToString(CultureInfo.InvariantCulture),
                 TransCod = transCod.ToString(CultureInfo.InvariantCulture),
-                CustomerCod = customerCod.ToString(CultureInfo.InvariantCulture)
+                CustomerCod = customerCod.ToString(CultureInfo.InvariantCulture),
+                CustomerTax = customerTax.ToString(CultureInfo.InvariantCulture)
             };
         }
 
@@ -1501,7 +1505,8 @@ namespace Service.Services.DownloadEtlNew
                 RecAddress = NormalizeText(row.RecAddress),
                 ToDlvCod = NormalizeText(row.ToDlvCod),
                 TransCod = ToNullableInt(row.TransCod),
-                CustomerCod = ToNullableInt(row.CustomerCod)
+                CustomerCod = ToNullableInt(row.CustomerCod),
+                CustomerTax = ToNullableInt(row.CustomerTax)
             };
         }
 
@@ -1564,6 +1569,7 @@ namespace Service.Services.DownloadEtlNew
                 {
                     TransCod = (amounts.Tax1 + amounts.Tax2) - 1000,
                     CustomerCod = 1000,
+                    CustomerTax = 1000,
                     ToDlvCod = (amounts.Tax1 + amounts.Tax2) - 1000 + amounts.Cod + amounts.Fee
                 };
             }
@@ -1572,6 +1578,7 @@ namespace Service.Services.DownloadEtlNew
             {
                 TransCod = 0,
                 CustomerCod = amounts.Tax1 + amounts.Tax2,
+                CustomerTax = amounts.Tax1 + amounts.Tax2,
                 ToDlvCod = amounts.Cod
             };
         }
@@ -1587,6 +1594,7 @@ namespace Service.Services.DownloadEtlNew
             {
                 TransCod = amounts.Tax1 + amounts.Tax2,
                 CustomerCod = 0,
+                CustomerTax = 0,
                 ToDlvCod = amounts.Tax1 + amounts.Tax2 + amounts.Cod + amounts.Fee
             };
         }
@@ -1602,6 +1610,7 @@ namespace Service.Services.DownloadEtlNew
             {
                 TransCod = 0,
                 CustomerCod = amounts.Tax1 + amounts.Tax2,
+                CustomerTax = amounts.Tax1 + amounts.Tax2,
                 ToDlvCod = amounts.Cod
             };
         }
@@ -1617,6 +1626,7 @@ namespace Service.Services.DownloadEtlNew
             {
                 TransCod = amounts.Tax1 + amounts.Tax2,
                 CustomerCod = 0,
+                CustomerTax = 0,
                 ToDlvCod = amounts.Tax1 + amounts.Tax2 + amounts.Cod + amounts.Fee
             };
         }
@@ -1632,6 +1642,7 @@ namespace Service.Services.DownloadEtlNew
             {
                 TransCod = 0,
                 CustomerCod = amounts.Tax1 + amounts.Tax2,
+                CustomerTax = amounts.Tax1 + amounts.Tax2,
                 ToDlvCod = amounts.Cod
             };
         }
@@ -1645,6 +1656,7 @@ namespace Service.Services.DownloadEtlNew
         {
             draft.TransCod = taxData.TransCod;
             draft.CustomerCod = taxData.CustomerCod;
+            draft.CustomerTax = taxData.CustomerTax;
             draft.ToDlvCod = taxData.ToDlvCod;
         }
 

@@ -86,9 +86,9 @@ namespace Service.Services.Receivable.Domain
         public int UnreceivedAmount { get; set; }
 
         /// <summary>
-        /// 跟廠商收金額。
+        /// 跟廠商收稅金，來源為 FEE_MASTER_DETAIL.CUSTOMER_TAX，不含報關費。
         /// </summary>
-        public int CustomerCod { get; set; }
+        public int CustomerTax { get; set; }
 
         /// <summary>
         /// 跟派件收金額。

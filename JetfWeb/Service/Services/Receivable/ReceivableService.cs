@@ -83,7 +83,7 @@ namespace Service.Services.Receivable
                 throw new InvalidOperationException("無法取得目前登入人員。");
             }
 
-            var customerCod = GetAmount(request.CustomerCod, "跟廠商收");
+            var customerTax = GetAmount(request.CustomerTax, "跟廠商收");
             var transCod = GetAmount(request.TransCod, "跟派件收");
             var jetfPayment = GetAmount(request.JetfPayment, "捷豐支付");
             var ccfee = GetAmount(request.Ccfee, "報關費");
@@ -104,14 +104,14 @@ namespace Service.Services.Receivable
                     throw new InvalidOperationException("查無應收未收明細，請重新查詢。");
                 }
 
-                var oldCustomerCod = detail.CustomerCod ?? 0;
+                var oldCustomerTax = detail.CustomerTax ?? 0;
                 var oldTransCod = detail.TransCod ?? 0;
                 var oldJetfPayment = detail.JetfPayment ?? 0;
                 var oldCcfee = detail.Ccfee ?? 0;
                 var oldCod = detail.Cod ?? 0;
                 var oldFee = detail.Fee ?? 0;
-                var originalCollectionTotal = (long)oldCustomerCod + oldTransCod + oldJetfPayment;
-                var updatedCollectionTotal = (long)customerCod + transCod + jetfPayment;
+                var originalCollectionTotal = (long)oldCustomerTax + oldTransCod + oldJetfPayment;
+                var updatedCollectionTotal = (long)customerTax + transCod + jetfPayment;
                 if (originalCollectionTotal != updatedCollectionTotal)
                 {
                     throw new InvalidOperationException(
@@ -119,7 +119,7 @@ namespace Service.Services.Receivable
                 }
 
                 var modifiedTime = DateTime.Now;
-                detail.CustomerCod = customerCod;
+                detail.CustomerTax = customerTax;
                 detail.TransCod = transCod;
                 detail.JetfPayment = jetfPayment;
                 detail.Ccfee = ccfee;
@@ -129,7 +129,7 @@ namespace Service.Services.Receivable
 
                 var modifyLogs = new List<FeeMasterDetailModifyLogEntity>();
                 AddModifyLogIfChanged(
-                    modifyLogs, request.Id, "跟廠商收", oldCustomerCod, customerCod, userId, modifiedTime);
+                    modifyLogs, request.Id, "跟廠商收", oldCustomerTax, customerTax, userId, modifiedTime);
                 AddModifyLogIfChanged(
                     modifyLogs, request.Id, "跟派件收", oldTransCod, transCod, userId, modifiedTime);
                 AddModifyLogIfChanged(
@@ -239,7 +239,7 @@ namespace Service.Services.Receivable
                 .WhereIf(request?.Status == ReceivableStatus.Unreceived,
                     x => !x.ReceivedCustomerCodTime.HasValue && !x.ReceivedToDlvCodTime.HasValue)
                 .WhereIf(request?.CollectionType == ReceivableCollectionType.Customer,
-                    x => (x.CustomerCod ?? 0) > 0)
+                    x => (x.CustomerTax ?? 0) > 0)
                 .WhereIf(request?.CollectionType == ReceivableCollectionType.Trans,
                     x => !string.IsNullOrEmpty(x.ToDlvCod) &&
                          x.ToDlvCod != "0");
@@ -274,6 +274,7 @@ namespace Service.Services.Receivable
                 Cod = x.Cod ?? 0,
                 Fee = x.Fee ?? 0,
                 CustomerCod = x.CustomerCod ?? 0,
+                CustomerTax = x.CustomerTax ?? 0,
                 TransCod = x.TransCod ?? 0,
                 ThreePartTax = x.ThreePartTax,
                 FourPartTax = x.FourPartTax,
@@ -345,7 +346,7 @@ namespace Service.Services.Receivable
                     CodSubtotal = codSubtotal,
                     ReceivedAmount = receivedAmount,
                     UnreceivedAmount = codSubtotal - receivedAmount,
-                    CustomerCod = row.CustomerCod,
+                    CustomerTax = row.CustomerTax,
                     TransCod = transCod,
                     ThreePartTax = row.ThreePartTax,
                     FourPartTax = row.FourPartTax,
@@ -688,32 +689,32 @@ namespace Service.Services.Receivable
                 {
                     group.Key.PostingDate,
                     group.Key.Source,
-                    CustomerCod = group.Sum(item => (long)item.CustomerCod),
+                    CustomerTax = group.Sum(item => (long)item.CustomerTax),
                     TransCod = group.Sum(item => (long)item.TransCod)
                 })
                 .ToList();
-            long totalCustomerCod = 0;
+            long totalCustomerTax = 0;
             long totalTransCod = 0;
             for (var index = 0; index < groups.Count; index++)
             {
                 var group = groups[index];
-                totalCustomerCod += group.CustomerCod;
+                totalCustomerTax += group.CustomerTax;
                 totalTransCod += group.TransCod;
                 var row = sheet.CreateRow(index + 1);
 
                 NpoiCell.CreateIntCell(row, 0, index + 1, dataStyle);
                 NpoiCell.CreateCell(row, 1, group.PostingDate?.Replace("/", string.Empty), dataStyle);
                 NpoiCell.CreateCell(row, 2, group.Source, dataStyle);
-                NpoiCell.CreateDoubleCell(row, 3, group.CustomerCod, numberStyle);
+                NpoiCell.CreateDoubleCell(row, 3, group.CustomerTax, numberStyle);
                 NpoiCell.CreateDoubleCell(row, 4, group.TransCod, numberStyle);
-                NpoiCell.CreateDoubleCell(row, 5, group.CustomerCod + group.TransCod, numberStyle);
+                NpoiCell.CreateDoubleCell(row, 5, group.CustomerTax + group.TransCod, numberStyle);
             }
 
             var totalRow = sheet.CreateRow(groups.Count + 1);
             NpoiCell.CreateCell(totalRow, 0, "合計", headerStyle);
-            NpoiCell.CreateDoubleCell(totalRow, 3, totalCustomerCod, numberStyle);
+            NpoiCell.CreateDoubleCell(totalRow, 3, totalCustomerTax, numberStyle);
             NpoiCell.CreateDoubleCell(totalRow, 4, totalTransCod, numberStyle);
-            NpoiCell.CreateDoubleCell(totalRow, 5, totalCustomerCod + totalTransCod, numberStyle);
+            NpoiCell.CreateDoubleCell(totalRow, 5, totalCustomerTax + totalTransCod, numberStyle);
 
             sheet.AutoSizeColumns(headers.Length, scale: 1.2, minWidth: 12);
         }
@@ -760,7 +761,7 @@ namespace Service.Services.Receivable
                 NpoiCell.CreateIntCell(row, column++, item.CodSubtotal, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.ReceivedAmount, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.UnreceivedAmount, numberStyle);
-                NpoiCell.CreateIntCell(row, column++, item.CustomerCod, numberStyle);
+                NpoiCell.CreateIntCell(row, column++, item.CustomerTax, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.TransCod, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.ThreePartTax, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.FourPartTax, numberStyle);

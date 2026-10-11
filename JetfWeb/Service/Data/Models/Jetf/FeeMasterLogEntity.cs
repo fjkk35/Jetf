@@ -320,6 +320,12 @@ namespace Service.Data
         public int? CustomerCod { get; set; }
 
         /// <summary>
+        /// 主檔異動當時向客戶收取的稅金合計，不含報關費。
+        /// </summary>
+        [Column("CUSTOMER_TAX")]
+        public int? CustomerTax { get; set; }
+
+        /// <summary>
         /// 派件公司代收金額。
         /// </summary>
         [Column("TRANS_COD")]

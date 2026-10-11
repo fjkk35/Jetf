@@ -71,6 +71,11 @@ namespace Service.Services.SeaTaxGUpload
         public int? CustomerCod { get; set; }
 
         /// <summary>
+        /// 向客戶收取的稅金，不含報關費。
+        /// </summary>
+        public int? CustomerTax { get; set; }
+
+        /// <summary>
         /// 稅金類別。
         /// </summary>
         public string IncludeTax { get; set; }

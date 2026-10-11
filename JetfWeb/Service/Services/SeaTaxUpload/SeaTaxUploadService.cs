@@ -777,6 +777,7 @@ and not exists (
                 var taxData = _taxService.GetTaxY(taxCalculationInput);
                 feeMasterRow.TransCod = taxData.TransCod.ToString(CultureInfo.InvariantCulture);
                 feeMasterRow.CustomerCod = taxData.CustomerCod.ToString(CultureInfo.InvariantCulture);
+                feeMasterRow.CustomerTax = taxData.CustomerTax.ToString(CultureInfo.InvariantCulture);
                 feeMasterRow.ToDlvCod = taxData.ToDlvCod.ToString(CultureInfo.InvariantCulture);
                 return;
             }
@@ -795,6 +796,7 @@ and not exists (
                 feeMasterRow.Fee = "0";
                 feeMasterRow.TransCod = taxData.TransCod.ToString(CultureInfo.InvariantCulture);
                 feeMasterRow.CustomerCod = taxData.CustomerCod.ToString(CultureInfo.InvariantCulture);
+                feeMasterRow.CustomerTax = taxData.CustomerTax.ToString(CultureInfo.InvariantCulture);
                 feeMasterRow.ToDlvCod = taxData.ToDlvCod.ToString(CultureInfo.InvariantCulture);
                 return;
             }
@@ -806,6 +808,7 @@ and not exists (
                 feeMasterRow.Fee = "0";
                 feeMasterRow.TransCod = taxData.TransCod.ToString(CultureInfo.InvariantCulture);
                 feeMasterRow.CustomerCod = taxData.CustomerCod.ToString(CultureInfo.InvariantCulture);
+                feeMasterRow.CustomerTax = taxData.CustomerTax.ToString(CultureInfo.InvariantCulture);
                 feeMasterRow.ToDlvCod = taxData.ToDlvCod.ToString(CultureInfo.InvariantCulture);
                 return;
             }
@@ -813,6 +816,7 @@ and not exists (
             var defaultTaxData = _taxService.GetTaxN(taxCalculationInput);
             feeMasterRow.TransCod = defaultTaxData.TransCod.ToString(CultureInfo.InvariantCulture);
             feeMasterRow.CustomerCod = defaultTaxData.CustomerCod.ToString(CultureInfo.InvariantCulture);
+            feeMasterRow.CustomerTax = defaultTaxData.CustomerTax.ToString(CultureInfo.InvariantCulture);
             feeMasterRow.ToDlvCod = defaultTaxData.ToDlvCod.ToString(CultureInfo.InvariantCulture);
         }
 
@@ -999,7 +1003,7 @@ and not exists (
                 taxData = _taxService.GetTaxN(taxCalculationInput);
             }
 
-            return CreateFeeMasterDetailRow(CreateFeeMasterDetailSourceRow(row), codAmount, detailFee, taxData.ToDlvCod, taxData.TransCod, taxData.CustomerCod);
+            return CreateFeeMasterDetailRow(CreateFeeMasterDetailSourceRow(row), codAmount, detailFee, taxData.ToDlvCod, taxData.TransCod, taxData.CustomerCod, taxData.CustomerTax);
         }
 
         /// <summary>
@@ -1039,7 +1043,7 @@ and not exists (
                     feeAssigned = true;
                 }
 
-                result.Add(CreateFeeMasterDetailRow(row, codAmount, detailFee, codAmount + transTax + detailFee, transTax, customerTax));
+                result.Add(CreateFeeMasterDetailRow(row, codAmount, detailFee, codAmount + transTax + detailFee, transTax, customerTax, customerTax));
                 codAssigned = true;
             }
 
@@ -1055,7 +1059,8 @@ and not exists (
             int feeAmount,
             int toDlvCod,
             int transCod = 0,
-            int customerCod = 0)
+            int customerCod = 0,
+            int customerTax = 0)
         {
             return new FeeMasterDetailRow
             {
@@ -1077,7 +1082,8 @@ and not exists (
                 RecAddress = row.RecAddress,
                 ToDlvCod = toDlvCod.ToString(CultureInfo.InvariantCulture),
                 TransCod = transCod.ToString(CultureInfo.InvariantCulture),
-                CustomerCod = customerCod.ToString(CultureInfo.InvariantCulture)
+                CustomerCod = customerCod.ToString(CultureInfo.InvariantCulture),
+                CustomerTax = customerTax.ToString(CultureInfo.InvariantCulture)
             };
         }
 
@@ -1119,6 +1125,7 @@ and not exists (
             feeMasterRow.Fee = taxData.TransCod > 0 ? feeMasterRow.Fee : "0";
             feeMasterRow.TransCod = taxData.TransCod.ToString(CultureInfo.InvariantCulture);
             feeMasterRow.CustomerCod = taxData.CustomerCod.ToString(CultureInfo.InvariantCulture);
+            feeMasterRow.CustomerTax = taxData.CustomerTax.ToString(CultureInfo.InvariantCulture);
             feeMasterRow.ToDlvCod = taxData.ToDlvCod.ToString(CultureInfo.InvariantCulture);
         }
 
@@ -1210,6 +1217,7 @@ and not exists (
                 TaxPayer = NormalizeText(row.TaxPayer),
                 Arrival = NormalizeText(row.Arrival),
                 CustomerCod = ParseAmountOrZero(row.CustomerCod),
+                CustomerTax = ParseAmountOrZero(row.CustomerTax),
                 TransCod = ParseAmountOrZero(row.TransCod),
                 ModiftyDate = createTime,
                 TaxRecId = NormalizeText(row.TaxRecId)
@@ -1270,7 +1278,8 @@ and not exists (
                 RecAddress = NormalizeText(row.RecAddress),
                 ToDlvCod = NormalizeText(row.ToDlvCod),
                 TransCod = ParseNullableInt(row.TransCod),
-                CustomerCod = ParseNullableInt(row.CustomerCod)
+                CustomerCod = ParseNullableInt(row.CustomerCod),
+                CustomerTax = ParseNullableInt(row.CustomerTax)
             };
         }
 

@@ -16,6 +16,11 @@ namespace Service.Services.DownloadEtlNew
         public int CustomerCod { get; set; }
 
         /// <summary>
+        /// 取得或設定向客戶收取的稅金合計，不含報關費。
+        /// </summary>
+        public int CustomerTax { get; set; }
+
+        /// <summary>
         /// 取得或設定實際派件代收金額。
         /// </summary>
         public int ToDlvCod { get; set; }

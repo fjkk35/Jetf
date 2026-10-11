@@ -78,9 +78,14 @@ namespace Service.Services.Receivable.Domain
         public int Fee { get; set; }
 
         /// <summary>
-        /// 跟廠商收金額。
+        /// 客戶代收金額，包含報關費，用於計算代收小計。
         /// </summary>
         public int CustomerCod { get; set; }
+
+        /// <summary>
+        /// 跟廠商收稅金，來源為 FEE_MASTER_DETAIL.CUSTOMER_TAX，不含報關費。
+        /// </summary>
+        public int CustomerTax { get; set; }
 
         /// <summary>
         /// 捷豐支付金額。

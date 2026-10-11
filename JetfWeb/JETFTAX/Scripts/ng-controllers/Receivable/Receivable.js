@@ -16,7 +16,7 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
         }
         function validateEditAmounts(form) {
             var fields = [
-                { name: '跟廠商收', value: form.CustomerCod },
+                { name: '跟廠商收', value: form.CustomerTax },
                 { name: '跟派件收', value: form.TransCod },
                 { name: '捷豐支付', value: form.JetfPayment },
                 { name: '報關費', value: form.Ccfee },
@@ -35,7 +35,7 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
                     return false;
                 }
             }
-            var total = Number(form.CustomerCod) + Number(form.TransCod) + Number(form.JetfPayment);
+            var total = Number(form.CustomerTax) + Number(form.TransCod) + Number(form.JetfPayment);
             if (total !== form.OriginalCollectionTotal) {
                 showError('跟廠商收、跟派件收、捷豐支付合計必須與原始金額 ' +
                     form.OriginalCollectionTotal.toLocaleString() + ' 相同');
@@ -256,14 +256,14 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
             $scope.editingRow = row;
             $scope.editForm = {
                 Id: row.Id,
-                CustomerCod: toAmount(row.CustomerCod),
+                CustomerTax: toAmount(row.CustomerTax),
                 TransCod: toAmount(row.TransCod),
                 JetfPayment: toAmount(row.JetfPayment),
                 Ccfee: toAmount(row.Ccfee),
                 Cod: toAmount(row.Cod),
                 Fee: toAmount(row.Fee),
                 UnreceivedReason: row.UnreceivedReason || '',
-                OriginalCollectionTotal: toAmount(row.CustomerCod) +
+                OriginalCollectionTotal: toAmount(row.CustomerTax) +
                     toAmount(row.TransCod) +
                     toAmount(row.JetfPayment)
             };
@@ -283,7 +283,7 @@ mainApp.controller('ReceivableController', ['$scope', '$http', function ($scope,
             $scope.savingEdit = true;
             $http.post(Router.action('Receivable', 'Update'), {
                 Id: form.Id,
-                CustomerCod: form.CustomerCod,
+                CustomerTax: form.CustomerTax,
                 TransCod: form.TransCod,
                 JetfPayment: form.JetfPayment,
                 Ccfee: form.Ccfee,

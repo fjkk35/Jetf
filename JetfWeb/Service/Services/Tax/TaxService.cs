@@ -31,6 +31,7 @@ namespace Service.Services.Tax
 
                 //跟客戶收
                 taxData.CustomerCod = 1000;
+                taxData.CustomerTax = 1000;
 
                 taxData.ToDlvCod = taxData.TransCod + cod + fee;
             }
@@ -41,6 +42,7 @@ namespace Service.Services.Tax
 
                 //跟客戶收
                 taxData.CustomerCod = tax1 + tax2;
+                taxData.CustomerTax = tax1 + tax2;
 
                 taxData.ToDlvCod = cod;
             }
@@ -74,6 +76,7 @@ namespace Service.Services.Tax
 
             //跟客戶收
             taxData.CustomerCod = 0;
+            taxData.CustomerTax = 0;
 
             //不包稅：代收貨款+稅金+手續費
             taxData.ToDlvCod = tax1 + tax2 + cod + fee;
@@ -106,6 +109,7 @@ namespace Service.Services.Tax
 
             //跟客戶收
             taxData.CustomerCod = tax1 + tax2;
+            taxData.CustomerTax = tax1 + tax2;
 
             taxData.ToDlvCod = cod;
 
@@ -137,6 +141,7 @@ namespace Service.Services.Tax
 
             //跟客戶收
             taxData.CustomerCod = 0;
+            taxData.CustomerTax = 0;
 
             taxData.ToDlvCod = cod;
 
@@ -168,6 +173,7 @@ namespace Service.Services.Tax
 
             //跟客戶收
             taxData.CustomerCod = tax1 + tax2;
+            taxData.CustomerTax = tax1 + tax2;
 
             taxData.ToDlvCod = cod;
 

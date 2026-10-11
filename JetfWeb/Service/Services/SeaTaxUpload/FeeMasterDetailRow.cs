@@ -99,6 +99,11 @@
         /// 客戶稅額
         /// </summary>
         public string CustomerCod { get; set; }
+
+        /// <summary>
+        /// 向客戶收取的明細稅金，不含報關費。
+        /// </summary>
+        public string CustomerTax { get; set; }
     }
 
     /// <summary>

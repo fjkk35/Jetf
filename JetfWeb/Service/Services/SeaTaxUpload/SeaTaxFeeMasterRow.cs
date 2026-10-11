@@ -158,6 +158,11 @@ namespace Service.Services.SeaTaxUpload
         public string CustomerCod { get; set; } = string.Empty;
 
         /// <summary>
+        /// 向客戶收取的稅金合計，不含報關費。
+        /// </summary>
+        public string CustomerTax { get; set; } = string.Empty;
+
+        /// <summary>
         /// 同主檔全部筆數的明細資料。
         /// </summary>
         public List<FeeMasterDetailRow> DetailRows { get; set; } = new List<FeeMasterDetailRow>();

@@ -158,6 +158,12 @@ namespace Service.Data
         public int? CustomerCod { get; set; }
 
         /// <summary>
+        /// 向客戶收取的明細稅金，不含報關費。
+        /// </summary>
+        [Column("CUSTOMER_TAX")]
+        public int? CustomerTax { get; set; }
+
+        /// <summary>
         /// 捷豐支付金額。
         /// </summary>
         [Column("JETF_PAYMENT")]

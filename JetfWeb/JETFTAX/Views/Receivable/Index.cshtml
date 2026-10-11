@@ -198,7 +198,7 @@
                         <td class="text-right">{{row.CodSubtotal | number:0}}</td>
                         <td class="text-right">{{row.ReceivedAmount | number:0}}</td>
                         <td class="text-right">{{row.UnreceivedAmount | number:0}}</td>
-                        <td class="text-right">{{row.CustomerCod | number:0}}</td>
+                        <td class="text-right">{{row.CustomerTax | number:0}}</td>
                         <td class="text-right">{{row.TransCod | number:0}}</td>
                         <td class="text-right">{{row.JetfPayment | number:0}}</td>
                         <td class="text-right">{{row.Ccfee | number:0}}</td>
@@ -286,7 +286,7 @@
                             <div class="col-sm-9">
                                 <input type="number"
                                        class="form-control text-right"
-                                       ng-model="editForm.CustomerCod"
+                                       ng-model="editForm.CustomerTax"
                                        min="0"
                                        step="1"
                                        required />
