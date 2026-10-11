@@ -394,7 +394,11 @@ namespace PDTWebAPI.Services
                 }
                 else if (body.DataType == "海快報單狀態")
                 {
-                    response = GetSeaDeclarationStatus(trackingNo);
+                    response = GetSeaDeclarationStatus(trackingNo, "TPCT");
+                }
+                else if (body.DataType == "海快報單狀態台中港")
+                {
+                    response = GetSeaDeclarationStatus(trackingNo, "華揚(眾信)");
                 }
                 else if (body.DataType == "海快報單狀態(資料庫)")
                 {
@@ -472,8 +476,9 @@ namespace PDTWebAPI.Services
         /// 取得海快報單狀態
         /// </summary>
         /// <param name="trackingNo"></param>
+        /// <param name="portCode">MODIFYBY 的港口判斷字串</param>
         /// <returns></returns>
-        public UnpackingResponseModel GetSeaDeclarationStatus(string trackingNo) 
+        public UnpackingResponseModel GetSeaDeclarationStatus(string trackingNo, string portCode)
         {
             var response = new UnpackingResponseModel()
             {
@@ -482,9 +487,9 @@ namespace PDTWebAPI.Services
 
             //海快原單資料
             DataTable dt = GetSeaOrderOriginal(trackingNo);
-            var modifyByRow = dt.AsEnumerable().FirstOrDefault(r => (r.Field<string>("MODIFYBY") ?? "").Contains("TPCT"));
+            var modifyByRow = dt.AsEnumerable().FirstOrDefault(r => (r.Field<string>("MODIFYBY") ?? "").Contains(portCode));
 
-            // 先取 TPCT 的 MAINNUMBER
+            // 先取符合指定港口判斷字串的 MAINNUMBER
             var mawb = modifyByRow?.Field<string>("MAINNUMBER");
 
             // 如果是空或 null，就改抓第一筆
@@ -512,7 +517,7 @@ namespace PDTWebAPI.Services
                 if (result.GridModel.Select(r => r.ProType).Contains("連線收單建檔"))
                 {
                     //是否溢卸
-                    var isUnload = IsUnload(dt);
+                    var isUnload = IsUnload(dt, portCode);
 
                     message = isUnload ? "高雄港" : "可通關";
                 }
