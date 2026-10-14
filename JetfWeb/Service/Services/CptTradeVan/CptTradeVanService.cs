@@ -1602,6 +1602,63 @@ namespace Service.Services
         }
 
         /// <summary>
+        /// (GB325)海運進口艙單表頭及彙整資料查詢
+        /// </summary>
+        /// <param name="parameters">查詢參數，包含海關通關號碼 vslRegNo。</param>
+        /// <returns>海運進口艙單表頭及彙整資料查詢結果。</returns>
+        public Gb325Model GetGb325(Dictionary<string, string> parameters)
+        {
+            int retryCount = 0;
+            const int maxRetries = 20;
+            Gb325Model result = null;
+            do
+            {
+                try
+                {
+                    string url = "https://portal.sw.nat.gov.tw/APGQ/GB325!query";
+
+                    using (HttpClient client = new HttpClient())
+                    {
+                        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+                        using (var content = new FormUrlEncodedContent(parameters))
+                        using (HttpResponseMessage response = client.PostAsync(url, content).Result)
+                        {
+                            if (response.IsSuccessStatusCode)
+                            {
+                                result = JsonConvert.DeserializeObject<Gb325Model>(response.Content.ReadAsStringAsync().Result)
+                                    ?? new Gb325Model() { Msg = "(GB325)海運進口艙單表頭及彙整資料查詢回應為空，請重新查詢" };
+                            }
+                            else
+                            {
+                                result = new Gb325Model() { Msg = "(GB325)海運進口艙單表頭及彙整資料查詢失敗，請重新查詢" };
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    result = new Gb325Model() { Msg = ex.Message };
+                }
+
+                if (result?.Status == "ok"
+                    || result?.Msg?.Contains("執行成功") == true
+                    || result?.Msg?.Contains("查無資料") == true)
+                {
+                    break;
+                }
+
+                retryCount++;
+                if (retryCount < maxRetries)
+                {
+                    Thread.Sleep(1000);
+                }
+            } while (retryCount < maxRetries);
+
+            return result;
+        }
+
+        /// <summary>
         /// 1.(GB301)進口報單通關流程查詢
         /// </summary>
         /// <param name="parameters"></param>

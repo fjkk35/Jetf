@@ -391,6 +391,8 @@
     <Compile Include="Models\CptTradeVan\Gb301Model.cs" />
     <Compile Include="Models\CptTradeVan\Gb302Model.cs" />
     <Compile Include="Models\CptTradeVan\Gb321Model.cs" />
+    <Compile Include="Models\CptTradeVan\Gb325GridModel.cs" />
+    <Compile Include="Models\CptTradeVan\Gb325Model.cs" />
     <Compile Include="Models\CptTradeVan\Gb326Model.cs" />
     <Compile Include="Models\CptTradeVan\Gb330Model.cs" />
     <Compile Include="Models\CptTradeVan\Gb350DetailGridModel.cs" />
