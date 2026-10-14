@@ -1,17 +1,22 @@
 ﻿@{
     ViewBag.Title = "貨況明細";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    var isEmbedded = string.Equals(Request.QueryString["embedded"], "true", StringComparison.OrdinalIgnoreCase);
+    Layout = isEmbedded ? "~/Views/Shared/_DetailLayout.cshtml" : "~/Views/Shared/_Layout.cshtml";
 }
 
 @Html.Css("~/Content/Views/SearchCargo/Detail.css")
+@if (isEmbedded)
+{
+    @Html.Css("~/Content/css-loader.css")
+}
 
-<div ng-app="mainApp" ng-controller="SearchCargoDetailController">
-    <div class="detail-header">
-        <span class="headtype">貨況明細</span>
-        <button class="btn btn-info btn-sm" ng-click="showLogCargoStatus()">
-            <i class="fa fa-history"></i> 查詢紀錄
-        </button>
-    </div>
+<div ng-app="mainApp" ng-controller="SearchCargoDetailController" class="@(isEmbedded ? "search-cargo-detail-embedded" : "")">
+    @if (!isEmbedded)
+    {
+        <div class="detail-header">
+            <span class="headtype">貨況明細</span>
+        </div>
+    }
 
     <!-- 載入中 -->
     <div ng-if="loading" class="loading-container">
@@ -22,7 +27,12 @@
     <div ng-if="!loading && detailData" class="detail-container">
         <!-- 基本資料 -->
         <div class="detail-section">
-            <h5 class="section-title">基本資料</h5>
+            <div class="basic-section-header">
+                <h5 class="section-title">基本資料</h5>
+                <button type="button" class="btn btn-info btn-sm" ng-click="showLogCargoStatus()" ng-disabled="loading || !detailData">
+                    <i class="fa fa-history"></i> 查詢紀錄
+                </button>
+            </div>
             <table class="detail-table">
                 <colgroup>
                     <col style="width: 10%;">
@@ -380,12 +390,15 @@
 
     </div>
 
-    <!-- 操作按鈕 -->
-    <div ng-if="!loading && detailData" class="button-section">
-        <button class="btn btn-secondary btn-sm" ng-click="closeWindow()">
-            <i class="fas fa-times"></i> 關閉
-        </button>
-    </div>
+    @if (!isEmbedded)
+    {
+        <!-- 操作按鈕 -->
+        <div ng-if="!loading && detailData" class="button-section">
+            <button class="btn btn-secondary btn-sm" ng-click="closeWindow()">
+                <i class="fas fa-times"></i> 關閉
+            </button>
+        </div>
+    }
 
     <!-- 新增處置說明 Modal -->
     <div class="modal fade" id="processModal" tabindex="-1" role="dialog">
@@ -613,6 +626,16 @@
         </div>
     </div>
 </div>
+
+@section scripts {
+    @if (isEmbedded)
+    {
+        <script>
+            var mainApp = angular.module('mainApp', ['commonFilters']);
+        </script>
+        @Scripts.Render("~/Scripts/ng-controllers/SearchCargo/SearchCargoDetail.js")
+    }
+}
 
 <style>
     .required:after {

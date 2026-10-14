@@ -85,5 +85,20 @@
             </table>
         </div>
     </div>
+
+    <div class="modal fade search-cargo-detail-modal" id="cargoDetailModal" tabindex="-1" role="dialog" aria-label="貨況明細" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="search-cargo-detail-toolbar">
+                    <button type="button" class="search-cargo-detail-close" data-dismiss="modal" aria-label="關閉">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <iframe ng-if="detailUrl" ng-src="{{detailUrl}}" id="cargoDetailFrame" title="貨況明細"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 

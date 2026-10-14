@@ -502,3 +502,35 @@ hr {
 .detail-section > .table {
     margin-bottom: 0;
 }
+
+.search-cargo-detail-embedded {
+    min-height: 100vh;
+    padding: 8px 12px 12px;
+    background: #ffffff;
+}
+
+.basic-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 12px;
+    background: #f1f5f9;
+    border-bottom: 2px solid #cbd5e1;
+}
+
+.basic-section-header .section-title {
+    padding: 0;
+    border-bottom: 0;
+}
+
+.basic-section-header .btn {
+    flex-shrink: 0;
+}
+
+.search-cargo-detail-embedded .detail-container {
+    max-width: none;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+}

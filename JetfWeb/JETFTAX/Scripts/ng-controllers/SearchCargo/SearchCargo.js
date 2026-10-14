@@ -3,6 +3,29 @@ mainApp.controller('SearchCargoController', function ($scope, $http, $window) {
     // 初始化資料
     $scope.data = [];
     $scope.loading = false;
+    $scope.detailUrl = null;
+
+    var detailModal = $('#cargoDetailModal');
+    var detailTrigger = null;
+
+    detailModal.on('hidden.bs.modal.searchCargo', function () {
+        $scope.$applyAsync(function () {
+            $scope.detailUrl = null;
+        });
+        if (detailTrigger) {
+            detailTrigger.focus();
+        }
+    });
+
+    function handleDetailMessage(event) {
+        var frame = document.getElementById('cargoDetailFrame');
+        if (event.origin === $window.location.origin && frame && event.source === frame.contentWindow &&
+            event.data && event.data.type === 'searchCargoDetail:close') {
+            detailModal.modal('hide');
+        }
+    }
+
+    $window.addEventListener('message', handleDetailMessage);
     
     // 查詢條件
   $scope.searchForm = {
@@ -90,10 +113,12 @@ $scope.data = response.data.data || [];
         $scope.data = [];
     };
 
-    // 開啟明細頁面 (新分頁)
+    // 在彈窗內開啟明細，保留查詢條件與結果
      $scope.openDetail = function (id, source) {
-   var url = Router.action('SearchCargo', 'Detail') + '?id=' + encodeURIComponent(id) + '&source=' + encodeURIComponent(source || '');
-        $window.open(url, '_blank');
+        detailTrigger = document.activeElement;
+        $scope.detailUrl = Router.action('SearchCargo', 'Detail') + '?id=' + encodeURIComponent(id) +
+            '&source=' + encodeURIComponent(source || '') + '&embedded=true';
+        detailModal.modal('show');
     };
 
     // Enter鍵觸發查詢
@@ -140,5 +165,10 @@ index = 4;
     // 頁面離開時移除事件監聽
     $scope.$on('$destroy', function () {
         angular.element(document).off('keydown');
+        $window.removeEventListener('message', handleDetailMessage);
+        detailModal.off('.searchCargo');
+        detailModal.removeClass('fade');
+        detailModal.modal('hide');
+        detailModal.modal('dispose');
     });
 });

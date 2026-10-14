@@ -21,6 +21,30 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
     var urlParams = new URLSearchParams($window.location.search);
     var id = urlParams.get('id');
     var source = urlParams.get('source');
+    var isEmbedded = urlParams.get('embedded') === 'true' && $window.parent !== $window;
+    var pageWindow = isEmbedded ? $window.parent : $window;
+
+    // 嵌入明細時通知查詢頁關閉彈窗
+    $scope.closeWindow = function () {
+        if (isEmbedded) {
+            $window.parent.postMessage({ type: 'searchCargoDetail:close' }, $window.location.origin);
+        } else {
+            $window.close();
+        }
+    };
+
+    function handleDetailKeyDown(event) {
+        if (event.key === 'Escape' && !document.querySelector('.modal.show, .swal-overlay--show-modal')) {
+            $scope.closeWindow();
+        }
+    }
+
+    if (isEmbedded) {
+        $window.addEventListener('keydown', handleDetailKeyDown, true);
+        $scope.$on('$destroy', function () {
+            $window.removeEventListener('keydown', handleDetailKeyDown, true);
+        });
+    }
 
     if (!id || !source) {
         swal({
@@ -28,7 +52,7 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
             text: "缺少必要參數",
             icon: "error"
         }).then(function () {
-            $window.close();
+            $scope.closeWindow();
         });
         return;
     }
@@ -40,7 +64,7 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
         $http.post(Router.action('SearchCargo', 'GetDetail'), { id: id, source: source })
             .then(function (response) {
                 if (response.data.Redirect) {
-                    window.location = Router.action('Account', 'Login');
+                    pageWindow.location.href = Router.action('Account', 'Login');
                     return;
                 }
 
@@ -78,7 +102,7 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
         $http.post(Router.action('SearchCargo', 'GetProcessList'), { dlv_inv: dlv_inv })
             .then(function (response) {
                 if (response.data.Redirect) {
-                    window.location = Router.action('Account', 'Login');
+                    pageWindow.location.href = Router.action('Account', 'Login');
                     return;
                 }
 
@@ -96,7 +120,7 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
         $http.post(Router.action('SearchCargo', 'GetCargoTargetBagNumber'), { bagNumber: bagNumber })
             .then(function (response) {
                 if (response.data.Redirect) {
-                    window.location = Router.action('Account', 'Login');
+                    pageWindow.location.href = Router.action('Account', 'Login');
                     return;
                 }
 
@@ -120,7 +144,7 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
             bagNumber: $scope.detailData.Bag_Number
         }).then(function (response) {
             if (response.data.Redirect) {
-                window.location = Router.action('Account', 'Login');
+                pageWindow.location.href = Router.action('Account', 'Login');
                 return;
             }
 
@@ -147,7 +171,7 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
             bagNumber: $scope.detailData.Dlv_Inv
         }).then(function (response) {
             if (response.data.Redirect) {
-                window.location = Router.action('Account', 'Login');
+                pageWindow.location.href = Router.action('Account', 'Login');
                 return;
             }
 
@@ -210,7 +234,7 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
             headers: { 'Content-Type': undefined }
         }).then(function (response) {
             if (response.data.Redirect) {
-                window.location = Router.action('Account', 'Login');
+                pageWindow.location.href = Router.action('Account', 'Login');
                 return;
             }
 
@@ -250,7 +274,7 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
                     dlv_inv: $scope.detailData.Dlv_Inv
                 }).then(function (response) {
                     if (response.data.Redirect) {
-                        window.location = Router.action('Account', 'Login');
+                        pageWindow.location.href = Router.action('Account', 'Login');
                         return;
                     }
 
@@ -291,7 +315,7 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
                     id: id
                 }).then(function (response) {
                     if (response.data.Redirect) {
-                        window.location = Router.action('Account', 'Login');
+                        pageWindow.location.href = Router.action('Account', 'Login');
                         return;
                     }
 
@@ -315,7 +339,7 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
             dlv_inv: $scope.detailData.Dlv_Inv
         }).then(function (response) {
             if (response.data.Redirect) {
-                window.location = Router.action('Account', 'Login');
+                pageWindow.location.href = Router.action('Account', 'Login');
                 return;
             }
 
@@ -337,7 +361,7 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
             trackingNo: $scope.detailData.Bag_Number
         }).then(function (response) {
             if (response.data.Redirect) {
-                window.location = Router.action('Account', 'Login');
+                pageWindow.location.href = Router.action('Account', 'Login');
                 return;
             }
 
@@ -353,14 +377,9 @@ mainApp.controller('SearchCargoDetailController', function ($scope, $http, $wind
         });
     };
 
-    // 關閉視窗
-    $scope.closeWindow = function () {
-        $window.close();
-    };
-
     // 返回列表
     $scope.backToList = function () {
-        $window.close();
+        $scope.closeWindow();
     };
 
     // 切換申報品名顯示
