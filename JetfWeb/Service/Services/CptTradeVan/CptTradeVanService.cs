@@ -19,8 +19,6 @@ using System.Data.SqlClient;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -31,13 +29,11 @@ namespace Service.Services
 {
     public class CptTradeVanService : _BaseService
     {
-        private readonly HttpClient _httpClient;
         private readonly CptPortalApi _cptPortalApi;
 
-        public CptTradeVanService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, IHttpClientFactory httpClientFactory, CptPortalApi cptPortalApi)
+        public CptTradeVanService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, CptPortalApi cptPortalApi)
             : base(jetfDbContext, dataCenterDbContext)
         {
-            _httpClient = httpClientFactory.CreateClient();
             _cptPortalApi = cptPortalApi;
         }
 
@@ -162,7 +158,7 @@ namespace Service.Services
                         { "hawb", r.TrackingNo }
                     };
 
-                var result = GetGb321(parameters);
+                var result = _cptPortalApi.GetGb321(parameters);
 
                 r.CptNo = "Gb321";
                 r.Msg = result.Msg;
@@ -210,7 +206,7 @@ namespace Service.Services
                                 { "hawb", r.TrackingNo }
                             };
 
-                        var gb301Result = GetGb301(parameters);
+                        var gb301Result = _cptPortalApi.GetGb301(parameters);
 
                         //重新執行次數
                         retryCount = 0;
@@ -219,7 +215,7 @@ namespace Service.Services
                             if (result.Msg.Contains("發生一或多項錯誤。"))
                             {
                                 Thread.Sleep(1000);
-                                gb301Result = GetGb301(parameters);
+                                gb301Result = _cptPortalApi.GetGb301(parameters);
                                 retryCount++;
                             }
                             else
@@ -292,7 +288,7 @@ namespace Service.Services
                         { "hawb", r.TrackingNo }
                     };
 
-                var result = GetGb353(parameters);
+                var result = _cptPortalApi.GetGb353(parameters);
 
                 retryCount = 0;
                 do
@@ -300,7 +296,7 @@ namespace Service.Services
                     if (result.Msg.Contains("發生一或多項錯誤。"))
                     {
                         Thread.Sleep(1000);
-                        result = GetGb353(parameters);
+                        result = _cptPortalApi.GetGb353(parameters);
                         retryCount++;
                     }
                     else
@@ -387,7 +383,7 @@ namespace Service.Services
                         { "hawb", "" }
                     };
 
-                var result = GetGb353(parameters);
+                var result = _cptPortalApi.GetGb353(parameters);
 
                 retryCount = 0;
                 do
@@ -395,7 +391,7 @@ namespace Service.Services
                     if (result.Msg.Contains("發生一或多項錯誤。"))
                     {
                         Thread.Sleep(1000);
-                        result = GetGb353(parameters);
+                        result = _cptPortalApi.GetGb353(parameters);
                         retryCount++;
                     }
                     else
@@ -511,7 +507,7 @@ namespace Service.Services
                         { "containerNo", r.ContainerNo },
                     };
 
-                var result = GetGb378(parameters);
+                var result = _cptPortalApi.GetGb378(parameters);
                 r.Gb378Msg = result.msg;
                 var firstItem = result.data?.FirstOrDefault();
                 if (firstItem != null)
@@ -1546,441 +1542,6 @@ namespace Service.Services
                 }).ToList();
         }
 
-        /// <summary>
-        /// 11.(GB321)進口簡易申報收單作業結果查詢
-        /// </summary>
-        /// <param name="apiUrl"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb321Model GetGb321(Dictionary<string, string> parameters)
-        {
-            int retryCount = 0;
-            const int maxRetries = 20;
-            Gb321Model result = null;
-            do
-            {
-                try
-                {
-                    //關貿Api
-                    string url = "https://portal.sw.nat.gov.tw/APGQ/GB321!query";
-
-                    using (HttpClient client = new HttpClient())
-                    {
-                        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
-                        //將參數轉換成 FormUrlEncodedContent
-                        var content = new FormUrlEncodedContent(parameters);
-                        //發送 POST 請求
-                        HttpResponseMessage response = client.PostAsync(url, content).Result;
-
-                        // 檢查請求是否成功
-                        if (response.IsSuccessStatusCode)
-                        {
-                            result = JsonConvert.DeserializeObject<Gb321Model>(response.Content.ReadAsStringAsync().Result);
-                        }
-                        else
-                        {
-                            result = new Gb321Model() { Msg = "(GB321)進口簡易申報收單作業結果查詢失敗，請重新查詢" };
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    result = new Gb321Model() { Msg = ex.Message };
-                }
-
-                if (result != null && (result.Msg.Contains("執行成功") || result.Msg.Contains("查無資料")))
-                {
-                    break;
-                }
-
-                retryCount++;
-                Thread.Sleep(1000);
-            } while (retryCount < maxRetries);
-
-            return result;
-        }
-
-        /// <summary>
-        /// (GB325)海運進口艙單表頭及彙整資料查詢
-        /// </summary>
-        /// <param name="parameters">查詢參數，包含海關通關號碼 vslRegNo。</param>
-        /// <returns>海運進口艙單表頭及彙整資料查詢結果。</returns>
-        public Gb325Model GetGb325(Dictionary<string, string> parameters)
-        {
-            int retryCount = 0;
-            const int maxRetries = 20;
-            Gb325Model result = null;
-            do
-            {
-                try
-                {
-                    string url = "https://portal.sw.nat.gov.tw/APGQ/GB325!query";
-
-                    using (HttpClient client = new HttpClient())
-                    {
-                        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
-                        using (var content = new FormUrlEncodedContent(parameters))
-                        using (HttpResponseMessage response = client.PostAsync(url, content).Result)
-                        {
-                            if (response.IsSuccessStatusCode)
-                            {
-                                result = JsonConvert.DeserializeObject<Gb325Model>(response.Content.ReadAsStringAsync().Result)
-                                    ?? new Gb325Model() { Msg = "(GB325)海運進口艙單表頭及彙整資料查詢回應為空，請重新查詢" };
-                            }
-                            else
-                            {
-                                result = new Gb325Model() { Msg = "(GB325)海運進口艙單表頭及彙整資料查詢失敗，請重新查詢" };
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    result = new Gb325Model() { Msg = ex.Message };
-                }
-
-                if (result?.Status == "ok"
-                    || result?.Msg?.Contains("執行成功") == true
-                    || result?.Msg?.Contains("查無資料") == true)
-                {
-                    break;
-                }
-
-                retryCount++;
-                if (retryCount < maxRetries)
-                {
-                    Thread.Sleep(1000);
-                }
-            } while (retryCount < maxRetries);
-
-            return result;
-        }
-
-        /// <summary>
-        /// 1.(GB301)進口報單通關流程查詢
-        /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb301Model GetGb301(Dictionary<string, string> parameters)
-        {
-            try
-            {
-                //關貿Api
-                string url = "https://portal.sw.nat.gov.tw/APGQ/GB301!queryAir";
-
-                using (HttpClient client = new HttpClient())
-                {
-                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                    //將參數轉換成 FormUrlEncodedContent
-                    var content = new FormUrlEncodedContent(parameters);
-                    //發送 POST 請求
-                    HttpResponseMessage response = client.PostAsync(url, content).Result;
-
-                    // 檢查請求是否成功
-                    if (response.IsSuccessStatusCode)
-                    {
-                        return JsonConvert.DeserializeObject<Gb301Model>(response.Content.ReadAsStringAsync().Result);
-                    }
-                    else
-                    {
-                        return new Gb301Model() { Msg = "(GB301)進口報單通關流程查詢失敗，請重新查詢" };
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                return new Gb301Model() { Msg = ex.Message };
-            }
-        }
-
-        /// <summary>
-        /// 1.(GB330)海關通關號碼查詢
-        /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb330Model GetGb330(Dictionary<string, string> parameters)
-        {
-            //var parameters = new Dictionary<string, string>
-            //        {
-            //            { "vslRegNo", "" },
-            //            { "choice", "N" },
-            //            { "shipName", r.ShipName },
-            //            { "voyageFlightNo", r.VoyageFlightNo },
-            //            { "voyageNo", "" },
-            //            { "estArDate", "" },
-            //            { "shipCoCd", "" },
-            //            { "estArDateB", "" },
-            //            { "estArDateE", "" },
-            //            { "custCd", "" },
-            //            { "clearanceDateB", "" },
-            //            { "clearanceDateE", "" },
-            //            { "shipClass", "A" },
-            //            { "custCd_P", "" },
-            //            { "estArDateB_P", "" },
-            //            { "estArDateE_P", "" },
-            //            { "shipCoCd_P", "" }
-            //        };
-
-            //關貿Api
-            string url = "https://portal.sw.nat.gov.tw/APGQ/GB330!query";
-            int retryCount = 3;
-
-            Gb330Model result = new Gb330Model();
-            do
-            {
-                try
-                {
-                    using (HttpClient client = new HttpClient())
-                    {
-                        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        //將參數轉換成 FormUrlEncodedContent
-                        var content = new FormUrlEncodedContent(parameters);
-                        //發送 POST 請求
-                        HttpResponseMessage response = client.PostAsync(url, content).Result;
-
-                        // 檢查請求是否成功
-                        if (response.IsSuccessStatusCode)
-                        {
-                            result = JsonConvert.DeserializeObject<Gb330Model>(response.Content.ReadAsStringAsync().Result);
-                            if (result.Msg.Contains("發生一或多項錯誤。"))
-                            {
-
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            result.Msg = "(GB330)海關通關號碼查詢，請重新查詢";
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    result.Msg = ex.Message;
-                }
-
-                retryCount--;
-                Thread.Sleep(1000);
-            } while (retryCount > 0);
-
-            return result;
-        }
-
-        /// <summary>
-        /// (GB378)海運貨櫃銷艙比例查詢作業
-        /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb378Model GetGb378(Dictionary<string, string> parameters)
-        {
-            //關貿Api
-            string url = "https://portal.sw.nat.gov.tw/APGQ/GB378!query";
-            int retryCount = 3;
-
-            Gb378Model result = new Gb378Model();
-            do
-            {
-                try
-                {
-                    using (HttpClient client = new HttpClient())
-                    {
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
-                        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        //將參數轉換成 FormUrlEncodedContent
-                        var content = new FormUrlEncodedContent(parameters);
-                        //發送 POST 請求
-                        HttpResponseMessage response = client.PostAsync(url, content).Result;
-
-                        // 檢查請求是否成功
-                        if (response.IsSuccessStatusCode)
-                        {
-                            result = JsonConvert.DeserializeObject<Gb378Model>(response.Content.ReadAsStringAsync().Result);
-                            if (result.msg.Contains("發生一或多項錯誤。"))
-                            {
-
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            result.msg = "(GB378)海運貨櫃銷艙比例查詢作業，請重新查詢";
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    result.msg = ex.Message;
-                }
-
-                retryCount--;
-                Thread.Sleep(1000);
-            } while (retryCount > 0);
-
-            return result;
-        }
-
-        /// <summary>
-        /// 17.(GB353)進口簡易報單錯單查詢
-        /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb353Model GetGb353(Dictionary<string, string> parameters)
-        {
-            int retryCount = 0;
-            const int maxRetries = 20;
-            Gb353Model result = null;
-            do
-            {
-                try
-                {
-                    //關貿Api
-                    string url = "https://portal.sw.nat.gov.tw/APGQ/GB353!query";
-
-                    using (HttpClient client = new HttpClient())
-                    {
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
-                        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        //將參數轉換成 FormUrlEncodedContent
-                        var content = new FormUrlEncodedContent(parameters);
-                        //發送 POST 請求
-                        HttpResponseMessage response = client.PostAsync(url, content).Result;
-
-                        // 檢查請求是否成功
-                        if (response.IsSuccessStatusCode)
-                        {
-                            result = JsonConvert.DeserializeObject<Gb353Model>(response.Content.ReadAsStringAsync().Result);
-                        }
-                        else
-                        {
-                            result = new Gb353Model() { Msg = "(GB353)進口簡易報單錯單查詢，請重新查詢" };
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    result = new Gb353Model() { Msg = ex.Message };
-                }
-
-                if (result != null && (result.Msg.Contains("執行成功") || result.Msg.Contains("查無資料")))
-                {
-                    break;
-                }
-                retryCount++;
-                Thread.Sleep(1000);
-            } while (retryCount < maxRetries);
-
-            return result;
-        }
-
-        /// <summary>
-        /// (GB350)空運進口貨物新艙單資料查詢
-        /// </summary>
-        /// <param name="apiUrl"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb350Model GetGb350(Dictionary<string, string> parameters)
-        {
-            int retryCount = 0;
-            const int maxRetries = 3;
-            Gb350Model result = null;
-            do
-            {
-                try
-                {
-                    //關貿Api
-                    string url = "https://portal.sw.nat.gov.tw/APGQ/GB350!queryMawb";
-
-                    using (HttpClient client = new HttpClient())
-                    {
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
-                        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        //將參數轉換成 FormUrlEncodedContent
-                        var content = new FormUrlEncodedContent(parameters);
-                        //發送 POST 請求
-                        HttpResponseMessage response = client.PostAsync(url, content).Result;
-
-                        // 檢查請求是否成功
-                        if (response.IsSuccessStatusCode)
-                        {
-                            result = JsonConvert.DeserializeObject<Gb350Model>(response.Content.ReadAsStringAsync().Result);
-                        }
-                        else
-                        {
-                            result = new Gb350Model() { Msg = "(GB350)空運進口貨物新艙單資料查詢，請重新查詢" };
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    result = new Gb350Model() { Msg = ex.Message };
-                }
-
-                if (result != null && result.Msg.Contains("查詢成功"))
-                {
-                    break;
-                }
-
-                retryCount++;
-            } while (retryCount < maxRetries);
-
-            return result;
-        }
-
-        public async Task<Gb321Model> GetGb321Async(Dictionary<string, string> parameters)
-        {
-            int retryCount = 0;
-            const int maxRetries = 5;
-            Gb321Model result = null;
-            do
-            {
-                try
-                {
-                    //關貿Api
-                    string url = "https://portal.sw.nat.gov.tw/APGQ/GB321!query";
-                    //將參數轉換成 FormUrlEncodedContent
-                    var content = new FormUrlEncodedContent(parameters);
-                    //發送 POST 請求
-                    //_httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
-                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                    using (HttpResponseMessage response = await _httpClient.PostAsync(url, content))
-                    {
-                        // 檢查請求是否成功
-                        if (response.IsSuccessStatusCode)
-                        {
-                            result = JsonConvert.DeserializeObject<Gb321Model>(await response.Content.ReadAsStringAsync());
-                        }
-                        else
-                        {
-                            result = new Gb321Model() { Msg = "(GB321)進口簡易申報收單作業結果查詢失敗，請重新查詢" };
-                        }
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    result = new Gb321Model() { Msg = ex.Message };
-                }
-
-                if (result != null && result.Msg.Contains("執行成功"))
-                {
-                    break;
-                }
-
-                retryCount++;
-                await Task.Delay(5000); 
-            } while (retryCount < maxRetries);
-
-            return result;
-        }
-
         public void RunCptSeaMainNumberJobAsync(string uploadTime, string uploadOpe)
         {
             var gb321List = GetGb321CptSeaMainNumberDetails(uploadTime, uploadOpe);
@@ -1995,9 +1556,9 @@ namespace Service.Services
 
         public List<string> GetGb326CptSeaMainNumberDetails(string uploadTime, string uploadOpe)
         {
-            var sql = @"SELECT distinct MainNumber FROM [jetf].[dbo].CptSeaMainNumberDetail a 
+            var sql = @"SELECT distinct MainNumber FROM [jetf].[dbo].CptSeaMainNumberDetail a
                         where Gb326ImportDate is null
-                        and exists 
+                        and exists
                         (
                              select * from [jetf].[dbo].[CptSeaMainNumber]
                              where MainNumber = a.MainNumber and UploadOpe=@UploadOpe and UploadTime=@UploadTime
@@ -2013,9 +1574,9 @@ namespace Service.Services
 
         public List<CptSeaMainNumberDetailModel> GetGb321CptSeaMainNumberDetails(string uploadTime, string uploadOpe)
         {
-            var sql = @"SELECT * FROM [jetf].[dbo].CptSeaMainNumberDetail a 
+            var sql = @"SELECT * FROM [jetf].[dbo].CptSeaMainNumberDetail a
                         where IsReceiveOrder='0'
-                        and exists 
+                        and exists
                         (
                           select * from [jetf].[dbo].[CptSeaMainNumber]
                           where MainNumber = a.MainNumber and UploadOpe=@UploadOpe and UploadTime=@UploadTime
@@ -2032,9 +1593,9 @@ namespace Service.Services
 
         public List<CptSeaMainNumberDetailModel> GetGb353CptSeaMainNumberDetails(string uploadTime, string uploadOpe)
         {
-            var sql = @"SELECT * FROM [jetf].[dbo].CptSeaMainNumberDetail a 
+            var sql = @"SELECT * FROM [jetf].[dbo].CptSeaMainNumberDetail a
                         where IsReceiveOrder='0'
-                        and exists 
+                        and exists
                         (
                           select * from [jetf].[dbo].[CptSeaMainNumber]
                           where MainNumber = a.MainNumber and UploadOpe=@UploadOpe and UploadTime=@UploadTime
@@ -2092,7 +1653,7 @@ namespace Service.Services
                         { "mawb", mainNumber },
                         { "hawb", item.BagNumber }
                     };
-                var result = GetGb321(parameters);
+                var result = _cptPortalApi.GetGb321(parameters);
 
                 item.Gb321Status = result.Status;
                 item.Gb321Msg = result.Msg;
@@ -2134,7 +1695,7 @@ namespace Service.Services
                             { "hawb", item.BagNumber }
                         };
 
-                var result = GetGb353(parameters);
+                var result = _cptPortalApi.GetGb353(parameters);
                 item.Gb353Status = result.Status;
                 item.Gb353Msg = result.Msg;
 

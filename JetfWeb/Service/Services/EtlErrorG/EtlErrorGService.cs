@@ -1,6 +1,7 @@
 ﻿using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.Models.CptTradeVan;
+using Service.Services.CptTradeVan;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -14,12 +15,12 @@ namespace Service.Services.EtlErrorG
 {
     public class EtlErrorGService : _BaseService
     {
-        private readonly CptTradeVanService _cptTradeVanService;
+        private readonly CptPortalApi _cptPortalApi;
 
-        public EtlErrorGService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, CptTradeVanService cptTradeVanService)
+        public EtlErrorGService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext, CptPortalApi cptPortalApi)
             : base(jetfDbContext, dataCenterDbContext)
         {
-            this._cptTradeVanService = cptTradeVanService;
+            _cptPortalApi = cptPortalApi;
         }
 
         IFont fontB;
@@ -331,7 +332,7 @@ namespace Service.Services.EtlErrorG
                         { "hawb", trackingNo }
                     };
 
-            return _cptTradeVanService.GetGb321(parameters);
+            return _cptPortalApi.GetGb321(parameters);
         }
 
 
@@ -347,7 +348,7 @@ namespace Service.Services.EtlErrorG
                         { "tab4.currentGridPageRows", "10" }
                     };
 
-            return _cptTradeVanService.GetGb350(parameters);
+            return _cptPortalApi.GetGb350(parameters);
         }
 
 
