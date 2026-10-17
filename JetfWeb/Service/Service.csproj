@@ -874,6 +874,7 @@
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenTaxUploadRow.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalQueryRequest.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalQueryResponse.cs" />
+    <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalQueryRow.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\Domain\SeaShenzhenOriginalUploadRow.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenFeeDownloadService.cs" />
     <Compile Include="Services\SeaShenzhenOriginal\SeaShenzhenFeeManualToDlvCodService.cs" />

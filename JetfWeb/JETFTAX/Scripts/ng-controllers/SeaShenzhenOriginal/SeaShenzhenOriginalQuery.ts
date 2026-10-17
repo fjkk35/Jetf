@@ -24,6 +24,7 @@ interface SeaShenzhenOriginalQueryRow {
     BlNo: string;
     OrderNo: string;
     JetfSerial: string;
+    HasJetfSerialSignReceipt: boolean;
     TransTimeText: string;
     TransName: string;
     Importer: string;
@@ -73,6 +74,9 @@ interface SeaShenzhenOriginalQueryScope extends ng.IScope {
     nextPage: () => void;
     getPages: () => number[];
     parsePageSize: () => number;
+    getCargoReceiptUrl: (cargoNumber: string) => string;
+    canSearchHctTrackingNo: (trackingNo: string) => boolean;
+    getHctTrackingUrl: (trackingNo: string) => string;
 }
 
 mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', function (
@@ -116,6 +120,20 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
 
     loadTaxPaymentOptions();
     loadDataTypeOptions();
+
+    $scope.getCargoReceiptUrl = function (cargoNumber: string): string {
+        return Router.action('Cargo', 'CargoSignReceipt') +
+            '?cargoNumber=' + encodeURIComponent(normalizeText(cargoNumber));
+    };
+
+    $scope.canSearchHctTrackingNo = function (trackingNo: string): boolean {
+        return normalizeText(trackingNo).length === 10;
+    };
+
+    $scope.getHctTrackingUrl = function (trackingNo: string): string {
+        return Router.action('ShipmentInboundRecord', 'HctTracking') +
+            '?trackingNo=' + encodeURIComponent(normalizeText(trackingNo));
+    };
 
     $scope.openStartDatePopup = function (): void {
         $scope.startDatePopup.opened = true;
@@ -210,8 +228,13 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
 
     $scope.getPages = function (): number[] {
         var pages: number[] = [];
-        var startPage = Math.max(1, $scope.currentPage - 2);
-        var endPage = Math.min($scope.totalPages, $scope.currentPage + 2);
+        var maxVisible = 10;
+        var startPage = Math.max(1, $scope.currentPage - Math.floor(maxVisible / 2));
+        var endPage = Math.min($scope.totalPages, startPage + maxVisible - 1);
+
+        if (endPage - startPage < maxVisible - 1) {
+            startPage = Math.max(1, endPage - maxVisible + 1);
+        }
 
         for (var i = startPage; i <= endPage; i++) {
             pages.push(i);
@@ -223,6 +246,10 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
     $scope.parsePageSize = function (): number {
         return parseInt($scope.pageSize, 10);
     };
+
+    function normalizeText(value: string): string {
+        return value ? value.toString().trim() : '';
+    }
 
     function buildRequest(pageIndex: number, pageSize: number): any {
         return {

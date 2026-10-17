@@ -271,7 +271,29 @@
                         <td>{{item.TrackingNo}}</td>
                         <td>{{item.BlNo}}</td>
                         <td>{{item.OrderNo}}</td>
-                        <td>{{item.JetfSerial}}</td>
+                        <td style="white-space: nowrap;">
+                            <span>{{item.JetfSerial}}</span>
+                            <a ng-if="canSearchHctTrackingNo(item.JetfSerial)"
+                               ng-href="{{getHctTrackingUrl(item.JetfSerial)}}"
+                               target="_blank"
+                               rel="noopener"
+                               class="btn btn-sm btn-success ml-1 px-1 py-0"
+                               title="查詢 HCT 貨態"
+                               aria-label="查詢 HCT 貨態"
+                               style="line-height: 1.2; min-width: 22px; font-weight: 600;">
+                                查
+                            </a>
+                            <a ng-if="item.HasJetfSerialSignReceipt"
+                               ng-href="{{getCargoReceiptUrl(item.JetfSerial)}}"
+                               target="_blank"
+                               rel="noopener"
+                               class="btn btn-sm btn-info ml-1 px-1 py-0"
+                               title="查看簽收單"
+                               aria-label="查看簽收單"
+                               style="line-height: 1.2; min-width: 22px; font-weight: 600;">
+                                簽
+                            </a>
+                        </td>
                         <td>{{item.TransTimeText}}</td>
                         <td>{{item.TransName}}</td>
                         <td>{{item.Importer}}</td>
@@ -297,6 +319,9 @@
                 <nav>
                     <ul class="pagination justify-content-center">
                         <li class="page-item" ng-class="{disabled: currentPage === 1}">
+                            <a class="page-link" href="javascript:void(0)" ng-click="changePage(1)">第一頁</a>
+                        </li>
+                        <li class="page-item" ng-class="{disabled: currentPage === 1}">
                             <a class="page-link" href="javascript:void(0)" ng-click="previousPage()">上一頁</a>
                         </li>
                         <li class="page-item"
@@ -306,6 +331,9 @@
                         </li>
                         <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
                             <a class="page-link" href="javascript:void(0)" ng-click="nextPage()">下一頁</a>
+                        </li>
+                        <li class="page-item" ng-class="{disabled: currentPage === totalPages}">
+                            <a class="page-link" href="javascript:void(0)" ng-click="changePage(totalPages)">最後一頁</a>
                         </li>
                     </ul>
                 </nav>

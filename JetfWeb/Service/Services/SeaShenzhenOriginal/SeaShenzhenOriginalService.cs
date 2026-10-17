@@ -173,11 +173,47 @@ namespace Service.Services.SeaShenzhenOriginal
                 })
                 .ToList();
 
+            FillCargoSignReceiptFlags(data);
+
             return new SeaShenzhenOriginalQueryResponse
             {
                 TotalCount = totalCount,
                 Data = data
             };
+        }
+
+        /// <summary>
+        /// 一次查詢目前頁面託運單號是否有簽收單，避免逐筆查詢。
+        /// </summary>
+        private void FillCargoSignReceiptFlags(List<SeaShenzhenOriginalQueryRow> data)
+        {
+            var serials = data
+                .Select(x => x.JetfSerial)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (!serials.Any())
+            {
+                return;
+            }
+
+            var receiptSerials = new HashSet<string>(JetfDb.CargoSignReceipts
+                .AsNoTracking()
+                .Where(x => serials.Contains(x.JetfSerial))
+                .Select(x => x.JetfSerial)
+                .Distinct()
+                .ToList()
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim()), StringComparer.OrdinalIgnoreCase);
+
+            foreach (var item in data)
+            {
+                item.HasJetfSerialSignReceipt =
+                    !string.IsNullOrWhiteSpace(item.JetfSerial) &&
+                    receiptSerials.Contains(item.JetfSerial.Trim());
+            }
         }
 
         /// <summary>

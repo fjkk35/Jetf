@@ -32,6 +32,17 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
         };
         loadTaxPaymentOptions();
         loadDataTypeOptions();
+        $scope.getCargoReceiptUrl = function (cargoNumber) {
+            return Router.action('Cargo', 'CargoSignReceipt') +
+                '?cargoNumber=' + encodeURIComponent(normalizeText(cargoNumber));
+        };
+        $scope.canSearchHctTrackingNo = function (trackingNo) {
+            return normalizeText(trackingNo).length === 10;
+        };
+        $scope.getHctTrackingUrl = function (trackingNo) {
+            return Router.action('ShipmentInboundRecord', 'HctTracking') +
+                '?trackingNo=' + encodeURIComponent(normalizeText(trackingNo));
+        };
         $scope.openStartDatePopup = function () {
             $scope.startDatePopup.opened = true;
         };
@@ -112,8 +123,12 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
         };
         $scope.getPages = function () {
             var pages = [];
-            var startPage = Math.max(1, $scope.currentPage - 2);
-            var endPage = Math.min($scope.totalPages, $scope.currentPage + 2);
+            var maxVisible = 10;
+            var startPage = Math.max(1, $scope.currentPage - Math.floor(maxVisible / 2));
+            var endPage = Math.min($scope.totalPages, startPage + maxVisible - 1);
+            if (endPage - startPage < maxVisible - 1) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
             for (var i = startPage; i <= endPage; i++) {
                 pages.push(i);
             }
@@ -122,6 +137,9 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
         $scope.parsePageSize = function () {
             return parseInt($scope.pageSize, 10);
         };
+        function normalizeText(value) {
+            return value ? value.toString().trim() : '';
+        }
         function buildRequest(pageIndex, pageSize) {
             return {
                 DataDateStart: formatDate($scope.searchForm.dataDateStart),
