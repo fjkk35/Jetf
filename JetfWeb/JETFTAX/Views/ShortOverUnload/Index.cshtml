@@ -1,0 +1,33 @@
+﻿@using Service.EnumTax
+@using Service.Extensions
+@{
+    ViewBag.Title = "短溢卸";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<span class="headtype">短溢卸</span>
+<hr />
+<form id="shortOverUnloadForm" ng-controller="ShortOverUnloadController" ng-submit="upload()"
+      method="post" enctype="multipart/form-data" class="containertype">
+    @Html.AntiForgeryToken()
+    <div class="form-group col-lg-4">
+        <label for="unloadFormat">資料來源</label>
+        <select id="unloadFormat" name="format" class="form-control">
+            <option value="@((int)ShortOverUnloadDataSource.TaichungShortUnload)">@ShortOverUnloadDataSource.TaichungShortUnload.ToDescription()</option>
+        </select>
+    </div>
+    <div class="form-group col-lg-4">
+        <input id="unloadFile" type="file" name="file" accept=".xlsx,.xls" class="form-control-file" aria-label="選擇匯入 Excel 檔案" required />
+    </div>
+    <div class="form-group col-lg-12">
+        <a href="@Url.Action("DownloadExample")">下載短卸範例</a>
+    </div>
+    <div class="form-group col-lg-12">
+        <button id="uploadUnload" type="submit" class="btn btn-primary" ng-disabled="uploading"><i class="fas fa-upload"></i> 匯出 Excel</button>
+    </div>
+    <div id="unloadStatus" class="col-lg-12" role="status" aria-live="polite"
+         ng-class="{ 'text-danger': statusType === 'error', 'text-success': statusType === 'success' }"
+         ng-bind="statusMessage"></div>
+    <div class="loader loader-bar" data-rounded data-text="匯出中"
+         ng-class="{ 'is-active': uploading }"></div>
+</form>

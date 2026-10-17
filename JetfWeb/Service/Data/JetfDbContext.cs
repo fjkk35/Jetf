@@ -104,6 +104,8 @@ namespace Service.Data
 
         public DbSet<SeaTaxUploadEntity> SeaTaxUploads { get; set; }
 
+        public DbSet<SeaManifestUploadEntity> SeaManifestUploads { get; set; }
+
         public DbSet<SeaShenzhenTaxEntity> SeaShenzhenTaxes { get; set; }
 
         public DbSet<SeaShenzhenOriginalEntity> SeaShenzhenOriginals { get; set; }

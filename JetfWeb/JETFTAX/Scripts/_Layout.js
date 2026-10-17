@@ -114,6 +114,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
         },
         {
             id: 'clearanceWork', title: '清關作業', icon: 'fas fa-fw fa-clipboard-check', partner: 'ClearanceWork', children: [
+                { id: 'ShortOverUnload', text: '短溢卸', url: '~/ShortOverUnload/Index', auth: ['ShortOverUnload'] },
                 //{ id: 'ScanCargoArrivalTime', text: '輸入外車交倉時間', url: '~/ScanCargoArrivalTime/Index' },
                 { id: 'PdtScanCargoArrivalTime', text: '輸入外車交倉時間', url: '~/PdtScanCargoArrivalTime/Index' },
                 { id: 'EtlClearanceDetails', text: '空快清關明細表', url: '~/EtlClearanceDetails/Index', auth: ['EtlClearanceDetails'] },

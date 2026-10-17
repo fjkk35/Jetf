@@ -357,6 +357,7 @@
     <Compile Include="EnumTax\ShipmentInboundProcessTransNo.cs" />
     <Compile Include="EnumTax\ShipmentInboundProcessType.cs" />
     <Compile Include="EnumTax\ShipmentInboundSourceType.cs" />
+    <Compile Include="EnumTax\ShortOverUnloadDataSource.cs" />
     <Compile Include="EnumTax\ShenzhenTaxPayment.cs" />
     <Compile Include="EnumTax\TactReptileUrl.cs" />
     <Compile Include="EnumTax\TaxPaymentType.cs" />
@@ -963,6 +964,7 @@
     <Compile Include="Data\Models\Jetf\SeaShenzhenTaxEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShenzhenFeeMasterEntity.cs" />
     <Compile Include="Data\Models\Jetf\SeaTaxUploadEntity.cs" />
+    <Compile Include="Data\Models\Jetf\SeaManifestUploadEntity.cs" />
     <Compile Include="Data\Models\DataCenter\SeaOrderOriginalEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundEditHistoryEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShipmentInboundEntity.cs" />
@@ -970,6 +972,9 @@
     <Compile Include="Data\Models\Jetf\ShipmentInboundLocationHistoryEntity.cs" />
     <Compile Include="Data\Models\DataCenter\SysCustEntity.cs" />
     <Compile Include="Extensions\QueryableExtensions.cs" />
+    <Compile Include="Models\ShortOverUnload\ShortOverUnloadRow.cs" />
+    <Compile Include="Models\ShortOverUnload\ShortOverUnloadVessel.cs" />
+    <Compile Include="Services\ShortOverUnload\ShortOverUnloadService.cs" />
     <Compile Include="_BaseService.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -597,5 +597,10 @@ namespace Service.EnumTax
         /// 稅金客戶調整
         /// </summary>
         ReconciliationTaxCustomerAdjustment,
+
+        /// <summary>
+        /// 短溢卸
+        /// </summary>
+        ShortOverUnload,
     }
 }
