@@ -39,7 +39,7 @@ namespace Service.Services
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResponseModel UploadFile(string filePath, string dataDate, string userId)
+        public async Task<ResponseModel> UploadFileAsync(string filePath, string dataDate, string userId)
         {
             var resopnseModel = new ResponseModel();
 
@@ -61,7 +61,7 @@ namespace Service.Services
                 GetMftNo(list);
 
                 //取得G326
-                GetGb326(list);
+                await GetGb326Async(list);
 
                 //取得稅金
                 GetTax(list);
@@ -228,7 +228,7 @@ namespace Service.Services
             return resopnseModel;
         }
 
-        void GetGb326(List<SeaClearanceDetailQueryModel> list) 
+        async Task GetGb326Async(List<SeaClearanceDetailQueryModel> list)
         { 
             foreach(var item in list)
             {
@@ -249,7 +249,7 @@ namespace Service.Services
                    { "tab1.hawb", item.TrackingNo }
                };
                
-                var result = _cptPortalApi.GetGb326(parameters);
+                var result = await _cptPortalApi.GetGb326Async(parameters);
 
                 item.ImportDate = result?.ImportDate;
             }

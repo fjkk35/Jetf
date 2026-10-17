@@ -38,16 +38,16 @@ namespace Service.Services.EtlErrorG
         /// <param name="sDate"></param>
         /// <param name="eDate"></param>
         /// <returns></returns>
-        public IWorkbook GetEtlErrorGWorkbook(string sDate, string eDate,bool isSearch)
+        public async Task<IWorkbook> GetEtlErrorGWorkbookAsync(string sDate, string eDate,bool isSearch)
         {
             IWorkbook workbook = new XSSFWorkbook();
 
             //更新GB321
             if(isSearch)
-                UpdateGb321(sDate, eDate);
+                await UpdateGb321Async(sDate, eDate);
 
             //GB350-航班日期
-            UpdateGb350(sDate, eDate);
+            await UpdateGb350Async(sDate, eDate);
 
             //明細
             DataTable dt_Details = EtlErrorGDetails(sDate, eDate);
@@ -264,7 +264,13 @@ namespace Service.Services.EtlErrorG
 
 
 
-        void UpdateGb321(string sDate, string eDate)
+        /// <summary>
+        /// 非同步查詢 GB321，依序更新錯單的收單日期及通關方式。
+        /// </summary>
+        /// <param name="sDate">查詢起日。</param>
+        /// <param name="eDate">查詢迄日。</param>
+        /// <returns>代表查詢及更新完成的工作。</returns>
+        async Task UpdateGb321Async(string sDate, string eDate)
         {
             var data = GetEtlPlinkError(sDate, eDate).AsEnumerable()
                 .Select(r => new
@@ -276,9 +282,9 @@ namespace Service.Services.EtlErrorG
 
             conn.Open();
 
-            data.ForEach(r =>
+            foreach (var r in data)
             {
-                var result = GetGb321(r.MainNumber, r.TrackingNo);
+                var result = await GetGb321Async(r.MainNumber, r.TrackingNo);
                 var model = result.GridModel?.FirstOrDefault(x => x.ProType.Contains("連線收單建檔"));
                 var clearanceModel = result.GridModel?.FirstOrDefault(x => x.ProType.Contains("通關方式"));
 
@@ -292,13 +298,19 @@ namespace Service.Services.EtlErrorG
                 if(!string.IsNullOrEmpty(proDate) || !string.IsNullOrEmpty(clearanceType))
                     //更新
                     UpdateEtlPlinkError(r.Id, proType, proDate, clearanceType);
-            });
+            }
 
             conn.Close();
 
         }
 
-        void UpdateGb350(string sDate, string eDate)
+        /// <summary>
+        /// 非同步查詢 GB350，依序更新主提單的進口日期。
+        /// </summary>
+        /// <param name="sDate">查詢起日。</param>
+        /// <param name="eDate">查詢迄日。</param>
+        /// <returns>代表查詢及更新完成的工作。</returns>
+        async Task UpdateGb350Async(string sDate, string eDate)
         {
             var data = GetEtlPlinkErrorMawb(sDate, eDate).AsEnumerable()
                 .Select(r => new
@@ -308,14 +320,14 @@ namespace Service.Services.EtlErrorG
 
             conn.Open();
 
-            data.ForEach(r =>
+            foreach (var r in data)
             {
-                var result = GetGb350(r.MainNumber);
+                var result = await GetGb350Async(r.MainNumber);
                 var importDate = result.GridModel?.FirstOrDefault()?.IMPORT_DATE ?? "";
 
                 if(!string.IsNullOrEmpty(importDate))
                     InsertEtlDeliveryDate(r.MainNumber, importDate);
-            });
+            }
 
             conn.Close();
 
@@ -323,7 +335,13 @@ namespace Service.Services.EtlErrorG
 
 
 
-        Gb321Model GetGb321(string mainNumber, string trackingNo)
+        /// <summary>
+        /// 依主、分提單建立 GB321 查詢參數並回傳非同步查詢工作。
+        /// </summary>
+        /// <param name="mainNumber">主提單號碼。</param>
+        /// <param name="trackingNo">分提單號碼。</param>
+        /// <returns>GB321 查詢結果。</returns>
+        Task<Gb321Model> GetGb321Async(string mainNumber, string trackingNo)
         {
             var parameters = new Dictionary<string, string>
                     {
@@ -332,11 +350,16 @@ namespace Service.Services.EtlErrorG
                         { "hawb", trackingNo }
                     };
 
-            return _cptPortalApi.GetGb321(parameters);
+            return _cptPortalApi.GetGb321Async(parameters);
         }
 
 
-        Gb350Model GetGb350(string mainNumber)
+        /// <summary>
+        /// 依主提單建立 GB350 查詢參數並回傳非同步查詢工作。
+        /// </summary>
+        /// <param name="mainNumber">主提單號碼。</param>
+        /// <returns>GB350 查詢結果。</returns>
+        Task<Gb350Model> GetGb350Async(string mainNumber)
         {
             var parameters = new Dictionary<string, string>
                     {
@@ -348,7 +371,7 @@ namespace Service.Services.EtlErrorG
                         { "tab4.currentGridPageRows", "10" }
                     };
 
-            return _cptPortalApi.GetGb350(parameters);
+            return _cptPortalApi.GetGb350Async(parameters);
         }
 
 

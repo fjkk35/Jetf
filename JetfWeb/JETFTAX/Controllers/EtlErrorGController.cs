@@ -3,6 +3,7 @@ using NPOI.SS.UserModel;
 using Service.EnumTax;
 using Service.Services.EtlErrorG;
 using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -40,7 +41,7 @@ namespace JETFTAX.Controllers
         /// <returns></returns>
         //[UserAuthorize("1", "2", "3", "4", "6")]
         [UserAuthorize(Authority.EtlErrorG)]
-        public ActionResult EtlErrorGExcel(EtlErrorGViewModel vm)
+        public async Task<ActionResult> EtlErrorGExcel(EtlErrorGViewModel vm)
         {
             string sDate = vm.SDate;
             string eDate = vm.EDate;
@@ -50,7 +51,7 @@ namespace JETFTAX.Controllers
             IWorkbook workbook;
             try
             {
-                workbook = _etlErrorGService.GetEtlErrorGWorkbook(sDate, eDate,vm.IsSearch);
+                workbook = await _etlErrorGService.GetEtlErrorGWorkbookAsync(sDate, eDate,vm.IsSearch);
                 using (MemoryStream fileStream = new MemoryStream())
                 {
                     workbook.Write(fileStream);

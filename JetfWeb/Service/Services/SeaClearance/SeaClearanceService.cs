@@ -530,7 +530,7 @@ namespace Service.Services.SeaClearance
         /// </summary>
         /// <param name="seaClearanceDetailId"></param>
         /// <returns></returns>
-        public ResponseModel UpdateImportDate(int seaClearanceDetailId)
+        public async Task<ResponseModel> UpdateImportDateAsync(int seaClearanceDetailId)
         {
             try
             {
@@ -560,7 +560,7 @@ namespace Service.Services.SeaClearance
                     { "tab1.hawb", detail.TrackingNo }
                 };
 
-                var result = _cptPortalApi.GetGb326(parameters);
+                var result = await _cptPortalApi.GetGb326Async(parameters);
                 var importDate = result?.ImportDate;
 
                 if (string.IsNullOrEmpty(importDate))

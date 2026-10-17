@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NLog;
 using Service.Data;
 using Service.Services;
+using Service.Services.CptTradeVan;
 using Service.Services.Job.CainiaoCheckJob;
 using Service.Services.Job.CainiaoNeedJob;
 using Service.Services.Job.ComponentJob;
@@ -151,6 +152,10 @@ namespace JETFTAX
                 services.AddTransient(ctrl);
             }
             services.AddHttpClient();
+            services.AddHttpClient(nameof(CptPortalApi), client =>
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36");
+            });
         }
 
         protected void Application_AcquireRequestState()

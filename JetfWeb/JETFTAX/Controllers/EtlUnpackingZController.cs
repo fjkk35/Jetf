@@ -4,6 +4,7 @@ using Service.Models;
 using Service.Models.EtlUnpackingZ;
 using Service.Services;
 using System;
+using System.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -86,9 +87,14 @@ namespace JETFTAX.Controllers
         }
 
 
+        /// <summary>
+        /// 等待非同步艙單查詢完成後，建立 Excel 並回傳下載資訊。
+        /// </summary>
+        /// <param name="data">換行分隔的主提單號碼。</param>
+        /// <returns>下載識別碼、檔名及錯誤訊息。</returns>
         [HttpPost]
         [UserAuthorize(Authority.UploadEtlMergeBagNo)]
-        public JsonResult Download(string data)
+        public async Task<JsonResult> Download(string data)
         {
             string handle = Guid.NewGuid().ToString();
             string fileName = $"{DateTime.Now.Date.ToString("yyyyMMdd")}空運進口貨物新艙單資料查詢.xlsx";
@@ -100,7 +106,7 @@ namespace JETFTAX.Controllers
                                        .Where(line => !string.IsNullOrWhiteSpace(line))
                                        .ToList();
 
-                IWorkbook workbook = _etlUnpackingZService.Download(list);
+                IWorkbook workbook = await _etlUnpackingZService.DownloadAsync(list);
 
                 using (MemoryStream fileStream = new MemoryStream())
                 {

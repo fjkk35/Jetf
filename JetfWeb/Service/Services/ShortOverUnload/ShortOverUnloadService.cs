@@ -8,6 +8,7 @@ using Service.Extensions;
 using Service.Models.ShortOverUnload;
 using Service.Services.CptTradeVan;
 using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Globalization;
@@ -44,7 +45,7 @@ namespace Service.Services.ShortOverUnload
         /// <param name="format">短溢卸資料來源，目前支援台中-短卸。</param>
         /// <param name="importedAt">本次匯入的台北日期時間。</param>
         /// <returns>可供下載的短卸報告 Excel 位元組。</returns>
-        public byte[] Generate(Stream input, ShortOverUnloadDataSource format, DateTime importedAt)
+        public async Task<byte[]> GenerateAsync(Stream input, ShortOverUnloadDataSource format, DateTime importedAt)
         {
             // 先驗證資料來源及 Excel，避免無效檔案觸發資料庫或 API 查詢。
             if (format != ShortOverUnloadDataSource.TaichungShortUnload)
@@ -60,7 +61,7 @@ namespace Service.Services.ShortOverUnload
                 var registration = LoadOrderData(group.Key, group.ToList());
                 if (!vesselCache.TryGetValue(registration, out var vessel))
                 {
-                    vessel = LoadVessel(registration);
+                    vessel = await LoadVesselAsync(registration);
                     vesselCache.Add(registration, vessel);
                 }
                 vessels.Add(group.Key, vessel);
@@ -135,10 +136,10 @@ namespace Service.Services.ShortOverUnload
         /// </summary>
         /// <param name="registration">海關通關號碼（船掛）。</param>
         /// <returns>船舶代碼、航次、船名、受理關別及預定到港日期。</returns>
-        private ShortOverUnloadVessel LoadVessel(string registration)
+        private async Task<ShortOverUnloadVessel> LoadVesselAsync(string registration)
         {
             // GB330 以船掛查詢船舶代碼、航次及船名。
-            var gb330 = _portalApi.GetGb330(new Dictionary<string, string>
+            var gb330 = await _portalApi.GetGb330Async(new Dictionary<string, string>
             {
                 { "choice", "V" },
                 { "vslRegNo", registration },
@@ -189,7 +190,7 @@ namespace Service.Services.ShortOverUnload
                 throw new InvalidDataException($"船掛「{registration}」GB330 缺少船（機）代碼、船舶航次或船名。");
 
             // GB325 使用相同船掛查詢受理關別與預定到港日。
-            var gb325 = _portalApi.GetGb325(new Dictionary<string, string>
+            var gb325 = await _portalApi.GetGb325Async(new Dictionary<string, string>
             {
                 { "rows", "10" },
                 { "page", "1" },

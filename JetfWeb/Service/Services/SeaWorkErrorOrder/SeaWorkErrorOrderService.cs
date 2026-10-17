@@ -32,7 +32,7 @@ namespace Service.Services.SeaWorkErrorOrder
         /// <param name="filePath"></param>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public ResponseModel Upload(string filePath, string dataDate, string userId)
+        public async Task<ResponseModel> UploadAsync(string filePath, string dataDate, string userId)
         {
             ResponseModel resopnseModel = new ResponseModel();
             resopnseModel.status = Status.success;
@@ -52,7 +52,7 @@ namespace Service.Services.SeaWorkErrorOrder
                     //取得GB353
                     var gb353List = _cptTradeVanService.GetCptSeaMainNumberDetails(bagNumberList);
                     //查詢GB353
-                    _cptTradeVanService.SearchGb353(gb353List);
+                    await _cptTradeVanService.SearchGb353Async(gb353List);
                     resopnseModel.msg = $"上傳檔案筆數：{list.Count}";
                 }
             }

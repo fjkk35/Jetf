@@ -13,33 +13,36 @@ using Service.Models.CptTradeVan;
 
 namespace Service.Services.CptTradeVan
 {
-    public class CptPortalApi : IDisposable
+    /// <summary>
+    /// 關港貿 API 非同步查詢，統一管理呼叫間隔、重試及紀錄。
+    /// </summary>
+    public class CptPortalApi
     {
         private static readonly Logger Logger = LogManager.GetLogger("CptPortalApi");
         private static readonly SemaphoreSlim RequestIntervalLock = new SemaphoreSlim(1, 1);
         private static readonly Stopwatch RequestIntervalTimer = new Stopwatch();
-        private readonly HttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public CptPortalApi()
-        {
-            _httpClient = new HttpClient();
-        }
-
+        /// <summary>
+        /// 初始化使用 HTTP 用戶端工廠的 API 服務。
+        /// </summary>
+        /// <param name="httpClientFactory">HTTP 用戶端工廠。</param>
         public CptPortalApi(IHttpClientFactory httpClientFactory)
         {
-            _httpClient = httpClientFactory.CreateClient();
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
         }
 
-        public void Dispose()
-        {
-            _httpClient.Dispose();
-        }
-        public Gb326Model GetGb326(Dictionary<string, string> parameters)
+        /// <summary>
+        /// 非同步查詢 GB326 進口簡易申報收單作業結果。
+        /// </summary>
+        /// <param name="parameters">API 查詢參數。</param>
+        /// <returns>進口簡易申報收單作業查詢結果。</returns>
+        public async Task<Gb326Model> GetGb326Async(Dictionary<string, string> parameters)
         {
             string url = "https://portal.sw.nat.gov.tw/APGQ/GB326!query1";
             var apiName = "GB326";
 
-            return ExecuteWithRetry(() =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 Gb326Model result = null;
                 var stopwatch = LogRequestBegin(apiName, parameters);
@@ -47,19 +50,18 @@ namespace Service.Services.CptTradeVan
                 {
                     //關貿Api
 
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = CreateHttpClient())
                     {
                         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
                         //將參數轉換成 FormUrlEncodedContent
                         var content = new FormUrlEncodedContent(parameters);
                         //發送 POST 請求
-                        HttpResponseMessage response = SendRequestAsync(client, url, content).GetAwaiter().GetResult();
+                        HttpResponseMessage response = await SendRequestAsync(client, url, content).ConfigureAwait(false);
 
                         // 檢查請求是否成功
                         if (response.IsSuccessStatusCode)
                         {
-                            result = JsonConvert.DeserializeObject<Gb326Model>(response.Content.ReadAsStringAsync().Result);
+                            result = JsonConvert.DeserializeObject<Gb326Model>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
                             LogResponseError(apiName, result?.Status, result?.Msg);
                         }
                         else
@@ -80,20 +82,20 @@ namespace Service.Services.CptTradeVan
                 }
 
                 return result;
-            }, result => IsSuccessfulResponse(result?.Status, result?.Msg));
+            }, result => IsSuccessfulResponse(result?.Status, result?.Msg)).ConfigureAwait(false);
         }
 
         /// <summary>
         /// 1.(GB301)進口報單通關流程查詢
         /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb301Model GetGb301(Dictionary<string, string> parameters)
+        /// <param name="parameters">API 查詢參數。</param>
+        /// <returns>API 查詢結果。</returns>
+        public async Task<Gb301Model> GetGb301Async(Dictionary<string, string> parameters)
         {
             string url = "https://portal.sw.nat.gov.tw/APGQ/GB301!queryAir";
             var apiName = "GB301";
 
-            return ExecuteWithRetry(() =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 Gb301Model result = null;
                 var stopwatch = LogRequestBegin(apiName, parameters);
@@ -101,18 +103,17 @@ namespace Service.Services.CptTradeVan
                 {
                     //關貿Api
 
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = CreateHttpClient())
                     {
                         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
                         //將參數轉換成 FormUrlEncodedContent
                         var content = new FormUrlEncodedContent(parameters);
                         //發送 POST 請求
-                        HttpResponseMessage response = SendRequestAsync(client, url, content).GetAwaiter().GetResult();
+                        HttpResponseMessage response = await SendRequestAsync(client, url, content).ConfigureAwait(false);
                         // 檢查請求是否成功
                         if (response.IsSuccessStatusCode)
                         {
-                            var responseResult = JsonConvert.DeserializeObject<Gb301Model>(response.Content.ReadAsStringAsync().Result);
+                            var responseResult = JsonConvert.DeserializeObject<Gb301Model>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
                             LogResponseError(apiName, responseResult?.Status, responseResult?.Msg);
                             return responseResult;
                         }
@@ -134,15 +135,20 @@ namespace Service.Services.CptTradeVan
                 }
 
                 return result;
-            }, result => IsSuccessfulResponse(result?.Status, result?.Msg));
+            }, result => IsSuccessfulResponse(result?.Status, result?.Msg)).ConfigureAwait(false);
         }
 
-        public Gb302Model GetGb302(Dictionary<string, string> parameters)
+        /// <summary>
+        /// 非同步查詢 GB302 進口報單不受理報關原因。
+        /// </summary>
+        /// <param name="parameters">API 查詢參數。</param>
+        /// <returns>進口報單不受理報關原因查詢結果。</returns>
+        public async Task<Gb302Model> GetGb302Async(Dictionary<string, string> parameters)
         {
             string url = "https://portal.sw.nat.gov.tw/APGQ/GB302!query";
             var apiName = "GB302";
 
-            return ExecuteWithRetry(() =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 Gb302Model result = null;
                 var stopwatch = LogRequestBegin(apiName, parameters);
@@ -150,18 +156,17 @@ namespace Service.Services.CptTradeVan
                 {
                     //關貿Api
 
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = CreateHttpClient())
                     {
                         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
                         //將參數轉換成 FormUrlEncodedContent
                         var content = new FormUrlEncodedContent(parameters);
                         //發送 POST 請求
-                        HttpResponseMessage response = SendRequestAsync(client, url, content).GetAwaiter().GetResult();
+                        HttpResponseMessage response = await SendRequestAsync(client, url, content).ConfigureAwait(false);
                         // 檢查請求是否成功
                         if (response.IsSuccessStatusCode)
                         {
-                            var responseResult = JsonConvert.DeserializeObject<Gb302Model>(response.Content.ReadAsStringAsync().Result);
+                            var responseResult = JsonConvert.DeserializeObject<Gb302Model>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
                             LogResponseError(apiName, responseResult?.Status, responseResult?.Msg);
                             return responseResult;
                         }
@@ -183,94 +188,39 @@ namespace Service.Services.CptTradeVan
                 }
 
                 return result;
-            }, result => IsSuccessfulResponse(result?.Status, result?.Msg));
-        }
-
-        /// <summary>
-        /// 11.(GB321)進口簡易申報收單作業結果查詢
-        /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb321Model GetGb321(Dictionary<string, string> parameters)
-        {
-            string url = "https://portal.sw.nat.gov.tw/APGQ/GB321!query";
-            var apiName = "GB321";
-
-            return ExecuteWithRetry(() =>
-            {
-                Gb321Model result = null;
-                var stopwatch = LogRequestBegin(apiName, parameters);
-                try
-                {
-                    //關貿Api
-
-                    using (HttpClient client = new HttpClient())
-                    {
-                        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
-                        //將參數轉換成 FormUrlEncodedContent
-                        var content = new FormUrlEncodedContent(parameters);
-                        //發送 POST 請求
-                        HttpResponseMessage response = SendRequestAsync(client, url, content).GetAwaiter().GetResult();
-
-                        // 檢查請求是否成功
-                        if (response.IsSuccessStatusCode)
-                        {
-                            result = JsonConvert.DeserializeObject<Gb321Model>(response.Content.ReadAsStringAsync().Result);
-                            LogResponseError(apiName, result?.Status, result?.Msg);
-                        }
-                        else
-                        {
-                            Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
-                            result = new Gb321Model() { Msg = "(GB321)進口簡易申報收單作業結果查詢失敗，請重新查詢" };
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, $"Request_Error[Error] - [POST] {apiName}");
-                    result = new Gb321Model() { Msg = ex.Message };
-                }
-                finally
-                {
-                    LogRequestEnd(apiName, stopwatch);
-                }
-
-                return result;
-            }, result => IsSuccessfulResponse(result?.Status, result?.Msg));
+            }, result => IsSuccessfulResponse(result?.Status, result?.Msg)).ConfigureAwait(false);
         }
 
         /// <summary>
         /// (GB350)空運進口貨物新艙單資料查詢-主號
         /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb350Model GetGb350Mawb(Dictionary<string, string> parameters)
+        /// <param name="parameters">API 查詢參數。</param>
+        /// <returns>API 查詢結果。</returns>
+        public async Task<Gb350Model> GetGb350MawbAsync(Dictionary<string, string> parameters)
         {
             string url = "https://portal.sw.nat.gov.tw/APGQ/GB350!queryMawb";
             var apiName = "GB350";
 
-            return ExecuteWithRetry(() =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 Gb350Model result = new Gb350Model();
                 var stopwatch = LogRequestBegin(apiName, parameters);
                 try
                 {
 
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = CreateHttpClient())
                     {
                         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
-                        var formData = new FormUrlEncodedContent(parameters).ReadAsStringAsync().Result;
+                        var formData = await new FormUrlEncodedContent(parameters).ReadAsStringAsync().ConfigureAwait(false);
                         var content = new StringContent(formData, Encoding.UTF8, "application/x-www-form-urlencoded");
 
                         //發送 POST 請求
-                        HttpResponseMessage response = SendRequestAsync(client, url, content).GetAwaiter().GetResult();
+                        HttpResponseMessage response = await SendRequestAsync(client, url, content).ConfigureAwait(false);
 
                         // 檢查請求是否成功
                         if (response.IsSuccessStatusCode)
                         {
-                            result = JsonConvert.DeserializeObject<Gb350Model>(response.Content.ReadAsStringAsync().Result);
+                            result = JsonConvert.DeserializeObject<Gb350Model>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
                             LogResponseError(apiName, result?.Status, result?.Msg);
                         }
                         else
@@ -291,38 +241,37 @@ namespace Service.Services.CptTradeVan
                 }
 
                 return result;
-            }, result => IsSuccessfulResponse(result?.Status, result?.Msg));
+            }, result => IsSuccessfulResponse(result?.Status, result?.Msg)).ConfigureAwait(false);
         }
 
         /// <summary>
         /// (GB350)空運進口貨物新艙單資料查詢-明細
         /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb350DetailModel GetGb350Detail(Dictionary<string, string> parameters)
+        /// <param name="parameters">API 查詢參數。</param>
+        /// <returns>API 查詢結果。</returns>
+        public async Task<Gb350DetailModel> GetGb350DetailAsync(Dictionary<string, string> parameters)
         {
             string url = "https://portal.sw.nat.gov.tw/APGQ/GB350!queryDetail";
             var apiName = "GB350";
 
-            return ExecuteWithRetry(() =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 Gb350DetailModel result = new Gb350DetailModel();
                 var stopwatch = LogRequestBegin(apiName, parameters);
                 try
                 {
 
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = CreateHttpClient())
                     {
                         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
                         var content = new FormUrlEncodedContent(parameters);
                         //發送 POST 請求
-                        HttpResponseMessage response = SendRequestAsync(client, url, content).GetAwaiter().GetResult();
+                        HttpResponseMessage response = await SendRequestAsync(client, url, content).ConfigureAwait(false);
 
                         // 檢查請求是否成功
                         if (response.IsSuccessStatusCode)
                         {
-                            result = JsonConvert.DeserializeObject<Gb350DetailModel>(response.Content.ReadAsStringAsync().Result);
+                            result = JsonConvert.DeserializeObject<Gb350DetailModel>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
                             LogResponseError(apiName, result?.Status, result?.Msg);
                         }
                         else
@@ -343,7 +292,7 @@ namespace Service.Services.CptTradeVan
                 }
 
                 return result;
-            }, result => IsSuccessfulResponse(result?.Status, result?.Msg));
+            }, result => IsSuccessfulResponse(result?.Status, result?.Msg)).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -351,28 +300,27 @@ namespace Service.Services.CptTradeVan
         /// </summary>
         /// <param name="parameters">查詢參數，包含海關通關號碼 vslRegNo。</param>
         /// <returns>海運進口艙單表頭及彙整資料查詢結果。</returns>
-        public Gb325Model GetGb325(Dictionary<string, string> parameters)
+        public async Task<Gb325Model> GetGb325Async(Dictionary<string, string> parameters)
         {
             string url = "https://portal.sw.nat.gov.tw/APGQ/GB325!query";
             var apiName = "GB325";
 
-            return ExecuteWithRetry(() =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 Gb325Model result = null;
                 var stopwatch = LogRequestBegin(apiName, parameters);
                 try
                 {
 
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = CreateHttpClient())
                     {
                         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
                         using (var content = new FormUrlEncodedContent(parameters))
-                        using (HttpResponseMessage response = SendRequestAsync(client, url, content).GetAwaiter().GetResult())
+                        using (HttpResponseMessage response = await SendRequestAsync(client, url, content).ConfigureAwait(false))
                         {
                             if (response.IsSuccessStatusCode)
                             {
-                                result = JsonConvert.DeserializeObject<Gb325Model>(response.Content.ReadAsStringAsync().Result)
+                                result = JsonConvert.DeserializeObject<Gb325Model>(await response.Content.ReadAsStringAsync().ConfigureAwait(false))
                                     ?? new Gb325Model() { Msg = "(GB325)海運進口艙單表頭及彙整資料查詢回應為空，請重新查詢" };
                                 LogResponseError(apiName, result?.Status, result?.Msg);
                             }
@@ -395,37 +343,37 @@ namespace Service.Services.CptTradeVan
                 }
 
                 return result;
-            }, result => IsSuccessfulResponse(result?.Status, result?.Msg));
+            }, result => IsSuccessfulResponse(result?.Status, result?.Msg)).ConfigureAwait(false);
         }
 
         /// <summary>
         /// 1.(GB330)海關通關號碼查詢
         /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb330Model GetGb330(Dictionary<string, string> parameters)
+        /// <param name="parameters">API 查詢參數。</param>
+        /// <returns>API 查詢結果。</returns>
+        public async Task<Gb330Model> GetGb330Async(Dictionary<string, string> parameters)
         {
             string url = "https://portal.sw.nat.gov.tw/APGQ/GB330!query";
             var apiName = "GB330";
 
-            return ExecuteWithRetry(() =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 Gb330Model result = new Gb330Model();
                 var stopwatch = LogRequestBegin(apiName, parameters);
                 try
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = CreateHttpClient())
                     {
                         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                         //將參數轉換成 FormUrlEncodedContent
                         var content = new FormUrlEncodedContent(parameters);
                         //發送 POST 請求
-                        HttpResponseMessage response = SendRequestAsync(client, url, content).GetAwaiter().GetResult();
+                        HttpResponseMessage response = await SendRequestAsync(client, url, content).ConfigureAwait(false);
 
                         // 檢查請求是否成功
                         if (response.IsSuccessStatusCode)
                         {
-                            result = JsonConvert.DeserializeObject<Gb330Model>(response.Content.ReadAsStringAsync().Result);
+                            result = JsonConvert.DeserializeObject<Gb330Model>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
                             LogResponseError(apiName, result?.Status, result?.Msg);
 
                         }
@@ -447,38 +395,37 @@ namespace Service.Services.CptTradeVan
                 }
 
                 return result;
-            }, result => IsSuccessfulResponse(result?.Status, result?.Msg));
+            }, result => IsSuccessfulResponse(result?.Status, result?.Msg)).ConfigureAwait(false);
         }
 
         /// <summary>
         /// (GB378)海運貨櫃銷艙比例查詢作業
         /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb378Model GetGb378(Dictionary<string, string> parameters)
+        /// <param name="parameters">API 查詢參數。</param>
+        /// <returns>API 查詢結果。</returns>
+        public async Task<Gb378Model> GetGb378Async(Dictionary<string, string> parameters)
         {
             string url = "https://portal.sw.nat.gov.tw/APGQ/GB378!query";
             var apiName = "GB378";
 
-            return ExecuteWithRetry(() =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 Gb378Model result = new Gb378Model();
                 var stopwatch = LogRequestBegin(apiName, parameters);
                 try
                 {
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = CreateHttpClient())
                     {
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
                         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                         //將參數轉換成 FormUrlEncodedContent
                         var content = new FormUrlEncodedContent(parameters);
                         //發送 POST 請求
-                        HttpResponseMessage response = SendRequestAsync(client, url, content).GetAwaiter().GetResult();
+                        HttpResponseMessage response = await SendRequestAsync(client, url, content).ConfigureAwait(false);
 
                         // 檢查請求是否成功
                         if (response.IsSuccessStatusCode)
                         {
-                            result = JsonConvert.DeserializeObject<Gb378Model>(response.Content.ReadAsStringAsync().Result);
+                            result = JsonConvert.DeserializeObject<Gb378Model>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
                             LogResponseError(apiName, result?.status, result?.msg);
 
                         }
@@ -500,20 +447,20 @@ namespace Service.Services.CptTradeVan
                 }
 
                 return result;
-            }, result => IsSuccessfulResponse(result?.status, result?.msg));
+            }, result => IsSuccessfulResponse(result?.status, result?.msg)).ConfigureAwait(false);
         }
 
         /// <summary>
         /// 17.(GB353)進口簡易報單錯單查詢
         /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb353Model GetGb353(Dictionary<string, string> parameters)
+        /// <param name="parameters">API 查詢參數。</param>
+        /// <returns>API 查詢結果。</returns>
+        public async Task<Gb353Model> GetGb353Async(Dictionary<string, string> parameters)
         {
             string url = "https://portal.sw.nat.gov.tw/APGQ/GB353!query";
             var apiName = "GB353";
 
-            return ExecuteWithRetry(() =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 Gb353Model result = null;
                 var stopwatch = LogRequestBegin(apiName, parameters);
@@ -521,19 +468,18 @@ namespace Service.Services.CptTradeVan
                 {
                     //關貿Api
 
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = CreateHttpClient())
                     {
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
                         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                         //將參數轉換成 FormUrlEncodedContent
                         var content = new FormUrlEncodedContent(parameters);
                         //發送 POST 請求
-                        HttpResponseMessage response = SendRequestAsync(client, url, content).GetAwaiter().GetResult();
+                        HttpResponseMessage response = await SendRequestAsync(client, url, content).ConfigureAwait(false);
 
                         // 檢查請求是否成功
                         if (response.IsSuccessStatusCode)
                         {
-                            result = JsonConvert.DeserializeObject<Gb353Model>(response.Content.ReadAsStringAsync().Result);
+                            result = JsonConvert.DeserializeObject<Gb353Model>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
                             LogResponseError(apiName, result?.Status, result?.Msg);
                         }
                         else
@@ -554,20 +500,20 @@ namespace Service.Services.CptTradeVan
                 }
 
                 return result;
-            }, result => IsSuccessfulResponse(result?.Status, result?.Msg));
+            }, result => IsSuccessfulResponse(result?.Status, result?.Msg)).ConfigureAwait(false);
         }
 
         /// <summary>
         /// (GB350)空運進口貨物新艙單資料查詢
         /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public Gb350Model GetGb350(Dictionary<string, string> parameters)
+        /// <param name="parameters">API 查詢參數。</param>
+        /// <returns>API 查詢結果。</returns>
+        public async Task<Gb350Model> GetGb350Async(Dictionary<string, string> parameters)
         {
             string url = "https://portal.sw.nat.gov.tw/APGQ/GB350!queryMawb";
             var apiName = "GB350";
 
-            return ExecuteWithRetry(() =>
+            return await ExecuteWithRetryAsync(async () =>
             {
                 Gb350Model result = null;
                 var stopwatch = LogRequestBegin(apiName, parameters);
@@ -575,19 +521,18 @@ namespace Service.Services.CptTradeVan
                 {
                     //關貿Api
 
-                    using (HttpClient client = new HttpClient())
+                    using (HttpClient client = CreateHttpClient())
                     {
-                        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36");
                         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                         //將參數轉換成 FormUrlEncodedContent
                         var content = new FormUrlEncodedContent(parameters);
                         //發送 POST 請求
-                        HttpResponseMessage response = SendRequestAsync(client, url, content).GetAwaiter().GetResult();
+                        HttpResponseMessage response = await SendRequestAsync(client, url, content).ConfigureAwait(false);
 
                         // 檢查請求是否成功
                         if (response.IsSuccessStatusCode)
                         {
-                            result = JsonConvert.DeserializeObject<Gb350Model>(response.Content.ReadAsStringAsync().Result);
+                            result = JsonConvert.DeserializeObject<Gb350Model>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
                             LogResponseError(apiName, result?.Status, result?.Msg);
                         }
                         else
@@ -608,9 +553,14 @@ namespace Service.Services.CptTradeVan
                 }
 
                 return result;
-            }, result => IsSuccessfulResponse(result?.Status, result?.Msg));
+            }, result => IsSuccessfulResponse(result?.Status, result?.Msg)).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// 非同步查詢 GB321 進口簡易申報收單作業結果。
+        /// </summary>
+        /// <param name="parameters">API 查詢參數。</param>
+        /// <returns>進口簡易申報收單作業查詢結果。</returns>
         public async Task<Gb321Model> GetGb321Async(Dictionary<string, string> parameters)
         {
             string url = "https://portal.sw.nat.gov.tw/APGQ/GB321!query";
@@ -622,24 +572,24 @@ namespace Service.Services.CptTradeVan
                 var stopwatch = LogRequestBegin(apiName, parameters);
                 try
                 {
-                    //關貿Api
-                    //將參數轉換成 FormUrlEncodedContent
-                    var content = new FormUrlEncodedContent(parameters);
-                    //發送 POST 請求
-                    //_httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
-                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                    using (HttpResponseMessage response = await SendRequestAsync(_httpClient, url, content).ConfigureAwait(false))
+                    // 每次查詢與重試皆由工廠建立用戶端，結束後釋放。
+                    using (HttpClient client = CreateHttpClient())
                     {
-                        // 檢查請求是否成功
-                        if (response.IsSuccessStatusCode)
+                        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                        using (var content = new FormUrlEncodedContent(parameters))
+                        using (HttpResponseMessage response = await SendRequestAsync(client, url, content).ConfigureAwait(false))
                         {
-                            result = JsonConvert.DeserializeObject<Gb321Model>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
-                            LogResponseError(apiName, result?.Status, result?.Msg);
-                        }
-                        else
-                        {
-                            Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
-                            result = new Gb321Model() { Msg = "(GB321)進口簡易申報收單作業結果查詢失敗，請重新查詢" };
+                            // 檢查請求是否成功
+                            if (response.IsSuccessStatusCode)
+                            {
+                                result = JsonConvert.DeserializeObject<Gb321Model>(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+                                LogResponseError(apiName, result?.Status, result?.Msg);
+                            }
+                            else
+                            {
+                                Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
+                                result = new Gb321Model() { Msg = "(GB321)進口簡易申報收單作業結果查詢失敗，請重新查詢" };
+                            }
                         }
                     }
 
@@ -659,26 +609,13 @@ namespace Service.Services.CptTradeVan
         }
 
         /// <summary>
-        /// 執行同步 API 查詢，失敗時等待 5 秒，最多重試 3 次。
+        /// 建立本次查詢使用的 HTTP 用戶端。
         /// </summary>
-        /// <typeparam name="T">API 查詢結果型別。</typeparam>
-        /// <param name="request">包含錯誤處理與紀錄的單次 API 查詢。</param>
-        /// <param name="isSuccessful">判斷結果是否成功或查無資料。</param>
-        /// <returns>成功結果，或重試用盡後的最後一次結果。</returns>
-        private static T ExecuteWithRetry<T>(Func<T> request, Func<T, bool> isSuccessful)
+        /// <returns>由工廠建立的 HTTP 用戶端。</returns>
+        private HttpClient CreateHttpClient()
         {
-            T result = default(T);
-            // 第 0 次為首次查詢，第 1～3 次為重試；最後一次失敗後直接回傳。
-            for (var retry = 0; retry <= 3; retry++)
-            {
-                if (retry > 0)
-                    Thread.Sleep(5000);
-
-                result = request();
-                if (isSuccessful(result))
-                    return result;
-            }
-            return result;
+            // 各查詢共用相同的用戶端來源，每次嘗試結束後由查詢方法釋放。
+            return _httpClientFactory.CreateClient(nameof(CptPortalApi));
         }
 
         /// <summary>
@@ -691,7 +628,7 @@ namespace Service.Services.CptTradeVan
         private static async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> request, Func<T, bool> isSuccessful)
         {
             T result = default(T);
-            // 非同步重試使用延遲等待，不阻塞處理執行緒。
+            // 第 0 次為首次查詢，第 1～3 次為重試，使用非同步延遲等待。
             for (var retry = 0; retry <= 3; retry++)
             {
                 if (retry > 0)
@@ -705,7 +642,7 @@ namespace Service.Services.CptTradeVan
         }
 
         /// <summary>
-        /// 發送 API 請求，所有實例及同步、非同步呼叫共用至少 0.5 秒的發送間隔。
+        /// 發送 API 請求，所有實例的呼叫共用至少 0.5 秒的發送間隔。
         /// </summary>
         /// <param name="client">本次查詢使用的 HTTP 用戶端。</param>
         /// <param name="url">實際呼叫的 API 網址。</param>

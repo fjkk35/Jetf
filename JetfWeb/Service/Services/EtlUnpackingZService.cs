@@ -20,13 +20,13 @@ namespace Service.Services
         private readonly CptPortalApi _cptPortalApi;
         private SqlConnection conn;
 
-        public EtlUnpackingZService() : this(new CptPortalApi())
-        {
-        }
-
+        /// <summary>
+        /// 初始化拆櫃異常查詢服務。
+        /// </summary>
+        /// <param name="cptPortalApi">由相依性注入提供的關港貿 API 服務。</param>
         public EtlUnpackingZService(CptPortalApi cptPortalApi)
         {
-            _cptPortalApi = cptPortalApi ?? new CptPortalApi();
+            _cptPortalApi = cptPortalApi ?? throw new ArgumentNullException(nameof(cptPortalApi));
             conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString);
         }
 
@@ -180,13 +180,13 @@ namespace Service.Services
         /// </summary>
         /// <param name="search"></param>
         /// <returns></returns>
-        public IWorkbook Download(List<string> search)
+        public async Task<IWorkbook> DownloadAsync(List<string> search)
         {
             //主號查詢
-            List<Gb350Model> mawbList = SearchMawb(search);
+            List<Gb350Model> mawbList = await SearchMawbAsync(search);
 
             //明細查詢
-            SearchDetail(mawbList);
+            await SearchDetailAsync(mawbList);
 
             IWorkbook workbook = new XSSFWorkbook();
             //主號查詢結果
@@ -370,7 +370,7 @@ namespace Service.Services
         /// 查詢主號
         /// </summary>
         /// <returns></returns>
-        List<Gb350Model> SearchMawb(List<string> search)
+        async Task<List<Gb350Model>> SearchMawbAsync(List<string> search)
         {
             List<Gb350Model> mawbList = new List<Gb350Model>();
 
@@ -390,7 +390,7 @@ namespace Service.Services
                     { "tab4.currentGridPage", "1" },
                     { "tab4.currentGridPageRows", "10" }
                 };
-                mawbList.Add(PostMawb(parameters));
+                mawbList.Add(await PostMawbAsync(parameters));
             }
 
             return mawbList;
@@ -401,7 +401,7 @@ namespace Service.Services
         /// </summary>
         /// <param name="mawbList"></param>
         /// <returns></returns>
-        void SearchDetail(List<Gb350Model> mawbList)
+        async Task SearchDetailAsync(List<Gb350Model> mawbList)
         {
             foreach (var mawb in mawbList)
             {
@@ -419,7 +419,7 @@ namespace Service.Services
                                 { "tab4.currentGridPageRows", "10" }
                             };
                             //查詢明細
-                            item.Detail = PostDetail(parameters);
+                            item.Detail = await PostDetailAsync(parameters);
                         }
                     }
                 }
@@ -431,9 +431,9 @@ namespace Service.Services
         /// </summary>
         /// <param name="parameters"></param>
         /// <returns></returns>
-        Gb350Model PostMawb(Dictionary<string, string> parameters)
+        async Task<Gb350Model> PostMawbAsync(Dictionary<string, string> parameters)
         {
-            Gb350Model result = _cptPortalApi.GetGb350Mawb(parameters);
+            Gb350Model result = await _cptPortalApi.GetGb350MawbAsync(parameters);
             result.SearchMawb = parameters["tab4.mawb"];
 
             return result;
@@ -444,9 +444,9 @@ namespace Service.Services
         /// </summary>
         /// <param name="parameters"></param>
         /// <returns></returns>
-        Gb350DetailModel PostDetail(Dictionary<string, string> parameters)
+        Task<Gb350DetailModel> PostDetailAsync(Dictionary<string, string> parameters)
         {
-            return _cptPortalApi.GetGb350Detail(parameters);
+            return _cptPortalApi.GetGb350DetailAsync(parameters);
         }
     }
 }

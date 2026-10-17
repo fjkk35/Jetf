@@ -5,6 +5,7 @@ using Service.Models;
 using Service.Services;
 using Service.Services.SeaWorkErrorOrder;
 using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -32,8 +33,14 @@ namespace JETFTAX.Controllers
             return View(vm);
         }
 
+        /// <summary>
+        /// 上傳海快錯單袋號，等待非同步 GB353 查詢完成後回傳結果。
+        /// </summary>
+        /// <param name="file">上傳的 Excel 檔案。</param>
+        /// <param name="vm">上傳日期及畫面條件。</param>
+        /// <returns>上傳與查詢結果。</returns>
         [UserAuthorize(Authority.SeaWorkErrorOrder)]
-        public ActionResult Upload(HttpPostedFileBase file, SeaWorkErrorOrderViewModel vm) 
+        public async Task<ActionResult> Upload(HttpPostedFileBase file, SeaWorkErrorOrderViewModel vm)
         {
             ResponseModel resopnseModel = new ResponseModel();
             try
@@ -55,7 +62,7 @@ namespace JETFTAX.Controllers
                             fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
-                            resopnseModel = _seaWorkErrorOrderService.Upload(filePath, vm.DataDate, UserContextService.GetUserId());
+                            resopnseModel = await _seaWorkErrorOrderService.UploadAsync(filePath, vm.DataDate, UserContextService.GetUserId());
                         }
                     }
                 }

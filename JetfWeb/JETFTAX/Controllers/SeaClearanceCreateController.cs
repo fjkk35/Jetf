@@ -6,6 +6,7 @@ using Service.Services;
 using Service.Services.ErrorOrderSend;
 using Service.Services.SeaClearance;
 using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -68,7 +69,7 @@ namespace JETFTAX.Controllers
         /// <returns></returns>
         [HttpPost]
         [UserAuthorize(Authority.SeaClearanceCreate)]
-        public JsonResult UploadFile(HttpPostedFileBase file, string dataDate)
+        public async Task<JsonResult> UploadFile(HttpPostedFileBase file, string dataDate)
         {
             ResponseModel resopnseModel = new ResponseModel();
             try
@@ -90,7 +91,7 @@ namespace JETFTAX.Controllers
                             fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
                             filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
                             file.SaveAs(filePath);
-                            resopnseModel = _seaClearanceCreateService.UploadFile(filePath, dataDate, UserContextService.GetUserId());
+                            resopnseModel = await _seaClearanceCreateService.UploadFileAsync(filePath, dataDate, UserContextService.GetUserId());
                         }
                     }
                 }

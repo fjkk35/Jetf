@@ -18,7 +18,7 @@ namespace Service.Services.SeaClearance
         /// <summary>
         /// 取得關貿GB301、GB321資料
         /// </summary>
-        public SeaClearanceCptModel GetCptData(GetCptDataRequest request)
+        public async Task<SeaClearanceCptModel> GetCptDataAsync(GetCptDataRequest request)
         {
             var cacheKey = $"{CacheName.SeaClearanceCptData.ToString()}_{request.SeaClearanceDetailId}";
 
@@ -32,8 +32,8 @@ namespace Service.Services.SeaClearance
                        { "hawb", request.TrackingNo }
                    };
 
-                var gb301Result = _cptPortalApi.GetGb301(parameters);
-                var gb321Result = _cptPortalApi.GetGb321(parameters);
+                var gb301Result = await _cptPortalApi.GetGb301Async(parameters);
+                var gb321Result = await _cptPortalApi.GetGb321Async(parameters);
 
                 // 檢查DB筆數並更新Gb301、Gb321
                 UpdateCptDataToDb(request, gb301Result, gb321Result, cacheKey);

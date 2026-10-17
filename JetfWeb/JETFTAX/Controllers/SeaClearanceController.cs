@@ -7,6 +7,7 @@ using Service.Services.SeaClearance.Domain;
 using Service.Services.SeaClearanceDetailEditHistory;
 using Service.Services.Step;
 using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -126,11 +127,11 @@ namespace JETFTAX.Controllers
         /// <param name="trackingNo"></param>
         /// <param name="postEntry"></param>
         /// <returns></returns>
-        public JsonResult GetCptData(GetCptDataRequest request)
+        public async Task<JsonResult> GetCptData(GetCptDataRequest request)
         {
             try
             {
-                var result = _seaClearanceService.GetCptData(request);
+                var result = await _seaClearanceService.GetCptDataAsync(request);
                 return Json(new ResponseModel
                 {
                     ReturnObject = result
@@ -566,11 +567,11 @@ namespace JETFTAX.Controllers
         /// <returns></returns>
         [HttpPost]
         [UserAuthorize(Authority.SeaClearance)]
-        public JsonResult UpdateImportDate(int id)
+        public async Task<JsonResult> UpdateImportDate(int id)
         {
             try
             {
-                var result = _seaClearanceService.UpdateImportDate(id);
+                var result = await _seaClearanceService.UpdateImportDateAsync(id);
                 return Json(result);
             }
             catch (Exception ex)

@@ -1,6 +1,7 @@
 using Service.EnumTax;
 using Service.Services.ShortOverUnload;
 using System;
+using System.Threading.Tasks;
 using System.IO;
 using System.Web;
 using System.Web.Mvc;
@@ -52,7 +53,7 @@ namespace JETFTAX.Controllers
         /// <returns>產檔結果及識別碼；失敗時回傳錯誤訊息。</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public JsonResult Upload(HttpPostedFileBase file, ShortOverUnloadDataSource? format)
+        public async Task<JsonResult> Upload(HttpPostedFileBase file, ShortOverUnloadDataSource? format)
         {
             try
             {
@@ -71,7 +72,7 @@ namespace JETFTAX.Controllers
                 // 一次取得台北匯入時間，確保所有頁籤日期及檔名一致。
                 var importedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
                     TimeZoneInfo.FindSystemTimeZoneById("Taipei Standard Time"));
-                var bytes = _service.Generate(file.InputStream, format.Value, importedAt);
+                var bytes = await _service.GenerateAsync(file.InputStream, format.Value, importedAt);
                 // 報告暫存於目前使用者的 TempData，前端取得識別碼後立即下載。
                 var handle = Guid.NewGuid().ToString("N");
                 TempData["ShortOverUnload:" + handle] = bytes;

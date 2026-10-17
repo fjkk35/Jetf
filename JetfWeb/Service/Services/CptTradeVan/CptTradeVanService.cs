@@ -20,7 +20,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Web.UI.WebControls;
 using TelegramLibrary.Model;
@@ -57,18 +56,18 @@ namespace Service.Services
                 {
                     case CptTradeVanEnum.ReceiveOrder:
                         var receiveOrderList = ReadReceiveOrderExcel(filePath);
-                        Search(receiveOrderList);
+                        await SearchAsync(receiveOrderList);
                         workbook = GetReceiveOrderSearchExcel(receiveOrderList);
                         break;
                     case CptTradeVanEnum.ErrorOrder:
                         var errorOrderList = ReadErrorOrderExcel(filePath);
-                        Search(errorOrderList);
+                        await SearchAsync(errorOrderList);
                         workbook = GetErrorOrderSearchExcel(errorOrderList);
                         break;
                     case CptTradeVanEnum.CargoManifest:
                         var cargoManifestList = ReadCargoManifestExcel(filePath);
                         //查詢Api
-                        Search(cargoManifestList);
+                        await SearchAsync(cargoManifestList);
                         //新增結果
                         InsertCptGb378(cargoManifestList, uploadTime, userId);
                         //取得結果包含預委票數
@@ -85,7 +84,7 @@ namespace Service.Services
                         if (resopnseModel.status == Status.success)
                         {
                             //執行查詢Gb321、Gb353
-                            RunCptSeaMainNumberJobAsync(uploadTime, userId);
+                            await RunCptSeaMainNumberJobAsync(uploadTime, userId);
 
                             var cptSeaMainNumberDetailList = GetCptSeaMainNumberDetails(uploadTime, userId);
                             workbook = GetCptSeaMainNumberDetailExcel(cptSeaMainNumberDetailList);
@@ -94,13 +93,13 @@ namespace Service.Services
                     case CptTradeVanEnum.SeaReceiveOrderWork:
                         var trackingNoList = ReadData(data);
                         var list = GetCptSeaMainNumberDetails(trackingNoList);
-                        SearchGb321(list);
+                        await SearchGb321Async(list);
                         workbook = GetCptReceiveOrderSearchWorkExcel(list);
                         break;
                     case CptTradeVanEnum.ErrorOrderWork:
                         trackingNoList = ReadData(data);
                         var gb353List = GetCptSeaMainNumberDetails(trackingNoList);
-                        SearchGb353(gb353List);
+                        await SearchGb353Async(gb353List);
                         workbook = GetCptErrorOrderSearchWorkExcel(gb353List);
                         break;
                     case CptTradeVanEnum.DeleteSeaMainNumber:
@@ -116,12 +115,12 @@ namespace Service.Services
                         break;
                     case CptTradeVanEnum.EtlErrorOrder:
                         var etlErrorOrderList = ReadEtlErrorOrderExcel(filePath);
-                        Search(etlErrorOrderList);
+                        await SearchAsync(etlErrorOrderList);
                         workbook = GetEtlErrorOrderSearchExcel(etlErrorOrderList);
                         break;
                     case CptTradeVanEnum.EtlClearanceOrder:
                         var etlClearanceOrder = ReadEtlClearanceOrderExcel(filePath);
-                        SearchEtlClearanceOrder(etlClearanceOrder);
+                        await SearchEtlClearanceOrderAsync(etlClearanceOrder);
                         GetAirApprovalG(etlClearanceOrder);
                         workbook = GetEtlClearanceOrderExcel(etlClearanceOrder);
                         break;
@@ -144,12 +143,10 @@ namespace Service.Services
         /// 收單查詢
         /// </summary>
         /// <param name="list"></param>
-        void Search(List<ReceiveOrderModel> list)
+        async Task SearchAsync(List<ReceiveOrderModel> list)
         {
-            //重新執行次數
-            int retryCount;
 
-            list.ForEach(r =>
+            foreach (var r in list)
             {
                 var parameters = new Dictionary<string, string>
                     {
@@ -158,7 +155,7 @@ namespace Service.Services
                         { "hawb", r.TrackingNo }
                     };
 
-                var result = _cptPortalApi.GetGb321(parameters);
+                var result = await _cptPortalApi.GetGb321Async(parameters);
 
                 r.CptNo = "Gb321";
                 r.Msg = result.Msg;
@@ -206,23 +203,8 @@ namespace Service.Services
                                 { "hawb", r.TrackingNo }
                             };
 
-                        var gb301Result = _cptPortalApi.GetGb301(parameters);
+                        var gb301Result = await _cptPortalApi.GetGb301Async(parameters);
 
-                        //重新執行次數
-                        retryCount = 0;
-                        do
-                        {
-                            if (result.Msg.Contains("發生一或多項錯誤。"))
-                            {
-                                Thread.Sleep(1000);
-                                gb301Result = _cptPortalApi.GetGb301(parameters);
-                                retryCount++;
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        } while (retryCount < 3);
 
                         r.CptNo = "Gb301";
                         r.Msg = gb301Result.Msg;
@@ -261,20 +243,17 @@ namespace Service.Services
                         }
                     }
                 }
-                Thread.Sleep(300);
-            });
+            }
         }
 
         /// <summary>
         /// 錯單查詢
         /// </summary>
         /// <param name="list"></param>
-        void Search(List<ErrorOrderModel> list)
+        async Task SearchAsync(List<ErrorOrderModel> list)
         {
-            //重新執行次數
-            int retryCount;
 
-            list.ForEach(r =>
+            foreach (var r in list)
             {
                 var parameters = new Dictionary<string, string>
                     {
@@ -288,22 +267,8 @@ namespace Service.Services
                         { "hawb", r.TrackingNo }
                     };
 
-                var result = _cptPortalApi.GetGb353(parameters);
+                var result = await _cptPortalApi.GetGb353Async(parameters);
 
-                retryCount = 0;
-                do
-                {
-                    if (result.Msg.Contains("發生一或多項錯誤。"))
-                    {
-                        Thread.Sleep(1000);
-                        result = _cptPortalApi.GetGb353(parameters);
-                        retryCount++;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                } while (retryCount < 3);
 
                 r.CptNo = "Gb353";
                 r.Msg = result.Msg;
@@ -356,20 +321,17 @@ namespace Service.Services
                             $"{x.IssueDateTime}，{x.RejReasonCode}，{x.RejReasonDesc}"
                         ).ToList());
                 }
-                Thread.Sleep(300);
-            });
+            }
         }
 
         /// <summary>
         /// 空運錯單查詢
         /// </summary>
         /// <param name="list"></param>
-        void Search(List<EtlErrorOrderModel> list)
+        async Task SearchAsync(List<EtlErrorOrderModel> list)
         {
-            //重新執行次數
-            int retryCount;
 
-            list.ForEach(r =>
+            foreach (var r in list)
             {
                 var parameters = new Dictionary<string, string>
                     {
@@ -383,22 +345,8 @@ namespace Service.Services
                         { "hawb", "" }
                     };
 
-                var result = _cptPortalApi.GetGb353(parameters);
+                var result = await _cptPortalApi.GetGb353Async(parameters);
 
-                retryCount = 0;
-                do
-                {
-                    if (result.Msg.Contains("發生一或多項錯誤。"))
-                    {
-                        Thread.Sleep(1000);
-                        result = _cptPortalApi.GetGb353(parameters);
-                        retryCount++;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                } while (retryCount < 3);
 
                 r.CptNo = "Gb353";
                 r.Msg = result.Msg;
@@ -455,23 +403,22 @@ namespace Service.Services
                             $"{x.Hawb}，{x.IssueDateTime}，{x.RejReasonCode}，{x.RejReasonDesc}"
                         ).ToList());
                 }
-                Thread.Sleep(300);
-            });
+            }
         }
 
         /// <summary>
         /// 讀取空運-正式報單查詢Excel
         /// </summary>
-        void SearchEtlClearanceOrder(List<EtlClearanceOrderModel> list) 
+        async Task SearchEtlClearanceOrderAsync(List<EtlClearanceOrderModel> list)
         {
-            list.ForEach(r =>
+            foreach (var r in list)
             {
                 var parameters = new Dictionary<string, string>
                             {
                                 { "declNo", r.ClearanceNumber},
                             };
 
-                var result = _cptPortalApi.GetGb301(parameters);
+                var result = await _cptPortalApi.GetGb301Async(parameters);
 
                 r.Gb301Msg = result.Msg;
                 r.Gb301ReceiveOrder = result.GridModel?.Any(x => x.ProcEventCodeStr.Contains("收單建檔")) == true ? "收單建檔" : "";
@@ -479,12 +426,12 @@ namespace Service.Services
                 if (string.IsNullOrEmpty(r.Gb301ReceiveOrder))
                 {
                     //查詢Gb302
-                    var gb302Result = _cptPortalApi.GetGb302(parameters);
+                    var gb302Result = await _cptPortalApi.GetGb302Async(parameters);
                     r.Gb302Msg = gb302Result.Msg;
 
                     r.GridModel = gb302Result?.GridModel;
                 }
-            });
+            }
 
 
         }
@@ -493,9 +440,9 @@ namespace Service.Services
         /// 銷艙率查詢
         /// </summary>
         /// <param name="list"></param>
-        void Search(List<CargoManifestModel> list)
+        async Task SearchAsync(List<CargoManifestModel> list)
         {
-            list.ForEach(r =>
+            foreach (var r in list)
             {
                 var parameters = new Dictionary<string, string>
                     {
@@ -507,15 +454,14 @@ namespace Service.Services
                         { "containerNo", r.ContainerNo },
                     };
 
-                var result = _cptPortalApi.GetGb378(parameters);
+                var result = await _cptPortalApi.GetGb378Async(parameters);
                 r.Gb378Msg = result.msg;
                 var firstItem = result.data?.FirstOrDefault();
                 if (firstItem != null)
                 {
                     r.ImCmRate = firstItem.imCmRate?.ToString();
                 }
-                Thread.Sleep(300);
-            });
+            }
         }
 
         /// <summary>
@@ -1542,16 +1488,23 @@ namespace Service.Services
                 }).ToList();
         }
 
-        public void RunCptSeaMainNumberJobAsync(string uploadTime, string uploadOpe)
+        /// <summary>
+        /// 依序查詢海運主號的 GB321、GB353 與 GB326，完成後回傳。
+        /// </summary>
+        /// <param name="uploadTime">上傳時間。</param>
+        /// <param name="uploadOpe">上傳人員。</param>
+        /// <returns>代表所有查詢完成的工作。</returns>
+        public async Task RunCptSeaMainNumberJobAsync(string uploadTime, string uploadOpe)
         {
+            // 等待每一組查詢完成後再處理下一組，保留更新與匯出的原有順序。
             var gb321List = GetGb321CptSeaMainNumberDetails(uploadTime, uploadOpe);
-            SearchGb321(gb321List);
+            await SearchGb321Async(gb321List);
 
             var gb353List = GetGb353CptSeaMainNumberDetails(uploadTime, uploadOpe);
-            SearchGb353(gb353List);
+            await SearchGb353Async(gb353List);
 
             var gb326List = GetGb326CptSeaMainNumberDetails(uploadTime, uploadOpe);
-            SearchGb326(gb326List);
+            await SearchGb326Async(gb326List);
         }
 
         public List<string> GetGb326CptSeaMainNumberDetails(string uploadTime, string uploadOpe)
@@ -1641,8 +1594,9 @@ namespace Service.Services
         /// <summary>
         /// 查詢GB321
         /// </summary>
-        /// <param name="list"></param>
-        public void SearchGb321(List<CptSeaMainNumberDetailModel> gb321List) 
+        /// <param name="gb321List">待查詢的海運主號明細。</param>
+        /// <returns>代表查詢及資料更新完成的工作。</returns>
+        public async Task SearchGb321Async(List<CptSeaMainNumberDetailModel> gb321List)
         {
             foreach (var item in gb321List)
             {
@@ -1653,7 +1607,7 @@ namespace Service.Services
                         { "mawb", mainNumber },
                         { "hawb", item.BagNumber }
                     };
-                var result = _cptPortalApi.GetGb321(parameters);
+                var result = await _cptPortalApi.GetGb321Async(parameters);
 
                 item.Gb321Status = result.Status;
                 item.Gb321Msg = result.Msg;
@@ -1679,7 +1633,7 @@ namespace Service.Services
         /// 查詢GB353
         /// </summary>
         /// <param name="gb353List"></param>
-        public void SearchGb353(List<CptSeaMainNumberDetailModel> gb353List) 
+        public async Task SearchGb353Async(List<CptSeaMainNumberDetailModel> gb353List)
         {
             foreach (var item in gb353List)
             {
@@ -1695,7 +1649,7 @@ namespace Service.Services
                             { "hawb", item.BagNumber }
                         };
 
-                var result = _cptPortalApi.GetGb353(parameters);
+                var result = await _cptPortalApi.GetGb353Async(parameters);
                 item.Gb353Status = result.Status;
                 item.Gb353Msg = result.Msg;
 
@@ -1724,7 +1678,7 @@ namespace Service.Services
         /// 查詢GB326
         /// </summary>
         /// <param name="gb353List"></param>
-        public void SearchGb326(List<string> gb326List)
+        public async Task SearchGb326Async(List<string> gb326List)
         {
             var seaMainNumberFieldA = GetSeaMainNumberFieldA(gb326List);
 
@@ -1744,7 +1698,7 @@ namespace Service.Services
                        { "tab1.hawb", "" }
                    };
 
-                var result = _cptPortalApi.GetGb326(parameters);
+                var result = await _cptPortalApi.GetGb326Async(parameters);
 
                 //更新資料
                 if(result != null)
