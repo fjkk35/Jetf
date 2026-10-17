@@ -74,7 +74,16 @@
                         <td>{{item.F_DataDate}}</td>
                         <td>{{item.I_DATA_TYPE}}</td>
                         <td>{{item.Format_OUT_DATETIME}}</td>
-                        <td>{{item.CUSTOMER}}</td>
+                        <td>
+                            <span>{{item.CUSTOMER}}</span>
+                            <a ng-if="item.CUSTOMER === '新遞'"
+                               href="@Url.Action("Index", "SeaShenzhenOriginalQuery")"
+                               target="_blank"
+                               rel="noopener"
+                               class="btn btn-primary btn-sm ml-2">
+                                託運資料查詢
+                            </a>
+                        </td>
                         <td>{{item.MAINNUMBER}}</td>
                         <td>{{item.BL_NO}}</td>
                         <td>{{item.PIECE}}</td>
