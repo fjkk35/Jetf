@@ -113,6 +113,12 @@ $scope.data = response.data.data || [];
         $scope.data = [];
     };
 
+    // 將使用者輸入的查詢內容帶入託運資料查詢頁
+    $scope.getConsignmentQueryUrl = function (searchValue) {
+        return Router.action('SeaShenzhenOriginalQuery', 'Index') +
+            '?jetfSerial=' + encodeURIComponent(searchValue || '');
+    };
+
     // 在彈窗內開啟明細，保留查詢條件與結果
      $scope.openDetail = function (id, source) {
         detailTrigger = document.activeElement;

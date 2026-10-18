@@ -1,4 +1,4 @@
-mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', function ($scope, $http) {
+mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', '$window', function ($scope, $http, $window) {
         $scope.data = [];
         $scope.taxPaymentOptions = [{ Value: '', Text: '全部' }];
         $scope.dataTypeOptions = [{ Value: '', Text: '全部' }];
@@ -24,7 +24,7 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
             trackingNo: '',
             blNo: '',
             orderNo: '',
-            jetfSerial: '',
+            jetfSerial: normalizeText(new URLSearchParams($window.location.search).get('jetfSerial')),
             importer: '',
             importerPhone: '',
             taxPayment: '',
@@ -137,6 +137,10 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
         $scope.parsePageSize = function () {
             return parseInt($scope.pageSize, 10);
         };
+        // 從貨況查詢帶入託運單號時，直接執行查詢
+        if ($scope.searchForm.jetfSerial) {
+            $scope.search();
+        }
         function normalizeText(value) {
             return value ? value.toString().trim() : '';
         }

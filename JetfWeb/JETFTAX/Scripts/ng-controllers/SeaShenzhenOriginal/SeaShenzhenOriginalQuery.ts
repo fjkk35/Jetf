@@ -79,9 +79,10 @@ interface SeaShenzhenOriginalQueryScope extends ng.IScope {
     getHctTrackingUrl: (trackingNo: string) => string;
 }
 
-mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', function (
+mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', '$window', function (
     $scope: SeaShenzhenOriginalQueryScope,
-    $http: ng.IHttpService
+    $http: ng.IHttpService,
+    $window: ng.IWindowService
 ) {
     $scope.data = [];
     $scope.taxPaymentOptions = [{ Value: '', Text: '全部' }];
@@ -111,7 +112,7 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
         trackingNo: '',
         blNo: '',
         orderNo: '',
-        jetfSerial: '',
+        jetfSerial: normalizeText(new URLSearchParams($window.location.search).get('jetfSerial')),
         importer: '',
         importerPhone: '',
         taxPayment: '',
@@ -246,6 +247,11 @@ mainApp.controller('SeaShenzhenOriginalQueryController', ['$scope', '$http', fun
     $scope.parsePageSize = function (): number {
         return parseInt($scope.pageSize, 10);
     };
+
+    // 從貨況查詢帶入託運單號時，直接執行查詢
+    if ($scope.searchForm.jetfSerial) {
+        $scope.search();
+    }
 
     function normalizeText(value: string): string {
         return value ? value.toString().trim() : '';

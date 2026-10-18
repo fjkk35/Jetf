@@ -77,7 +77,7 @@
                         <td>
                             <span>{{item.CUSTOMER}}</span>
                             <a ng-if="item.CUSTOMER === '新遞'"
-                               href="@Url.Action("Index", "SeaShenzhenOriginalQuery")"
+                               ng-href="{{getConsignmentQueryUrl(searchForm.searchValue)}}"
                                target="_blank"
                                rel="noopener"
                                class="btn btn-primary btn-sm ml-2">
