@@ -32,6 +32,7 @@ interface EzwayQueryResultResponse {
     ReplyTime?: string;
     IsReply?: string;
     AuthorizeDocNo?: string;
+    DocBlockReason?: string;
     AuthorizeReply?: string;
     AuthorizeDatm?: string;
     BlockReason?: string;

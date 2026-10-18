@@ -91,6 +91,11 @@ namespace Service.Services.Ezway.Domain
         public string AuthorizeDocNo { get; set; }
 
         /// <summary>
+        /// 文號阻擋原因。
+        /// </summary>
+        public string DocBlockReason { get; set; }
+
+        /// <summary>
         /// 海關回覆日期。
         /// </summary>
         public string AuthorizeDatm { get; set; }

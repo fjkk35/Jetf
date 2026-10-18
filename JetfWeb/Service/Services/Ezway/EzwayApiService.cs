@@ -618,9 +618,10 @@ namespace Service.Services.Ezway
             NpoiCell.CreateCell(headerRow, 6, "實名委任日期", headerStyle);
             NpoiCell.CreateCell(headerRow, 7, "認證結果", headerStyle);
             NpoiCell.CreateCell(headerRow, 8, "核准文號", headerStyle);
-            NpoiCell.CreateCell(headerRow, 9, "海關回覆結果", headerStyle);
-            NpoiCell.CreateCell(headerRow, 10, "海關回覆日期", headerStyle);
-            NpoiCell.CreateCell(headerRow, 11, "阻擋原因", headerStyle);
+            NpoiCell.CreateCell(headerRow, 9, "文號阻擋原因", headerStyle);
+            NpoiCell.CreateCell(headerRow, 10, "海關回覆結果", headerStyle);
+            NpoiCell.CreateCell(headerRow, 11, "海關回覆日期", headerStyle);
+            NpoiCell.CreateCell(headerRow, 12, "阻擋原因", headerStyle);
 
             for (int index = 0; index < exportResults.Count; index++)
             {
@@ -636,12 +637,13 @@ namespace Service.Services.Ezway
                 NpoiCell.CreateCell(row, 6, BuildReplyDateTime(item), centerStyle);
                 NpoiCell.CreateCell(row, 7, item.IsReply ?? string.Empty, centerStyle);
                 NpoiCell.CreateCell(row, 8, item.AuthorizeDocNo ?? string.Empty, textStyle);
-                NpoiCell.CreateCell(row, 9, item.AuthorizeReply ?? string.Empty, textStyle);
-                NpoiCell.CreateCell(row, 10, item.AuthorizeDatm ?? string.Empty, centerStyle);
-                NpoiCell.CreateCell(row, 11, item.BlockReason ?? string.Empty, textStyle);
+                NpoiCell.CreateCell(row, 9, item.DocBlockReason ?? string.Empty, textStyle);
+                NpoiCell.CreateCell(row, 10, item.AuthorizeReply ?? string.Empty, textStyle);
+                NpoiCell.CreateCell(row, 11, item.AuthorizeDatm ?? string.Empty, centerStyle);
+                NpoiCell.CreateCell(row, 12, item.BlockReason ?? string.Empty, textStyle);
             }
 
-            for (int columnIndex = 0; columnIndex <= 11; columnIndex++)
+            for (int columnIndex = 0; columnIndex <= 12; columnIndex++)
             {
                 sheet.AutoSizeColumn(columnIndex);
                 if (sheet.GetColumnWidth(columnIndex) < 4000)
