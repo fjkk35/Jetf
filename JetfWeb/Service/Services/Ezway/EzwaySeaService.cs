@@ -101,6 +101,7 @@ namespace Service.Services.Ezway
                 "實名委任日期",
                 "認證結果",
                 "核准文號",
+                "文號阻擋原因",
                 "海關回覆結果",
                 "海關回覆日期",
                 "申報金額",
@@ -140,6 +141,7 @@ namespace Service.Services.Ezway
                 NpoiCell.CreateCell(row, columnIndex++, BuildReplyDateTime(item), centerStyle);
                 NpoiCell.CreateCell(row, columnIndex++, item.IsReply ?? string.Empty, textStyle);
                 NpoiCell.CreateCell(row, columnIndex++, item.AuthorizeDocNo ?? string.Empty, textStyle);
+                NpoiCell.CreateCell(row, columnIndex++, item.DocBlockReason ?? string.Empty, textStyle);
                 NpoiCell.CreateCell(row, columnIndex++, item.AuthorizeReply ?? string.Empty, textStyle);
                 NpoiCell.CreateCell(row, columnIndex++, item.AuthorizeDatm ?? string.Empty, centerStyle);
                 NpoiCell.CreateCell(row, columnIndex++, item.TotCustomsValueAmt ?? string.Empty, textStyle);
