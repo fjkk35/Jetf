@@ -66,14 +66,14 @@ namespace Service.Services.CptTradeVan
                         }
                         else
                         {
-                            Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
+                            Logger.Error($"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
                             result = new Gb326Model() { Msg = "(Gb326)進口簡易申報收單作業結果查詢失敗，請重新查詢" };
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, $"Request_Error[Error] - [POST] {apiName}");
+                    Logger.Error(ex, $"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName}");
                     result = new Gb326Model() { Msg = ex.Message };
                 }
                 finally
@@ -119,14 +119,14 @@ namespace Service.Services.CptTradeVan
                         }
                         else
                         {
-                            Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
+                            Logger.Error($"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
                             return new Gb301Model() { Msg = "(GB301)進口報單通關流程查詢失敗，請重新查詢" };
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, $"Request_Error[Error] - [POST] {apiName}");
+                    Logger.Error(ex, $"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName}");
                     result = new Gb301Model() { Msg = ex.Message };
                 }
                 finally
@@ -172,14 +172,14 @@ namespace Service.Services.CptTradeVan
                         }
                         else
                         {
-                            Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
+                            Logger.Error($"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
                             return new Gb302Model() { Msg = "(GB302)進口報單不受理報關原因查詢" };
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, $"Request_Error[Error] - [POST] {apiName}");
+                    Logger.Error(ex, $"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName}");
                     result = new Gb302Model() { Msg = ex.Message };
                 }
                 finally
@@ -225,14 +225,14 @@ namespace Service.Services.CptTradeVan
                         }
                         else
                         {
-                            Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
+                            Logger.Error($"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
                             result.Msg = $"(GB350主號)查詢失敗：HTTP {(int)response.StatusCode} ({response.ReasonPhrase})";
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, $"Request_Error[Error] - [POST] {apiName}");
+                    Logger.Error(ex, $"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName}");
                     result.Msg = $"(GB350主號)查詢失敗：{ex.GetBaseException().Message}";
                 }
                 finally
@@ -276,14 +276,14 @@ namespace Service.Services.CptTradeVan
                         }
                         else
                         {
-                            Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
+                            Logger.Error($"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
                             result.Msg = $"(GB350明細)查詢失敗：HTTP {(int)response.StatusCode} ({response.ReasonPhrase})";
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, $"Request_Error[Error] - [POST] {apiName}");
+                    Logger.Error(ex, $"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName}");
                     result.Msg = $"(GB350明細)查詢失敗：{ex.GetBaseException().Message}";
                 }
                 finally
@@ -326,7 +326,7 @@ namespace Service.Services.CptTradeVan
                             }
                             else
                             {
-                                Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
+                                Logger.Error($"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
                                 result = new Gb325Model() { Msg = "(GB325)海運進口艙單表頭及彙整資料查詢失敗，請重新查詢" };
                             }
                         }
@@ -334,7 +334,7 @@ namespace Service.Services.CptTradeVan
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, $"Request_Error[Error] - [POST] {apiName}");
+                    Logger.Error(ex, $"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName}");
                     result = new Gb325Model() { Msg = ex.Message };
                 }
                 finally
@@ -379,14 +379,14 @@ namespace Service.Services.CptTradeVan
                         }
                         else
                         {
-                            Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
+                            Logger.Error($"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
                             result.Msg = "(GB330)海關通關號碼查詢，請重新查詢";
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, $"Request_Error[Error] - [POST] {apiName}");
+                    Logger.Error(ex, $"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName}");
                     result.Msg = ex.Message;
                 }
                 finally
@@ -431,14 +431,14 @@ namespace Service.Services.CptTradeVan
                         }
                         else
                         {
-                            Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
+                            Logger.Error($"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
                             result.msg = "(GB378)海運貨櫃銷艙比例查詢作業，請重新查詢";
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, $"Request_Error[Error] - [POST] {apiName}");
+                    Logger.Error(ex, $"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName}");
                     result.msg = ex.Message;
                 }
                 finally
@@ -484,14 +484,14 @@ namespace Service.Services.CptTradeVan
                         }
                         else
                         {
-                            Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
+                            Logger.Error($"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
                             result = new Gb353Model() { Msg = "(GB353)進口簡易報單錯單查詢，請重新查詢" };
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, $"Request_Error[Error] - [POST] {apiName}");
+                    Logger.Error(ex, $"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName}");
                     result = new Gb353Model() { Msg = ex.Message };
                 }
                 finally
@@ -537,14 +537,14 @@ namespace Service.Services.CptTradeVan
                         }
                         else
                         {
-                            Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
+                            Logger.Error($"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
                             result = new Gb350Model() { Msg = "(GB350)空運進口貨物新艙單資料查詢，請重新查詢" };
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, $"Request_Error[Error] - [POST] {apiName}");
+                    Logger.Error(ex, $"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName}");
                     result = new Gb350Model() { Msg = ex.Message };
                 }
                 finally
@@ -587,7 +587,7 @@ namespace Service.Services.CptTradeVan
                             }
                             else
                             {
-                                Logger.Error($"Request_Error[Error] - [POST] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
+                                Logger.Error($"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName} | HTTP {(int)response.StatusCode} ({response.ReasonPhrase})");
                                 result = new Gb321Model() { Msg = "(GB321)進口簡易申報收單作業結果查詢失敗，請重新查詢" };
                             }
                         }
@@ -596,7 +596,7 @@ namespace Service.Services.CptTradeVan
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error(ex, $"Request_Error[Error] - [POST] {apiName}");
+                    Logger.Error(ex, $"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName}");
                     result = new Gb321Model() { Msg = ex.Message };
                 }
                 finally
@@ -694,6 +694,17 @@ namespace Service.Services.CptTradeVan
         }
 
         /// <summary>
+        /// 取得目前紀錄使用的登入帳號。
+        /// </summary>
+        /// <returns>登入帳號，未提供時回傳 Unknown。</returns>
+        private static string GetLogUserId()
+        {
+            // 沿用 MVC 設定的邏輯內容，讓帳號隨非同步查詢與重試傳遞。
+            var userId = MappedDiagnosticsLogicalContext.Get("userId");
+            return string.IsNullOrWhiteSpace(userId) ? "Unknown" : userId.Trim();
+        }
+
+        /// <summary>
         /// 記錄每次 API 嘗試的代碼與參數，並開始計算耗時。
         /// </summary>
         /// <param name="apiName">關港貿 API 代碼。</param>
@@ -702,7 +713,7 @@ namespace Service.Services.CptTradeVan
         private static Stopwatch LogRequestBegin(string apiName, Dictionary<string, string> parameters)
         {
             // 每次重試均保留獨立紀錄，參數以 JSON 呈現，沿用現有 request log 格式。
-            Logger.Debug($"Request_Begin[Debug] - [POST] {apiName} | Params={JsonConvert.SerializeObject(parameters)}");
+            Logger.Debug($"Request_Begin[Debug] - [POST] [{GetLogUserId()}] {apiName} | Params={JsonConvert.SerializeObject(parameters)}");
             return Stopwatch.StartNew();
         }
 
@@ -718,7 +729,7 @@ namespace Service.Services.CptTradeVan
             if (IsSuccessfulResponse(status, message))
                 return;
 
-            Logger.Error($"Request_Error[Error] - [POST] {apiName} | Status={status} | Msg={message ?? "API 回應為空"}");
+            Logger.Error($"Request_Error[Error] - [POST] [{GetLogUserId()}] {apiName} | Status={status} | Msg={message ?? "API 回應為空"}");
         }
 
         /// <summary>
@@ -730,7 +741,7 @@ namespace Service.Services.CptTradeVan
         {
             // 由 finally 呼叫，確保提前回傳、重試或發生例外時仍有結束紀錄。
             stopwatch.Stop();
-            Logger.Debug($"Request_End[Debug] - [POST] {apiName} | cost: {stopwatch.ElapsedMilliseconds}ms");
+            Logger.Debug($"Request_End[Debug] - [POST] [{GetLogUserId()}] {apiName} | cost: {stopwatch.ElapsedMilliseconds}ms");
         }
     }
 }
