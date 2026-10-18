@@ -26,7 +26,7 @@ namespace JETFTAX.Controllers
         }
 
         /// <summary>
-        /// 依資料日期產生物流代收檔 Excel，並回傳暫存下載資訊。
+        /// 依資料日期產生物流代收檔 Excel、轉入尚未銷帳的到付款資料，並回傳暫存下載資訊。
         /// </summary>
         [HttpPost]
         [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]

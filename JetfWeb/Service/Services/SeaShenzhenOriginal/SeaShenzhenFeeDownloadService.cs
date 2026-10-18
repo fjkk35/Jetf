@@ -6,7 +6,9 @@ using Service.Extensions;
 using Service.Services.SeaShenzhenOriginal.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Entity;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -17,54 +19,39 @@ namespace Service.Services.SeaShenzhenOriginal
     /// </summary>
     public class SeaShenzhenFeeDownloadService : _BaseService
     {
-        /// <summary>
-        /// 物流代收檔匯出用列資料。
-        /// </summary>
-        private sealed class SeaShenzhenFeeDownloadRow
-        {
-            public string Customer { get; set; }
-
-            public string TrackingNo { get; set; }
-
-            public string DlvInv { get; set; }
-
-            public int ToDlvCod { get; set; }
-
-            public string Recipient { get; set; }
-
-            public string RecPhone { get; set; }
-
-            public string DlvCom { get; set; }
-
-            public string IncludeTax { get; set; }
-        }
+        private const int CommandTimeoutSeconds = 1200;
 
         public SeaShenzhenFeeDownloadService(JetfDbContext jetfDbContext, DataCenterDbContext dataCenterDbContext)
             : base(jetfDbContext, dataCenterDbContext)
         {
+            JetfDb.Database.CommandTimeout = CommandTimeoutSeconds;
         }
 
         /// <summary>
-        /// 依資料日期匯出 IncludeTax = C 或 Cod > 0 的深圳物流代收檔。
+        /// 依資料日期匯出 IncludeTax = C 或 Cod > 0 的深圳物流代收檔，並轉入到付款資料。
+        /// 已銷帳資料仍可下載，但不更新到付款金額。
         /// </summary>
         public byte[] ExportCollectibleExcel(SeaShenzhenFeeTransferRequest request)
         {
             var dataDate = GetRequiredDataDate(request);
 
-            var feeRows = GetCollectibleRows(dataDate);
+            var feeRows = GetCollectibleRows(dataDate.ToString("yyyyMMdd"));
 
             if (feeRows.Count == 0)
             {
                 throw new Exception("查無符合條件的物流代收資料");
             }
 
-            var customerNameLookup = GetCustomerNameLookup(feeRows);
-            var workbook = CreateCollectibleWorkbook(feeRows, customerNameLookup);
+            var customerNameDic = GetCustomerNameDic(feeRows);
+            var workbook = CreateCollectibleWorkbook(feeRows, customerNameDic);
 
             using (var stream = new MemoryStream())
             {
                 workbook.Write(stream);
-                return stream.ToArray();
+                var fileBytes = stream.ToArray();
+                // 檔案成功產生後才轉入同一批資料，銷帳狀態僅影響寫入。
+                SaveCollectibleRows(feeRows, dataDate);
+                return fileBytes;
             }
         }
 
@@ -73,56 +60,123 @@ namespace Service.Services.SeaShenzhenOriginal
         /// </summary>
         private List<SeaShenzhenFeeDownloadRow> GetCollectibleRows(string dataDate)
         {
-            var dateFeeRows = JetfDb.ShenzhenFeeMasters
+            var taxPaymentC = ShenzhenTaxPayment.C.ToString();
+            return JetfDb.ShenzhenFeeMasters
                 .AsNoTracking()
                 .Where(x => x.DataDate == dataDate)
+                .Where(x => x.IncludeTax == taxPaymentC || x.Cod > 0)
                 .OrderBy(x => x.Id)
-                .ToList();
-
-            if (dateFeeRows.Count == 0)
-            {
-                return new List<SeaShenzhenFeeDownloadRow>();
-            }
-
-            var result = new List<SeaShenzhenFeeDownloadRow>();
-            foreach (var feeRow in dateFeeRows)
-            {
-                // 下載條件：IncludeTax = C 或 Cod > 0。
-                if (feeRow.IncludeTax != ShenzhenTaxPayment.C.ToString() && feeRow.Cod <= 0)
+                .Select(feeRow => new SeaShenzhenFeeDownloadRow
                 {
-                    continue;
-                }
-
-                result.Add(new SeaShenzhenFeeDownloadRow
-                {
+                    Id = feeRow.Id,
                     Customer = feeRow.Customer,
                     TrackingNo = feeRow.TrackingNo,
                     DlvInv = feeRow.DlvInv,
+                    Cod = feeRow.Cod,
+                    Fee = feeRow.Fee,
                     ToDlvCod = feeRow.ToDlvCod,
                     Recipient = feeRow.Recipient,
                     RecPhone = feeRow.RecPhone,
                     DlvCom = feeRow.DlvCom,
                     IncludeTax = feeRow.IncludeTax
-                });
+                })
+                .ToList();
+        }
+
+        /// <summary>
+        /// 將當次下載資料轉入 FEE_MASTER_COD，已銷帳或代收總金額相同的既有資料不更新。
+        /// </summary>
+        /// <param name="feeRows">與下載檔案相同的來源資料。</param>
+        /// <param name="dataDate">下載所選資料日期。</param>
+        private void SaveCollectibleRows(List<SeaShenzhenFeeDownloadRow> feeRows, DateTime dataDate)
+        {
+            // 僅處理當次下載中具有物流貨號的資料。
+            var rows = feeRows
+                .Where(x => !string.IsNullOrWhiteSpace(x.DlvInv))
+                .ToList();
+            if (rows.Count == 0)
+            {
+                return;
             }
 
-            return result;
+            // 查詢及寫入共用交易，防止查詢後才銷帳的資料被覆寫，也保護不存在的單號。
+            using (var transaction = JetfDb.Database.BeginTransaction(IsolationLevel.Serializable))
+            {
+                // 批次查詢既有到付款資料，以物流貨號建立字典，同一貨號保留全部既有資料。
+                var dlvInvs = rows.Select(x => x.DlvInv).ToList();
+                var existingRowsDic = JetfDb.FeeMasterCods
+                    .AsNoTracking()
+                    .WhereBulkContains(JetfDb, dlvInvs, x => x.DlvInv, x => x)
+                    .GroupBy(x => x.DlvInv.TrimEnd())
+                    .ToDictionary(group => group.Key, group => group.ToList());
+                var inserts = new List<FeeMasterCodEntity>();
+                var updates = new List<FeeMasterCodEntity>();
+                var now = DateTime.Now;
+
+                foreach (var row in rows)
+                {
+                    if (!existingRowsDic.TryGetValue(row.DlvInv.TrimEnd(), out var targets))
+                    {
+                        // 物流貨號不存在時新增；來源沒有主號，資料日期作為出倉日期。
+                        inserts.Add(new FeeMasterCodEntity
+                        {
+                            DataType = "新遞",
+                            MainNumber = string.Empty,
+                            Customer = row.Customer,
+                            BagNumber = row.TrackingNo,
+                            TrackingNo = row.TrackingNo,
+                            DlvInv = row.DlvInv,
+                            OriginalImporter = row.Recipient,
+                            Cc = row.Cod,
+                            Fee = row.Fee,
+                            ToDlvCod = row.ToDlvCod,
+                            SignOutTime = dataDate,
+                            CreatedTime = now
+                        });
+                        continue;
+                    }
+
+                    foreach (var target in targets)
+                    {
+                        // 已有銷帳時間、銷帳紀錄，或代收總金額相同時，略過該筆更新。
+                        if (target.ReceivedCcTime.HasValue || target.ReconciliationLogisticsId.HasValue ||
+                            target.ToDlvCod == row.ToDlvCod)
+                        {
+                            continue;
+                        }
+
+                        // 僅同步到付款、手續費及代收總金額，保留既有其他欄位。
+                        target.Cc = row.Cod;
+                        target.Fee = row.Fee;
+                        target.ToDlvCod = row.ToDlvCod;
+                        updates.Add(target);
+                    }
+                }
+
+                // 批次寫入新增與更新資料，全部成功才提交交易；失敗時由交易回復。
+                JetfDb.BulkUpdate(updates);
+                JetfDb.BulkInsert(inserts, options =>
+                {
+                    options.TimeoutSeconds = CommandTimeoutSeconds;
+                });
+                transaction.Commit();
+            }
         }
 
         /// <summary>
         /// 依匯出資料補齊客戶代碼對應的客戶名稱。
         /// </summary>
-        private Dictionary<string, string> GetCustomerNameLookup(IEnumerable<SeaShenzhenFeeDownloadRow> feeRows)
+        private Dictionary<string, string> GetCustomerNameDic(IEnumerable<SeaShenzhenFeeDownloadRow> feeRows)
         {
             var customerCodes = (feeRows ?? Enumerable.Empty<SeaShenzhenFeeDownloadRow>())
                 .Select(x => x.Customer)
                 .Where(x => !string.IsNullOrWhiteSpace(x))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Distinct()
                 .ToList();
 
             if (customerCodes.Count == 0)
             {
-                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                return new Dictionary<string, string>();
             }
 
             var customers = DataCenterDb.SysCusts
@@ -131,11 +185,10 @@ namespace Service.Services.SeaShenzhenOriginal
 
             return customers
                 .Where(x => !string.IsNullOrWhiteSpace(x.CustCode))
-                .GroupBy(x => x.CustCode, StringComparer.OrdinalIgnoreCase)
+                .GroupBy(x => x.CustCode)
                 .ToDictionary(
                     group => group.Key,
-                    group => group.Select(x => x.CustName).FirstOrDefault() ?? string.Empty,
-                    StringComparer.OrdinalIgnoreCase);
+                    group => group.Select(x => x.CustName).FirstOrDefault() ?? string.Empty);
         }
 
         /// <summary>
@@ -143,7 +196,7 @@ namespace Service.Services.SeaShenzhenOriginal
         /// </summary>
         private IWorkbook CreateCollectibleWorkbook(
             IEnumerable<SeaShenzhenFeeDownloadRow> feeRows,
-            Dictionary<string, string> customerNameLookup)
+            Dictionary<string, string> customerNameDic)
         {
             var workbook = new XSSFWorkbook();
             var sheet = workbook.CreateSheet("物流代收檔");
@@ -172,7 +225,7 @@ namespace Service.Services.SeaShenzhenOriginal
             foreach (var item in feeRows)
             {
                 var row = sheet.CreateRow(rowIndex++);
-                var customerName = GetCustomerName(item.Customer, customerNameLookup);
+                var customerName = GetCustomerName(item.Customer, customerNameDic);
 
                 NpoiCell.CreateIntCell(row, 0, serialNo++, dataStyle);
                 NpoiCell.CreateCell(row, 1, customerName, dataStyle);
@@ -201,7 +254,7 @@ namespace Service.Services.SeaShenzhenOriginal
         /// <summary>
         /// 驗證並取得必要的資料日期參數。
         /// </summary>
-        private static string GetRequiredDataDate(SeaShenzhenFeeTransferRequest request)
+        private static DateTime GetRequiredDataDate(SeaShenzhenFeeTransferRequest request)
         {
             var dataDate = (request?.DataDate ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(dataDate))
@@ -209,13 +262,20 @@ namespace Service.Services.SeaShenzhenOriginal
                 throw new Exception("請輸入資料日期");
             }
 
-            return dataDate;
+            DateTime parsedDate;
+            if (!DateTime.TryParseExact(dataDate, "yyyyMMdd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out parsedDate))
+            {
+                throw new Exception("資料日期格式錯誤");
+            }
+
+            return parsedDate;
         }
 
         /// <summary>
         /// 取得顯示用客戶名稱，查無主檔時退回原始代碼。
         /// </summary>
-        private static string GetCustomerName(string customerCode, Dictionary<string, string> customerNameLookup)
+        private static string GetCustomerName(string customerCode, Dictionary<string, string> customerNameDic)
         {
             if (string.IsNullOrWhiteSpace(customerCode))
             {
@@ -223,7 +283,7 @@ namespace Service.Services.SeaShenzhenOriginal
             }
 
             string customerName;
-            if (customerNameLookup != null && customerNameLookup.TryGetValue(customerCode, out customerName) && !string.IsNullOrWhiteSpace(customerName))
+            if (customerNameDic != null && customerNameDic.TryGetValue(customerCode, out customerName) && !string.IsNullOrWhiteSpace(customerName))
             {
                 return customerName;
             }
