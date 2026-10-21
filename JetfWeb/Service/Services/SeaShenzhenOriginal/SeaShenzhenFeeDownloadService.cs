@@ -28,19 +28,22 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
-        /// 依資料日期匯出 IncludeTax = C 或 Cod > 0 的深圳物流代收檔，並轉入到付款資料。
+        /// 依日期先轉入到付款資料，再產生深圳費用、原始代收與當日人工調整的物流代收檔。
         /// 已銷帳資料仍可下載，但不更新到付款金額。
         /// </summary>
         public byte[] ExportCollectibleExcel(SeaShenzhenFeeTransferRequest request)
         {
             var dataDate = GetRequiredDataDate(request);
 
-            var feeRows = GetCollectibleRows(dataDate.ToString("yyyyMMdd"));
+            var feeRows = GetCollectibleRows(dataDate);
 
             if (feeRows.Count == 0)
             {
                 throw new Exception("查無符合條件的物流代收資料");
             }
+
+            // 先將當次下載資料轉入到付款資料，資料庫更新完成後才產生檔案；銷帳狀態僅影響寫入。
+            SaveCollectibleRows(feeRows, dataDate);
 
             var customerNameDic = GetCustomerNameDic(feeRows);
             var workbook = CreateCollectibleWorkbook(feeRows, customerNameDic);
@@ -48,39 +51,111 @@ namespace Service.Services.SeaShenzhenOriginal
             using (var stream = new MemoryStream())
             {
                 workbook.Write(stream);
-                var fileBytes = stream.ToArray();
-                // 檔案成功產生後才轉入同一批資料，銷帳狀態僅影響寫入。
-                SaveCollectibleRows(feeRows, dataDate);
-                return fileBytes;
+                return stream.ToArray();
             }
         }
 
         /// <summary>
-        /// 依資料日期整理可下載的物流代收資料，符合 IncludeTax = C 或 Cod > 0 的資料才可下載。
+        /// 依日期取得物流代收資料，並以物流貨號排除補入來源的重複資料。
         /// </summary>
-        private List<SeaShenzhenFeeDownloadRow> GetCollectibleRows(string dataDate)
+        private List<SeaShenzhenFeeDownloadRow> GetCollectibleRows(DateTime dataDate)
         {
+            var dataDateText = dataDate.ToString("yyyyMMdd");
+            var nextDate = dataDate.AddDays(1);
             var taxPaymentC = ShenzhenTaxPayment.C.ToString();
-            return JetfDb.ShenzhenFeeMasters
+
+            // 來源一：[dbo].[ShenzhenFeeMasterManualToDlvCod]，取得 ModifiedTime 在所選日期內的人工調整貨號。
+            // 僅用貨號篩選後續資料來源，下載欄位及金額優先使用費用主檔，不存在時使用原始託運資料。
+            var manualDlvInvs = JetfDb.ShenzhenFeeMasterManualToDlvCods
                 .AsNoTracking()
-                .Where(x => x.DataDate == dataDate)
-                .Where(x => x.IncludeTax == taxPaymentC || x.Cod > 0)
-                .OrderBy(x => x.Id)
-                .Select(feeRow => new SeaShenzhenFeeDownloadRow
-                {
-                    Id = feeRow.Id,
-                    Customer = feeRow.Customer,
-                    TrackingNo = feeRow.TrackingNo,
-                    DlvInv = feeRow.DlvInv,
-                    Cod = feeRow.Cod,
-                    Fee = feeRow.Fee,
-                    ToDlvCod = feeRow.ToDlvCod,
-                    Recipient = feeRow.Recipient,
-                    RecPhone = feeRow.RecPhone,
-                    DlvCom = feeRow.DlvCom,
-                    IncludeTax = feeRow.IncludeTax
-                })
+                .Where(x => x.ModifiedTime >= dataDate && x.ModifiedTime < nextDate)
+                .Select(x => x.DlvInv)
+                .ToList()
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
+                .Distinct()
                 .ToList();
+
+            // 來源二：[dbo].[ShenzhenFeeMaster]，取得所選 DataDate 且符合 IncludeTax = C 或 Cod > 0 的既有下載資料。
+            // 同時取得人工調整貨號的歷史費用資料，使用主檔目前的下載欄位與金額。
+            var feeMasters = JetfDb.ShenzhenFeeMasters
+                .AsNoTracking()
+                .Where(x => (x.DataDate == dataDateText && (x.IncludeTax == taxPaymentC || x.Cod > 0)) ||
+                    manualDlvInvs.Contains(x.DlvInv))
+                .OrderBy(x => x.Id)
+                .ToList();
+
+            // 來源三：[dbo].[SeaShenzhenOriginal]，取得所選 DataDate 且 Cc > 0 的原始託運資料。
+            // 同時取得人工調整貨號的歷史託運資料，費用主檔沒有該貨號時，改用原始託運資料。
+            var originals = JetfDb.SeaShenzhenOriginals
+                .AsNoTracking()
+                .Where(x => (x.DataDate >= dataDate && x.DataDate < nextDate && x.Cc > 0) ||
+                    manualDlvInvs.Contains(x.JetfSerial))
+                .OrderBy(x => x.Id)
+                .ToList();
+
+            // 費用與原始託運資料在記憶體中合併，僅補入物流貨號尚未存在的資料。
+            return MergeCollectibleRows(feeMasters, originals);
+        }
+
+        /// <summary>
+        /// 在記憶體中合併下載資料，優先使用費用主檔，貨號不存在時才使用原始託運資料。
+        /// </summary>
+        private static List<SeaShenzhenFeeDownloadRow> MergeCollectibleRows(
+            List<ShenzhenFeeMasterEntity> feeMasters,
+            List<SeaShenzhenOriginalEntity> originals)
+        {
+            // 以費用主檔的 DlvInv 比對原始託運資料的 JetfSerial，僅保留主檔中不存在的貨號，並轉成下載資料。
+            var originalRows = originals
+                .Where(original => !feeMasters.Any(fee => fee.DlvInv == original.JetfSerial))
+                .Select(CreateOriginalDownloadRow);
+
+            // 優先保留費用主檔的欄位與金額，再接上原始託運資料補入的資料，產生下載清單。
+            return feeMasters
+                .Select(CreateFeeDownloadRow)
+                .Concat(originalRows)
+                .ToList();
+        }
+
+        /// <summary>
+        /// 將深圳費用主檔轉成下載資料。
+        /// </summary>
+        private static SeaShenzhenFeeDownloadRow CreateFeeDownloadRow(ShenzhenFeeMasterEntity fee)
+        {
+            return new SeaShenzhenFeeDownloadRow
+            {
+                Id = fee.Id,
+                Customer = fee.Customer,
+                TrackingNo = fee.TrackingNo,
+                DlvInv = fee.DlvInv,
+                Cod = fee.Cod,
+                Fee = fee.Fee,
+                ToDlvCod = fee.ToDlvCod,
+                Recipient = fee.Recipient,
+                RecPhone = fee.RecPhone,
+                DlvCom = fee.DlvCom,
+                IncludeTax = fee.IncludeTax
+            };
+        }
+
+        /// <summary>
+        /// 將原始託運資料轉成下載資料，僅收取其原始代收金額。
+        /// </summary>
+        private static SeaShenzhenFeeDownloadRow CreateOriginalDownloadRow(SeaShenzhenOriginalEntity original)
+        {
+            var cod = Convert.ToInt32(Math.Round(original.Cc ?? 0, MidpointRounding.AwayFromZero));
+            return new SeaShenzhenFeeDownloadRow
+            {
+                TrackingNo = original.TrackingNo,
+                DlvInv = original.JetfSerial,
+                Cod = cod,
+                Fee = 0,
+                ToDlvCod = cod,
+                Recipient = original.Importer,
+                RecPhone = original.ImporterPhone,
+                DlvCom = original.TransName,
+                IncludeTax = original.TaxPayment
+            };
         }
 
         /// <summary>
