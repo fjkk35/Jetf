@@ -30,7 +30,7 @@ namespace TelegramLibrary
         private static readonly HttpClient httpClient = CreateHttpClient();
         private readonly SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString);
 
-        private readonly string botToken = "7833563595:AAEz_vvgY8l69AhiP8Wh3DMnnfz0MVIeOqg";
+        private readonly string botToken = "8989248231:AAHnOEIbDq22RITjKjzrfHPNTq_sK8VDJTw";
         //var chatId = "-1002741936670";
 
         static TelegramBot()
