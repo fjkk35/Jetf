@@ -619,13 +619,51 @@ namespace Service.Services.CptTradeVan
         }
 
         /// <summary>
+        /// 每次重新取得外部查詢服務觀察到的伺服器出口 IPv4。
+        /// </summary>
+        /// <returns>量測到的對外 IPv4，查詢失敗時回傳 Unknown。</returns>
+        private async Task<string> GetPublicIpAsync()
+        {
+            try
+            {
+                // 每次 GBXXX 呼叫與重試皆重新量測，不共用先前取得的 IP。
+                using (var client = CreateHttpClient())
+                {
+                    client.Timeout = TimeSpan.FromSeconds(3);
+                    client.DefaultRequestHeaders.ConnectionClose = true;
+                    client.DefaultRequestHeaders.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue
+                    {
+                        NoCache = true,
+                        NoStore = true
+                    };
+                    var value = await client.GetStringAsync("https://api.ipify.org").ConfigureAwait(false);
+                    if (!IPAddress.TryParse(value.Trim(), out var address)
+                        || address.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        Logger.Error($"PublicIp_Error[Error] - [GET] [{GetLogUserId()}] PublicIp | 對外 IP 查詢未回傳有效的 IPv4 位址。");
+                        return "Unknown";
+                    }
+
+                    // 這是查詢服務看到的出口；多出口 NAT 不保證每個目的地使用相同 IP。
+                    return address.ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                // 查詢失敗也不快取，下次呼叫重新量測，並繼續執行這次 GBXXX。
+                Logger.Error(ex, $"PublicIp_Error[Error] - [GET] [{GetLogUserId()}] PublicIp");
+                return "Unknown";
+            }
+        }
+
+        /// <summary>
         /// 執行非同步 API 查詢，失敗時等待 5 秒，最多重試 3 次。
         /// </summary>
         /// <typeparam name="T">API 查詢結果型別。</typeparam>
         /// <param name="request">包含錯誤處理與紀錄的單次 API 查詢。</param>
         /// <param name="isSuccessful">判斷結果是否成功或查無資料。</param>
         /// <returns>成功結果，或重試用盡後的最後一次結果。</returns>
-        private static async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> request, Func<T, bool> isSuccessful)
+        private async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> request, Func<T, bool> isSuccessful)
         {
             T result = default(T);
             // 第 0 次為首次查詢，第 1～3 次為重試，使用非同步延遲等待。
@@ -634,9 +672,14 @@ namespace Service.Services.CptTradeVan
                 if (retry > 0)
                     await Task.Delay(5000).ConfigureAwait(false);
 
-                result = await request().ConfigureAwait(false);
-                if (isSuccessful(result))
-                    return result;
+                var publicIp = await GetPublicIpAsync().ConfigureAwait(false);
+                // 每次嘗試獨立保留量測值，開始、結束與錯誤皆使用該次 IP。
+                using (MappedDiagnosticsLogicalContext.SetScoped("cptPortalPublicIp", publicIp))
+                {
+                    result = await request().ConfigureAwait(false);
+                    if (isSuccessful(result))
+                        return result;
+                }
             }
             return result;
         }
