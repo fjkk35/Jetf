@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../Lib/TelegramLibrary/TelegramLibrary.csproj" Id="032c4f4d-e742-46b2-abd7-fba58d2f52b3" />
+  <Project Path="TelegramPortalApi/TelegramPortalApi.csproj" Id="3a574b77-cf33-4e79-b896-e330e833c97b" />
+</Solution>
