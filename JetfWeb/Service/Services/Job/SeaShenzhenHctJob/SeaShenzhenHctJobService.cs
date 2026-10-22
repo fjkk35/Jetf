@@ -24,7 +24,7 @@ namespace Service.Services.Job.SeaShenzhenHctJob
         //private const string DefaultPassword = "test1";
         private const string DefaultCompany = "04974971408";
         private const string DefaultPassword = "24951752";
-        private const string DefaultCustomerCode = "04974971408";
+        private const string DefaultCustomerCode = "04742171291";
         private static readonly XNamespace SoapNamespace = "http://schemas.xmlsoap.org/soap/envelope/";
         private static readonly XNamespace ServiceNamespace = "http://tempuri.org/";
 
@@ -42,7 +42,7 @@ namespace Service.Services.Job.SeaShenzhenHctJob
             {
                 var pendingItems = JetfDb.SeaShenzhenOriginals
                     .Where(x => x.IsHct && !x.IsHctSuccess)
-                    .Where( x => x.JetfSerial== "1111031515")
+                    .Where( x => x.JetfSerial== "8026906742")
                     .OrderBy(x => x.Id)
                     .ToList();
 
@@ -144,7 +144,7 @@ namespace Service.Services.Job.SeaShenzhenHctJob
                 Ertel1 = original.ImporterPhone,
                 Eraddr = original.ImporterAddress,
                 Ejamt = "1",
-                Eqamt = original.DlvGw.ToString("0.###", CultureInfo.InvariantCulture),
+                Eqamt = original.Volume?.ToString("0.###", CultureInfo.InvariantCulture),
                 Escsno = DefaultCustomerCode,
                 Edelno = original.JetfSerial,
                 Eqmny = original.Cc.HasValue
