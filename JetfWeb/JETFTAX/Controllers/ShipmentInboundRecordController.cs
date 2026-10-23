@@ -87,7 +87,7 @@ namespace JETFTAX.Controllers
         /// <param name="trackingNo">貨號。</param>
         /// <returns>HCT 貨號查詢頁面。</returns>
         [HttpGet]
-        [UserAuthorize(Authority.ShipmentInboundRecord)]
+        [UserAuthorize(Authority.ShipmentInboundRecord, Authority.SeaShenzhenOriginalUpload)]
         public ActionResult HctTracking(string trackingNo)
         {
             try
