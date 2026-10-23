@@ -963,6 +963,7 @@
     <Compile Include="Data\Models\DataCenter\OriginalListEntity.cs" />
     <Compile Include="Data\Models\Jetf\SeaShenzhenHctSendLogEntity.cs" />
     <Compile Include="Data\Models\Jetf\SeaShenzhenOriginalEntity.cs" />
+    <Compile Include="Data\Models\Jetf\SeaShenzhenTrackingNoRangeEntity.cs" />
     <Compile Include="Data\Models\Jetf\SeaShenzhenTaxEntity.cs" />
     <Compile Include="Data\Models\Jetf\ShenzhenFeeMasterEntity.cs" />
     <Compile Include="Data\Models\Jetf\SeaTaxUploadEntity.cs" />

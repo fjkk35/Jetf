@@ -16,6 +16,10 @@ namespace Service.Services.ShipmentInboundCommon
         {
         }
 
+        /// <summary>
+        /// 依單號區間與原單來源，批次補齊貨件的託運、製單及費用資料。
+        /// </summary>
+        /// <param name="shipmentInboundList">待補齊資料的入庫貨件。</param>
         public void EnrichShipmentData(List<ShipmentInboundModel> shipmentInboundList)
         {
             if (shipmentInboundList == null || shipmentInboundList.Count == 0)
@@ -23,6 +27,7 @@ namespace Service.Services.ShipmentInboundCommon
                 return;
             }
 
+            // 整理非空白且不重複的單號，後續批次查詢，避免逐筆存取資料庫。
             var trackingNos = shipmentInboundList
                 .Where(x => !string.IsNullOrWhiteSpace(x.TrackingNo))
                 .Select(x => x.TrackingNo.Trim())
@@ -34,17 +39,24 @@ namespace Service.Services.ShipmentInboundCommon
                 return;
             }
 
-            var seaData = QuerySeaOrderData(trackingNos);
-            var seaOrderEditData = QuerySeaOrderEditData(trackingNos);
-            var airData = QueryAirOrderData(trackingNos);
-            var airDataByDeliveryNo = QueryAirOrderDataByDeliveryNo(trackingNos);
+            // 設定區間內的單號以 SeaShenzhenOriginal 查託運資料，以 FEE_MASTER_COD.ToDlvCod 查到付款。
+            var seaShenzhenTrackingNos = QuerySeaShenzhenTrackingNos(trackingNos);
+            var seaShenzhenData = QuerySeaShenzhenOrderData(seaShenzhenTrackingNos.ToList());
+            var seaShenzhenFeeData = QuerySeaShenzhenFeeData(seaShenzhenTrackingNos.ToList());
+            // 其餘單號查詢海運、空運原單；空運同時支援以追蹤單號及配送單號比對。
+            var otherTrackingNos = trackingNos.Where(x => !seaShenzhenTrackingNos.Contains(x)).ToList();
+            var seaData = QuerySeaOrderData(otherTrackingNos);
+            var seaOrderEditData = QuerySeaOrderEditData(otherTrackingNos);
+            var airData = QueryAirOrderData(otherTrackingNos);
+            var airDataByDeliveryNo = QueryAirOrderDataByDeliveryNo(otherTrackingNos);
             // 空運上傳單號可能是 ORIGINALLIST.DELIVERYNO，需將原單查出的 TRACKINGNO 一併帶入，才能回查 MAKELIST 製單資料。
-            var airMakeListLookupKeys = trackingNos
+            var airMakeListLookupKeys = otherTrackingNos
                 .Concat(airData.Values.Concat(airDataByDeliveryNo.Values).Select(x => x.TrackingNo))
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct()
                 .ToList();
             var airMakeListData = QueryAirMakeListData(airMakeListLookupKeys);
+            // 一般貨件的費用以原單物流貨號查詢，因此先從原單結果整理查詢鍵值。
             var originalJetfSerials = seaData.Values
                 .Concat(airData.Values)
                 .Concat(airDataByDeliveryNo.Values)
@@ -57,6 +69,7 @@ namespace Service.Services.ShipmentInboundCommon
 
             foreach (var shipment in shipmentInboundList)
             {
+                // 模型可能被重複使用，先清除上次查詢的託運資料及金額，再依本次單號重新帶入。
                 ResetResolvedFields(shipment);
 
                 if (string.IsNullOrWhiteSpace(shipment.TrackingNo))
@@ -67,6 +80,37 @@ namespace Service.Services.ShipmentInboundCommon
                 var trackingNo = shipment.TrackingNo.Trim();
                 shipment.TrackingNo = trackingNo;
 
+                // 新遞區間優先套用專用來源，客戶代碼沿用新遞深圳的 CN00132。
+                if (seaShenzhenTrackingNos.Contains(trackingNo))
+                {
+                    shipment.DataType = "海運";
+                    shipment.CustCode = "CN00132";
+
+                    // 找到新遞託運資料時，帶入原單號、收件人及派件公司，並標記已有原單。
+                    if (seaShenzhenData.TryGetValue(trackingNo, out var seaShenzhenOrder))
+                    {
+                        shipment.IsOrderOriginal = true;
+                        shipment.MainNumber = seaShenzhenOrder.MainNumber;
+                        shipment.OriginalJetfSerial = seaShenzhenOrder.OriginalJetfSerial;
+                        shipment.OriginalTrackingNo = seaShenzhenOrder.OriginalTrackingNo;
+                        shipment.OriginalImporter = seaShenzhenOrder.Importer;
+                        shipment.ImporterAddr = seaShenzhenOrder.ImporterAddr;
+                        shipment.ImporterPhone = seaShenzhenOrder.ImporterPhone;
+                        shipment.Importer = seaShenzhenOrder.Importer;
+                        shipment.TransName = seaShenzhenOrder.TransName;
+                    }
+
+                    // ToDlvCod 直接作為到付款；稅金、報關費及手續費維持 0，查無到付款資料時也維持 0。
+                    if (seaShenzhenFeeData.TryGetValue(trackingNo, out var seaShenzhenFee))
+                    {
+                        shipment.Cod = seaShenzhenFee.Cod ?? 0;
+                    }
+
+                    // 新遞區間處理完成，不再套用下方的一般原單及費用規則。
+                    continue;
+                }
+
+                // 一般單號依海運物流貨號、空運追蹤單號、空運配送單號的順序選取原單。
                 ShipmentOrderData orderData = null;
 
                 if (seaData.ContainsKey(trackingNo))
@@ -146,6 +190,7 @@ namespace Service.Services.ShipmentInboundCommon
                     shipment.OrderImporter = orderEditData.Importer;
                 }
 
+                // 一般貨件由 FEE_MASTER 帶入稅金、報關費及到付款，手續費再依客戶規則計算。
                 if (!string.IsNullOrWhiteSpace(shipment.OriginalJetfSerial)
                     && feeData.ContainsKey(shipment.OriginalJetfSerial))
                 {
@@ -157,6 +202,7 @@ namespace Service.Services.ShipmentInboundCommon
                 }
                 else if (orderData != null)
                 {
+                    // 查無費用資料時，改用原單的代收金額作為到付款，手續費為 0。
                     shipment.Cod = orderData.FallbackCod;
                     shipment.Fee = 0;
                 }
@@ -375,12 +421,119 @@ namespace Service.Services.ShipmentInboundCommon
         }
 
         /// <summary>
+        /// 依新遞深圳單號區間，取得本次匯入符合範圍的單號。
+        /// </summary>
+        /// <param name="trackingNos">本次匯入的物流單號。</param>
+        /// <returns>符合任一設定區間的物流單號，區間包含起訖值。</returns>
+        private HashSet<string> QuerySeaShenzhenTrackingNos(List<string> trackingNos)
+        {
+            var ranges = JetfDb.SeaShenzhenTrackingNoRanges
+                .AsNoTracking()
+                .ToList();
+
+            return trackingNos
+                .Where(trackingNo => long.TryParse(trackingNo, out var number)
+                    && ranges.Any(range => number >= range.StartTrackingNo && number <= range.EndTrackingNo))
+                .ToHashSet();
+        }
+
+        /// <summary>
+        /// 依物流單號查詢新遞深圳託運資料；同單號使用最新資料日期的紀錄。
+        /// </summary>
+        /// <param name="trackingNos">符合新遞深圳區間的物流單號。</param>
+        /// <returns>以物流單號索引的託運資料。</returns>
+        private Dictionary<string, ShipmentOrderData> QuerySeaShenzhenOrderData(List<string> trackingNos)
+        {
+            if (trackingNos.Count == 0)
+            {
+                return new Dictionary<string, ShipmentOrderData>();
+            }
+
+            var data = JetfDb.SeaShenzhenOriginals
+                .AsNoTracking()
+                .Where(x => trackingNos.Contains(x.JetfSerial))
+                .Select(x => new
+                {
+                    x.Id,
+                    x.DataDate,
+                    x.JetfSerial,
+                    x.TrackingNo,
+                    x.BlNo,
+                    x.Importer,
+                    x.ImporterAddress,
+                    x.ImporterPhone,
+                    x.TransName
+                })
+                .ToList();
+
+            return data
+                .GroupBy(x => x.JetfSerial)
+                .Select(g => g.OrderByDescending(x => x.DataDate)
+                    .ThenByDescending(x => x.Id)
+                    .Select(x => new ShipmentOrderData
+                    {
+                        TrackingNo = x.JetfSerial,
+                        MainNumber = x.BlNo,
+                        OriginalJetfSerial = x.JetfSerial,
+                        OriginalTrackingNo = x.TrackingNo,
+                        Importer = x.Importer,
+                        ImporterAddr = x.ImporterAddress,
+                        ImporterPhone = x.ImporterPhone,
+                        TransName = x.TransName
+                    })
+                    .First())
+                .ToDictionary(x => x.TrackingNo, x => x);
+        }
+
+        /// <summary>
+        /// 依物流單號查詢 FEE_MASTER_COD 的 ToDlvCod，作為新遞深圳貨件的到付款。
+        /// </summary>
+        /// <param name="trackingNos">符合新遞深圳區間的物流單號。</param>
+        /// <returns>以物流單號索引的最新出倉到付款資料。</returns>
+        private Dictionary<string, ShipmentFeeData> QuerySeaShenzhenFeeData(List<string> trackingNos)
+        {
+            if (trackingNos.Count == 0)
+            {
+                return new Dictionary<string, ShipmentFeeData>();
+            }
+
+            var data = JetfDb.FeeMasterCods
+                .AsNoTracking()
+                .Where(x => trackingNos.Contains(x.DlvInv))
+                .Select(x => new
+                {
+                    x.Id,
+                    x.SignOutTime,
+                    x.DlvInv,
+                    x.ToDlvCod
+                })
+                .ToList();
+
+            return data
+                .GroupBy(x => x.DlvInv)
+                .Select(g => g.OrderByDescending(x => x.SignOutTime)
+                    .ThenByDescending(x => x.Id)
+                    .Select(x => new ShipmentFeeData
+                    {
+                        TrackingNo = x.DlvInv,
+                        Cod = x.ToDlvCod
+                    })
+                    .First())
+                .ToDictionary(x => x.TrackingNo, x => x);
+        }
+
+        /// <summary>
         /// 依物流貨號查詢海運原單資料。
         /// </summary>
         /// <param name="trackingNos">要查詢的物流貨號。</param>
         /// <returns>以物流貨號索引的海運原單資料。</returns>
         private Dictionary<string, ShipmentOrderData> QuerySeaOrderData(List<string> trackingNos)
         {
+            if (trackingNos.Count == 0)
+            {
+                return new Dictionary<string, ShipmentOrderData>();
+            }
+
             {
                 var data = DataCenterDb.SeaOrderOriginals
                     .AsNoTracking()
@@ -430,6 +583,11 @@ namespace Service.Services.ShipmentInboundCommon
         /// <returns>以追蹤單號索引的空運原單資料。</returns>
         private Dictionary<string, ShipmentOrderData> QueryAirOrderData(List<string> trackingNos)
         {
+            if (trackingNos.Count == 0)
+            {
+                return new Dictionary<string, ShipmentOrderData>();
+            }
+
             {
                 var data = DataCenterDb.OriginalLists
                     .AsNoTracking()
@@ -476,6 +634,11 @@ namespace Service.Services.ShipmentInboundCommon
         /// <returns>以派送單號索引的空運原單資料。</returns>
         private Dictionary<string, ShipmentOrderData> QueryAirOrderDataByDeliveryNo(List<string> trackingNos)
         {
+            if (trackingNos.Count == 0)
+            {
+                return new Dictionary<string, ShipmentOrderData>();
+            }
+
             {
                 var data = DataCenterDb.OriginalLists
                     .AsNoTracking()
