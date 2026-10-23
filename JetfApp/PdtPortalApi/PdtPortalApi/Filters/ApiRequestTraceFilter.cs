@@ -112,7 +112,6 @@ public sealed class ApiRequestTraceFilter(
     private static object BuildRequestPayload(IDictionary<string, object?> actionArguments)
     {
         return actionArguments
-            .Where(argument => argument.Value is not CancellationToken)
             .ToDictionary(
                 argument => argument.Key,
                 argument => SensitiveNames.Contains(argument.Key)

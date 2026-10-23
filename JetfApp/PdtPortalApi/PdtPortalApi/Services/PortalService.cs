@@ -34,15 +34,14 @@ public sealed class PortalService(
     /// 依帳號檢查使用者是否存在。
     /// </summary>
     /// <param name="account">登入帳號。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>存在時回傳 true，否則回傳 false。</returns>
-    public async Task<bool> LoginAsync(string account, CancellationToken cancellationToken)
+    public async Task<bool> LoginAsync(string account)
     {
         try
         {
             return await _jetfDbContext.UserMasters
                 .AsNoTracking()
-                .AnyAsync(entity => entity.UserId == account, cancellationToken);
+                .AnyAsync(entity => entity.UserId == account);
         }
         catch (Exception exception)
         {
@@ -54,9 +53,8 @@ public sealed class PortalService(
     /// <summary>
     /// 取得貨件來源清單。
     /// </summary>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>貨件來源資料。</returns>
-    public async Task<IReadOnlyList<ShipmentInboundSourceTypeDto>> GetShipmentInboundSourcesAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ShipmentInboundSourceTypeDto>> GetShipmentInboundSourcesAsync()
     {
         try
         {
@@ -68,7 +66,7 @@ public sealed class PortalService(
                     Id = entity.Id,
                     SourceType = entity.SourceType
                 })
-                .ToListAsync(cancellationToken);
+                .ToListAsync();
         }
         catch (Exception exception)
         {
@@ -82,12 +80,10 @@ public sealed class PortalService(
     /// </summary>
     /// <param name="trackingNo">單號。</param>
     /// <param name="sourceType">貨件來源。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>單號檢查結果。</returns>
     public async Task<TrackingCheckResult> CheckInboundDataAsync(
         string trackingNo,
-        ShipmentInboundSourceType sourceType,
-        CancellationToken cancellationToken)
+        ShipmentInboundSourceType sourceType)
     {
         try
         {
@@ -95,26 +91,37 @@ public sealed class PortalService(
             var expectedLength = GetExpectedTrackingNoLength(sourceType);
             var isTrackingNoLengthValid = !expectedLength.HasValue || normalizedTrackingNo.Length == expectedLength.Value;
 
-            var seaOrderExists = await _dataCenterDbContext.SeaOrderOriginals
-                .AsNoTracking()
-                .AnyAsync(entity => entity.JetfSerial == normalizedTrackingNo, cancellationToken);
-
-            var airOrderExists = await _dataCenterDbContext.OriginalLists
-                .AsNoTracking()
-                .AnyAsync(
-                    entity => entity.TrackingNo == normalizedTrackingNo,
-                    cancellationToken);
-
-            if (airOrderExists == false)
+            // 與建立入庫資料使用相同的區間規則，避免新遞託運資料被判為不明貨。
+            var isSeaShenzhenTrackingNo = await IsSeaShenzhenTrackingNoAsync(normalizedTrackingNo);
+            bool hasOriginalData;
+            if (isSeaShenzhenTrackingNo)
             {
-                airOrderExists = await _dataCenterDbContext.OriginalLists
-                .AsNoTracking()
-                .AnyAsync(
-                    entity => entity.DeliveryNo == normalizedTrackingNo,
-                    cancellationToken);
+                hasOriginalData = await _jetfDbContext.SeaShenzhenOriginals
+                    .AsNoTracking()
+                    .AnyAsync(entity => entity.JetfSerial == normalizedTrackingNo);
+            }
+            else
+            {
+                var seaOrderExists = await _dataCenterDbContext.SeaOrderOriginals
+                    .AsNoTracking()
+                    .AnyAsync(entity => entity.JetfSerial == normalizedTrackingNo);
+
+                var airOrderExists = await _dataCenterDbContext.OriginalLists
+                    .AsNoTracking()
+                    .AnyAsync(
+                        entity => entity.TrackingNo == normalizedTrackingNo);
+
+                if (airOrderExists == false)
+                {
+                    airOrderExists = await _dataCenterDbContext.OriginalLists
+                        .AsNoTracking()
+                        .AnyAsync(
+                            entity => entity.DeliveryNo == normalizedTrackingNo);
+                }
+
+                hasOriginalData = seaOrderExists || airOrderExists;
             }
 
-            var hasOriginalData = seaOrderExists || airOrderExists;
             var messages = new List<string>();
             if (!hasOriginalData)
             {
@@ -146,13 +153,13 @@ public sealed class PortalService(
     /// 建立入庫資料。
     /// </summary>
     /// <param name="request">入庫請求資料。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>處理結果。</returns>
-    public async Task<ServiceResult> CreateShipmentInboundAsync(CreateShipmentInboundRequest request, CancellationToken cancellationToken)
+    public async Task<ServiceResult> CreateShipmentInboundAsync(CreateShipmentInboundRequest request)
     {
         try
         {
             var seqNo = request.SeqNo ?? string.Empty;
+            var trackingNo = request.TrackingNo.Trim();
             if (string.IsNullOrEmpty(seqNo))
             {
                 return ServiceResult.Fail(
@@ -161,7 +168,7 @@ public sealed class PortalService(
                     StatusCodes.Status400BadRequest);
             }
 
-            var isDuplicateSeqNo = await IsDuplicateShipmentInboundSeqNoAsync(seqNo, cancellationToken);
+            var isDuplicateSeqNo = await IsDuplicateShipmentInboundSeqNoAsync(seqNo);
             if (isDuplicateSeqNo)
             {
                 _logger.LogDebug("入庫流水編號重複 SeqNo: {SeqNo}", seqNo);
@@ -171,7 +178,7 @@ public sealed class PortalService(
                     StatusCodes.Status409Conflict);
             }
 
-            if (!TryReserveShipmentInboundTrackingNo(request.TrackingNo))
+            if (!TryReserveShipmentInboundTrackingNo(trackingNo))
             {
                 _logger.LogDebug("10 秒內收到重複 TrackingNo: {TrackingNo}", request.TrackingNo);
                 return ServiceResult.Fail(
@@ -180,7 +187,7 @@ public sealed class PortalService(
                     StatusCodes.Status409Conflict);
             }
 
-            var isDuplicate = await IsDuplicateShipmentInboundAsync(request.TrackingNo, cancellationToken);
+            var isDuplicate = await IsDuplicateShipmentInboundAsync(trackingNo);
             if (isDuplicate)
             {
                 _logger.LogDebug("入庫資料重複 TrackingNo: {TrackingNo}", request.TrackingNo);
@@ -190,111 +197,31 @@ public sealed class PortalService(
                     StatusCodes.Status409Conflict);
             }
 
-            var seaData = await GetSeaDataAsync(request.TrackingNo, cancellationToken);
-            var airData = seaData is null
-                ? await GetAirDataAsync(request.TrackingNo, cancellationToken)
-                : null;
-            var seaOrderEditData = seaData is null
-                ? null
-                : await GetSeaOrderEditDataAsync(request.TrackingNo, cancellationToken);
-            var airMakeListData = airData is null
-                ? null
-                : await GetAirMakeListDataAsync(airData.TrackingNo, cancellationToken);
-
-            var hasOriginalData = seaData is not null || airData is not null;
-            var dataType = seaData is not null ? "海運" : airData is not null ? "空運" : string.Empty;
-            var size = string.IsNullOrWhiteSpace(request.Size) ? "小" : request.Size.Trim();
-
-            var originalJetfSerial = string.Empty;
-            var mainNumber = string.Empty;
-            var originalTrackingNo = string.Empty;
-            var custCode = string.Empty;
-            var transNo = string.Empty;
-            var transName = string.Empty;
-            var importer = string.Empty;
-            var importerPhone = string.Empty;
-            var importerAddr = string.Empty;
-            var orderImporterId = string.Empty;
-            var orderImporter = string.Empty;
-            var originalImporterId = string.Empty;
-            var originalImporter = string.Empty;
-            var sourceCod = 0;
-
-            switch (dataType)
+            var entity = new ShipmentInboundEntity
             {
-                case "海運":
-                    originalJetfSerial = seaData?.OriginalJetfSerial ?? string.Empty;
-                    mainNumber = seaData?.MainNumber ?? string.Empty;
-                    originalTrackingNo = seaData?.OriginalTrackingNo ?? string.Empty;
-                    custCode = seaData?.CustCode ?? string.Empty;
-                    transName = seaData?.TransName ?? string.Empty;
-                    importer = seaData?.Importer ?? string.Empty;
-                    importerPhone = seaData?.ImporterPhone ?? string.Empty;
-                    importerAddr = seaData?.ImporterAddr ?? string.Empty;
-                    orderImporterId = seaOrderEditData?.ImporterId ?? string.Empty;
-                    orderImporter = seaOrderEditData?.Importer ?? string.Empty;
-                    originalImporterId = seaData?.ImporterId ?? string.Empty;
-                    originalImporter = seaData?.Importer ?? string.Empty;
-                    sourceCod = seaData?.Cc ?? 0;
-                    break;
-
-                case "空運":
-                    originalJetfSerial = airData?.OriginalJetfSerial ?? string.Empty;
-                    mainNumber = airData?.MainNumber ?? string.Empty;
-                    originalTrackingNo = airData?.OriginalTrackingNo ?? string.Empty;
-                    custCode = airData?.CustCode ?? string.Empty;
-                    transNo = airData?.TransNo ?? string.Empty;
-                    importer = airData?.Importer ?? string.Empty;
-                    importerPhone = airData?.ImporterPhone ?? string.Empty;
-                    importerAddr = airData?.ImporterAddr ?? string.Empty;
-                    orderImporterId = airMakeListData?.ImporterId ?? string.Empty;
-                    orderImporter = airMakeListData?.Importer ?? string.Empty;
-                    originalImporterId = airData?.ImporterId ?? string.Empty;
-                    originalImporter = airData?.Importer ?? string.Empty;
-                    sourceCod = airData?.Cc ?? 0;
-                    break;
-            }
-
-            var feeData = string.IsNullOrWhiteSpace(originalJetfSerial)
-                ? null
-                : await GetFeeDataAsync(originalJetfSerial, cancellationToken);
-            var cod = feeData?.Cod ?? sourceCod;
-            var fee = ShipmentInboundFeePolicy.CalculateInboundFee(custCode, feeData?.Tax, feeData?.Ccfee);
-
-			var entity = new ShipmentInboundEntity
-			{
-				DataType = dataType,
                 InboundDate = request.InboundDate.LocalDateTime,
-				TrackingNo = request.TrackingNo,
-				SeqNo = seqNo,
- 				LocationCode = request.LocationCode,
- 				SourceType = request.SourceType,
- 				ReturnTrackingNo = request.ReturnTrackingNo ?? string.Empty,
-                OriginalJetfSerial = originalJetfSerial,
-                MainNumber = mainNumber,
-                OriginalTrackingNo = originalTrackingNo,
-                Size = size,
- 				CustCode = custCode,
- 				TransNo = transNo,
- 				TransName = transName,
-				Importer = importer,
-				OrderImporterId = orderImporterId,
-				OrderImporter = orderImporter,
-				OriginalImporterId = originalImporterId,
-				OriginalImporter = originalImporter,
-				ImporterPhone = importerPhone,
-				ImporterAddr = importerAddr,
-				IsOrderOriginal = hasOriginalData,
-                UploadOpe = request.UploadOpe ?? string.Empty,
-				CreatedTime = DateTime.Now,
-				Tax = feeData?.Tax ?? 0,
-				Ccfee = feeData?.Ccfee ?? 0,
-				Cod = cod,
-				Fee = fee,
+                TrackingNo = trackingNo,
+                SeqNo = seqNo,
+                LocationCode = request.LocationCode,
+                SourceType = request.SourceType,
+                ReturnTrackingNo = request.ReturnTrackingNo ?? string.Empty,
+                Size = string.IsNullOrWhiteSpace(request.Size) ? "小" : request.Size.Trim(),
+                UploadOpe = request.UploadOpe ?? string.Empty
             };
 
-			await _jetfDbContext.ShipmentInbounds.AddAsync(entity, cancellationToken);
-			var affectedRows = await _jetfDbContext.SaveChangesAsync(cancellationToken);
+            // 依單號區間選擇資料來源，各流程負責填入託運資料與費用。
+            if (await IsSeaShenzhenTrackingNoAsync(trackingNo))
+            {
+                await EnrichSeaShenzhenShipmentInboundAsync(entity, trackingNo);
+            }
+            else
+            {
+                await EnrichShipmentInboundAsync(entity, trackingNo);
+            }
+
+            entity.CreatedTime = DateTime.Now;
+			await _jetfDbContext.ShipmentInbounds.AddAsync(entity);
+			var affectedRows = await _jetfDbContext.SaveChangesAsync();
 
 			return affectedRows > 0
 				? ServiceResult.Success("入庫資料寫入成功")
@@ -313,9 +240,8 @@ public sealed class PortalService(
     /// <summary>
     /// 取得異常原因清單。
     /// </summary>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>異常原因資料。</returns>
-    public async Task<IReadOnlyList<ShipmentInboundExceptionReasonDto>> GetShipmentInboundExceptionReasonsAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<ShipmentInboundExceptionReasonDto>> GetShipmentInboundExceptionReasonsAsync()
     {
         try
         {
@@ -327,7 +253,7 @@ public sealed class PortalService(
                     Id = entity.Id,
                     Reason = entity.Reason
                 })
-                .ToListAsync(cancellationToken);
+                .ToListAsync();
         }
         catch (Exception exception)
         {
@@ -340,11 +266,9 @@ public sealed class PortalService(
     /// 建立異常件資料。
     /// </summary>
     /// <param name="request">異常件請求資料。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>處理結果。</returns>
     public async Task<ServiceResult> CreateShipmentInboundExceptionAsync(
-        CreateShipmentInboundExceptionRequest request,
-        CancellationToken cancellationToken)
+        CreateShipmentInboundExceptionRequest request)
     {
         try
         {
@@ -356,7 +280,7 @@ public sealed class PortalService(
                 {
                     entity.Id
                 })
-                .ToListAsync(cancellationToken);
+                .ToListAsync();
 
             if (matchingInbounds.Count == 0)
             {
@@ -372,7 +296,7 @@ public sealed class PortalService(
                     "查到多筆符合條件的入庫資料，請確認流水號");
             }
 
-            var photoPathResult = await SaveExceptionPhotoAsync(request.Photo, cancellationToken);
+            var photoPathResult = await SaveExceptionPhotoAsync(request.Photo);
             if (!photoPathResult.IsSuccess || string.IsNullOrWhiteSpace(photoPathResult.PhotoPath))
             {
                 return ServiceResult.Fail(photoPathResult.ErrorCode, photoPathResult.Message, photoPathResult.Code);
@@ -380,7 +304,7 @@ public sealed class PortalService(
 
             var exceptionReasonExists = await _jetfDbContext.ShipmentInboundExceptionReasons
                 .AsNoTracking()
-                .AnyAsync(entity => entity.Id == request.ExceptionReasonId, cancellationToken);
+                .AnyAsync(entity => entity.Id == request.ExceptionReasonId);
             if (!exceptionReasonExists)
             {
                 return ServiceResult.Fail(
@@ -397,8 +321,8 @@ public sealed class PortalService(
                 UploadOpe = request.UploadOpe.Trim()
             };
 
-            await _jetfDbContext.ShipmentInboundExceptions.AddAsync(entity, cancellationToken);
-            var affectedRows = await _jetfDbContext.SaveChangesAsync(cancellationToken);
+            await _jetfDbContext.ShipmentInboundExceptions.AddAsync(entity);
+            var affectedRows = await _jetfDbContext.SaveChangesAsync();
 
             return affectedRows > 0
                 ? ServiceResult.Success("異常件上傳成功")
@@ -418,15 +342,13 @@ public sealed class PortalService(
     /// 更新單件儲位。
     /// </summary>
     /// <param name="request">儲位調撥請求。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>處理結果。</returns>
     public async Task<ServiceResult> UpdateLocationCodeAsync(
-        UpdateLocationCodeRequest request,
-        CancellationToken cancellationToken)
+        UpdateLocationCodeRequest request)
     {
         try
         {
-            await using var transaction = await _jetfDbContext.Database.BeginTransactionAsync(cancellationToken);
+            await using var transaction = await _jetfDbContext.Database.BeginTransactionAsync();
             var seqNo = request.SeqNo.Trim();
             var newLocationCode = NormalizeLocationCode(request.LocationCode);
             var editUser = request.EditUser.Trim();
@@ -439,7 +361,7 @@ public sealed class PortalService(
                     entity.Id,
                     entity.LocationCode
                 })
-                .ToListAsync(cancellationToken);
+                .ToListAsync();
 
             if (matchingInbounds.Count == 0)
             {
@@ -467,25 +389,24 @@ public sealed class PortalService(
             var updatedRows = await _jetfDbContext.ShipmentInbounds
                 .Where(entity => entity.Id == inbound.Id)
                 .ExecuteUpdateAsync(
-                    setters => setters.SetProperty(entity => entity.LocationCode, newLocationCode),
-                    cancellationToken);
+                    setters => setters.SetProperty(entity => entity.LocationCode, newLocationCode));
 
             if (updatedRows <= 0)
             {
-                await transaction.RollbackAsync(cancellationToken);
+                await transaction.RollbackAsync();
                 return ServiceResult.Fail("UPDATE_FAILED", "儲位調撥失敗");
             }
 
-            await AddLocationEditHistoryAsync(inbound.Id, oldLocationCode, newLocationCode, editUser, cancellationToken);
+            await AddLocationEditHistoryAsync(inbound.Id, oldLocationCode, newLocationCode, editUser);
 
-            var affectedRows = await _jetfDbContext.SaveChangesAsync(cancellationToken);
+            var affectedRows = await _jetfDbContext.SaveChangesAsync();
             if (affectedRows <= 0)
             {
-                await transaction.RollbackAsync(cancellationToken);
+                await transaction.RollbackAsync();
                 return ServiceResult.Fail("UPDATE_FAILED", "儲位調撥失敗");
             }
 
-            await transaction.CommitAsync(cancellationToken);
+            await transaction.CommitAsync();
             return ServiceResult.Success($"儲位調撥成功\n流水號：{seqNo}\n新儲位：{newLocationCode}");
         }
         catch (Exception exception)
@@ -502,11 +423,9 @@ public sealed class PortalService(
     /// 取得整板儲位調撥件數。
     /// </summary>
     /// <param name="request">件數查詢請求。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>處理結果。</returns>
     public async Task<ServiceResult> GetBatchLocationUpdateCountAsync(
-        GetBatchLocationUpdateCountRequest request,
-        CancellationToken cancellationToken)
+        GetBatchLocationUpdateCountRequest request)
     {
         try
         {
@@ -523,8 +442,7 @@ public sealed class PortalService(
             var updateCount = await _jetfDbContext.ShipmentInbounds
                 .AsNoTracking()
                 .CountAsync(
-                    entity => entity.LocationCode == oldLocationCode && entity.OutboundTime == null,
-                    cancellationToken);
+                    entity => entity.LocationCode == oldLocationCode && entity.OutboundTime == null);
 
             if (updateCount == 0)
             {
@@ -554,15 +472,13 @@ public sealed class PortalService(
     /// 執行整板儲位調撥。
     /// </summary>
     /// <param name="request">整板調撥請求。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>處理結果。</returns>
     public async Task<ServiceResult> BatchUpdateLocationCodeAsync(
-        BatchUpdateLocationCodeRequest request,
-        CancellationToken cancellationToken)
+        BatchUpdateLocationCodeRequest request)
     {
         try
         {
-            await using var transaction = await _jetfDbContext.Database.BeginTransactionAsync(cancellationToken);
+            await using var transaction = await _jetfDbContext.Database.BeginTransactionAsync();
             var oldLocationCode = NormalizeLocationCode(request.OldLocationCode);
             var newLocationCode = NormalizeLocationCode(request.NewLocationCode);
             var editUser = request.EditUser.Trim();
@@ -582,7 +498,7 @@ public sealed class PortalService(
                     entity.Id,
                     entity.LocationCode
                 })
-                .ToListAsync(cancellationToken);
+                .ToListAsync();
 
             if (matchingInbounds.Count == 0)
             {
@@ -595,29 +511,28 @@ public sealed class PortalService(
             var updatedRows = await _jetfDbContext.ShipmentInbounds
                 .Where(entity => inboundIds.Contains(entity.Id))
                 .ExecuteUpdateAsync(
-                    setters => setters.SetProperty(entity => entity.LocationCode, newLocationCode),
-                    cancellationToken);
+                    setters => setters.SetProperty(entity => entity.LocationCode, newLocationCode));
 
             if (updatedRows != matchingInbounds.Count)
             {
-                await transaction.RollbackAsync(cancellationToken);
+                await transaction.RollbackAsync();
                 return ServiceResult.Fail("UPDATE_FAILED", "整板儲位調撥失敗");
             }
 
             foreach (var inbound in matchingInbounds)
             {
                 var originalLocationCode = inbound.LocationCode?.Trim() ?? string.Empty;
-                await AddLocationEditHistoryAsync(inbound.Id, originalLocationCode, newLocationCode, editUser, cancellationToken);
+                await AddLocationEditHistoryAsync(inbound.Id, originalLocationCode, newLocationCode, editUser);
             }
 
-            var affectedRows = await _jetfDbContext.SaveChangesAsync(cancellationToken);
+            var affectedRows = await _jetfDbContext.SaveChangesAsync();
             if (affectedRows <= 0)
             {
-                await transaction.RollbackAsync(cancellationToken);
+                await transaction.RollbackAsync();
                 return ServiceResult.Fail("UPDATE_FAILED", "整板儲位調撥失敗");
             }
 
-            await transaction.CommitAsync(cancellationToken);
+            await transaction.CommitAsync();
             return ServiceResult.Success($"整板儲位調撥成功，已更新 {matchingInbounds.Count} 筆資料");
         }
         catch (Exception exception)
@@ -635,12 +550,162 @@ public sealed class PortalService(
     }
 
     /// <summary>
+    /// 填入新遞深圳託運資料，並以 ToDlvCod 作為到付款。
+    /// </summary>
+    /// <param name="entity">待建立的入庫資料。</param>
+    /// <param name="trackingNo">物流單號。</param>
+    private async Task EnrichSeaShenzhenShipmentInboundAsync(ShipmentInboundEntity entity, string trackingNo)
+    {
+        var seaData = await GetSeaShenzhenDataAsync(trackingNo);
+        var feeData = await GetSeaShenzhenFeeDataAsync(trackingNo);
+
+        // 區間內單號固定歸屬新遞海運；查無原單時仍可帶入到付款。
+        entity.DataType = "海運";
+        entity.CustCode = "CN00132";
+        entity.IsOrderOriginal = seaData is not null;
+        entity.OriginalJetfSerial = seaData?.OriginalJetfSerial ?? string.Empty;
+        entity.MainNumber = seaData?.MainNumber ?? string.Empty;
+        entity.OriginalTrackingNo = seaData?.OriginalTrackingNo ?? string.Empty;
+        entity.TransName = seaData?.TransName ?? string.Empty;
+        entity.Importer = seaData?.Importer ?? string.Empty;
+        entity.OriginalImporter = seaData?.Importer ?? string.Empty;
+        entity.ImporterPhone = seaData?.ImporterPhone ?? string.Empty;
+        entity.ImporterAddr = seaData?.ImporterAddr ?? string.Empty;
+        entity.Cod = feeData?.Cod ?? 0;
+        entity.Tax = 0;
+        entity.Ccfee = 0;
+        entity.Fee = 0;
+    }
+
+    /// <summary>
+    /// 依序比對一般海運、空運託運資料，並填入製單資訊與費用。
+    /// </summary>
+    /// <param name="entity">待建立的入庫資料。</param>
+    /// <param name="trackingNo">物流單號。</param>
+    private async Task EnrichShipmentInboundAsync(ShipmentInboundEntity entity, string trackingNo)
+    {
+        var seaData = await GetSeaDataAsync(trackingNo);
+        var airData = seaData is null ? await GetAirDataAsync(trackingNo) : null;
+        var sourceCod = 0;
+
+        entity.IsOrderOriginal = seaData is not null || airData is not null;
+        if (seaData is not null)
+        {
+            var seaOrderEditData = await GetSeaOrderEditDataAsync(trackingNo);
+
+            entity.DataType = "海運";
+            entity.OriginalJetfSerial = seaData.OriginalJetfSerial;
+            entity.MainNumber = seaData.MainNumber;
+            entity.OriginalTrackingNo = seaData.OriginalTrackingNo;
+            entity.CustCode = seaData.CustCode;
+            entity.TransName = seaData.TransName;
+            entity.Importer = seaData.Importer;
+            entity.ImporterPhone = seaData.ImporterPhone;
+            entity.ImporterAddr = seaData.ImporterAddr;
+            entity.OrderImporterId = seaOrderEditData?.ImporterId ?? string.Empty;
+            entity.OrderImporter = seaOrderEditData?.Importer ?? string.Empty;
+            entity.OriginalImporterId = seaData.ImporterId;
+            entity.OriginalImporter = seaData.Importer;
+            sourceCod = seaData.Cc;
+        }
+        else if (airData is not null)
+        {
+            var airMakeListData = await GetAirMakeListDataAsync(airData.TrackingNo);
+
+            entity.DataType = "空運";
+            entity.OriginalJetfSerial = airData.OriginalJetfSerial;
+            entity.MainNumber = airData.MainNumber;
+            entity.OriginalTrackingNo = airData.OriginalTrackingNo;
+            entity.CustCode = airData.CustCode;
+            entity.TransNo = airData.TransNo;
+            entity.Importer = airData.Importer;
+            entity.ImporterPhone = airData.ImporterPhone;
+            entity.ImporterAddr = airData.ImporterAddr;
+            entity.OrderImporterId = airMakeListData?.ImporterId ?? string.Empty;
+            entity.OrderImporter = airMakeListData?.Importer ?? string.Empty;
+            entity.OriginalImporterId = airData.ImporterId;
+            entity.OriginalImporter = airData.Importer;
+            sourceCod = airData.Cc;
+        }
+
+        // 一般託運以費用表為優先，查無費用時使用原單的到付款。
+        var feeData = string.IsNullOrWhiteSpace(entity.OriginalJetfSerial)
+            ? null
+            : await GetFeeDataAsync(entity.OriginalJetfSerial);
+        entity.Tax = feeData?.Tax ?? 0;
+        entity.Ccfee = feeData?.Ccfee ?? 0;
+        entity.Cod = feeData?.Cod ?? sourceCod;
+        entity.Fee = ShipmentInboundFeePolicy.CalculateInboundFee(entity.CustCode ?? string.Empty, feeData?.Tax, feeData?.Ccfee);
+    }
+
+    /// <summary>
+    /// 判斷單號是否位於新遞深圳的任一設定區間，包含起訖單號。
+    /// </summary>
+    /// <param name="trackingNo">物流單號。</param>
+    /// <returns>符合新遞深圳區間時回傳 true。</returns>
+    private async Task<bool> IsSeaShenzhenTrackingNoAsync(string trackingNo)
+    {
+        if (!long.TryParse(trackingNo, out var number))
+        {
+            return false;
+        }
+
+        return await _jetfDbContext.SeaShenzhenTrackingNoRanges
+            .AsNoTracking()
+            .AnyAsync(entity => number >= entity.StartTrackingNo && number <= entity.EndTrackingNo);
+    }
+
+    /// <summary>
+    /// 依物流單號查詢最新的新遞深圳託運資料。
+    /// </summary>
+    /// <param name="trackingNo">物流單號。</param>
+    /// <returns>新遞深圳託運資料；查無資料時回傳 null。</returns>
+    private async Task<SeaOrderOriginalDto?> GetSeaShenzhenDataAsync(string trackingNo)
+    {
+        return await _jetfDbContext.SeaShenzhenOriginals
+            .AsNoTracking()
+            .Where(entity => entity.JetfSerial == trackingNo)
+            .OrderByDescending(entity => entity.DataDate)
+            .ThenByDescending(entity => entity.Id)
+            .Select(entity => new SeaOrderOriginalDto
+            {
+                TrackingNo = entity.JetfSerial ?? string.Empty,
+                OriginalJetfSerial = entity.JetfSerial ?? string.Empty,
+                MainNumber = entity.BlNo ?? string.Empty,
+                OriginalTrackingNo = entity.TrackingNo ?? string.Empty,
+                Importer = entity.Importer ?? string.Empty,
+                ImporterAddr = entity.ImporterAddress ?? string.Empty,
+                ImporterPhone = entity.ImporterPhone ?? string.Empty,
+                TransName = entity.TransName ?? string.Empty
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    /// <summary>
+    /// 依物流單號查詢最新出倉資料的 ToDlvCod，作為新遞深圳的到付款。
+    /// </summary>
+    /// <param name="trackingNo">物流單號。</param>
+    /// <returns>到付款資料；查無資料時回傳 null。</returns>
+    private async Task<FeeMasterDto?> GetSeaShenzhenFeeDataAsync(string trackingNo)
+    {
+        return await _jetfDbContext.FeeMasterCods
+            .AsNoTracking()
+            .Where(entity => entity.DlvInv == trackingNo)
+            .OrderByDescending(entity => entity.SignOutTime)
+            .ThenByDescending(entity => entity.Id)
+            .Select(entity => new FeeMasterDto
+            {
+                Cod = entity.ToDlvCod ?? 0
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    /// <summary>
     /// 查詢海運原始資料。
     /// </summary>
     /// <param name="trackingNo">單號。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>海運原始資料；若不存在則回傳 null。</returns>
-    private async Task<SeaOrderOriginalDto?> GetSeaDataAsync(string trackingNo, CancellationToken cancellationToken)
+    private async Task<SeaOrderOriginalDto?> GetSeaDataAsync(string trackingNo)
     {
         try
         {
@@ -662,7 +727,7 @@ public sealed class PortalService(
                     TransName = entity.TransName,
                     Cc = entity.CC
                 })
-                .FirstOrDefaultAsync(cancellationToken);
+                .FirstOrDefaultAsync();
 
             if (seaData is null)
             {
@@ -695,9 +760,8 @@ public sealed class PortalService(
     /// 查詢空運原始資料。
     /// </summary>
     /// <param name="trackingNo">單號。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>空運原始資料；若不存在則回傳 null。</returns>
-    private async Task<AirOrderOriginalDto?> GetAirDataAsync(string trackingNo, CancellationToken cancellationToken)
+    private async Task<AirOrderOriginalDto?> GetAirDataAsync(string trackingNo)
     {
         try
         {
@@ -718,7 +782,7 @@ public sealed class PortalService(
                     TransNo = entity.TransNo,
                     Cc = entity.CC
                 })
-                .FirstOrDefaultAsync(cancellationToken);
+                .FirstOrDefaultAsync();
 
             if (airData is null)
             {
@@ -739,7 +803,7 @@ public sealed class PortalService(
                      TransNo = entity.TransNo,
                      Cc = entity.CC
                  })
-                 .FirstOrDefaultAsync(cancellationToken);
+                 .FirstOrDefaultAsync();
             }
 
             if (airData is null)
@@ -773,11 +837,9 @@ public sealed class PortalService(
     /// 依物流貨號查詢海運製單中的進口人資訊。
     /// </summary>
     /// <param name="trackingNo">物流貨號。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>海運製單進口人資料；查無資料時回傳 null。</returns>
     private async Task<ShipmentImporterDataDto?> GetSeaOrderEditDataAsync(
-        string trackingNo,
-        CancellationToken cancellationToken)
+        string trackingNo)
     {
         try
         {
@@ -790,7 +852,7 @@ public sealed class PortalService(
                     ImporterId = entity.ImporterId ?? string.Empty,
                     Importer = entity.Importer ?? string.Empty
                 })
-                .FirstOrDefaultAsync(cancellationToken);
+                .FirstOrDefaultAsync();
         }
         catch (Exception exception)
         {
@@ -803,11 +865,9 @@ public sealed class PortalService(
     /// 依追蹤單號查詢空運製單中的收件人資訊。
     /// </summary>
     /// <param name="trackingNo">追蹤單號。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>空運製單收件人資料；查無資料時回傳 null。</returns>
     private async Task<ShipmentImporterDataDto?> GetAirMakeListDataAsync(
-        string trackingNo,
-        CancellationToken cancellationToken)
+        string trackingNo)
     {
         try
         {
@@ -819,7 +879,7 @@ public sealed class PortalService(
                     ImporterId = entity.RecId ?? string.Empty,
                     Importer = entity.Recipient ?? string.Empty
                 })
-                .FirstOrDefaultAsync(cancellationToken);
+                .FirstOrDefaultAsync();
         }
         catch (Exception exception)
         {
@@ -832,9 +892,8 @@ public sealed class PortalService(
     /// 查詢費用資料。
     /// </summary>
     /// <param name="dlvInv">費用資料的發票號碼。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>費用資料；若不存在則回傳 null。</returns>
-    private async Task<FeeMasterDto?> GetFeeDataAsync(string dlvInv, CancellationToken cancellationToken)
+    private async Task<FeeMasterDto?> GetFeeDataAsync(string dlvInv)
     {
         try
         {
@@ -848,7 +907,7 @@ public sealed class PortalService(
                     Cod = entity.Cod ?? 0,
                     Fee = 30,
                 })
-                .FirstOrDefaultAsync(cancellationToken);
+                .FirstOrDefaultAsync();
         }
         catch (Exception exception)
         {
@@ -884,9 +943,8 @@ public sealed class PortalService(
     /// 檢查入庫資料是否重複。
     /// </summary>
     /// <param name="trackingNo">單號。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>符合重複條件時回傳 true，否則回傳 false。</returns>
-    private async Task<bool> IsDuplicateShipmentInboundAsync(string trackingNo, CancellationToken cancellationToken)
+    private async Task<bool> IsDuplicateShipmentInboundAsync(string trackingNo)
     {
         try
         {
@@ -895,8 +953,7 @@ public sealed class PortalService(
             return await _jetfDbContext.ShipmentInbounds
                 .AsNoTracking()
                 .AnyAsync(
-                    entity => entity.TrackingNo == trackingNo && (!entity.OutboundDate.HasValue || entity.OutboundDate >= duplicateThreshold ),
-                    cancellationToken);
+                    entity => entity.TrackingNo == trackingNo && (!entity.OutboundDate.HasValue || entity.OutboundDate >= duplicateThreshold ));
         }
         catch (Exception exception)
         {
@@ -931,17 +988,15 @@ public sealed class PortalService(
     /// 檢查入庫流水編號是否重複。
     /// </summary>
     /// <param name="seqNo">流水編號。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>存在相同流水編號時回傳 true，否則回傳 false。</returns>
-    private async Task<bool> IsDuplicateShipmentInboundSeqNoAsync(string seqNo, CancellationToken cancellationToken)
+    private async Task<bool> IsDuplicateShipmentInboundSeqNoAsync(string seqNo)
     {
         try
         {
             return await _jetfDbContext.ShipmentInbounds
                 .AsNoTracking()
                 .AnyAsync(
-                    entity => entity.SeqNo == seqNo,
-                    cancellationToken);
+                    entity => entity.SeqNo == seqNo);
         }
         catch (Exception exception)
         {
@@ -971,8 +1026,7 @@ public sealed class PortalService(
         int shipmentInboundId,
         string oldLocationCode,
         string newLocationCode,
-        string editUser,
-        CancellationToken cancellationToken)
+        string editUser)
     {
         await _jetfDbContext.ShipmentInboundEditHistories.AddAsync(
             new ShipmentInboundEditHistoryEntity
@@ -983,8 +1037,7 @@ public sealed class PortalService(
                 NewValue = newLocationCode,
                 EditTime = DateTime.Now,
                 EditUser = editUser
-            },
-            cancellationToken);
+            });
     }
 
     private static string NormalizeLocationCode(string locationCode)
@@ -992,7 +1045,7 @@ public sealed class PortalService(
         return locationCode.Trim().ToUpperInvariant();
     }
 
-    private async Task<PhotoSaveResult> SaveExceptionPhotoAsync(string photoBase64, CancellationToken cancellationToken)
+    private async Task<PhotoSaveResult> SaveExceptionPhotoAsync(string photoBase64)
     {
         try
         {
@@ -1028,8 +1081,6 @@ public sealed class PortalService(
 
             await Task.Run(() =>
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
                 using var sftpClient = new SftpClient(
                     _shipmentInboundPhotoSftpOptions.Host,
                     _shipmentInboundPhotoSftpOptions.Port,
@@ -1046,13 +1097,9 @@ public sealed class PortalService(
                 {
                     sftpClient.Disconnect();
                 }
-            }, cancellationToken);
+            });
 
             return PhotoSaveResult.Success(BuildExceptionPhotoUri(remoteFilePath));
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
         }
         catch (Exception exception)
         {

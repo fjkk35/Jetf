@@ -18,4 +18,10 @@ public sealed class JetfDbContext(DbContextOptions<JetfDbContext> options) : DbC
     public DbSet<ShipmentInboundEditHistoryEntity> ShipmentInboundEditHistories => Set<ShipmentInboundEditHistoryEntity>();
 
 	public DbSet<FeeMasterEntity> FeeMasters => Set<FeeMasterEntity>();
+
+    public DbSet<SeaShenzhenTrackingNoRangeEntity> SeaShenzhenTrackingNoRanges => Set<SeaShenzhenTrackingNoRangeEntity>();
+
+    public DbSet<SeaShenzhenOriginalEntity> SeaShenzhenOriginals => Set<SeaShenzhenOriginalEntity>();
+
+    public DbSet<FeeMasterCodEntity> FeeMasterCods => Set<FeeMasterCodEntity>();
 }

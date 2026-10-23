@@ -23,16 +23,15 @@ public sealed class ShipmentInboundController(
     /// <summary>
     /// 取得貨件來源清單。
     /// </summary>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>貨件來源清單。</returns>
     [HttpGet("source-types")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ShipmentInboundSourceTypeDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ShipmentInboundSourceTypeDto>>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<ApiResponse<IReadOnlyList<ShipmentInboundSourceTypeDto>>>> GetSourceTypesAsync(CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<ShipmentInboundSourceTypeDto>>>> GetSourceTypesAsync()
     {
         try
         {
-            var data = await _portalService.GetShipmentInboundSourcesAsync(cancellationToken);
+            var data = await _portalService.GetShipmentInboundSourcesAsync();
             return Ok(ApiResponse<IReadOnlyList<ShipmentInboundSourceTypeDto>>.Ok(data));
         }
         catch (Exception exception)
@@ -51,16 +50,15 @@ public sealed class ShipmentInboundController(
     /// 檢查是否存在原始入庫資料。
     /// </summary>
     /// <param name="request">檢查請求。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>是否存在原始入庫資料。</returns>
     [HttpPost("check")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<ApiResponse<bool>>> CheckAsync([FromBody] TrackingNoRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<bool>>> CheckAsync([FromBody] TrackingNoRequest request)
     {
         try
         {
-            var result = await _portalService.CheckInboundDataAsync(request.TrackingNo, request.SourceType, cancellationToken);
+            var result = await _portalService.CheckInboundDataAsync(request.TrackingNo, request.SourceType);
             return Ok(ApiResponse<bool>.Ok(result.IsValid, result.Message));
         }
         catch (Exception exception)
@@ -85,7 +83,6 @@ public sealed class ShipmentInboundController(
     /// <param name="timestamp">請求時間戳記。</param>
     /// <param name="signature">簽章字串。</param>
     /// <param name="request">入庫請求。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>寫入結果。</returns>
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
@@ -96,8 +93,7 @@ public sealed class ShipmentInboundController(
     public async Task<ActionResult<ApiResponse<bool>>> CreateAsync(
         [FromHeader(Name = "X-Timestamp")] long timestamp,
         [FromHeader(Name = "X-Signature")] string? signature,
-        [FromBody] CreateShipmentInboundRequest request,
-        CancellationToken cancellationToken)
+        [FromBody] CreateShipmentInboundRequest request)
     {
         try
         {
@@ -110,7 +106,7 @@ public sealed class ShipmentInboundController(
                         StatusCodes.Status401Unauthorized));
             }
 
-            var result = await _portalService.CreateShipmentInboundAsync(request, cancellationToken);
+            var result = await _portalService.CreateShipmentInboundAsync(request);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.Code, ApiResponse<bool>.Fail(result.ErrorCode, result.Message, result.Code));
@@ -133,16 +129,15 @@ public sealed class ShipmentInboundController(
     /// <summary>
     /// 取得異常原因清單。
     /// </summary>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>異常原因清單。</returns>
     [HttpGet("exception-reasons")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ShipmentInboundExceptionReasonDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ShipmentInboundExceptionReasonDto>>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<ApiResponse<IReadOnlyList<ShipmentInboundExceptionReasonDto>>>> GetExceptionReasonsAsync(CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<ShipmentInboundExceptionReasonDto>>>> GetExceptionReasonsAsync()
     {
         try
         {
-            var data = await _portalService.GetShipmentInboundExceptionReasonsAsync(cancellationToken);
+            var data = await _portalService.GetShipmentInboundExceptionReasonsAsync();
             return Ok(ApiResponse<IReadOnlyList<ShipmentInboundExceptionReasonDto>>.Ok(data));
         }
         catch (Exception exception)
@@ -161,7 +156,6 @@ public sealed class ShipmentInboundController(
     /// 寫入異常件資料。
     /// </summary>
     /// <param name="request">異常件請求。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>寫入結果。</returns>
     [HttpPost("exception")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
@@ -170,8 +164,7 @@ public sealed class ShipmentInboundController(
     public async Task<ActionResult<ApiResponse<bool>>> CreateExceptionAsync(
         [FromHeader(Name = "X-Timestamp")] long timestamp,
         [FromHeader(Name = "X-Signature")] string? signature,
-        [FromBody] CreateShipmentInboundExceptionRequest request,
-        CancellationToken cancellationToken)
+        [FromBody] CreateShipmentInboundExceptionRequest request)
     {
         try
         {
@@ -184,7 +177,7 @@ public sealed class ShipmentInboundController(
                         StatusCodes.Status401Unauthorized));
             }
 
-            var result = await _portalService.CreateShipmentInboundExceptionAsync(request, cancellationToken);
+            var result = await _portalService.CreateShipmentInboundExceptionAsync(request);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.Code, ApiResponse<bool>.Fail(result.ErrorCode, result.Message, result.Code));
@@ -208,7 +201,6 @@ public sealed class ShipmentInboundController(
     /// 更新單件儲位。
     /// </summary>
     /// <param name="request">儲位調撥請求。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>更新結果。</returns>
     [HttpPost("update-location-code")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
@@ -217,8 +209,7 @@ public sealed class ShipmentInboundController(
     public async Task<ActionResult<ApiResponse<bool>>> UpdateLocationCodeAsync(
         [FromHeader(Name = "X-Timestamp")] long timestamp,
         [FromHeader(Name = "X-Signature")] string? signature,
-        [FromBody] UpdateLocationCodeRequest request,
-        CancellationToken cancellationToken)
+        [FromBody] UpdateLocationCodeRequest request)
     {
         try
         {
@@ -231,7 +222,7 @@ public sealed class ShipmentInboundController(
                         StatusCodes.Status401Unauthorized));
             }
 
-            var result = await _portalService.UpdateLocationCodeAsync(request, cancellationToken);
+            var result = await _portalService.UpdateLocationCodeAsync(request);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.Code, ApiResponse<bool>.Fail(result.ErrorCode, result.Message, result.Code));
@@ -255,7 +246,6 @@ public sealed class ShipmentInboundController(
     /// 取得整板儲位調撥件數。
     /// </summary>
     /// <param name="request">件數查詢請求。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>查詢結果。</returns>
     [HttpPost("batch-location-update-count")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
@@ -264,8 +254,7 @@ public sealed class ShipmentInboundController(
     public async Task<ActionResult<ApiResponse<bool>>> GetBatchLocationUpdateCountAsync(
         [FromHeader(Name = "X-Timestamp")] long timestamp,
         [FromHeader(Name = "X-Signature")] string? signature,
-        [FromBody] GetBatchLocationUpdateCountRequest request,
-        CancellationToken cancellationToken)
+        [FromBody] GetBatchLocationUpdateCountRequest request)
     {
         try
         {
@@ -278,7 +267,7 @@ public sealed class ShipmentInboundController(
                         StatusCodes.Status401Unauthorized));
             }
 
-            var result = await _portalService.GetBatchLocationUpdateCountAsync(request, cancellationToken);
+            var result = await _portalService.GetBatchLocationUpdateCountAsync(request);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.Code, ApiResponse<bool>.Fail(result.ErrorCode, result.Message, result.Code));
@@ -306,7 +295,6 @@ public sealed class ShipmentInboundController(
     /// 執行整板儲位調撥。
     /// </summary>
     /// <param name="request">整板調撥請求。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>更新結果。</returns>
     [HttpPost("batch-update-location-code")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
@@ -315,8 +303,7 @@ public sealed class ShipmentInboundController(
     public async Task<ActionResult<ApiResponse<bool>>> BatchUpdateLocationCodeAsync(
         [FromHeader(Name = "X-Timestamp")] long timestamp,
         [FromHeader(Name = "X-Signature")] string? signature,
-        [FromBody] BatchUpdateLocationCodeRequest request,
-        CancellationToken cancellationToken)
+        [FromBody] BatchUpdateLocationCodeRequest request)
     {
         try
         {
@@ -329,7 +316,7 @@ public sealed class ShipmentInboundController(
                         StatusCodes.Status401Unauthorized));
             }
 
-            var result = await _portalService.BatchUpdateLocationCodeAsync(request, cancellationToken);
+            var result = await _portalService.BatchUpdateLocationCodeAsync(request);
             if (!result.IsSuccess)
             {
                 return StatusCode(result.Code, ApiResponse<bool>.Fail(result.ErrorCode, result.Message, result.Code));

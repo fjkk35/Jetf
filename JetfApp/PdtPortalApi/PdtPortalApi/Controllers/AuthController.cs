@@ -20,13 +20,12 @@ public sealed class AuthController(IPortalService portalService, IAppVersionServ
     /// 使用帳號檢查使用者是否存在。
     /// </summary>
     /// <param name="request">登入請求。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>標準化登入結果。</returns>
     [HttpPost("login")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status426UpgradeRequired)]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<ApiResponse<bool>>> LoginAsync([FromBody] LoginRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<bool>>> LoginAsync([FromBody] LoginRequest request)
     {
         try
         {
@@ -40,7 +39,7 @@ public sealed class AuthController(IPortalService portalService, IAppVersionServ
                         StatusCodes.Status426UpgradeRequired));
             }
 
-            var isSuccess = await _portalService.LoginAsync(request.Account, cancellationToken);
+            var isSuccess = await _portalService.LoginAsync(request.Account);
 
             if (isSuccess)
             {
