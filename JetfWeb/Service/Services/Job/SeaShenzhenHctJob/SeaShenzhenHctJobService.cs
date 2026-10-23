@@ -42,7 +42,6 @@ namespace Service.Services.Job.SeaShenzhenHctJob
             {
                 var pendingItems = JetfDb.SeaShenzhenOriginals
                     .Where(x => x.IsHct && !x.IsHctSuccess)
-                    .Where( x => x.JetfSerial== "8026906742")
                     .OrderBy(x => x.Id)
                     .ToList();
 
