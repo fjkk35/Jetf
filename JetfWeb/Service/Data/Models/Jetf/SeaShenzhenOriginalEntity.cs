@@ -113,7 +113,7 @@ namespace Service.Data
         public decimal Gw { get; set; }
 
         /// <summary>
-        /// 傳給物流重量。
+        /// 傳給物流重量，為材積乘以 10。
         /// </summary>
         [Column("DlvGw")]
         public decimal DlvGw { get; set; }

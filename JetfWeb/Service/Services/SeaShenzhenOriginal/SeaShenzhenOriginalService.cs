@@ -383,11 +383,6 @@ namespace Service.Services.SeaShenzhenOriginal
                     model.Quantity = ParseNullableInt(model.QuantityText);
                     model.Gw = ParseNullableDecimal(model.GwText);
 
-                    if (!string.IsNullOrWhiteSpace(volumeText) && !model.Volume.HasValue)
-                    {
-                        AddValidationError(model, "材積", "格式錯誤");
-                    }
-
                     result.Add(model);
                 }
             }
@@ -470,13 +465,14 @@ namespace Service.Services.SeaShenzhenOriginal
                     AddValidationError(item, "數量", "格式錯誤");
                 }
 
-                if (string.IsNullOrWhiteSpace(item.GwText))
+                if (!item.Volume.HasValue)
+                {
+                    AddValidationError(item, "材積", "必填");
+                }
+
+                if (!item.Gw.HasValue)
                 {
                     AddValidationError(item, "重量", "必填");
-                }
-                else if (!item.Gw.HasValue)
-                {
-                    AddValidationError(item, "重量", "格式錯誤");
                 }
 
                 if (string.IsNullOrWhiteSpace(item.TransName))
@@ -615,7 +611,7 @@ namespace Service.Services.SeaShenzhenOriginal
             entity.Quantity = row.Quantity;
             entity.Volume = row.Volume;
             entity.Gw = row.Gw.Value;
-            entity.DlvGw = CalculateDlvGw(row.Gw);
+            entity.DlvGw = CalculateDlvGw(row.Volume);
             entity.Memo = NullIfEmpty(row.Memo);
             entity.Claimant = NullIfEmpty(row.Claimant);
             entity.TaxPayment = row.TaxPayment;
@@ -623,18 +619,16 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
-        /// 依 HCT 規則計算傳給物流的重量：大於 1 無條件捨去小數，未滿或等於 1 以 1 計。
+        /// 以材積乘以 10 計算傳給物流的重量。
         /// </summary>
-        private decimal CalculateDlvGw(decimal? gw)
+        private decimal CalculateDlvGw(decimal? volume)
         {
-            if (!gw.HasValue)
+            if (!volume.HasValue)
             {
-                throw new InvalidOperationException("重量不可為空");
+                throw new InvalidOperationException("材積不可為空");
             }
 
-            return gw.Value > 1
-                ? Math.Truncate(gw.Value)
-                : 1;
+            return volume.Value * 10m;
         }
 
         /// <summary>
