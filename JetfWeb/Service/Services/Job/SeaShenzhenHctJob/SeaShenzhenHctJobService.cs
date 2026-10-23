@@ -144,7 +144,7 @@ namespace Service.Services.Job.SeaShenzhenHctJob
                 Ertel1 = original.ImporterPhone,
                 Eraddr = original.ImporterAddress,
                 Ejamt = "1",
-                Eqamt = original.Volume?.ToString("0.###", CultureInfo.InvariantCulture),
+                Eqamt = original.DlvGw.ToString("0.###", CultureInfo.InvariantCulture),
                 Escsno = DefaultCustomerCode,
                 Edelno = original.JetfSerial,
                 Eqmny = original.Cc.HasValue
