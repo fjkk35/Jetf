@@ -620,6 +620,7 @@ namespace Service.Services.CptTradeVan
 
         /// <summary>
         /// 每次重新取得外部查詢服務觀察到的伺服器出口 IPv4。
+        /// 目前暫停呼叫，待有需要時再啟用。
         /// </summary>
         /// <returns>量測到的對外 IPv4，查詢失敗時回傳 Unknown。</returns>
         private async Task<string> GetPublicIpAsync()
@@ -672,14 +673,10 @@ namespace Service.Services.CptTradeVan
                 if (retry > 0)
                     await Task.Delay(5000).ConfigureAwait(false);
 
-                var publicIp = await GetPublicIpAsync().ConfigureAwait(false);
-                // 每次嘗試獨立保留量測值，開始、結束與錯誤皆使用該次 IP。
-                using (MappedDiagnosticsLogicalContext.SetScoped("cptPortalPublicIp", publicIp))
-                {
-                    result = await request().ConfigureAwait(false);
-                    if (isSuccessful(result))
-                        return result;
-                }
+                // 暫停查詢對外 IP，直接執行 API；需要時可在此重新啟用。
+                result = await request().ConfigureAwait(false);
+                if (isSuccessful(result))
+                    return result;
             }
             return result;
         }
