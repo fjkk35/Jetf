@@ -21,14 +21,14 @@ namespace JETFTAX.Controllers
             _seaShenzhenOriginalService = seaShenzhenOriginalService;
         }
 
-        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        [UserAuthorize(Authority.SeaShenzhenOriginalQuery)]
         public ActionResult Index()
         {
             return View();
         }
 
         [HttpPost]
-        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        [UserAuthorize(Authority.SeaShenzhenOriginalQuery)]
         public JsonResult SearchData(SeaShenzhenOriginalQueryRequest request)
         {
             try
@@ -51,7 +51,7 @@ namespace JETFTAX.Controllers
         }
 
         [HttpGet]
-        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        [UserAuthorize(Authority.SeaShenzhenOriginalQuery)]
         public JsonResult GetTaxPaymentOptions()
         {
             var list = new[]
@@ -69,7 +69,7 @@ namespace JETFTAX.Controllers
         }
 
         [HttpGet]
-        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        [UserAuthorize(Authority.SeaShenzhenOriginalQuery)]
         public JsonResult GetDataTypeOptions()
         {
             var list = new[]

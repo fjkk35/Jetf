@@ -19,7 +19,7 @@ namespace JETFTAX.Controllers
             _seaShenzhenFeeDownloadService = seaShenzhenFeeDownloadService;
         }
 
-        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        [UserAuthorize(Authority.SeaShenzhenFeeDownload)]
         public ActionResult Index()
         {
             return View();
@@ -29,7 +29,7 @@ namespace JETFTAX.Controllers
         /// 依資料日期產生物流代收檔 Excel、轉入尚未銷帳的到付款資料，並回傳暫存下載資訊。
         /// </summary>
         [HttpPost]
-        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        [UserAuthorize(Authority.SeaShenzhenFeeDownload)]
         public JsonResult ExportExcel(SeaShenzhenFeeTransferRequest request)
         {
             try

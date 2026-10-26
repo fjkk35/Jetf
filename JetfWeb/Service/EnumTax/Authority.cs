@@ -602,5 +602,30 @@ namespace Service.EnumTax
         /// 短溢卸
         /// </summary>
         ShortOverUnload,
+
+        /// <summary>
+        /// 新遞捷豐稅金轉檔
+        /// </summary>
+        SeaShenzhenFeeTransfer,
+
+        /// <summary>
+        /// 新遞託運資料查詢
+        /// </summary>
+        SeaShenzhenOriginalQuery,
+
+        /// <summary>
+        /// 新遞金額人工調整
+        /// </summary>
+        SeaShenzhenFeeManualToDlvCod,
+
+        /// <summary>
+        /// 新遞稅金資料查詢
+        /// </summary>
+        SeaShenzhenFeeQuery,
+
+        /// <summary>
+        /// 新遞物流代收檔下載
+        /// </summary>
+        SeaShenzhenFeeDownload,
     }
 }

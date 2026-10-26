@@ -22,7 +22,7 @@ namespace JETFTAX.Controllers
             _seaShenzhenFeeManualToDlvCodService = seaShenzhenFeeManualToDlvCodService;
         }
 
-        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        [UserAuthorize(Authority.SeaShenzhenFeeManualToDlvCod)]
         public ActionResult Index()
         {
             return View();
@@ -32,7 +32,7 @@ namespace JETFTAX.Controllers
         /// 依條件查詢人工調整資料。
         /// </summary>
         [HttpPost]
-        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        [UserAuthorize(Authority.SeaShenzhenFeeManualToDlvCod)]
         public JsonResult SearchData(SeaShenzhenFeeManualToDlvCodQueryRequest request)
         {
             try
@@ -55,7 +55,7 @@ namespace JETFTAX.Controllers
         }
 
         [HttpPost]
-        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        [UserAuthorize(Authority.SeaShenzhenFeeManualToDlvCod)]
         public JsonResult Upload(HttpPostedFileBase file)
         {
             var responseModel = new ResponseModel();
@@ -92,7 +92,7 @@ namespace JETFTAX.Controllers
         }
 
         [HttpGet]
-        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        [UserAuthorize(Authority.SeaShenzhenFeeManualToDlvCod)]
         public ActionResult DownloadTemplate()
         {
             var fileBytes = _seaShenzhenFeeManualToDlvCodService.ExportTemplate();

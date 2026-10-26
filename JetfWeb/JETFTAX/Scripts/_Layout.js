@@ -53,12 +53,11 @@ mainApp.controller('LayoutController', function ($scope, $http) {
         {
             id: 'seaShenzhen', title: '新遞', icon: 'fas fa-fw fa-truck', children: [
                 { id: 'SeaShenzhenOriginal', text: '上傳託運資料', url: '~/SeaShenzhenOriginal/Index', auth: ['SeaShenzhenOriginalUpload'] },
-                //{ id: 'SeaShenzhenTax', text: '上傳稅金資料', url: '~/SeaShenzhenTax/Index', auth: ['SeaShenzhenOriginalUpload'] },
-                { id: 'SeaShenzhenFeeTransfer', text: '捷豐稅金轉檔', url: '~/SeaShenzhenFeeTransfer/Index', auth: ['SeaShenzhenOriginalUpload'] },
-                { id: 'SeaShenzhenOriginalQuery', text: '託運資料查詢', url: '~/SeaShenzhenOriginalQuery/Index', auth: ['SeaShenzhenOriginalUpload'] },
-                { id: 'SeaShenzhenFeeManualToDlvCod', text: '金額人工調整', url: '~/SeaShenzhenFeeManualToDlvCod/Index', auth: ['SeaShenzhenOriginalUpload'] },
-                { id: 'SeaShenzhenFeeQuery', text: '稅金資料查詢', url: '~/SeaShenzhenFeeQuery/Index', auth: ['SeaShenzhenOriginalUpload'] },
-                { id: 'SeaShenzhenFeeDownload', text: '物流代收檔下載', url: '~/SeaShenzhenFeeDownload/Index', auth: ['SeaShenzhenOriginalUpload'] }
+                { id: 'SeaShenzhenFeeTransfer', text: '捷豐稅金轉檔', url: '~/SeaShenzhenFeeTransfer/Index', auth: ['SeaShenzhenFeeTransfer'] },
+                { id: 'SeaShenzhenOriginalQuery', text: '託運資料查詢', url: '~/SeaShenzhenOriginalQuery/Index', auth: ['SeaShenzhenOriginalQuery'] },
+                { id: 'SeaShenzhenFeeManualToDlvCod', text: '金額人工調整', url: '~/SeaShenzhenFeeManualToDlvCod/Index', auth: ['SeaShenzhenFeeManualToDlvCod'] },
+                { id: 'SeaShenzhenFeeQuery', text: '稅金資料查詢', url: '~/SeaShenzhenFeeQuery/Index', auth: ['SeaShenzhenFeeQuery'] },
+                { id: 'SeaShenzhenFeeDownload', text: '物流代收檔下載', url: '~/SeaShenzhenFeeDownload/Index', auth: ['SeaShenzhenFeeDownload'] }
             ]
         },
         {

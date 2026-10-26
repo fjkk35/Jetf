@@ -20,14 +20,14 @@ namespace JETFTAX.Controllers
             _seaShenzhenFeeTransferService = seaShenzhenFeeTransferService;
         }
 
-        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        [UserAuthorize(Authority.SeaShenzhenFeeTransfer)]
         public ActionResult Index()
         {
             return View();
         }
 
         [HttpPost]
-        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        [UserAuthorize(Authority.SeaShenzhenFeeTransfer)]
         public JsonResult Transfer(SeaShenzhenFeeTransferRequest request)
         {
             try
@@ -62,7 +62,7 @@ namespace JETFTAX.Controllers
         }
 
         [HttpPost]
-        [UserAuthorize(Authority.SeaShenzhenOriginalUpload)]
+        [UserAuthorize(Authority.SeaShenzhenFeeTransfer)]
         public JsonResult ExportExceptions(SeaShenzhenFeeTransferExceptionExportRequest request)
         {
             try
