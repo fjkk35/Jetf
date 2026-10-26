@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 using Newtonsoft.Json;
 using Service.Services.Job.FtzWebClientJob.Model;
 using System;
@@ -44,7 +44,7 @@ namespace Service.Services.Job.FtzWebClientJob
                     }
 
                     // 步驟 2: 查詢資料
-                    var startDate = DateTime.Now.AddDays(-1).ToString("yyyyMMdd");
+                    var startDate = DateTime.Now.AddDays(-7).ToString("yyyyMMdd");
                     var endDate = DateTime.Now.ToString("yyyyMMdd");
                     var jsonResult = await QueryData(client, "I", "0335", startDate, endDate);
 

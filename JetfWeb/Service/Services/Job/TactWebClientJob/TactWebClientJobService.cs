@@ -46,7 +46,7 @@ namespace Service.Services.Job.TactWebClientJob
                     }
 
                     // 步驟 2: 查詢資料
-                    var startDate = DateTime.Now.AddDays(-1).ToString("yyyy/MM/dd");
+                    var startDate = DateTime.Now.AddDays(-7).ToString("yyyy/MM/dd");
                     var endDate = DateTime.Now.ToString("yyyy/MM/dd");
                     string htmlResult = await QueryData(client, "I", startDate, endDate);
 
