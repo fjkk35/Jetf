@@ -73,6 +73,11 @@ builder.Services.AddDbContext<DataCenterDbContext>(options => options.UseSqlServ
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<ITaxDocumentService, TaxDocumentService>();
+builder.Services.Configure<SeaShenzhenApiOptions>(builder.Configuration.GetSection(SeaShenzhenApiOptions.SectionName));
+builder.Services.Configure<CargoSignReceiptFtpOptions>(builder.Configuration.GetSection(CargoSignReceiptFtpOptions.SectionName));
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<ISeaShenzhenService, SeaShenzhenService>();
+builder.Services.AddScoped<ICargoSignReceiptFileService, CargoSignReceiptFileService>();
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -122,6 +127,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    options.OperationFilter<SeaShenzhenOperationFilter>();
     var bearerSecurityScheme = new OpenApiSecurityScheme
     {
         Description = "請輸入 JWT Token。格式：Bearer {token}",

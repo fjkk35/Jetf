@@ -19,14 +19,13 @@ public sealed class TaxDocumentsController(ITaxDocumentService taxDocumentServic
     /// 取得稅金單 PDF。
     /// </summary>
     /// <param name="request">稅金單查詢請求資料。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>成功時回傳包含 PDF 檔案內容的 API 回應。</returns>
     [HttpGet("get-tax-number-pdf")]
     [Produces("application/json")]
-    public async Task<ActionResult<ApiResponse<TaxDocumentFileResponse>>> GetTaxNumberPdf([FromQuery] TaxDocumentQueryRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<TaxDocumentFileResponse>>> GetTaxNumberPdf([FromQuery] TaxDocumentQueryRequest request)
     {
         var userId = User.GetRequiredUserId();
-        var result = await taxDocumentService.GetTaxDocumentAsync(userId, request, cancellationToken);
+        var result = await taxDocumentService.GetTaxDocumentAsync(userId, request);
 
         var response = ApiResponse<TaxDocumentFileResponse>.Ok(new TaxDocumentFileResponse
         {

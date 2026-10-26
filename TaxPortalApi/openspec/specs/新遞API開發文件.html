@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>新遞金額與簽收單 API</title><style>
+        :root {
+            color-scheme: light;
+            --page: #f6f8fb;
+            --surface: #ffffff;
+            --text: #172033;
+            --muted: #667085;
+            --border: #d8dee9;
+            --get: #1f9d68;
+            --get-soft: #eaf8f1;
+            --code: #172033;
+            --code-text: #e8edf5;
+            --link: #1769aa;
+            --danger: #c0392b;
+            --shadow: 0 8px 28px rgba(23, 32, 51, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--page);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+            line-height: 1.6;
+        }
+
+        .page {
+            width: min(1080px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 40px 0 64px;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin-top: 0;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+            font-size: clamp(28px, 4vw, 40px);
+            line-height: 1.2;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+
+        h3 {
+            margin: 24px 0 12px;
+            font-size: 17px;
+        }
+
+        code,
+        pre,
+        output {
+            font-family: Consolas, "SFMono-Regular", Menlo, monospace;
+        }
+
+        code {
+            overflow-wrap: anywhere;
+        }
+
+        .subtitle {
+            margin-bottom: 26px;
+            color: var(--muted);
+        }
+
+        .endpoint {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px;
+            padding: 14px 18px;
+            border: 1px solid #9dd8be;
+            border-radius: 10px;
+            background: var(--get-soft);
+        }
+
+        .method {
+            flex: 0 0 auto;
+            padding: 5px 11px;
+            border-radius: 6px;
+            background: var(--get);
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .endpoint code {
+            min-width: 0;
+            font-weight: 650;
+            word-break: break-all;
+        }
+
+        .section {
+            margin-top: 22px;
+            padding: clamp(20px, 4vw, 30px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+            box-shadow: var(--shadow);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 11px 12px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 650;
+        }
+
+        tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .try-box {
+            border-left: 4px solid var(--get);
+        }
+
+        .field {
+            display: grid;
+            gap: 7px;
+            margin-bottom: 18px;
+        }
+
+        label {
+            font-weight: 650;
+        }
+
+        input {
+            width: 100%;
+            padding: 11px 13px;
+            border: 1px solid #aeb8c7;
+            border-radius: 7px;
+            background: #fff;
+            color: var(--text);
+            font: inherit;
+        }
+
+        input:focus {
+            border-color: var(--get);
+            outline: 3px solid rgba(31, 157, 104, 0.17);
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 16px 0;
+        }
+
+        button,
+        .button-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            background: #fff;
+            color: var(--text);
+            font: inherit;
+            font-weight: 650;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        button:hover,
+        .button-link:hover {
+            border-color: var(--get);
+        }
+
+        button:focus-visible,
+        .button-link:focus-visible {
+            outline: 3px solid rgba(31, 157, 104, 0.25);
+            outline-offset: 2px;
+        }
+
+        .primary {
+            border-color: var(--get);
+            background: var(--get);
+            color: #fff;
+        }
+
+        .primary:hover {
+            background: #178457;
+        }
+
+        .output-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .output-item {
+            min-width: 0;
+            padding: 13px 15px;
+            border-radius: 8px;
+            background: var(--code);
+            color: var(--code-text);
+        }
+
+        .output-item.full {
+            grid-column: 1 / -1;
+        }
+
+        .output-label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aebbd0;
+            font-family: inherit;
+            font-size: 13px;
+        }
+
+        .output-value {
+            display: block;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
+        }
+
+        .status {
+            min-height: 24px;
+            margin: 10px 0 0;
+            color: var(--get);
+            font-size: 14px;
+        }
+
+        .status.error {
+            color: var(--danger);
+        }
+
+        pre {
+            margin: 12px 0 0;
+            padding: 16px;
+            overflow-x: auto;
+            border-radius: 8px;
+            background: var(--code);
+            color: var(--code-text);
+            line-height: 1.55;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .note {
+            margin: 14px 0 0;
+            padding: 12px 14px;
+            border-left: 4px solid #e0a72f;
+            background: #fff8e8;
+            color: #674b0c;
+        }
+
+        .response-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-code {
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: var(--get-soft);
+            color: #126b47;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        @media (max-width: 680px) {
+            .page {
+                width: min(100% - 20px, 1080px);
+                padding-top: 24px;
+            }
+
+            .endpoint {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .output-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .output-item.full {
+                grid-column: auto;
+            }
+
+            th,
+            td {
+                min-width: 110px;
+            }
+        }
+    
+select { width:100%; padding:11px 13px; border:1px solid #aeb8c7; border-radius:7px; background:white; font:inherit; }
+nav {display:flex;flex-wrap:wrap;gap:12px;margin:18px 0;}
+nav a {color:var(--link);text-decoration:none;}
+.tool-grid {display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:680px){.tool-grid{grid-template-columns:1fr;}}
+@media print{body{background:white;}.section{box-shadow:none;break-inside:avoid;}#sign-tool{display:none;}}
+</style></head><body><main class="page">
+<header><h1>新遞金額與簽收單 API</h1><p class="subtitle">TaxPortalApi · 串接規格與 HMAC-SHA256 簽章產生工具</p></header>
+<nav aria-label="文件導覽"><a href="#section-3">查詢金額</a><a href="#section-4">簽收單</a><a href="#section-5">錯誤回應</a><a href="#sign-tool">簽章產生工具</a></nav>
+<section class="section" id="section-0"><h2>API 資訊</h2>
+<div class="table-wrap"><table><thead><tr><th>項目</th><th>內容</th></tr></thead><tbody>
+<tr><td>Base URL</td><td><code>{BaseUrl}</code>，由部署方提供 TaxPortalApi 的完整根網址，含 IIS 虛擬目錄（如有）</td></tr>
+<tr><td>金額查詢</td><td><code>GET {BaseUrl}/api/SeaShenzhen/get-amount</code></td></tr>
+<tr><td>簽收單查詢</td><td><code>GET {BaseUrl}/api/SeaShenzhen/get-sign-receipts</code></td></tr>
+<tr><td>驗證方式</td><td>HMAC-SHA256，每次請求驗證；不需要 JWT</td></tr>
+<tr><td>Secret Key</td><td><code>29681c667764ca0a75973f6a3456b9ca0ab38dd05696e173db336080ca0d4348</code>，對應伺服器 <code>SeaShenzhenApi:SecretKey</code></td></tr>
+<tr><td>Timestamp 有效時間</td><td>3 分鐘（180 秒）；<code>0 &lt;= 伺服器時間 - timestamp &lt;= 180</code>，超過或使用未來時間皆回傳 401</td></tr>
+<tr><td>編碼</td><td>UTF-8；JSON 回應欄位使用 camelCase</td></tr>
+</tbody></table></div>
+</section>
+<section class="section" id="section-1"><h2>Request</h2>
+<p>兩支 API 使用相同的 Query Parameters。物流貨號以完整值比對，不使用單號區間判斷。</p>
+<div class="table-wrap"><table><thead><tr><th>參數</th><th>必填</th><th>型別</th><th>說明</th></tr></thead><tbody>
+<tr><td><code>trackinngNo</code></td><td>是</td><td>string</td><td>物流貨號，對應 SeaShenzhenOriginal.JetfSerial，最多 20 字元，前後不可有空白</td></tr>
+<tr><td><code>timestamp</code></td><td>是</td><td>long</td><td>呼叫當下的 UTC Unix Timestamp，單位為秒</td></tr>
+<tr><td><code>sign</code></td><td>是</td><td>string</td><td>64 字元小寫十六進位 HMAC-SHA256 簽章</td></tr>
+</tbody></table></div>
+<pre><code>{BaseUrl}/api/SeaShenzhen/get-amount?trackinngNo={物流貨號}&amp;timestamp={Unix秒數}&amp;sign={簽章}
+{BaseUrl}/api/SeaShenzhen/get-sign-receipts?trackinngNo={物流貨號}&amp;timestamp={Unix秒數}&amp;sign={簽章}</code></pre>
+</section>
+<section class="section" id="section-2"><h2>Sign 產生方式</h2>
+<p>先依指定名稱、大小寫、順序及分隔符號組合原文：</p>
+<pre><code>trackinngNo={trackinngNo}&amp;timestamp={timestamp}</code></pre>
+<p>再以 UTF-8 編碼 Secret Key 與原文，計算 HMAC-SHA256，轉成小寫十六進位字串：</p>
+<pre><code>sign = lowercase_hex(HMAC-SHA256(UTF8(Secret Key), UTF8(簽章原文)))</code></pre>
+<ul>
+<li>原文使用尚未 URL Encode 的參數值；完成簽名後，再對網址的 Query 參數做 URL Encode。</li>
+<li>timestamp 使用十進位 Unix 秒數，不加千分位、不使用毫秒。</li>
+<li>sign 使用小寫十六進位，長度固定 64 字元。</li>
+<li>實際呼叫請使用當下時間；伺服器和呼叫端應保持時間同步。</li>
+<li>同一貨號及 timestamp 的簽章可用於上述兩支查詢 API；有效時間內可重複查詢。</li>
+</ul>
+<h3>固定測試向量</h3>
+<p>以下使用本文件提供的 Secret Key 計算固定測試向量，可用來核對簽章結果。</p>
+<pre><code>Secret Key：29681c667764ca0a75973f6a3456b9ca0ab38dd05696e173db336080ca0d4348
+簽章原文：trackinngNo=1056864804&amp;timestamp=1780202356
+sign：7c5b53e4a092ed623b9e2c04b572fc6b9345efb68a6f166bf16fdee4e2c5e40f</code></pre>
+<p>固定 timestamp 已不是有效請求時間，僅用於驗證簽章演算法。</p>
+<h3>C# 範例</h3>
+<pre><code>var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+var payload = $&quot;trackinngNo={trackinngNo}&amp;timestamp={timestamp.ToString(CultureInfo.InvariantCulture)}&quot;;
+var hash = HMACSHA256.HashData(
+    Encoding.UTF8.GetBytes(secretKey),
+    Encoding.UTF8.GetBytes(payload));
+var sign = Convert.ToHexString(hash).ToLowerInvariant();
+var url = $&quot;{baseUrl.TrimEnd(&#x27;/&#x27;)}/api/SeaShenzhen/get-amount&quot;
+    + $&quot;?trackinngNo={Uri.EscapeDataString(trackinngNo)}&quot;
+    + $&quot;&amp;timestamp={timestamp.ToString(CultureInfo.InvariantCulture)}&amp;sign={sign}&quot;;</code></pre>
+<p>需引用 System.Globalization、System.Security.Cryptography、System.Text。簽收單查詢將路徑改成 get-sign-receipts，簽名規則相同。</p>
+</section>
+<section class="section" id="section-3"><h2>1. 查詢金額</h2>
+<pre><code>GET /api/SeaShenzhen/get-amount?trackinngNo=1056864804&amp;timestamp={目前的Unix秒數}&amp;sign={簽章}</code></pre>
+<p>金額規則依 SeaShenzhenOriginalQuery/Index；支付方式依此次需求回傳原始值。</p>
+<div class="table-wrap"><table><thead><tr><th>回應 data 欄位</th><th>型別</th><th>來源與規則</th></tr></thead><tbody>
+<tr><td><code>trackinngNo</code></td><td>string</td><td>SeaShenzhenOriginal.JetfSerial</td></tr>
+<tr><td><code>cod</code></td><td>number</td><td>有 ShenzhenFeeMaster 資料取 Cod；否則直接取 SeaShenzhenOriginal.Cc 原值；Cc 未填則 0</td></tr>
+<tr><td><code>tax</code></td><td>integer</td><td>ShenzhenFeeMaster.Tax；沒有轉檔資料則 0</td></tr>
+<tr><td><code>fee</code></td><td>integer</td><td>ShenzhenFeeMaster.Fee；沒有轉檔資料則 0</td></tr>
+<tr><td><code>taxPayment</code></td><td>string / null</td><td>SeaShenzhenOriginal.TaxPayment 原始值，包含 XD、C 或 null，不轉中文、不修改原值</td></tr>
+</tbody></table></div>
+<p>先以物流貨號查詢原始託運資料，再以 JetfSerial = ShenzhenFeeMaster.DlvInv 查詢金額。若同一貨號有多筆，兩個資料來源各依 DataDate、Id 由新至舊取第一筆。Cod 為 0 時仍使用 0，不回退至 Cc；到付款不加總稅金、手續費，也不取 ToDlvCod。未取得的金額回傳 0。</p>
+<h3>成功回應</h3>
+<pre><code>{
+  &quot;data&quot;: {
+    &quot;trackinngNo&quot;: &quot;1056864804&quot;,
+    &quot;cod&quot;: 100,
+    &quot;tax&quot;: 200,
+    &quot;fee&quot;: 30,
+    &quot;taxPayment&quot;: &quot;C&quot;
+  },
+  &quot;isSuccess&quot;: true,
+  &quot;code&quot;: 200,
+  &quot;message&quot;: &quot;操作成功&quot;,
+  &quot;errorCode&quot;: &quot;&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-24T10:00:00+08:00&quot;
+}</code></pre>
+<p>沒有稅金轉檔資料時，data 範例：</p>
+<pre><code>{
+  &quot;trackinngNo&quot;: &quot;1056864804&quot;,
+  &quot;cod&quot;: 123.456,
+  &quot;tax&quot;: 0,
+  &quot;fee&quot;: 0,
+  &quot;taxPayment&quot;: &quot;XD&quot;
+}</code></pre>
+</section>
+<section class="section" id="section-4"><h2>2. 查詢簽收單</h2>
+<pre><code>GET /api/SeaShenzhen/get-sign-receipts?trackinngNo=1056864804&amp;timestamp={目前的Unix秒數}&amp;sign={簽章}</code></pre>
+<p>先確認 SeaShenzhenOriginal 有此物流貨號，才查詢 dbo.Cargo_Sign_Receipt，以 Jetf_Serial 比對貨號，依 Id 遞增讀取 FilePath 指定的 FTP 圖片。與 ShipmentInboundRecord/Index 使用相同的簽收單資料來源。</p>
+<p>同一貨號可能有多張圖片，以 images 清單回傳。空白路徑、檔案不存在或內容為空的圖片會略過；全部皆不可讀取時回傳 404，FTP 連線或下載錯誤回傳 502。</p>
+<div class="table-wrap"><table><thead><tr><th>回應 data 欄位</th><th>型別</th><th>說明</th></tr></thead><tbody>
+<tr><td><code>trackinngNo</code></td><td>string</td><td>查詢的物流貨號</td></tr>
+<tr><td><code>images</code></td><td>array</td><td>可讀取的簽收圖片清單</td></tr>
+<tr><td><code>images[].fileName</code></td><td>string</td><td>圖片檔名；未填檔名時取路徑中的檔名</td></tr>
+<tr><td><code>images[].contentType</code></td><td>string</td><td>依檔名判斷的 MIME，例如 image/jpeg；無法判斷時為 application/octet-stream</td></tr>
+<tr><td><code>images[].contentBase64</code></td><td>string</td><td>圖片 Base64 內容，不含 data URI 前綴</td></tr>
+</tbody></table></div>
+<h3>成功回應</h3>
+<pre><code>{
+  &quot;data&quot;: {
+    &quot;trackinngNo&quot;: &quot;1056864804&quot;,
+    &quot;images&quot;: [
+      {
+        &quot;fileName&quot;: &quot;receipt.png&quot;,
+        &quot;contentType&quot;: &quot;image/png&quot;,
+        &quot;contentBase64&quot;: &quot;iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9E8AAAAASUVORK5CYII=&quot;
+      }
+    ]
+  },
+  &quot;isSuccess&quot;: true,
+  &quot;code&quot;: 200,
+  &quot;message&quot;: &quot;操作成功&quot;,
+  &quot;errorCode&quot;: &quot;&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-24T10:00:00+08:00&quot;
+}</code></pre>
+<p>若要在網頁顯示，可組成 <code>data:{contentType};base64,{contentBase64}</code>；下載檔案則直接解碼 Base64。上述圖片僅為 1 × 1 像素示意圖。</p>
+</section>
+<section class="section" id="section-5"><h2>錯誤回應</h2>
+<pre><code>{
+  &quot;data&quot;: null,
+  &quot;isSuccess&quot;: false,
+  &quot;code&quot;: 401,
+  &quot;message&quot;: &quot;Sign 驗證失敗&quot;,
+  &quot;errorCode&quot;: &quot;&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-24T10:00:00+08:00&quot;
+}</code></pre>
+<p>新遞 API 以 HTTP 狀態碼與 message 說明錯誤，統一回應格式中的 errorCode 為空字串。</p>
+<div class="table-wrap"><table><thead><tr><th>HTTP Status</th><th>說明</th></tr></thead><tbody>
+<tr><td>400</td><td>參數未填或格式錯誤</td></tr>
+<tr><td>400</td><td>物流貨號格式錯誤</td></tr>
+<tr><td>401</td><td>Timestamp 超出有效時間</td></tr>
+<tr><td>401</td><td>Sign 驗證失敗</td></tr>
+<tr><td>404</td><td>查無託運資料</td></tr>
+<tr><td>404</td><td>查無簽收單圖片</td></tr>
+<tr><td>502</td><td>簽收單圖片讀取失敗</td></tr>
+<tr><td>503</td><td>簽名金鑰未設定</td></tr>
+<tr><td>503</td><td>簽收單 FTP 未設定</td></tr>
+<tr><td>500</td><td>系統發生未預期錯誤</td></tr>
+</tbody></table></div>
+</section>
+<section class="section" id="section-6"><h2>伺服器設定</h2>
+<p>專案 appsettings.json 已設定本文件的 Secret Key。appsettings.SeaShenzhen.example.json 包含相同金鑰及 FTP 設定範例，範例檔不會自動載入。部署時請使用相同設定，或使用以下環境變數：</p>
+<div class="table-wrap"><table><thead><tr><th>設定名稱</th><th>環境變數</th><th>說明</th></tr></thead><tbody>
+<tr><td>SeaShenzhenApi:SecretKey</td><td>SeaShenzhenApi__SecretKey</td><td>本文件列出的 HMAC 金鑰</td></tr>
+<tr><td>CargoSignReceiptFtp:Host</td><td>CargoSignReceiptFtp__Host</td><td>既有簽收單 FTP 主機</td></tr>
+<tr><td>CargoSignReceiptFtp:UserName</td><td>CargoSignReceiptFtp__UserName</td><td>既有簽收單 FTP 帳號</td></tr>
+<tr><td>CargoSignReceiptFtp:Password</td><td>CargoSignReceiptFtp__Password</td><td>既有簽收單 FTP 密碼</td></tr>
+</tbody></table></div>
+<p>金額查詢不需要 FTP 設定。兩支 API 都需要有效 HMAC 金鑰；簽收圖片讀取另外需要 FTP 設定。延用既有 DefaultConnection 查詢 jetf 資料庫，無須新增資料表。</p>
+<p>回應外層 timestamp 延用專案的伺服器本機時間；請求 timestamp 始終使用 UTC Unix 秒數。</p>
+</section>
+<section class="section try-box" id="sign-tool">
+<h2>簽章產生工具</h2>
+<p class="hint">簽章在瀏覽器內計算；工具不會將金鑰傳送到外部服務，也不會自動送出 API 請求。可留空 Base URL，先核對簽章。</p>
+<form id="sign-form">
+<div class="field"><label for="base-url">Base URL</label><input id="base-url" placeholder="https://api.example.com/TaxPortalApi" autocomplete="off"></div>
+<div class="tool-grid">
+<div class="field"><label for="endpoint">API</label><select id="endpoint"><option value="get-amount">查詢金額</option><option value="get-sign-receipts">查詢簽收單</option></select></div>
+<div class="field"><label for="jetf-serial">物流貨號 trackinngNo</label><input id="jetf-serial" value="1056864804" maxlength="20" autocomplete="off" required></div>
+<div class="field"><label for="request-timestamp">UTC Unix Timestamp（秒）</label><input id="request-timestamp" inputmode="numeric" required></div>
+<div class="field"><label for="secret-key">Secret Key</label><input id="secret-key" type="password" value="29681c667764ca0a75973f6a3456b9ca0ab38dd05696e173db336080ca0d4348" autocomplete="off" required></div>
+</div>
+<div class="actions"><button class="primary" type="submit">產生簽章</button><button type="button" id="current-time">使用目前時間</button><button type="button" id="test-vector">核對固定測試向量</button><button type="button" id="copy-url">複製 Request URL</button></div>
+</form>
+<div class="output-grid">
+<div class="output-item full"><span class="output-label">簽章原文</span><code class="output-value" id="payload-output"></code></div>
+<div class="output-item full"><span class="output-label">sign</span><code class="output-value" id="sign-output"></code></div>
+<div class="output-item full"><span class="output-label">Request URL</span><code class="output-value" id="url-output"></code></div>
+</div>
+<p class="status" id="tool-status" role="status" aria-live="polite"></p>
+</section>
+</main><script>const form = document.getElementById("sign-form");
+const serialInput = document.getElementById("jetf-serial");
+const timestampInput = document.getElementById("request-timestamp");
+const secretInput = document.getElementById("secret-key");
+const status = document.getElementById("tool-status");
+function useCurrentTime() { timestampInput.value = String(Math.floor(Date.now() / 1000)); }
+useCurrentTime();
+document.getElementById("current-time").addEventListener("click", useCurrentTime);
+async function generate() {
+    status.classList.remove("error");
+    try {
+        const serial = serialInput.value;
+        const stamp = timestampInput.value;
+        const key = secretInput.value;
+        if (!serial.trim() || serial !== serial.trim() || serial.length > 20) throw new Error("物流貨號必填，最多 20 字元，前後不可有空白。");
+        if (!/^[1-9][0-9]*$/.test(stamp)) throw new Error("請輸入 UTC Unix Timestamp 秒數。");
+        if (!key) throw new Error("請輸入本文件提供的 Secret Key。");
+        if (!globalThis.crypto?.subtle) throw new Error("瀏覽器無法使用 Web Crypto，請以本機檔案、localhost 或 HTTPS 開啟文件。");
+        const payload = "trackinngNo=" + serial + "&timestamp=" + stamp;
+        const encoder = new TextEncoder();
+        const cryptoKey = await crypto.subtle.importKey("raw", encoder.encode(key), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+        const hash = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(payload));
+        const sign = Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, "0")).join("");
+        const base = document.getElementById("base-url").value.trim().replace(/\/+$/, "") || "{BaseUrl}";
+        const path = document.getElementById("endpoint").value;
+        const url = base + "/api/SeaShenzhen/" + path + "?trackinngNo=" + encodeURIComponent(serial) + "&timestamp=" + stamp + "&sign=" + sign;
+        document.getElementById("payload-output").textContent = payload;
+        document.getElementById("sign-output").textContent = sign;
+        document.getElementById("url-output").textContent = url;
+        const age = Math.floor(Date.now() / 1000) - Number(stamp);
+        status.textContent = age < 0 || age > 180
+            ? "簽章已產生；此 timestamp 不在有效範圍內，僅供核對演算法。"
+            : "簽章已產生。實際呼叫需在 180 秒有效時間內完成。";
+    } catch (error) {
+        status.classList.add("error");
+        status.textContent = error.message;
+        document.getElementById("payload-output").textContent = "";
+        document.getElementById("sign-output").textContent = "";
+        document.getElementById("url-output").textContent = "";
+    }
+}
+form.addEventListener("submit", async event => { event.preventDefault(); await generate(); });
+document.getElementById("test-vector").addEventListener("click", async () => {
+    serialInput.value = "1056864804";
+    timestampInput.value = "1780202356";
+    secretInput.value = "29681c667764ca0a75973f6a3456b9ca0ab38dd05696e173db336080ca0d4348";
+    await generate();
+});
+document.getElementById("copy-url").addEventListener("click", async () => {
+    const url = document.getElementById("url-output").textContent;
+    if (!url) { status.textContent = "請先產生簽章。"; return; }
+    try { await navigator.clipboard.writeText(url); status.textContent = "已複製 Request URL。"; }
+    catch { status.textContent = "無法自動複製，請選取 Request URL 手動複製。"; }
+});
+</script></body></html>

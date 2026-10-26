@@ -22,7 +22,7 @@ public sealed class TaxDocumentService(
 
     private readonly TaxDocumentFtpOptions _ftpOptions = ftpOptions.Value;
 
-    public async Task<TaxDocumentFileResult> GetTaxDocumentAsync(long userId, TaxDocumentQueryRequest request, CancellationToken cancellationToken = default)
+    public async Task<TaxDocumentFileResult> GetTaxDocumentAsync(long userId, TaxDocumentQueryRequest request)
     {
         var taxNumber = request.TaxNumber.Trim();
         var clearanceTax = await dataCenterDbContext.ClearanceTaxes
@@ -33,7 +33,7 @@ public sealed class TaxDocumentService(
                 item.DataType,
                 item.MergeNumber
             })
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync();
 
         if (clearanceTax is null)
         {
@@ -46,7 +46,7 @@ public sealed class TaxDocumentService(
             throw new ApiException(StatusCodes.Status404NotFound, "找不到對應的客戶資料", "TAXDOC_002");
         }
 
-        var custCode = await ResolveCustCodeAsync(clearanceTax.DataType, mergeNumber, cancellationToken);
+        var custCode = await ResolveCustCodeAsync(clearanceTax.DataType, mergeNumber);
         if (string.IsNullOrWhiteSpace(custCode))
         {
             throw new ApiException(StatusCodes.Status404NotFound, "找不到對應的客戶資料", "TAXDOC_002");
@@ -55,7 +55,7 @@ public sealed class TaxDocumentService(
         var normalizedUserId = ConvertToCustomerUserId(userId);
         var customerMatched = await jetfDbContext.TaxPortalCustomers
             .AsNoTracking()
-            .AnyAsync(item => item.TaxPortalUserId == normalizedUserId && item.CustCode == custCode, cancellationToken);
+            .AnyAsync(item => item.TaxPortalUserId == normalizedUserId && item.CustCode == custCode);
 
         if (!customerMatched)
         {
@@ -71,7 +71,7 @@ public sealed class TaxDocumentService(
                 item.FilePath,
                 item.FileName
             })
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync();
 
         if (pdfInfo is null || string.IsNullOrWhiteSpace(pdfInfo.FilePath))
         {
@@ -80,15 +80,15 @@ public sealed class TaxDocumentService(
 
         var remotePath = NormalizeRemotePath(pdfInfo.FilePath);
         await using var ftpClient = new AsyncFtpClient(_ftpOptions.Host, _ftpOptions.UserName, _ftpOptions.Password);
-        await ftpClient.AutoConnect(cancellationToken);
+        await ftpClient.AutoConnect();
 
-        var fileExists = await ftpClient.FileExists(remotePath, cancellationToken);
+        var fileExists = await ftpClient.FileExists(remotePath);
         if (!fileExists)
         {
             throw new ApiException(StatusCodes.Status404NotFound, "FTP 上找不到對應的稅金單 PDF", "TAXDOC_005");
         }
 
-        var fileContent = await ftpClient.DownloadBytes(remotePath, token: cancellationToken);
+        var fileContent = await ftpClient.DownloadBytes(remotePath, restartPosition: 0);
         if (fileContent.Length == 0)
         {
             throw new ApiException(StatusCodes.Status404NotFound, "FTP 上找不到對應的稅金單 PDF", "TAXDOC_005");
@@ -101,7 +101,7 @@ public sealed class TaxDocumentService(
         };
     }
 
-    private async Task<string?> ResolveCustCodeAsync(string? dataType, string mergeNumber, CancellationToken cancellationToken)
+    private async Task<string?> ResolveCustCodeAsync(string? dataType, string mergeNumber)
     {
         if (SpecialDataTypes.Contains(dataType ?? string.Empty))
         {
@@ -109,14 +109,14 @@ public sealed class TaxDocumentService(
                 .AsNoTracking()
                 .Where(item => item.DeliveryNo == mergeNumber)
                 .Select(item => item.CustCode)
-                .FirstOrDefaultAsync(cancellationToken);
+                .FirstOrDefaultAsync();
         }
 
         return await dataCenterDbContext.SeaOrderOriginals
             .AsNoTracking()
             .Where(item => item.JetfSerial == mergeNumber)
             .Select(item => item.CustCode)
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefaultAsync();
     }
 
     private static int ConvertToCustomerUserId(long userId)

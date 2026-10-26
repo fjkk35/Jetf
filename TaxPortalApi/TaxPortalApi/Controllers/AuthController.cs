@@ -17,26 +17,24 @@ public class AuthController(IAuthService authService) : ControllerBase
     /// 登入
     /// </summary>
     /// <param name="request">登入請求資料。</param>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>包含 JWT Token 的統一回應。</returns>
     [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<ActionResult<ApiResponse<string>>> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<string>>> Login([FromBody] LoginRequest request)
     {
-        var token = await authService.LoginAsync(request, cancellationToken);
+        var token = await authService.LoginAsync(request);
         return ApiResponse<string>.Ok(token, "登入成功");
     }
 
     /// <summary>
     /// 取得目前登入使用者
     /// </summary>
-    /// <param name="cancellationToken">取消權杖。</param>
     /// <returns>目前登入使用者資訊。</returns>
     [Authorize]
     [HttpGet("me")]
-    public async Task<ActionResult<ApiResponse<CurrentUserResponse>>> GetCurrentUser(CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<CurrentUserResponse>>> GetCurrentUser()
     {
-        var currentUser = await authService.GetCurrentUserAsync(User, cancellationToken);
+        var currentUser = await authService.GetCurrentUserAsync(User);
         return ApiResponse<CurrentUserResponse>.Ok(currentUser);
     }
 }

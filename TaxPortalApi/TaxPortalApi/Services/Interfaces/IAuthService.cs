@@ -5,7 +5,7 @@ namespace TaxPortalApi.Services.Interfaces;
 
 public interface IAuthService
 {
-    Task<string> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default);
+    Task<string> LoginAsync(LoginRequest request);
 
-    Task<CurrentUserResponse> GetCurrentUserAsync(ClaimsPrincipal principal, CancellationToken cancellationToken = default);
+    Task<CurrentUserResponse> GetCurrentUserAsync(ClaimsPrincipal principal);
 }

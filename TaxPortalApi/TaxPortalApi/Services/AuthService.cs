@@ -9,12 +9,12 @@ namespace TaxPortalApi.Services;
 
 public class AuthService(JetfDbContext dbContext, IJwtTokenService jwtTokenService) : IAuthService
 {
-    public async Task<string> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
+    public async Task<string> LoginAsync(LoginRequest request)
     {
         var userName = request.UserName.Trim();
         var user = await dbContext.TaxPortalUsers
             .AsNoTracking()
-            .FirstOrDefaultAsync(item => item.UserName == userName, cancellationToken);
+            .FirstOrDefaultAsync(item => item.UserName == userName);
 
         if (user is null)
         {
@@ -40,7 +40,7 @@ public class AuthService(JetfDbContext dbContext, IJwtTokenService jwtTokenServi
         return jwtTokenService.CreateToken(user.Id, user.UserName);
     }
 
-    public Task<CurrentUserResponse> GetCurrentUserAsync(ClaimsPrincipal principal, CancellationToken cancellationToken = default)
+    public Task<CurrentUserResponse> GetCurrentUserAsync(ClaimsPrincipal principal)
     {
         var userName = principal.Identity?.Name;
         var rawUserId = principal.FindFirstValue(ClaimTypes.NameIdentifier);

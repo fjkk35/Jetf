@@ -4,5 +4,5 @@ namespace TaxPortalApi.Services.Interfaces;
 
 public interface ITaxDocumentService
 {
-    Task<TaxDocumentFileResult> GetTaxDocumentAsync(long userId, TaxDocumentQueryRequest request, CancellationToken cancellationToken = default);
+    Task<TaxDocumentFileResult> GetTaxDocumentAsync(long userId, TaxDocumentQueryRequest request);
 }
