@@ -953,6 +953,17 @@
     <Compile Include="Services\WorkDay\WorkDayService.cs" />
     <Compile Include="Services\WorkLoad\SeaWorkLoadService.cs" />
     <Compile Include="Services\WorkLoad\WorkLoadService.cs" />
+    <Compile Include="Services\FlightArrivalUpload\Domain\FlightArrivalUploadData.cs" />
+    <Compile Include="Data\Models\Jetf\A03B6FUploadEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ArriveUploadEntity.cs" />
+    <Compile Include="Data\Models\Jetf\ProcessEntity.cs" />
+    <Compile Include="Services\FlightArrivalUpload\Domain\FlightArrivalUploadClearanceModel.cs" />
+    <Compile Include="Services\FlightArrivalUpload\Domain\FlightArrivalUploadArrivalModel.cs" />
+    <Compile Include="Services\FlightArrivalUpload\Domain\FlightArrivalUploadProcessModel.cs" />
+    <Compile Include="Services\FlightArrivalUpload\FlightArrivalUploadService.cs" />
+    <Compile Include="Services\FlightArrivalUpload\FlightArrivalUploadNameComparer.cs" />
+    <Compile Include="Services\FlightArrivalUpload\FlightArrivalUploadService.Reader.cs" />
+    <Compile Include="Services\FlightArrivalUpload\FlightArrivalUploadService.Persistence.cs" />
     <Compile Include="Data\DataCenterDbContext.cs" />
     <Compile Include="Data\Models\DataCenter\EtlTipcTaxEntity.cs" />
     <Compile Include="Data\Models\Jetf\BatchSearchCargo2Entity.cs" />

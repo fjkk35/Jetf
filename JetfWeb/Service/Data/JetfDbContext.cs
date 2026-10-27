@@ -130,6 +130,11 @@ namespace Service.Data
 
         public DbSet<CargoSignReceiptEntity> CargoSignReceipts { get; set; }
 
+        /// <summary>
+        /// 貨物處理紀錄，供匯入流程投影查重使用。
+        /// </summary>
+        public DbSet<ProcessEntity> Processes { get; set; }
+
         public DbSet<SeaClearanceCustomerEntity> SeaClearanceCustomers { get; set; }
 
         public DbSet<SeaClearanceCustTaxPaymentEntity> SeaClearanceCustTaxPayments { get; set; }

@@ -9,7 +9,6 @@ using Service.Services;
 using Service.Services.WorkDay;
 using Service.Services.WorkLoad;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
@@ -619,91 +618,6 @@ namespace JETFTAX.Controllers
                 rowCount++;
             }
         }
-
-        /// <summary>
-        /// 上傳檔案(A03、B6F、班機派件送達)
-        /// </summary>
-        /// <returns></returns>
-        //[UserAuthorize("1", "2", "3", "4", "6")]
-        [UserAuthorize(Authority.UploadFlightArrival)]
-        public ActionResult UploadFile()
-        {
-            return View();
-        }
-
-        /// <summary>
-        /// 上傳檔案(A03、B6F、班機派件送達)-上傳檔案
-        /// </summary>
-        /// <param name="file"></param>
-        /// <returns></returns>
-        [HttpPost]
-        //[UserAuthorize("1", "2", "3", "4", "6")]
-        [UserAuthorize(Authority.UploadFlightArrival)]
-        public JsonResult UploadFile(HttpPostedFileBase file)
-        {
-            ResponseModel resopnseModel = new ResponseModel();
-            try
-            {
-                string fileType, fileName, filePath;
-                if (file != null)
-                {
-                    if (file.ContentLength > 0)
-                    {
-                        fileType = Path.GetExtension(file.FileName);
-                        if (fileType != ".xlsx")
-                        {
-                            resopnseModel.status = Status.error;
-                            resopnseModel.msg = "副檔名需為xlsx";
-                        }
-
-                        if (resopnseModel.status != Status.error)
-                        {
-                            fileName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.Now.ToString("yyyyMMddHHmmss")}{Path.GetExtension(file.FileName)}";
-                            filePath = Path.Combine(Server.MapPath("~/UploadFIle"), fileName);
-                            file.SaveAs(filePath);
-
-                            IWorkbook workBook;
-                            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite))
-                            {
-                                workBook = new XSSFWorkbook(fs);
-                            }
-                            ArrayList arrayList = new ArrayList();
-                            for (int i = 0; i < workBook.NumberOfSheets; i++)
-                            {
-                                arrayList.Add(workBook.GetSheetName(i));
-                            }
-                            if (arrayList.IndexOf("A03") < 0)
-                            {
-                                resopnseModel.status = Status.error;
-                                resopnseModel.msg = "上傳檔案無頁籤[A03]，請確認";
-                            }
-                            else if (arrayList.IndexOf("B6F") < 0)
-                            {
-                                resopnseModel.status = Status.error;
-                                resopnseModel.msg = "上傳檔案無頁籤[B6F]，請確認";
-                            }
-                            else
-                            {
-                                resopnseModel = _workLoadService.UploadFile(filePath, UserContextService.GetUserId());
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    resopnseModel.status = Status.error;
-                    resopnseModel.msg = "未選擇檔案";
-                }
-            }
-            catch (Exception ex)
-            {
-                resopnseModel.status = Status.error;
-                resopnseModel.msg = ex.Message;
-            }
-
-            return Json(resopnseModel, JsonRequestBehavior.AllowGet);
-        }
-
 
         /// <summary>
         /// 上傳空快錯單袋號

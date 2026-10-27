@@ -385,16 +385,16 @@ mainApp.controller('ReconciliationLogisticsController', ['$scope', '$http', func
                     return;
                 }
                 var result = response.data.ReturnObject;
-            $scope.comparisonDownloadInfo = {
-                fileGuid: result.FileGuid,
-                fileName: result.FileName
-            };
-            $scope.downloadComparisonExcel();
-            swal({
-                title: '成功',
-                text: '比對明細已產生並開始下載。',
-                icon: 'success'
-            });
+                $scope.comparisonDownloadInfo = {
+                    fileGuid: result.FileGuid,
+                    fileName: result.FileName
+                };
+                $scope.downloadComparisonExcel();
+                swal({
+                    title: '成功',
+                    text: '比對明細已產生並開始下載。',
+                    icon: 'success'
+                });
             }).catch(function () {
                 showError('比對明細產生失敗，請稍後再試');
             }).finally(function () {

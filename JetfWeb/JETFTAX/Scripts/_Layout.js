@@ -99,7 +99,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
             id: 'workLoad', title: '作業量', icon: 'fas fa-fw fa-chart-bar', partner: 'WorkLoad', children: [
                 { id: 'CCStatusReport', text: '海空快通關狀態彙總表', url: '~/WorkLoad/CCStatusReport', auth: ['ClearanceStatusReport'] },
                 { id: 'EtlCustomerWorkLoadReport', text: '空快客戶作業量報表V2', url: '~/EtlCustomerWorkLoadReport/Index', auth: ['EtlCustomerWorkLoadReport'] },
-                { id: 'UploadFile', text: '上傳檔案(A03、B6F、班機派件送達)', url: '~/WorkLoad/UploadFile', auth: ['UploadFlightArrival'] },
+                { id: 'UploadFile', text: '上傳檔案(A03、B6F、班機派件送達)', url: '~/FlightArrivalUpload/UploadFile', auth: ['UploadFlightArrival'] },
                 { id: 'UploadFileEtlBagNo', text: '上傳空快錯單袋號', url: '~/WorkLoad/UploadFileEtlBagNo', auth: ['UploadEtlErrorBagNo'] },
                 { id: 'UploadFileSeaManifest', text: '上傳海快艙單號碼', url: '~/WorkLoad/UploadFileSeaManifest', auth: ['UploadSeaManifest'] },
                 { id: 'UploadFileSeaBagNo', text: '上傳海快錯單', url: '~/WorkLoad/UploadFileSeaBagNo', auth: ['UploadSeaErrorBagNo'] },
