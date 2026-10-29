@@ -134,13 +134,12 @@ namespace Service.Services.SjlTaxResponse
         private List<SeaTaxModel> GetSeaTaxByDeliveryNumbers(List<string> deliveryNumbers)
         {
             var sql = @"
-                        select a.Id,DATADATE,a.DLV_COM,TRACKINGNO,DLV_INV,CLEARANCE_NUMBER,a.RECIPIENT,b.TAX_NUMBER,b.TAX_AMOUNT from [jetf].[dbo].[FEE_MASTER] a
+                        select a.Id,DATADATE,a.DLV_COM,TRACKINGNO,DLV_INV,CLEARANCE_NUMBER,a.RECIPIENT,a.INCLUDE_TAX,b.TAX_NUMBER,b.TAX_AMOUNT from [jetf].[dbo].[FEE_MASTER] a
                         left join DATA_CENTER.dbo.CLEARANCE_TAX b on a.TRACKINGNO = b.BAG_NUMBER
                         where a.DLV_INV in @DlvInvs
                         and a.SOURCE_TYPE='1'
                         and a.Download='1'
-                        and CUSTOMER in ('CN00060','CN00063')
-                        and INCLUDE_TAX in ('C')";
+                        and CUSTOMER in ('CN00060','CN00063')";
 
             return conn.Query<SeaTaxModel>(sql,
                 new { DlvInvs = deliveryNumbers }, commandTimeout: 300).ToList();
@@ -154,13 +153,12 @@ namespace Service.Services.SjlTaxResponse
         private List<EtlTaxModel> GetEtlTaxByDeliveryNumbers(List<string> deliveryNumbers)
         {
             var sql = @"
-                        select a.Id,DATADATE,a.BAG_NUMBER,d.TRANS_NAME,TRACKINGNO,DLV_INV,CLEARANCE_NUMBER,a.RECIPIENT,isnull(b.TAX_NUMBER,c.TAX_NUMBER) as TAX_NUMBER,isnull(b.TAX_AMOUNT,c.TAX_AMOUNT) as TAX_AMOUNT from [jetf].[dbo].[FEE_MASTER] a
+                        select a.Id,DATADATE,a.BAG_NUMBER,d.TRANS_NAME,TRACKINGNO,DLV_INV,CLEARANCE_NUMBER,a.RECIPIENT,a.INCLUDE_TAX,isnull(b.TAX_NUMBER,c.TAX_NUMBER) as TAX_NUMBER,isnull(b.TAX_AMOUNT,c.TAX_AMOUNT) as TAX_AMOUNT from [jetf].[dbo].[FEE_MASTER] a
                         left join DATA_CENTER.dbo.CLEARANCE_TAX b on a.TRACKINGNO = b.MERGE_NUMBER
                         left join DATA_CENTER.dbo.CLEARANCE_TAX c on a.BAG_NUMBER = c.MERGE_NUMBER
                         left join [jetf].[dbo].[View_CustomerTrans] d on a.DLV_COM = d.TRANS_NO
                         where a.DLV_INV in @DlvInvs
                         and a.SOURCE_TYPE='3'
-                        and INCLUDE_TAX in ('Y','C')
                         and CUSTOMER in ('00001','00002','00019','00054','00078')";
 
             return conn.Query<EtlTaxModel>(sql,

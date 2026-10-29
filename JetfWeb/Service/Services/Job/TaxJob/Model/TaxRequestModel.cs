@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -46,6 +46,11 @@ namespace Service.Services.TaxJob.Model
         /// 稅金金額
         /// </summary>
         public decimal TaxAmount { get; set; }
+
+        /// <summary>
+        /// 包稅類別：包稅／不包稅。
+        /// </summary>
+        public string TaxType { get; set; }
 
         /// <summary>
         /// 派件公司

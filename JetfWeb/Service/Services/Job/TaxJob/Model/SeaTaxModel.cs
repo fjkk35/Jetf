@@ -52,5 +52,10 @@ namespace Service.Services.TaxJob.Model
         /// 稅額
         /// </summary>
         public decimal Tax_Amount { get; set; }
+
+        /// <summary>
+        /// 包稅代碼，C、Y 為包稅，其餘為不包稅。
+        /// </summary>
+        public string Include_Tax { get; set; }
     }
 }

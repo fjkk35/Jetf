@@ -105,13 +105,12 @@ namespace Service.Services
         public List<SeaTaxModel> GetSeaTax(string dataDate)
         {
             var sql = @"
-                        select a.Id,DATADATE,a.DLV_COM,TRACKINGNO,DLV_INV,CLEARANCE_NUMBER,a.RECIPIENT,b.TAX_NUMBER,b.TAX_AMOUNT from [jetf].[dbo].[FEE_MASTER] a
+                        select a.Id,DATADATE,a.DLV_COM,TRACKINGNO,DLV_INV,CLEARANCE_NUMBER,a.RECIPIENT,a.INCLUDE_TAX,b.TAX_NUMBER,b.TAX_AMOUNT from [jetf].[dbo].[FEE_MASTER] a
                         left join DATA_CENTER.dbo.CLEARANCE_TAX b on a.TRACKINGNO = b.BAG_NUMBER
                         where DATADATE=@DataDate
                         and a.SOURCE_TYPE='1'
                         and a.Download='1'
                         and CUSTOMER in ('CN00060','CN00063')
-                        and INCLUDE_TAX in ('C')
                         and NOT EXISTS
                         (
                              select 1 from [jetf].[dbo].SjlTaxResponse
@@ -134,13 +133,12 @@ namespace Service.Services
         public List<EtlTaxModel> GetEtlTax(string sDate, string eDate)
         {
             var sql = @"
-                        select a.Id,DATADATE,a.BAG_NUMBER,d.TRANS_NAME,TRACKINGNO,DLV_INV,CLEARANCE_NUMBER,a.RECIPIENT,isnull(b.TAX_NUMBER,c.TAX_NUMBER) as TAX_NUMBER,isnull(b.TAX_AMOUNT,c.TAX_AMOUNT) as TAX_AMOUNT from [jetf].[dbo].[FEE_MASTER] a
+                        select a.Id,DATADATE,a.BAG_NUMBER,d.TRANS_NAME,TRACKINGNO,DLV_INV,CLEARANCE_NUMBER,a.RECIPIENT,a.INCLUDE_TAX,isnull(b.TAX_NUMBER,c.TAX_NUMBER) as TAX_NUMBER,isnull(b.TAX_AMOUNT,c.TAX_AMOUNT) as TAX_AMOUNT from [jetf].[dbo].[FEE_MASTER] a
                         left join DATA_CENTER.dbo.CLEARANCE_TAX b on a.TRACKINGNO = b.MERGE_NUMBER
                         left join DATA_CENTER.dbo.CLEARANCE_TAX c on a.BAG_NUMBER = c.MERGE_NUMBER
                         left join [jetf].[dbo].[View_CustomerTrans] d on a.DLV_COM = d.TRANS_NO
                         where DATADATE between @SDate and @EDate
                         and a.SOURCE_TYPE='3'
-                        and INCLUDE_TAX in ('Y','C')
                         and CUSTOMER in ('00001','00002','00019','00054','00078')
                         and NOT EXISTS
                         (
@@ -193,6 +191,7 @@ namespace Service.Services
                 Edelno = tax.Dlv_Inv,
                 ConsigneeName = tax.Recipient,
                 TaxAmount = tax.Tax_Amount,
+                TaxType = GetTaxTypeName(tax.Include_Tax),
                 ProductName = tax.Dlv_Com,
                 PayObject = PayObject,
                 Type = SeaTaxType
@@ -216,10 +215,21 @@ namespace Service.Services
                 Edelno = tax.Dlv_Inv,
                 ConsigneeName = tax.Recipient,
                 TaxAmount = tax.Tax_Amount,
+                TaxType = GetTaxTypeName(tax.Include_Tax),
                 ProductName = tax.Trans_Name,
                 PayObject = PayObject,
                 Type = AirTaxType
             };
+        }
+
+        /// <summary>
+        /// 將包稅代碼轉換成捷利 API 使用的名稱。
+        /// </summary>
+        /// <param name="includeTax">包稅代碼。</param>
+        /// <returns>C、Y 為包稅，其餘為不包稅。</returns>
+        private static string GetTaxTypeName(string includeTax)
+        {
+            return includeTax == "C" || includeTax == "Y" ? "包稅" : "不包稅";
         }
 
         /// <summary>
