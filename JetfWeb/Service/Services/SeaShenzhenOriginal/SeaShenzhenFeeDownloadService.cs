@@ -159,7 +159,7 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
-        /// 將當次下載資料轉入 FEE_MASTER_COD，已銷帳或代收總金額相同的既有資料不更新。
+        /// 將當次下載資料的代收總金額轉入 FEE_MASTER_COD 的 CC 與 ToDlvCod，已銷帳或兩欄金額皆相同的既有資料不更新。
         /// </summary>
         /// <param name="feeRows">與下載檔案相同的來源資料。</param>
         /// <param name="dataDate">下載所選資料日期。</param>
@@ -202,8 +202,7 @@ namespace Service.Services.SeaShenzhenOriginal
                             TrackingNo = row.TrackingNo,
                             DlvInv = row.DlvInv,
                             OriginalImporter = row.Recipient,
-                            Cc = row.Cod,
-                            Fee = row.Fee,
+                            Cc = row.ToDlvCod,
                             ToDlvCod = row.ToDlvCod,
                             SignOutTime = dataDate,
                             CreatedTime = now
@@ -213,16 +212,15 @@ namespace Service.Services.SeaShenzhenOriginal
 
                     foreach (var target in targets)
                     {
-                        // 已有銷帳時間、銷帳紀錄，或代收總金額相同時，略過該筆更新。
+                        // 已有銷帳時間、銷帳紀錄，或 CC 與代收總金額皆相同時，略過該筆更新。
                         if (target.ReceivedCcTime.HasValue || target.ReconciliationLogisticsId.HasValue ||
-                            target.ToDlvCod == row.ToDlvCod)
+                            (target.Cc == row.ToDlvCod && target.ToDlvCod == row.ToDlvCod))
                         {
                             continue;
                         }
 
-                        // 僅同步到付款、手續費及代收總金額，保留既有其他欄位。
-                        target.Cc = row.Cod;
-                        target.Fee = row.Fee;
+                        // 到付款及代收總金額皆使用來源 ToDlvCod，保留既有手續費與其他欄位。
+                        target.Cc = row.ToDlvCod;
                         target.ToDlvCod = row.ToDlvCod;
                         updates.Add(target);
                     }
