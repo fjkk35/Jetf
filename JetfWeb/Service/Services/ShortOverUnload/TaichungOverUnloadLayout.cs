@@ -114,7 +114,7 @@ namespace Service.Services.ShortOverUnload
             styles[43] = Style(workbook, fonts[11], 1, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Bottom, false, 0, 176, "\"Ｃ\"\\:@", false);
             styles[44] = Style(workbook, fonts[11], 1, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, false, 0, 0, null, false);
             styles[45] = Style(workbook, fonts[11], 1, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, true, 0, 0, null, false);
-            styles[46] = Style(workbook, fonts[0], 2, 1, 0, 0, HorizontalAlignment.General, VerticalAlignment.Bottom, false, 0, 0, null, false);
+            styles[46] = Style(workbook, fonts[0], 2, 1, 1, 1, HorizontalAlignment.General, VerticalAlignment.Bottom, false, 0, 0, null, false);
             styles[47] = Style(workbook, fonts[11], 1, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, false, 0, 0, null, false);
             styles[48] = Style(workbook, fonts[11], 1, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, true, 0, 0, null, false);
             styles[49] = Style(workbook, fonts[0], 2, 1, 0, 0, HorizontalAlignment.General, VerticalAlignment.Bottom, false, 0, 0, null, false);
@@ -122,21 +122,22 @@ namespace Service.Services.ShortOverUnload
             styles[51] = Style(workbook, fonts[11], 1, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, false, 0, 49, null, false);
             styles[52] = Style(workbook, fonts[11], 1, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, true, 0, 49, null, false);
             styles[53] = Style(workbook, fonts[13], 2, 1, 1, 0, HorizontalAlignment.Center, VerticalAlignment.Center, true, 0, 0, null, false);
-            styles[54] = Style(workbook, fonts[11], 1, 2, 0, 0, HorizontalAlignment.Left, VerticalAlignment.Bottom, false, 0, 0, null, false);
-            styles[55] = Style(workbook, fonts[11], 1, 1, 1, 0, HorizontalAlignment.Left, VerticalAlignment.Center, false, 0, 0, null, false);
-            styles[56] = Style(workbook, fonts[11], 1, 1, 1, 0, HorizontalAlignment.Left, VerticalAlignment.Center, false, 0, 49, null, false);
-            styles[57] = Style(workbook, fonts[11], 0, 1, 1, 0, HorizontalAlignment.Left, VerticalAlignment.Center, true, 0, 0, null, false);
-            styles[58] = Style(workbook, fonts[11], 0, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, true, 0, 0, null, false);
-            styles[59] = Style(workbook, fonts[11], 1, 2, 2, 0, HorizontalAlignment.Left, VerticalAlignment.Bottom, false, 0, 0, null, false);
+            // 頁籤四原申報區補齊左右邊界與各列橫線，避免沿用範例中缺少的框線。
+            styles[54] = Style(workbook, fonts[11], 1, 2, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Bottom, false, 0, 0, null, false);
+            styles[55] = Style(workbook, fonts[11], 1, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, false, 0, 0, null, false);
+            styles[56] = Style(workbook, fonts[11], 1, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, false, 0, 49, null, false);
+            styles[57] = Style(workbook, fonts[11], 1, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, true, 0, 0, null, false);
+            styles[58] = Style(workbook, fonts[11], 1, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, true, 0, 0, null, false);
+            styles[59] = Style(workbook, fonts[11], 1, 2, 2, 1, HorizontalAlignment.Left, VerticalAlignment.Bottom, false, 0, 0, null, false);
             styles[60] = Style(workbook, fonts[11], 1, 1, 2, 1, HorizontalAlignment.Left, VerticalAlignment.Center, false, 0, 0, null, false);
             styles[61] = Style(workbook, fonts[11], 1, 1, 2, 1, HorizontalAlignment.Left, VerticalAlignment.Center, false, 0, 49, null, false);
             styles[62] = Style(workbook, fonts[11], 1, 1, 2, 1, HorizontalAlignment.Left, VerticalAlignment.Center, false, 0, 14, null, false);
-            styles[63] = Style(workbook, fonts[11], 0, 1, 2, 1, HorizontalAlignment.Left, VerticalAlignment.Center, true, 0, 0, null, false);
+            styles[63] = Style(workbook, fonts[11], 1, 1, 2, 1, HorizontalAlignment.Left, VerticalAlignment.Center, true, 0, 0, null, false);
             styles[64] = Style(workbook, fonts[13], 2, 1, 1, 0, HorizontalAlignment.Center, VerticalAlignment.Center, true, 0, 49, null, false);
             styles[65] = Style(workbook, fonts[14], 1, 2, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, false, 0, 0, null, false);
             styles[66] = Style(workbook, fonts[14], 1, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, false, 0, 0, null, false);
             styles[67] = Style(workbook, fonts[14], 1, 1, 1, 1, HorizontalAlignment.Left, VerticalAlignment.Center, false, 0, 49, null, false);
-            styles[68] = Style(workbook, fonts[14], 0, 1, 1, 1, HorizontalAlignment.General, VerticalAlignment.Center, true, 0, 0, null, false);
+            styles[68] = Style(workbook, fonts[14], 1, 1, 1, 1, HorizontalAlignment.General, VerticalAlignment.Center, true, 0, 0, null, false);
             styles[69] = Style(workbook, fonts[14], 2, 1, 1, 1, HorizontalAlignment.General, VerticalAlignment.Center, true, 0, 49, null, false);
             styles[70] = Style(workbook, fonts[0], 0, 1, 0, 1, HorizontalAlignment.General, VerticalAlignment.Bottom, false, 0, 0, null, false);
             styles[71] = Style(workbook, fonts[0], 1, 0, 0, 1, HorizontalAlignment.General, VerticalAlignment.Bottom, false, 0, 0, null, false);
@@ -418,6 +419,20 @@ namespace Service.Services.ShortOverUnload
                     Rows(sheet, 41, 41, 16.5f, styles, new[] { 36, 2, 1, 35, 35, 35, 35, 35, 35, 35, 35, 35 });
                     foreach (var range in new[] { "A41:B41", "A2:D3", "G2:G3", "I1:J1", "A39:L39", "H2:H3", "A5:A9", "A42:B42", "E1:F1", "E2:F3", "K1:L1", "I2:J3", "K2:L3", "A10:A37" })
                         sheet.AddMergedRegion(CellRangeAddress.ValueOf(range));
+                    // 合併完成後，補上「內容別」與「艙單號碼」之間的整段黑色直線。
+                    var black = new XSSFColor();
+                    // 使用完整 ARGB（FF000000），明確指定不透明黑色。
+                    black.SetRgb(new byte[] { 255, 0, 0, 0 });
+                    for (var rowIndex = 4; rowIndex <= 37; rowIndex++)
+                    {
+                        // 整頁縮小列印時，使用與外框相同的線寬，提高 A/B 欄分隔線在預覽中的可見度。
+                        var contentStyle = (XSSFCellStyle)sheet.GetRow(rowIndex).GetCell(0).CellStyle;
+                        contentStyle.BorderRight = BorderStyle.Medium;
+                        contentStyle.SetRightBorderColor(black);
+                        var manifestStyle = (XSSFCellStyle)sheet.GetRow(rowIndex).GetCell(1).CellStyle;
+                        manifestStyle.BorderLeft = BorderStyle.Medium;
+                        manifestStyle.SetLeftBorderColor(black);
+                    }
                     Cell(sheet, "A1").SetCellValue("中華民國海關艙單");
                     Cell(sheet, "E1").SetCellValue("船名\n NAME OF VESSEL");
                     Cell(sheet, "G1").SetCellValue("航次\nVOY. NO.");
