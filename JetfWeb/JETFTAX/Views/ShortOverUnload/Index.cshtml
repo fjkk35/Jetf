@@ -1,6 +1,4 @@
-﻿@using Service.EnumTax
-@using Service.Extensions
-@{
+﻿@{
     ViewBag.Title = "短溢卸";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
@@ -12,8 +10,9 @@
     @Html.AntiForgeryToken()
     <div class="form-group col-lg-4">
         <label for="unloadFormat">資料來源</label>
-        <select id="unloadFormat" name="format" class="form-control">
-            <option value="@((int)ShortOverUnloadDataSource.TaichungShortUnload)">@ShortOverUnloadDataSource.TaichungShortUnload.ToDescription()</option>
+        <select id="unloadFormat" name="format" class="form-control" ng-model="selectedFormat"
+                ng-options="item.Value as item.Text for item in dataSourceOptions"
+                ng-disabled="dataSourceOptions.length === 0" required>
         </select>
     </div>
     <div class="form-group col-lg-4">
@@ -23,11 +22,30 @@
         <a href="@Url.Action("DownloadExample")">下載短卸範例</a>
     </div>
     <div class="form-group col-lg-12">
-        <button id="uploadUnload" type="submit" class="btn btn-primary" ng-disabled="uploading"><i class="fas fa-upload"></i> 匯出 Excel</button>
+        <button id="uploadUnload" type="submit" class="btn btn-primary" ng-disabled="uploading || dataSourceOptions.length === 0"><i class="fas fa-upload"></i> 匯出 Excel</button>
     </div>
     <div id="unloadStatus" class="col-lg-12" role="status" aria-live="polite"
-         ng-class="{ 'text-danger': statusType === 'error', 'text-success': statusType === 'success' }"
+         ng-class="{ 'text-danger': statusType === 'error', 'text-success': statusType === 'success', 'alert alert-primary font-weight-bold': statusType === 'warning' }"
          ng-bind="statusMessage"></div>
+    <div class="col-lg-12" ng-if="missingData.length > 0">
+        <p class="mt-3">未取得資料（<span ng-bind="missingData.length"></span> 項）</p>
+        <table class="table table-bordered table-striped table-sm">
+            <thead>
+                <tr>
+                    <th scope="col">主提單號碼</th>
+                    <th scope="col">分提單號碼</th>
+                    <th scope="col">未取得欄位</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="item in missingData track by $index">
+                    <td class="text-nowrap" ng-bind="item.MainNumber"></td>
+                    <td class="text-nowrap" ng-bind="item.BlNo"></td>
+                    <td ng-bind="item.MissingFields"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
     <div class="loader loader-bar" data-rounded data-text="匯出中"
          ng-class="{ 'is-active': uploading }"></div>
 </form>

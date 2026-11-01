@@ -987,13 +987,22 @@
     <Compile Include="Data\Models\DataCenter\SysCustEntity.cs" />
     <Compile Include="Extensions\QueryableExtensions.cs" />
     <Compile Include="Models\ShortOverUnload\ShortOverUnloadRow.cs" />
+    <Compile Include="Models\ShortOverUnload\ShortOverUnloadCargo.cs" />
+    <Compile Include="Models\ShortOverUnload\ShortOverUnloadExportResult.cs" />
+    <Compile Include="Models\ShortOverUnload\ShortOverUnloadMissingData.cs" />
     <Compile Include="Models\ShortOverUnload\ShortOverUnloadVessel.cs" />
     <Compile Include="Services\ShortOverUnload\ShortOverUnloadService.cs" />
+    <Compile Include="Services\ShortOverUnload\TaichungOverUnloadLayout.cs" />
     <Compile Include="_BaseService.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\ShortOverUnload\BillOfLadingSeal.png">
+      <LogicalName>Service.Resources.ShortOverUnload.BillOfLadingSeal.png</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Services\CptSeaMainNumber\" />

@@ -11,6 +11,12 @@ namespace Service.EnumTax
         /// 台中-短卸。
         /// </summary>
         [Description("台中-短卸")]
-        TaichungShortUnload = 1
+        TaichungShortUnload = 1,
+
+        /// <summary>
+        /// 台中-溢卸。
+        /// </summary>
+        [Description("台中-溢卸")]
+        TaichungOverUnload = 2
     }
 }

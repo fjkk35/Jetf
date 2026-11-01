@@ -84,7 +84,7 @@ namespace Service.Models.CptTradeVan
         public string DeclType { get; set; }
 
         /// <summary>
-        /// 製造商編號列表
+        /// 艙單號碼列表
         /// </summary>
         public List<string> MftNoList { get; set; }
 
@@ -114,7 +114,7 @@ namespace Service.Models.CptTradeVan
         public string Status { get; set; }
 
         /// <summary>
-        /// 製造商編號
+        /// 艙單號碼（以主號查主艙號，帶入分號查分艙號）。
         /// </summary>
         public string MftNo { get; set; }
 

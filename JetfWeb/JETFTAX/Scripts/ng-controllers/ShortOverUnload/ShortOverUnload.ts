@@ -1,16 +1,32 @@
 /// <reference path="../../types/global.d.ts" />
 
+interface ShortOverUnloadDataSourceOption {
+    Value: string;
+    Text: string;
+}
+
+interface ShortOverUnloadMissingData {
+    MainNumber: string;
+    BlNo: string;
+    MissingFields: string;
+}
+
 interface ShortOverUnloadResponse {
     Redirect?: string;
     status?: string;
     msg?: string;
     fileGuid?: string;
+    fileName?: string;
+    missingData?: ShortOverUnloadMissingData[];
 }
 
 interface ShortOverUnloadScope extends ng.IScope {
+    dataSourceOptions: ShortOverUnloadDataSourceOption[];
+    selectedFormat: string;
     uploading: boolean;
     statusMessage: string;
-    statusType: 'success' | 'error' | '';
+    statusType: 'success' | 'warning' | 'error' | '';
+    missingData: ShortOverUnloadMissingData[];
     upload: () => void;
 }
 
@@ -19,23 +35,26 @@ mainApp.controller('ShortOverUnloadController', ['$scope', '$http', '$window', f
     $http: ng.IHttpService,
     $window: ng.IWindowService
 ) {
+    $scope.dataSourceOptions = [];
+    $scope.selectedFormat = '';
     $scope.uploading = false;
     $scope.statusMessage = '';
     $scope.statusType = '';
+    $scope.missingData = [];
 
-    function showStatus(message: string, type: 'success' | 'error' | ''): void {
+    function showStatus(message: string, type: 'success' | 'warning' | 'error' | ''): void {
         $scope.statusMessage = message;
         $scope.statusType = type;
     }
 
-    function redirectToLogin(response: ng.IHttpResponse<ShortOverUnloadResponse>): void {
+    function redirectToLogin(response: ng.IHttpResponse<any>): void {
         $window.location.href = response.headers('X-Login-Redirect')
             || (response.data && response.data.Redirect)
             || Router.action('Account', 'Login');
     }
 
     $scope.upload = function (): void {
-        if ($scope.uploading) {
+        if ($scope.uploading || !$scope.selectedFormat) {
             return;
         }
 
@@ -49,9 +68,12 @@ mainApp.controller('ShortOverUnloadController', ['$scope', '$http', '$window', f
         }
 
         var postData = new FormData(form);
+        // ng-options 的原生選項值包含型別前綴，改用實際列舉值上傳。
+        postData.set('format', $scope.selectedFormat);
         $scope.uploading = true;
         $scope.statusMessage = '';
         $scope.statusType = '';
+        $scope.missingData = [];
 
         $http.post<ShortOverUnloadResponse>(Router.action('ShortOverUnload', 'Upload'), postData, {
             headers: {
@@ -65,13 +87,20 @@ mainApp.controller('ShortOverUnloadController', ['$scope', '$http', '$window', f
                 redirectToLogin(response);
                 return;
             }
-            if (result.status !== 'success' || !result.fileGuid) {
+            if (result.status !== 'success' || !result.fileGuid || !result.fileName) {
                 showStatus(result.msg || '匯出失敗，請重新上傳。', 'error');
                 return;
             }
 
-            $window.location.href = Router.action('ShortOverUnload', 'Download')
-                + '?fileGuid=' + encodeURIComponent(result.fileGuid);
+            $scope.missingData = result.missingData || [];
+            if ($scope.missingData.length > 0) {
+                showStatus('匯出完成，以下 ' + $scope.missingData.length + ' 項資料未取得，對應欄位保留空白。', 'warning');
+            } else {
+                showStatus('匯出完成，已開始下載。', 'success');
+            }
+            $window.location.href = Router.action('Download', 'DownloadFile')
+                + '?fileGuid=' + encodeURIComponent(result.fileGuid)
+                + '&fileName=' + encodeURIComponent(result.fileName);
         }, function (response: ng.IHttpResponse<ShortOverUnloadResponse>): void {
             if (response.status === 401 || (response.data && response.data.Redirect)
                 || response.headers('X-Login-Redirect')) {
@@ -83,4 +112,31 @@ mainApp.controller('ShortOverUnloadController', ['$scope', '$http', '$window', f
             $scope.uploading = false;
         });
     };
+
+    $http.get<ShortOverUnloadDataSourceOption[] | ShortOverUnloadResponse>(
+        Router.action('ShortOverUnload', 'GetDataSourceOptions'), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }
+    ).then(function (response: ng.IHttpResponse<ShortOverUnloadDataSourceOption[] | ShortOverUnloadResponse>): void {
+        if (!Array.isArray(response.data)) {
+            if (response.data && response.data.Redirect) {
+                redirectToLogin(response);
+                return;
+            }
+            showStatus('無法取得資料來源，請重新整理頁面。', 'error');
+            return;
+        }
+        $scope.dataSourceOptions = response.data;
+        $scope.selectedFormat = response.data.length > 0 ? response.data[0].Value : '';
+        if (!$scope.selectedFormat) {
+            showStatus('無可用的資料來源。', 'error');
+        }
+    }, function (response: ng.IHttpResponse<ShortOverUnloadResponse>): void {
+        if (response.status === 401 || (response.data && response.data.Redirect)
+            || response.headers('X-Login-Redirect')) {
+            redirectToLogin(response);
+            return;
+        }
+        showStatus('無法取得資料來源，請重新整理頁面。', 'error');
+    });
 }]);

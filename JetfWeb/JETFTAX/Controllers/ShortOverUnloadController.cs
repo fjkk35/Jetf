@@ -1,8 +1,10 @@
 using Service.EnumTax;
+using Service.Extensions;
 using Service.Services.ShortOverUnload;
 using System;
 using System.Threading.Tasks;
 using System.IO;
+using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using static JETFTAX.Controllers.AccountController;
@@ -34,6 +36,18 @@ namespace JETFTAX.Controllers
             return View();
         }
 
+        /// <summary>取得短溢卸資料來源選項。</summary>
+        /// <returns>列舉值及其顯示名稱。</returns>
+        [HttpGet]
+        public JsonResult GetDataSourceOptions()
+        {
+            var options = Enum.GetValues(typeof(ShortOverUnloadDataSource))
+                .Cast<ShortOverUnloadDataSource>()
+                .Select(source => new { Value = ((int)source).ToString(), Text = source.ToDescription() })
+                .ToList();
+            return Json(options, JsonRequestBehavior.AllowGet);
+        }
+
         /// <summary>
         /// 下載短卸匯入範例 Excel。
         /// </summary>
@@ -50,7 +64,7 @@ namespace JETFTAX.Controllers
         /// </summary>
         /// <param name="file">使用者上傳的 Excel 檔案。</param>
         /// <param name="format">畫面選擇的短溢卸資料來源。</param>
-        /// <returns>產檔結果及識別碼；失敗時回傳錯誤訊息。</returns>
+        /// <returns>產檔識別碼及未取得資料清單；失敗時回傳錯誤訊息。</returns>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<JsonResult> Upload(HttpPostedFileBase file, ShortOverUnloadDataSource? format)
@@ -59,7 +73,7 @@ namespace JETFTAX.Controllers
             {
                 // 未選擇或無法繫結的資料來源不可進入匯入流程。
                 if (!format.HasValue || !ModelState.IsValid)
-                    throw new InvalidDataException("請選擇台中-短卸。");
+                    throw new InvalidDataException("請選擇台中-短卸或台中-溢卸。");
 
                 // 檔案存在且副檔名為支援的 Excel 格式後，才交由服務解析。
                 if (file == null || file.ContentLength == 0)
@@ -72,12 +86,15 @@ namespace JETFTAX.Controllers
                 // 一次取得台北匯入時間，確保所有頁籤日期及檔名一致。
                 var importedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
                     TimeZoneInfo.FindSystemTimeZoneById("Taipei Standard Time"));
-                var bytes = await _service.GenerateAsync(file.InputStream, format.Value, importedAt);
-                // 報告暫存於目前使用者的 TempData，前端取得識別碼後立即下載。
-                var handle = Guid.NewGuid().ToString("N");
-                TempData["ShortOverUnload:" + handle] = bytes;
-                TempData["ShortOverUnload:" + handle + ":name"] = $"台中-短卸_{importedAt:yyyyMMddHHmmss}.xlsx";
-                return Json(new { status = "success", fileGuid = handle });
+                var result = await _service.GenerateAsync(file.InputStream, format.Value, importedAt);
+                // 沿用共用下載流程，以 GUID 暫存報告，檔名直接回傳前端。
+                var fileGuid = Guid.NewGuid().ToString();
+                TempData[fileGuid] = result.Content;
+                var fileName = $"{format.Value.ToDescription()}_{importedAt:yyyyMMddHHmmss}.xlsx";
+                // 服務已依主號、分號合併缺少欄位，直接回傳給畫面。
+                var response = Json(new { status = "success", fileGuid, fileName, missingData = result.MissingData });
+                response.MaxJsonLength = int.MaxValue;
+                return response;
             }
             catch (Exception ex)
             {
@@ -86,23 +103,5 @@ namespace JETFTAX.Controllers
             }
         }
 
-        /// <summary>
-        /// 依產檔識別碼下載本次匯入的短卸報告。
-        /// </summary>
-        /// <param name="fileGuid">上傳成功時回傳的 N 格式 GUID。</param>
-        /// <returns>Excel 報告；識別碼無效或暫存已失效時回傳找不到檔案。</returns>
-        [HttpGet]
-        public ActionResult Download(string fileGuid)
-        {
-            // 先驗證識別碼，再讀取本使用者的暫存報告及檔名。
-            if (!Guid.TryParseExact(fileGuid, "N", out _))
-                return HttpNotFound();
-            var bytes = TempData["ShortOverUnload:" + fileGuid] as byte[];
-            var name = TempData["ShortOverUnload:" + fileGuid + ":name"] as string;
-            if (bytes == null)
-                return HttpNotFound("匯出檔案已過期，請重新上傳。");
-            // 回傳附件讓瀏覽器直接下載 Excel。
-            return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", name ?? "台中-短卸.xlsx");
-        }
     }
 }
