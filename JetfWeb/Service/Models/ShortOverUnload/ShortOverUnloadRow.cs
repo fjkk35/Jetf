@@ -22,7 +22,7 @@ namespace Service.Models.ShortOverUnload
         /// <summary>實到件數。</summary>
         public int ActualQuantity { get; set; }
 
-        /// <summary>艙單裝貨型態。</summary>
+        /// <summary>依主號、分號取得 SEA_MANIFEST_UPLOAD.MANIFEST，供裝貨型態及艙單號碼欄位使用。</summary>
         public string Manifest { get; set; }
 
         /// <summary>第一項貨物說明。</summary>
@@ -31,11 +31,8 @@ namespace Service.Models.ShortOverUnload
         /// <summary>第一項貨物的櫃號。</summary>
         public string ContainerNo { get; set; }
 
-        /// <summary>GB326 以主號查詢的主艙號。</summary>
-        public string MainManifestNo { get; set; }
-
-        /// <summary>GB326 以主分號查詢的分艙號。</summary>
-        public string ManifestNo { get; set; }
+        /// <summary>GB326 以船掛及主號查詢的艙單號碼，僅供頁籤四 B11 的主艙號欄位使用。</summary>
+        public string CorrectionManifestNo { get; set; }
 
         /// <summary>溢卸報告使用的有效毛重製單資料。</summary>
         public ShortOverUnloadCargo Cargo { get; set; }

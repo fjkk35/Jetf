@@ -60,7 +60,7 @@ namespace Service.Services.ShortOverUnload
             // 相同主提單的資料集中補值；不同主提單若使用相同船掛則共用 API 結果。
             foreach (var group in rows.GroupBy(row => row.MainNumber))
             {
-                // 依主號取得拆櫃日期及 TYPE=O 的船掛，並補入各分號的裝貨型態及 ITEM_NO=1 製單資料。
+                // 依主號取得拆櫃日期及 TYPE=O 的船掛，並補入各分號的 MANIFEST 及 ITEM_NO=1 製單資料。
                 var registration = LoadOrderData(group.Key, group.ToList());
                 if (!vesselCache.TryGetValue(registration, out var vessel))
                 {
@@ -75,8 +75,8 @@ namespace Service.Services.ShortOverUnload
                     LoadBillOfLadingTotals(group.Key, group.ToList());
                     // 依有效毛重製單補齊各分號的貨物、進口人及貨櫃資料，重複資料優先取溢卸註記 O。
                     LoadOverUnloadCargo(group.Key, group.ToList());
-                    // 透過 GB326 取得此主號的主艙號，以及各不同分號的分艙號。
-                    await LoadOverUnloadManifestsAsync(registration, group.Key, group.ToList());
+                    // 透過 GB326 以船掛及主號取得艙單號碼，僅供頁籤四 B11 的主艙號欄位使用。
+                    await LoadCorrectionManifestAsync(registration, group.Key, group.ToList());
                 }
             }
 
@@ -91,7 +91,7 @@ namespace Service.Services.ShortOverUnload
         }
 
         /// <summary>
-        /// 使用 EF 取得船掛及拆櫃日期，依主提單及匯入分提單補齊裝貨型態、貨物說明及櫃號，多筆資料取第一筆。
+        /// 使用 EF 取得船掛及拆櫃日期，依主提單及匯入分提單補齊 MANIFEST、貨物說明及櫃號，多筆資料取第一筆。
         /// </summary>
         /// <param name="mainNumber">主提單號碼。</param>
         /// <param name="rows">待補值的主提單明細。</param>
@@ -303,36 +303,26 @@ namespace Service.Services.ShortOverUnload
             }
         }
 
-        /// <summary>主艙號每個主號查一次；分艙號每個不同分號查一次。</summary>
-        private async Task LoadOverUnloadManifestsAsync(string registration, string mainNumber,
+        /// <summary>每個主號以船掛及主號查詢一次 GB326，僅補入頁籤四 B11 的主艙號。</summary>
+        private async Task LoadCorrectionManifestAsync(string registration, string mainNumber,
             List<ShortOverUnloadRow> rows)
         {
-            // 分號傳空字串，以「船掛＋主號」查詢 GB326 的主艙號；同一主號只查一次。
-            var mainManifestNo = await LoadManifestNumberAsync(registration, mainNumber, "");
-            var houseManifests = new Dictionary<string, string>();
+            var manifestNo = await LoadManifestNumberAsync(registration, mainNumber);
             foreach (var row in rows)
             {
-                // 同一主號下重複出現的分號共用查詢結果，查無資料的結果也會快取。
-                if (!houseManifests.TryGetValue(row.BlNo, out var manifestNo))
-                {
-                    // 以「船掛＋主號＋分號」查詢 GB326，將回傳的艙單號碼作為此分號的分艙號。
-                    manifestNo = await LoadManifestNumberAsync(registration, mainNumber, row.BlNo);
-                    houseManifests.Add(row.BlNo, manifestNo);
-                }
-                // 每筆明細共用主艙號，分艙號則使用該分號的查詢或快取結果。
-                row.MainManifestNo = mainManifestNo;
-                row.ManifestNo = manifestNo;
+                // 其他艙單欄位沿用 SEA_MANIFEST_UPLOAD 依主號及分號取得的 MANIFEST。
+                row.CorrectionManifestNo = manifestNo;
             }
         }
 
-        /// <summary>沿用 GB326 query1；分號空白查主艙號，有分號時查對應分艙號。</summary>
-        private async Task<string> LoadManifestNumberAsync(string registration, string mainNumber, string blNo)
+        /// <summary>透過 GB326 query1，以船掛及主號查詢艙單號碼。</summary>
+        private async Task<string> LoadManifestNumberAsync(string registration, string mainNumber)
         {
             // 缺少船掛時無法查詢，回傳空值讓匯出欄位留白。
             if (string.IsNullOrWhiteSpace(registration))
                 return null;
 
-            // 呼叫 GB326 的 query1，使用主號查詢模式；有傳分號時再限縮至該分提單。
+            // 呼叫 GB326 的 query1，使用主號查詢模式，分號固定留空。
             var result = await _portalApi.GetGb326Async(new Dictionary<string, string>
             {
                 { "tab1.currentPage", "1" },
@@ -342,20 +332,18 @@ namespace Service.Services.ShortOverUnload
                 { "tab1.mftNo", "" },
                 { "choice", "B" },
                 { "tab1.mawb", mainNumber },
-                { "tab1.hawb", blNo }
+                { "tab1.hawb", "" }
             });
-            var description = $"船掛「{registration}」主提單「{mainNumber}」{(string.IsNullOrEmpty(blNo) ? "主艙號" : $"分提單「{blNo}」分艙號")}";
+            var description = $"船掛「{registration}」主提單「{mainNumber}」艙單號碼";
             if (result == null || result.Msg?.Contains("查無資料") == true)
                 return null;
             // 區分查無資料與 API 執行失敗，只有執行失敗才回報錯誤。
             if (!IsSuccessful(result.Status, result.Msg))
                 throw new InvalidDataException($"{description} GB326 查詢失敗：{result?.Msg}");
-            // 艙單號碼必須屬於本次查詢的船掛、主號及指定分號，避免填入其他提單的資料。
+            // 艙單號碼必須屬於本次查詢的船掛及主號，避免填入其他提單的資料。
             if (string.IsNullOrWhiteSpace(result.MftNo)
                 || !string.Equals(result.VslRegNo?.Trim(), registration, StringComparison.OrdinalIgnoreCase)
-                || !string.Equals(result.Mawb?.Trim(), mainNumber, StringComparison.OrdinalIgnoreCase)
-                || (!string.IsNullOrEmpty(blNo)
-                    && !string.Equals(result.Hawb?.Trim(), blNo, StringComparison.OrdinalIgnoreCase)))
+                || !string.Equals(result.Mawb?.Trim(), mainNumber, StringComparison.OrdinalIgnoreCase))
                 return null;
             return result.MftNo.Trim();
         }
@@ -441,8 +429,9 @@ namespace Service.Services.ShortOverUnload
                         fields.Add("船長姓名", vessel.OfficerName);
                         fields.Add("BL總件數", row.BillOfLadingPackageCount);
                         fields.Add("BL總毛重", row.BillOfLadingGrossWeight);
-                        fields.Add("主艙號", row.MainManifestNo);
-                        fields.Add("分艙號", row.ManifestNo);
+                        fields.Add("艙單號碼", row.Manifest);
+                        fields.Add("主艙號", row.CorrectionManifestNo);
+                        fields.Add("分艙號", row.Manifest);
                         fields.Add("快遞業者統一編號", cargo?.JetfId);
                         fields.Add("毛重", cargo?.Gw);
                         fields.Add("件數", cargo?.Piece);
@@ -746,8 +735,8 @@ namespace Service.Services.ShortOverUnload
                 for (var line = 0; line < pageRows.Count; line++)
                 {
                     var row = pageRows[line];
-                    // A9 起依序填入分號、分艙號、申報及實到件數，最多寫入本頁 14 筆。
-                    SetValues(sheet, 8 + line, 0, row.BlNo, row.ManifestNo, row.DeclaredQuantity, row.ActualQuantity);
+                    // A9 起依序填入分號、依主號及分號查得的 MANIFEST、申報及實到件數，最多寫入本頁 14 筆。
+                    SetValues(sheet, 8 + line, 0, row.BlNo, row.Manifest, row.DeclaredQuantity, row.ActualQuantity);
                 }
                 // A33 填入本次匯入日期，顯示格式統一為 yyyy/M/d。
                 SetDate(workbook, Cell(sheet, 32, 0), importedAt, dateStyles);
@@ -794,15 +783,15 @@ namespace Service.Services.ShortOverUnload
                 Cell(sheet, 1, 7).SetCellValue(vessel.VslSign);
                 Cell(sheet, 1, 8).SetCellValue(vessel.OfficerName);
                 Cell(sheet, 1, 10).SetCellValue(vessel.VslRegNo);
-                // B11、C11 填入主艙號與主提單號碼，與下方分艙明細分開顯示。
-                SetValues(sheet, 10, 1, details[0].MainManifestNo, details[0].MainNumber);
+                // B11 主艙號使用 GB326 依船掛及主號查得的艙單號碼；C11 填入主提單號碼。
+                SetValues(sheet, 10, 1, details[0].CorrectionManifestNo, details[0].MainNumber);
                 var pageRows = details.Skip(offset).Take(25).ToList();
                 for (var line = 0; line < pageRows.Count; line++)
                 {
                     var row = pageRows[line];
                     var cargo = row.Cargo ?? new ShortOverUnloadCargo();
-                    // B13 起填入分艙號、分號、件重、標記、貨名及進口人資料。
-                    SetValues(sheet, 12 + line, 1, row.ManifestNo, row.BlNo, cargo.Gw, cargo.Piece, cargo.PieceUnit,
+                    // B13 起的分艙號使用依主號及分號查得的 MANIFEST，再依序填入分號及貨物資料。
+                    SetValues(sheet, 12 + line, 1, row.Manifest, row.BlNo, cargo.Gw, cargo.Piece, cargo.PieceUnit,
                         cargo.Marks, cargo.ItemName, cargo.Importer, cargo.ImporterAddress, "TXG018DH");
                 }
             }
@@ -859,8 +848,8 @@ namespace Service.Services.ShortOverUnload
                 for (var line = 0; line < pageRows.Count; line++)
                 {
                     var row = pageRows[line];
-                    // A9 起填入本頁的分號、分艙號、申報及實到件數。
-                    SetValues(sheet, 8 + line, 0, row.BlNo, row.ManifestNo, row.DeclaredQuantity, row.ActualQuantity);
+                    // A9 起填入本頁的分號、依主號及分號查得的 MANIFEST、申報及實到件數。
+                    SetValues(sheet, 8 + line, 0, row.BlNo, row.Manifest, row.DeclaredQuantity, row.ActualQuantity);
                 }
                 // A33 與其他申請頁籤使用相同匯入日期及 yyyy/M/d 格式。
                 SetDate(workbook, Cell(sheet, 32, 0), importedAt, dateStyles);

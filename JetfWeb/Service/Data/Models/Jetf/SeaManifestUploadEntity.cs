@@ -24,7 +24,7 @@ namespace Service.Data
         public string BlNo { get; set; }
 
         /// <summary>
-        /// 艙單裝貨型態。
+        /// 艙單號碼（MANIFEST）。
         /// </summary>
         [Column("MANIFEST")]
         public string Manifest { get; set; }

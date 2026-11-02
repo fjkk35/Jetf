@@ -114,7 +114,7 @@ namespace Service.Models.CptTradeVan
         public string Status { get; set; }
 
         /// <summary>
-        /// 艙單號碼（以主號查主艙號，帶入分號查分艙號）。
+        /// 艙單號碼。
         /// </summary>
         public string MftNo { get; set; }
 
