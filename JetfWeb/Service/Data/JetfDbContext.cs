@@ -106,6 +106,11 @@ namespace Service.Data
 
         public DbSet<SeaManifestUploadEntity> SeaManifestUploads { get; set; }
 
+        /// <summary>
+        /// 上傳拆櫃紀錄的主號拆櫃日期。
+        /// </summary>
+        public DbSet<SeaUnboxingRecordEntity> SeaUnboxingRecords { get; set; }
+
         public DbSet<SeaShenzhenTaxEntity> SeaShenzhenTaxes { get; set; }
 
         public DbSet<SeaShenzhenOriginalEntity> SeaShenzhenOriginals { get; set; }

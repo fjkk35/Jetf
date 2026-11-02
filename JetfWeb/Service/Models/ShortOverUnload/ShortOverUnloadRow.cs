@@ -1,3 +1,5 @@
+using System;
+
 namespace Service.Models.ShortOverUnload
 {
     /// <summary>
@@ -7,6 +9,9 @@ namespace Service.Models.ShortOverUnload
     {
         /// <summary>主提單號碼。</summary>
         public string MainNumber { get; set; }
+
+        /// <summary>依主號取得上傳拆櫃紀錄的拆櫃日期，供報告進倉日期與時間使用。</summary>
+        public DateTime? UnboxingDate { get; set; }
 
         /// <summary>分提單號碼。</summary>
         public string BlNo { get; set; }

@@ -60,7 +60,7 @@ namespace Service.Services.ShortOverUnload
             // 相同主提單的資料集中補值；不同主提單若使用相同船掛則共用 API 結果。
             foreach (var group in rows.GroupBy(row => row.MainNumber))
             {
-                // 依主號取得 TYPE=O 的船掛，並補入各分號的裝貨型態及 ITEM_NO=1 製單資料。
+                // 依主號取得拆櫃日期及 TYPE=O 的船掛，並補入各分號的裝貨型態及 ITEM_NO=1 製單資料。
                 var registration = LoadOrderData(group.Key, group.ToList());
                 if (!vesselCache.TryGetValue(registration, out var vessel))
                 {
@@ -91,7 +91,7 @@ namespace Service.Services.ShortOverUnload
         }
 
         /// <summary>
-        /// 使用 EF 取得船掛，依主提單及匯入分提單補齊裝貨型態、貨物說明及櫃號，多筆資料取第一筆。
+        /// 使用 EF 取得船掛及拆櫃日期，依主提單及匯入分提單補齊裝貨型態、貨物說明及櫃號，多筆資料取第一筆。
         /// </summary>
         /// <param name="mainNumber">主提單號碼。</param>
         /// <param name="rows">待補值的主提單明細。</param>
@@ -132,6 +132,18 @@ namespace Service.Services.ShortOverUnload
                 .GroupBy(row => row.BlNo?.Trim() ?? "")
                 .ToDictionary(group => group.Key, group => group.First());
 
+            // 上傳拆櫃紀錄的「主號拆櫃日」以主號對應 DataDate，各分號共用同一日期。
+            var unboxingDateText = JetfDb.SeaUnboxingRecords
+                .AsNoTracking()
+                .Where(record => record.MainNumber == mainNumber)
+                .Select(record => record.DataDate)
+                .FirstOrDefault();
+            // 沿用拆櫃紀錄上傳時的日期解析方式，查無資料或無法解析時保持空白。
+            DateTime? unboxingDate = null;
+            if (DateTime.TryParse(unboxingDateText, CultureInfo.CurrentCulture, DateTimeStyles.None, out var parsedDate)
+                || DateTime.TryParse(unboxingDateText, CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDate))
+                unboxingDate = parsedDate.Date;
+
             foreach (var row in rows)
             {
                 // 各來源獨立補值，缺少其中一筆資料時只將對應欄位留空。
@@ -140,6 +152,7 @@ namespace Service.Services.ShortOverUnload
                 row.Manifest = manifest?.Manifest?.Trim();
                 row.ItemName = item?.ItemName;
                 row.ContainerNo = item?.ContainerNo;
+                row.UnboxingDate = unboxingDate;
             }
             return registration?.Trim() ?? "";
         }
@@ -409,7 +422,8 @@ namespace Service.Services.ShortOverUnload
                         { "船舶航次", vessel.VoyageFlightNo },
                         { "船名", vessel.ShipName },
                         { "受理關別", vessel.ProcessCustCd },
-                        { "預定到港日期", vessel.EstimatedArrivalDate }
+                        { "預定到港日期", vessel.EstimatedArrivalDate },
+                        { "進倉日期與時間", row.UnboxingDate }
                     };
 
                     if (format == ShortOverUnloadDataSource.TaichungShortUnload)
@@ -582,12 +596,26 @@ namespace Service.Services.ShortOverUnload
             try
             {
                 var sheetNames = new HashSet<string>();
-                // 頁籤一：(一)短溢卸報告，依主號分頁，每頁 14 筆，短卸與溢卸共用。
-                AddShortOverUnloadReportSheets(workbook, rows, vessels, importedAt, format, sheetNames);
+                // 整份工作簿共用報告、附件及日期樣式，避免不同主號重複建立格式。
+                var reportStyles = CreateStyles(workbook);
+                var attachmentStyles = format == ShortOverUnloadDataSource.TaichungOverUnload
+                    ? TaichungOverUnloadLayout.CreateStyles(workbook) : null;
+                var dateStyles = new Dictionary<short, ICellStyle>();
 
-                // 溢卸在報告後新增五類附件頁籤，短卸只輸出原有報告。
-                if (format == ShortOverUnloadDataSource.TaichungOverUnload)
-                    AddOverUnloadSheets(workbook, rows, vessels, importedAt, sheetNames);
+                // 先依主號升冪排序，每個主號依序產出頁籤一至六，各頁籤內再依頁碼排列。
+                foreach (var group in rows.GroupBy(row => row.MainNumber).OrderBy(group => group.Key, StringComparer.Ordinal))
+                {
+                    var details = group.ToList();
+                    var vessel = vessels[group.Key];
+                    // 頁籤一：(一)短溢卸報告，每頁 14 筆，短卸與溢卸共用。
+                    AddShortOverUnloadReportSheets(workbook, details, vessel, importedAt, format,
+                        reportStyles, dateStyles, sheetNames);
+
+                    // 溢卸在同主號的報告後新增五類附件頁籤，短卸只輸出原有報告。
+                    if (format == ShortOverUnloadDataSource.TaichungOverUnload)
+                        AddOverUnloadSheets(workbook, details, vessel, importedAt,
+                            attachmentStyles, dateStyles, sheetNames);
+                }
 
                 // 開啟報告時先顯示第一頁，再序列化為可下載的檔案。
                 workbook.SetActiveSheet(0);
@@ -601,102 +629,86 @@ namespace Service.Services.ShortOverUnload
 
         /// <summary>頁籤一：(一)短溢卸報告。每個主號獨立分頁，每頁 14 筆，短卸與溢卸共用。</summary>
         /// <param name="workbook">報告所屬的工作簿。</param>
-        /// <param name="rows">已補齊資料的匯入明細。</param>
-        /// <param name="vessels">以主提單號碼索引的船舶資料。</param>
+        /// <param name="details">同一主號已補齊資料的匯入明細，保留原匯入順序。</param>
+        /// <param name="vessel">此主號的船舶資料。</param>
         /// <param name="importedAt">本次匯入的台北日期時間。</param>
         /// <param name="format">台中-短卸或台中-溢卸。</param>
+        /// <param name="styles">工作簿共用的報告樣式。</param>
+        /// <param name="dateStyles">工作簿共用的日期樣式快取。</param>
         /// <param name="usedNames">整份工作簿已使用的頁籤名稱。</param>
-        private static void AddShortOverUnloadReportSheets(XSSFWorkbook workbook, List<ShortOverUnloadRow> rows,
-            IDictionary<string, ShortOverUnloadVessel> vessels, DateTime importedAt,
-            ShortOverUnloadDataSource format, ISet<string> usedNames)
+        private static void AddShortOverUnloadReportSheets(XSSFWorkbook workbook, List<ShortOverUnloadRow> details,
+            ShortOverUnloadVessel vessel, DateTime importedAt, ShortOverUnloadDataSource format,
+            ICellStyle[] styles, IDictionary<short, ICellStyle> dateStyles, ISet<string> usedNames)
         {
             // 第 8～21 列共可容納 14 筆，超過時建立下一個頁籤。
             const int rowsPerSheet = 14;
-            // 工作簿共用字型及樣式，日期樣式依原始格式快取。
-            var styles = CreateStyles(workbook);
-            var dateStyles = new Dictionary<short, ICellStyle>();
+            var pageCount = (details.Count + rowsPerSheet - 1) / rowsPerSheet;
 
-            // 每個主提單獨立分頁，頁內資料沿用原匯入順序。
-            foreach (var group in rows.GroupBy(row => row.MainNumber))
+            // 依頁碼分頁，明細起點由每頁筆數計算。
+            for (var page = 1; page <= pageCount; page++)
             {
-                var details = group.ToList();
-                var vessel = vessels[group.Key];
-                var pageCount = (details.Count + rowsPerSheet - 1) / rowsPerSheet;
+                var offset = (page - 1) * rowsPerSheet;
+                // 先以主號及頁碼建立合法且唯一的名稱，再產生已套用格式的空白報告。
+                var sheetName = CreateSheetName("(一)短溢卸報告", details[0].MainNumber, page, usedNames);
+                var sheet = CreateSheet(workbook, sheetName, styles);
 
-                // 依頁碼分頁，明細起點由每頁筆數計算。
-                for (var page = 1; page <= pageCount; page++)
+                // 依指定儲存格填入業者代碼、船舶資料、卸存地點及日期。
+                Cell(sheet, 2, 3).SetCellValue("24951752");
+                Cell(sheet, 2, 4).SetCellValue(vessel.ImoNo);
+                Cell(sheet, 2, 6).SetCellValue(vessel.VoyageFlightNo);
+                Cell(sheet, 2, 7).SetCellValue(vessel.ProcessCustCd);
+                // C5 寫入預定到港日期，沒有日期時留白，並保留原本框線與字型。
+                SetDate(workbook, Cell(sheet, 4, 2), vessel.EstimatedArrivalDate, dateStyles);
+                Cell(sheet, 4, 3).SetCellValue(vessel.ShipName);
+                Cell(sheet, 4, 4).SetCellValue(vessel.VslRegNo);
+                // G5 進倉日期使用此主號上傳拆櫃紀錄的拆櫃日期，查無日期時留白。
+                SetDate(workbook, Cell(sheet, 4, 6), details[0].UnboxingDate, dateStyles);
+                Cell(sheet, 4, 7).SetCellValue("TXG018DH");
+                // B23 簽章區日期使用本次匯入日期。
+                SetDate(workbook, Cell(sheet, 22, 1), importedAt, dateStyles);
+
+                // 明細只寫入 A8～H21，尾頁空白列保留原有框線與尺寸。
+                for (var line = 0; line < rowsPerSheet; line++)
                 {
-                    var offset = (page - 1) * rowsPerSheet;
-                    // 先以主號及頁碼建立合法且唯一的名稱，再產生已套用格式的空白報告。
-                    var sheetName = CreateSheetName("(一)短溢卸報告", group.Key, page, usedNames);
-                    var sheet = CreateSheet(workbook, sheetName, styles);
+                    for (var column = 0; column < 8; column++)
+                        Cell(sheet, 7 + line, column).SetCellType(CellType.Blank);
+                    if (offset + line >= details.Count)
+                        continue;
 
-                    // 依指定儲存格填入業者代碼、船舶資料、卸存地點及日期。
-                    Cell(sheet, 2, 3).SetCellValue("24951752");
-                    Cell(sheet, 2, 4).SetCellValue(vessel.ImoNo);
-                    Cell(sheet, 2, 6).SetCellValue(vessel.VoyageFlightNo);
-                    Cell(sheet, 2, 7).SetCellValue(vessel.ProcessCustCd);
-                    // C5 寫入預定到港日期，沒有日期時留白，並保留原本框線與字型。
-                    SetDate(workbook, Cell(sheet, 4, 2), vessel.EstimatedArrivalDate, dateStyles);
-                    Cell(sheet, 4, 3).SetCellValue(vessel.ShipName);
-                    Cell(sheet, 4, 4).SetCellValue(vessel.VslRegNo);
-                    // G5 為本次匯入日期，使用整份報告共用的台北時間。
-                    SetDate(workbook, Cell(sheet, 4, 6), importedAt, dateStyles);
-                    Cell(sheet, 4, 7).SetCellValue("TXG018DH");
-                    // B23 簽章區日期與表頭使用相同匯入日期。
-                    SetDate(workbook, Cell(sheet, 22, 1), importedAt, dateStyles);
-
-                    // 明細只寫入 A8～H21，尾頁空白列保留原有框線與尺寸。
-                    for (var line = 0; line < rowsPerSheet; line++)
-                    {
-                        for (var column = 0; column < 8; column++)
-                            Cell(sheet, 7 + line, column).SetCellType(CellType.Blank);
-                        if (offset + line >= details.Count)
-                            continue;
-
-                        var detail = details[offset + line];
-                        Cell(sheet, 7 + line, 0).SetCellValue(detail.MainNumber);
-                        Cell(sheet, 7 + line, 1).SetCellValue(detail.BlNo);
-                        Cell(sheet, 7 + line, 2).SetCellValue(detail.DeclaredQuantity);
-                        Cell(sheet, 7 + line, 3).SetCellValue(detail.ActualQuantity);
-                        if (!string.IsNullOrEmpty(detail.Manifest))
-                            Cell(sheet, 7 + line, 4).SetCellValue(detail.Manifest);
-                        var itemName = format == ShortOverUnloadDataSource.TaichungOverUnload
-                            ? detail.Cargo?.ItemName : detail.ItemName;
-                        if (!string.IsNullOrEmpty(itemName))
-                            Cell(sheet, 7 + line, 5).SetCellValue(itemName);
-                        Cell(sheet, 7 + line, 6).SetCellValue(
-                            format == ShortOverUnloadDataSource.TaichungOverUnload ? "溢卸" : "短卸");
-                        if (!string.IsNullOrEmpty(detail.ContainerNo))
-                            Cell(sheet, 7 + line, 7).SetCellValue(detail.ContainerNo);
-                    }
+                    var detail = details[offset + line];
+                    Cell(sheet, 7 + line, 0).SetCellValue(detail.MainNumber);
+                    Cell(sheet, 7 + line, 1).SetCellValue(detail.BlNo);
+                    Cell(sheet, 7 + line, 2).SetCellValue(detail.DeclaredQuantity);
+                    Cell(sheet, 7 + line, 3).SetCellValue(detail.ActualQuantity);
+                    if (!string.IsNullOrEmpty(detail.Manifest))
+                        Cell(sheet, 7 + line, 4).SetCellValue(detail.Manifest);
+                    var itemName = format == ShortOverUnloadDataSource.TaichungOverUnload
+                        ? detail.Cargo?.ItemName : detail.ItemName;
+                    if (!string.IsNullOrEmpty(itemName))
+                        Cell(sheet, 7 + line, 5).SetCellValue(itemName);
+                    Cell(sheet, 7 + line, 6).SetCellValue(
+                        format == ShortOverUnloadDataSource.TaichungOverUnload ? "溢卸" : "短卸");
+                    if (!string.IsNullOrEmpty(detail.ContainerNo))
+                        Cell(sheet, 7 + line, 7).SetCellValue(detail.ContainerNo);
                 }
             }
         }
 
-        /// <summary>以 NPOI 建立溢卸申請、裝機明細、更正、BL 及准單五類工作表。</summary>
-        private static void AddOverUnloadSheets(XSSFWorkbook workbook, List<ShortOverUnloadRow> rows,
-            IDictionary<string, ShortOverUnloadVessel> vessels, DateTime importedAt, ISet<string> usedNames)
+        /// <summary>以 NPOI 依序建立同一主號的溢卸申請、裝機明細、更正、BL 及准單五類工作表。</summary>
+        private static void AddOverUnloadSheets(XSSFWorkbook workbook, List<ShortOverUnloadRow> details,
+            ShortOverUnloadVessel vessel, DateTime importedAt, ICellStyle[] styles,
+            IDictionary<short, ICellStyle> dateStyles, ISet<string> usedNames)
         {
-            // 五類附件共用參考版面的字型與樣式，減少分頁時重複建立格式。
-            var styles = TaichungOverUnloadLayout.CreateStyles(workbook);
-            var dateStyles = new Dictionary<short, ICellStyle>();
-            var groups = rows.GroupBy(row => row.MainNumber).ToList();
-            foreach (var group in groups)
-            {
-                var details = group.ToList();
-                var vessel = vessels[group.Key];
-                // 頁籤二：(二)溢卸申請書，每頁 14 筆，申請筆數使用此主號全部明細筆數。
-                AddOverUnloadApplicationSheets(workbook, details, vessel, importedAt, styles, dateStyles, usedNames);
-                // 頁籤三：(三)裝機明細表，每頁 46 筆，列出選定製單的貨物及進口人資料。
-                AddCargoSheets(workbook, details, vessel, styles, usedNames);
-                // 頁籤四：(四)艙單更正申請書，每頁 25 筆，分別列出主艙號及各分號的分艙號。
-                AddCorrectionSheets(workbook, details, vessel, styles, usedNames);
-                // 頁籤五：(五)BL，每個主號一張，彙整標記、件重及貨櫃／封條資料。
-                AddBillOfLadingSheets(workbook, details, vessel, styles, usedNames);
-                // 頁籤六：(六)准單申請書，每頁 14 筆，列出艙單更正後申請准單的明細。
-                AddPermitApplicationSheets(workbook, details, vessel, importedAt, styles, dateStyles, usedNames);
-            }
+            // 頁籤二：(二)溢卸申請書，每頁 14 筆，申請筆數使用此主號全部明細筆數。
+            AddOverUnloadApplicationSheets(workbook, details, vessel, importedAt, styles, dateStyles, usedNames);
+            // 頁籤三：(三)裝機明細表，每頁 46 筆，列出選定製單的貨物及進口人資料。
+            AddCargoSheets(workbook, details, vessel, styles, usedNames);
+            // 頁籤四：(四)艙單更正申請書，每頁 25 筆，分別列出主艙號及各分號的分艙號。
+            AddCorrectionSheets(workbook, details, vessel, styles, usedNames);
+            // 頁籤五：(五)BL，每個主號一張，彙整標記、件重及貨櫃／封條資料。
+            AddBillOfLadingSheets(workbook, details, vessel, styles, usedNames);
+            // 頁籤六：(六)准單申請書，每頁 14 筆，列出艙單更正後申請准單的明細。
+            AddPermitApplicationSheets(workbook, details, vessel, importedAt, styles, dateStyles, usedNames);
         }
 
         /// <summary>保留識別碼為文字，重量、件數、數量及金額寫入數值。</summary>
