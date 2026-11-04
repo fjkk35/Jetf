@@ -99,6 +99,47 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
         }
 
         /// <summary>
+        /// 刪除處理狀態，清空處理時間與人員並保留異動歷史
+        /// </summary>
+        public void DeleteProcessType(int id)
+        {
+            var userId = GetUserId();
+
+            using (var tx = JetfDb.Database.BeginTransaction())
+            {
+                try
+                {
+                    var existing = JetfDb.ShipmentInbounds.FirstOrDefault(x => x.Id == id);
+
+                    if (existing == null)
+                    {
+                        throw new Exception("查無此資料");
+                    }
+
+                    if (existing.OutboundDate.HasValue)
+                    {
+                        throw new Exception("已有出庫日期，刪除倉庫處理狀態失敗");
+                    }
+
+                    var oldWarehouseProcessType = existing.WarehouseProcessType;
+                    existing.WarehouseProcessType = null;
+                    existing.WarehouseProcessTime = null;
+                    existing.WarehouseProcessOpe = null;
+
+                    InsertWarehouseProcessTypeHistory(JetfDb, id, oldWarehouseProcessType, null, userId);
+
+                    JetfDb.SaveChanges();
+                    tx.Commit();
+                }
+                catch
+                {
+                    tx.Rollback();
+                    throw;
+                }
+            }
+        }
+
+        /// <summary>
         /// 批量上傳更新倉庫處理狀態
         /// Excel 欄位：單號、處理狀態(中文)
         /// 整批驗證：任一筆驗證失敗則整批失敗，不更新任何資料。
@@ -184,8 +225,7 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
         /// <summary>
         /// 寫入倉庫處理狀態編輯歷史
         /// </summary>
-        /// <param name="connection">資料庫連線</param>
-        /// <param name="transaction">交易</param>
+        /// <param name="db">資料庫內容</param>
         /// <param name="shipmentInboundId">ShipmentInbound Id</param>
         /// <param name="oldValue">舊值</param>
         /// <param name="newValue">新值</param>
@@ -194,7 +234,7 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
             Data.JetfDbContext db,
             int shipmentInboundId,
             byte? oldValue,
-            byte newValue,
+            byte? newValue,
             string userId)
         {
             if (oldValue == newValue)
@@ -205,7 +245,9 @@ namespace Service.Services.ShipmentInboundWarehouseProcess
             var oldValueText = oldValue.HasValue
                 ? ((WarehouseProcessType)oldValue.Value).ToDescription()
                 : string.Empty;
-            var newValueText = ((WarehouseProcessType)newValue).ToDescription();
+            var newValueText = newValue.HasValue
+                ? ((WarehouseProcessType)newValue.Value).ToDescription()
+                : string.Empty;
 
             db.ShipmentInboundEditHistories.Add(new Data.ShipmentInboundEditHistoryEntity
             {

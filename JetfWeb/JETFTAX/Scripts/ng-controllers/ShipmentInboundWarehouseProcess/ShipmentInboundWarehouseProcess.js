@@ -4,6 +4,7 @@
     $scope.loading = false;
     $scope.isSearched = false;
     $scope.saving = false;
+    $scope.deleting = false;
 
     $scope.uploading = false;
     $scope.uploadResult = null;
@@ -217,8 +218,80 @@
         $('#processTypeModal').modal('show');
     };
 
+    // 刪除處理狀態
+    $scope.deleteProcessType = function (item) {
+        if ($scope.saving || $scope.deleting) {
+            return;
+        }
+
+        if (!$scope.isItemEditable(item)) {
+            swal({
+                title: "提醒",
+                text: "已有出庫日期，不可刪除倉庫處理狀態",
+                icon: "warning"
+            });
+            return;
+        }
+
+        if (!item.WarehouseProcessType) {
+            return;
+        }
+
+        swal({
+            title: "確定要刪除處理狀態？",
+            text: "單號：" + item.TrackingNo + "\n刪除後將恢復為未設定。",
+            icon: "warning",
+            buttons: ["取消", "刪除"],
+            dangerMode: true
+        }).then(function (confirmed) {
+            if (!confirmed || $scope.saving || $scope.deleting) {
+                return;
+            }
+
+            $scope.deleting = true;
+
+            $http.post(Router.action('ShipmentInboundWarehouseProcess', 'DeleteProcessType'), { Id: item.Id })
+                .then(function (response) {
+                    if (response.data.Redirect) {
+                        window.location = Router.action('Account', 'Login');
+                        return;
+                    }
+
+                    if (response.data.status === 'success') {
+                        swal({
+                            title: "成功",
+                            text: "刪除成功",
+                            icon: "success"
+                        });
+                        $scope.loadData();
+                    } else {
+                        swal({
+                            title: "失敗",
+                            text: response.data.msg || "刪除失敗",
+                            icon: "error"
+                        });
+                    }
+                })
+                .catch(function (error) {
+                    console.error('刪除失敗:', error);
+                    swal({
+                        title: "錯誤",
+                        text: "刪除失敗，請稍後再試",
+                        icon: "error"
+                    });
+                })
+                .finally(function () {
+                    $scope.deleting = false;
+                });
+        });
+    };
+
     // 儲存處理狀態
     $scope.saveProcessType = function () {
+        if ($scope.saving || $scope.deleting) {
+            return;
+        }
+
         if (!$scope.isItemEditable($scope.currentItem)) {
             swal({
                 title: "提醒",

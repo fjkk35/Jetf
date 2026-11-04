@@ -85,16 +85,24 @@
                                         <button ng-if="item.WarehouseProcessType" 
                                                 class="btn btn-sm btn-info" 
                                                 ng-click="openProcessTypeModal(item)"
-                                                ng-disabled="!isItemEditable(item)"
+                                                ng-disabled="!isItemEditable(item) || saving || deleting"
                                                 title="{{isItemEditable(item) ? '修改處理狀態' : '已有出庫日期，不可修改'}}">
                                             {{item.WarehouseProcessTypeName}}
                                         </button>
                                         <button ng-if="!item.WarehouseProcessType" 
                                                 class="btn btn-sm btn-secondary" 
                                                 ng-click="openProcessTypeModal(item)"
-                                                ng-disabled="!isItemEditable(item)"
+                                                ng-disabled="!isItemEditable(item) || saving || deleting"
                                                 title="{{isItemEditable(item) ? '修改處理狀態' : '已有出庫日期，不可修改'}}">
                                             未設定
+                                        </button>
+                                        <button type="button"
+                                                ng-if="item.WarehouseProcessType && isItemEditable(item)"
+                                                class="btn btn-sm btn-danger ml-2"
+                                                ng-click="deleteProcessType(item)"
+                                                ng-disabled="saving || deleting"
+                                                title="刪除處理狀態">
+                                            <i class="fa fa-trash"></i> 刪除
                                         </button>
                                     </td>
                                     <td>{{item.WarehouseProcessTime | customDateTime}}</td>
@@ -190,7 +198,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" ng-click="saveProcessType()" ng-disabled="saving">
+                    <button type="button" class="btn btn-primary" ng-click="saveProcessType()" ng-disabled="saving || deleting">
                         <i class="fa fa-spinner fa-spin" ng-show="saving"></i>
                         {{saving ? '儲存中...' : '確定'}}
                     </button>

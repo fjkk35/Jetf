@@ -96,6 +96,29 @@ namespace JETFTAX.Controllers
         }
 
         /// <summary>
+        /// 刪除處理狀態
+        /// </summary>
+        [HttpPost]
+        [UserAuthorize(Authority.ShipmentInboundWarehouseProcess)]
+        public JsonResult DeleteProcessType(int id)
+        {
+            try
+            {
+                _service.DeleteProcessType(id);
+
+                return Json(new ResponseModel());
+            }
+            catch (Exception ex)
+            {
+                return Json(new ResponseModel
+                {
+                    status = "error",
+                    msg = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
         /// 批量上傳(Excel)：依單號更新倉庫處理狀態
         /// Excel 欄位：單號、處理狀態(中文)
         /// </summary>
