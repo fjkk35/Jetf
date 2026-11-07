@@ -38,5 +38,11 @@ namespace Service.EnumTax
         /// </summary>
         [Description("公司名義不回艙")]
         NoReturnCompany = 5,
+
+        /// <summary>
+        /// 待退運
+        /// </summary>
+        [Description("待退運")]
+        PendingReturn = 6,
     }
 }

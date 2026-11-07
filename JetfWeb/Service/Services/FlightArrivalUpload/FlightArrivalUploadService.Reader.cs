@@ -1,4 +1,5 @@
-using NPOI.SS.UserModel;
+﻿using NPOI.SS.UserModel;
+using Service.EnumTax;
 using Service.Extensions;
 using Service.Services.FlightArrivalUpload.Domain;
 using System;
@@ -102,7 +103,7 @@ namespace Service.Services.FlightArrivalUpload
         }
 
         /// <summary>
-        /// 沿用 B6F 固定欄位讀取原有資料，分提單號必填才依公司名義清關與 W 欄拆袋號碼產生處理紀錄。
+        /// 沿用 B6F 固定欄位讀取原有資料，分提單號必填才依公司名義清關、W 欄拆袋號碼及 R 欄原袋收單狀態產生處理紀錄。
         /// </summary>
         /// <param name="sheet">B6F 工作表。</param>
         /// <param name="data">接收 B6F 匯入資料及處理紀錄的解析結果。</param>
@@ -149,9 +150,12 @@ namespace Service.Services.FlightArrivalUpload
                     var company = sheet.GetRow(i).GetCell(23) == null ? "" : sheet.GetRow(i).GetCell(23).ToString().Trim();
                     //已拆袋新建號碼：W 欄
                     var newBag = sheet.GetRow(i).GetCell(22) == null ? "" : sheet.GetRow(i).GetCell(22).ToString().Trim();
+                    //原袋整袋 (收單 )：R 欄
+                    var originalBag = sheet.GetRow(i).GetCell(17) == null ? "" : sheet.GetRow(i).GetCell(17).ToString().Trim();
                     var companyClearance = company == "公司名義清關(中匯)" || company == "公司名義清關(捷豐)";
                     var splitBag = newBag.Contains("0H4");
-                    if (!companyClearance && !splitBag) continue;
+                    var pendingReturn = originalBag == "已挪至新表";
+                    if (!companyClearance && !splitBag && !pendingReturn) continue;
                     if (companyClearance)
                     {
                         //客戶：E 欄
@@ -171,6 +175,10 @@ namespace Service.Services.FlightArrivalUpload
                     if (splitBag)
                     {
                         AddProcess(data, processKeys, dlvInv, 4, "已拆袋，新袋號:" + newBag);
+                    }
+                    if (pendingReturn)
+                    {
+                        AddProcess(data, processKeys, dlvInv, (int)CargoProcessType.PendingReturn, "待退運");
                     }
                 }
             }
