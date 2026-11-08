@@ -169,7 +169,7 @@ namespace Service.Services.FlightArrivalUpload
                         else
                         {
                             AddProcess(data, processKeys, dlvInv, 3,
-                                $"拆出小件貨公司名義收-{remarkDate}");
+                                $"公司名義收-{remarkDate}");
                         }
                     }
                     if (splitBag)
