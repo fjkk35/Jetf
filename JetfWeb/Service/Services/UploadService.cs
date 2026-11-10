@@ -657,11 +657,6 @@ namespace Service.Services
             sb.Append("from [jetf].[dbo].[CainiaoTaxEdit] a,[DATA_CENTER].[dbo].[SEA_ORDER_ORIGINAL] b ");
             sb.Append("where a.TrackingNo=b.BL_NO and a.Upload_Ope=@Upload_Ope and a.Upload_Time=@Upload_Time ");
 
-            //更新貨況查詢
-            sb.Append("update jetf.dbo.MERGE_ORIGINALLIST set TAX_PAYMENT='P',TRANS_TAXPAYMENT=rtrim(TRANS_NAME)+'P' ");
-            sb.Append("from [jetf].[dbo].[CainiaoTaxEdit] a,[jetf].[dbo].[MERGE_ORIGINALLIST] b ");
-            sb.Append("where b.ORIGINAL='SEA' and a.TrackingNo=b.BL_NO and a.Upload_Ope=@Upload_Ope and a.Upload_Time=@Upload_Time ");
-
             using (SqlTransaction tran = conn.BeginTransaction())
             {
                 using (SqlCommand cmd = new SqlCommand(sb.ToString(), conn))
@@ -707,10 +702,6 @@ namespace Service.Services
             sb.Append("update DATA_CENTER.dbo.SEA_ORDER_ORIGINAL set TAX_PAYMENT='P',TRANS_TAXPAYMENT=rtrim(TRANS_NAME)+'P' ");
             sb.Append("from [jetf].[dbo].[CainiaoTaxEdit] a,[DATA_CENTER].[dbo].[SEA_ORDER_ORIGINAL] b ");
             sb.Append("where a.TrackingNo=b.JETF_SERIAL and a.Upload_Ope=@Upload_Ope and a.Upload_Time=@Upload_Time ");
-            //更新貨況查詢
-            sb.Append("update jetf.dbo.MERGE_ORIGINALLIST set TAX_PAYMENT='P',TRANS_TAXPAYMENT=rtrim(TRANS_NAME)+'P' ");
-            sb.Append("from [jetf].[dbo].[CainiaoTaxEdit] a,[jetf].[dbo].[MERGE_ORIGINALLIST] b ");
-            sb.Append("where b.ORIGINAL='SEA' and a.TrackingNo=b.JETF_SERIAL and a.Upload_Ope=@Upload_Ope and a.Upload_Time=@Upload_Time ");
 
             using (SqlTransaction tran = conn.BeginTransaction())
             {
@@ -757,10 +748,6 @@ namespace Service.Services
             sb.Append("update DATA_CENTER.dbo.ORIGINALLIST set TAX_PAYMENT='P',TRANS_TAXPAYMENT=rtrim(CLEARANCEWAREHOUSING)+'P' ");
             sb.Append("from [jetf].[dbo].[CainiaoTaxEdit] a,[DATA_CENTER].[dbo].[ORIGINALLIST] b ");
             sb.Append("where a.TrackingNo=b.TrackingNo and a.Upload_Ope=@Upload_Ope and a.Upload_Time=@Upload_Time ");
-            //更新貨況查詢
-            sb.Append("update jetf.dbo.MERGE_ORIGINALLIST set TAX_PAYMENT='P',TRANS_TAXPAYMENT=rtrim(CLEARANCEWAREHOUSING)+'P' ");
-            sb.Append("from [jetf].[dbo].[CainiaoTaxEdit] a,[jetf].[dbo].[MERGE_ORIGINALLIST] b ");
-            sb.Append("where b.ORIGINAL='ETL' and a.TrackingNo=b.JETF_SERIAL and a.Upload_Ope=@Upload_Ope and a.Upload_Time=@Upload_Time ");
 
             using (SqlTransaction tran = conn.BeginTransaction())
             {
