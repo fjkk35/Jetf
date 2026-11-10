@@ -431,8 +431,6 @@
     <Compile Include="Models\CainiaoTaxEditViewModel.cs" />
     <Compile Include="Models\CainiaoYtoSeaTax\CainiaoYtoSeaTaxViewModel.cs" />
     <Compile Include="Models\CargoSignReceiptViewModel.cs" />
-    <Compile Include="Models\Cargo\ShenzhenCargoViewModel.cs" />
-    <Compile Include="Models\Cargo\TargetBagNumberViewModel.cs" />
     <Compile Include="Models\CCLWork\B6FUnpackingDetailsViewModel.cs" />
     <Compile Include="Models\CCLWork\CargoManifestModel.cs" />
     <Compile Include="Models\CCLWork\ScanCargoDetailsViewModel.cs" />
@@ -451,7 +449,6 @@
     <Compile Include="Models\CustomerViewModel.cs" />
     <Compile Include="Models\DialogCargoViewModel.cs" />
     <Compile Include="Models\DialogLogCargoStatusViewModel.cs" />
-    <Compile Include="Models\DialogProcessViewModel.cs" />
     <Compile Include="Models\DownloadEtlViewModel.cs" />
     <Compile Include="Models\DownloadNoIncludeTaxViewModel.cs" />
     <Compile Include="Models\SeaMainNumberShippingDetailsRequest.cs" />
@@ -475,7 +472,6 @@
     <Compile Include="Models\SeaClearanceCustTaxPayment\SeaClearanceCustTaxPaymentViewModel.cs" />
     <Compile Include="Models\SeaClearanceFee\SeaClearanceFeeViewModel.cs" />
     <Compile Include="Models\SeaClearanceSjlTaxPayment\SeaClearanceSjlTaxPaymentViewModel.cs" />
-    <Compile Include="Models\SearchCargo2ViewModel.cs" />
     <Compile Include="Models\SeataxViewModel.cs" />
     <Compile Include="Models\SeaUnreceivedOrder\SeaUnreceivedOrderViewModel.cs" />
     <Compile Include="Models\SeaWorkErrorOrderReport\SeaWorkErrorOrderReportViewModel.cs" />
@@ -2894,14 +2890,11 @@
     <Content Include="Views\Download\DownloadSeaModifyG.cshtml" />
     <Content Include="Views\Download\DownloadNoTransfer.cshtml" />
     <Content Include="Views\Download\DownloadSeaModify.cshtml" />
-    <Content Include="Views\Cargo\SearchCargo2.cshtml" />
-    <Content Include="Views\Cargo\DialogCargo2.cshtml" />
     <Content Include="Views\Income\IncomeReport.cshtml" />
     <Content Include="Views\Income\IncomeETAReport.cshtml" />
     <Content Include="Views\Income\IncomeDetailsReport.cshtml" />
     <Content Include="Views\Line\CreateLineGroup.cshtml" />
     <Content Include="Views\Line\SearchLineGroup.cshtml" />
-    <Content Include="Views\Cargo\DialogProcess.cshtml" />
     <Content Include="Views\Cargo\DownloadProcess.cshtml" />
     <Content Include="Views\WorkLoad\CCStatusReport.cshtml" />
     <Content Include="Views\Cargo\SearchWork.cshtml" />
@@ -2932,11 +2925,9 @@
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\AccessDenied\Index.cshtml" />
     <Content Include="Views\LoginSuccess\Index.cshtml" />
-    <Content Include="Views\Cargo\DialogCargoTargetBagNumber.cshtml" />
     <Content Include="Views\EtlUnpackingZ\Upload.cshtml" />
     <Content Include="Views\CptTradeVan\Index.cshtml" />
     <Content Include="Views\Shenzhen\Upload.cshtml" />
-    <Content Include="Views\Cargo\DialogShenzhenCargo.cshtml" />
     <Content Include="Views\TpctContainer\Index.cshtml" />
     <Content Include="Views\ScanCargoArrivalTime\Index.cshtml" />
     <Content Include="Views\CainiaoHiLifeTax\Index.cshtml" />
@@ -2945,7 +2936,6 @@
     <Content Include="Views\EtlErrorG\Index.cshtml" />
     <Content Include="Views\EtlClearanceDetails\Index.cshtml" />
     <Content Include="Views\CainiaoHiLifeTaxDetails\Index.cshtml" />
-    <Content Include="Views\Cargo\DialogCargoTargetTrackingNo.cshtml" />
     <Content Include="Views\CainiaoTaixinStarTax\Index.cshtml" />
     <Content Include="Views\WorkDay\Index.cshtml" />
     <Content Include="Views\CainiaoYtoSeaTax\Index.cshtml" />

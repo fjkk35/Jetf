@@ -383,7 +383,6 @@
     <Compile Include="Models\BusinessRegistry\BusinessRegistryModel.cs" />
     <Compile Include="Models\CainiaoFamilySeaTax\CainiaoFamilySeaTaxModel.cs" />
     <Compile Include="Models\CainiaoHiLifeTax\CainiaoHiLifeTaxModel.cs" />
-    <Compile Include="Models\Cargo\FeeMasterModel.cs" />
     <Compile Include="Models\CptSeaMainNumberJob\CptSeaMainNumberDetailModel.cs" />
     <Compile Include="Models\CptTradeVan\CargoManifestModel.cs" />
     <Compile Include="Models\CptTradeVan\ErrorOrderModel.cs" />
