@@ -21,11 +21,14 @@ using iTextSharp.text.pdf.parser;
 using System.Net;
 using System.Net.NetworkInformation;
 using FluentFTP.Helpers;
+using NLog;
 
 namespace Service.Services.SevenElevenEtlTaxTax
 {
     public class SevenElevenEtlTaxService : _BaseService
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         public SevenElevenEtlTaxService(Service.Data.JetfDbContext jetfDbContext, Service.Data.DataCenterDbContext dataCenterDbContext)
             : base(jetfDbContext, dataCenterDbContext)
         {
@@ -225,6 +228,7 @@ namespace Service.Services.SevenElevenEtlTaxTax
             }
             catch (Exception ex)
             {
+                Logger.Error(ex, "7-11 稅金上傳失敗");
                 return new ResponseModel(ex.Message);
             }
 
