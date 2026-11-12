@@ -30,7 +30,6 @@ namespace TelegramLibrary
         private static readonly HttpClient httpClient = CreateHttpClient();
         private readonly SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString);
 
-        private readonly string botToken = "8989248231:AAHnOEIbDq22RITjKjzrfHPNTq_sK8VDJTw";
         //var chatId = "-1002741936670";
 
         static TelegramBot()
@@ -47,6 +46,26 @@ namespace TelegramLibrary
             };
         }
 
+        private static string GetBotToken()
+        {
+            var dataTable = new DataTable();
+            using (var connection = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString))
+            using (var adapter = new SqlDataAdapter(
+                "SELECT TOP (1) [BotToken] FROM [jetf].[dbo].[TelegramBotConfig]",
+                connection))
+            {
+                adapter.Fill(dataTable);
+            }
+
+            string token = dataTable.Rows.Count > 0 ? Convert.ToString(dataTable.Rows[0]["BotToken"]) : null;
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                throw new InvalidOperationException("找不到 Telegram Bot Token，請確認 dbo.TelegramBotConfig 已設定 BotToken。");
+            }
+
+            return token.Trim();
+        }
+
         public async Task<TelegramResponse> SendTextMessageAsync(string chatId, string message)
         {
             if (string.IsNullOrWhiteSpace(chatId))
@@ -54,10 +73,9 @@ namespace TelegramLibrary
                 return CreateErrorResponse("chatId 不可為空。");
             }
 
-            string url = $"https://api.telegram.org/bot{botToken}/sendMessage?chat_id={chatId}&text={Uri.EscapeDataString(message)}";
-
             return await ExecuteWithRetryAsync(async () =>
             {
+                string url = $"https://api.telegram.org/bot{GetBotToken()}/sendMessage?chat_id={chatId}&text={Uri.EscapeDataString(message)}";
                 using (HttpResponseMessage response = await httpClient.GetAsync(url))
                 {
                     string result = await response.Content.ReadAsStringAsync();
@@ -79,10 +97,9 @@ namespace TelegramLibrary
                 return CreateErrorResponse($"找不到圖片檔案：{filePath}");
             }
 
-            string url = $"https://api.telegram.org/bot{botToken}/sendPhoto";
-
             return await ExecuteWithRetryAsync(async () =>
             {
+                string url = $"https://api.telegram.org/bot{GetBotToken()}/sendPhoto";
                 using (var form = new MultipartFormDataContent())
                 using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (var fileContent = new StreamContent(fileStream))
@@ -115,10 +132,9 @@ namespace TelegramLibrary
                 return CreateErrorResponse($"找不到文件檔案：{filePath}");
             }
 
-            string url = $"https://api.telegram.org/bot{botToken}/sendDocument";
-
             return await ExecuteWithRetryAsync(async () =>
             {
+                string url = $"https://api.telegram.org/bot{GetBotToken()}/sendDocument";
                 using (var form = new MultipartFormDataContent())
                 using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (var fileContent = new StreamContent(fileStream))
