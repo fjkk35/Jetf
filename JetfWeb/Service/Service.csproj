@@ -430,6 +430,9 @@
     <Compile Include="Models\ExportClearance\ExportClearanceInfoModel.cs" />
     <Compile Include="Models\ExportClearance\ExportFlightDetailModel.cs" />
     <Compile Include="Models\GlobalModel.cs" />
+    <Compile Include="Models\ProcessReportRowModel.cs" />
+    <Compile Include="Models\ProcessReportResultModel.cs" />
+    <Compile Include="Models\ProcessReportCargoModel.cs" />
     <Compile Include="Models\HctEtlTax\HctEtlTaxDetail.cs" />
     <Compile Include="Models\Importer\ImporterResponse.cs" />
     <Compile Include="Models\IncomeReport\IncomeReportCustomerRateModel.cs" />

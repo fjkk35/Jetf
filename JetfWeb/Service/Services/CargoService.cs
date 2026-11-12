@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using Service.Data;
 using Service.EnumTax;
 using Service.Extensions;
 using Service.Models;
@@ -8,9 +9,11 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
+using System.Data.Entity;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -20,12 +23,16 @@ namespace Service.Services
     {
         private readonly SqlConnection conn;
         private readonly GlobalService _globalService;
+        private readonly JetfDbContext _jetfDb;
+        private readonly DataCenterDbContext _dataCenterDb;
         /// <summary>
         /// 建構式
         /// </summary>
-        public CargoService(GlobalService globalService)
+        public CargoService(GlobalService globalService, JetfDbContext jetfDb, DataCenterDbContext dataCenterDb)
         {
             _globalService = globalService;
+            _jetfDb = jetfDb;
+            _dataCenterDb = dataCenterDb;
             conn = new SqlConnection(ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString);
         }
 
@@ -239,60 +246,309 @@ namespace Service.Services
 
 
         /// <summary>
-        /// 處置說明下載
+        /// 依日期、客戶、處置類型與結案狀態查詢資料，組合處置說明報表。
         /// </summary>
-        /// <param name="sdate"></param>
-        /// <param name="edate"></param>
-        /// <returns></returns>
-        public DataTableModel ProcessReport(string custId, string sdate, string edate, string processType,string finish)
+        /// <param name="custId">客戶代碼；傳入 All 時不限制客戶。</param>
+        /// <param name="sdate">查詢起日，格式為 yyyyMMdd。</param>
+        /// <param name="edate">查詢迄日，格式為 yyyyMMdd。</param>
+        /// <param name="processType">處置類型；傳入 All 時不限制類型。</param>
+        /// <param name="finish">結案狀態；傳入 All 時不限制狀態。</param>
+        /// <returns>包含查詢狀態、訊息與報表資料列的結果。</returns>
+        public ProcessReportResultModel ProcessReport(string custId, string sdate, string edate, string processType, string finish)
         {
-            DataTableModel dataTableModel = new DataTableModel();
+            var result = new ProcessReportResultModel();
+            var jetfTimeout = _jetfDb.Database.CommandTimeout;
+            var dataCenterTimeout = _dataCenterDb.Database.CommandTimeout;
             try
             {
-                DataTable dt = new DataTable();
-                var sql = @"
-                            with cte_Process as 
-                            (
-	                            SELECT  ROW_NUMBER() OVER (PARTITION BY a.ID ORDER BY a.ID ) as ROW_ID,a.DATADATE,b.ETA,b.DESPATCH_NAME as CUSD_ID,b.CUSTOMER,b.MAINNUMBER,b.BL_NO,a.DLV_INV,b.I_DATA_TYPE,b.I_SIGN_IN_TIME,b.I_SIGN_OUT_TIME,b.IMPORTER,b.IM_PHONENO,a.REMARK,c.[USER_NAME],a.[CRTDATETIME],a.DEL,a.FINISH,a.FINISH_USER_ID,d.[USER_NAME] as FINISH_USER_NAME,a.FINISH_DATETIME,a.PROCESS_TYPE FROM [jetf].[dbo].[Process] a (nolock) 
-	                            left join [jetf].[dbo].MERGE_ORIGINALLIST b (nolock) on a.DLV_INV=b.JETF_SERIAL 
-	                            left join [jetf].[dbo].[USER_MASTER] c on a.[USER_ID]=c.[USER_ID] 
-	                            left join [jetf].[dbo].[USER_MASTER] d on a.[FINISH_USER_ID]=d.[USER_ID] 
-	                            where DEL='0' and DATADATE between @sdate and @edate
-                            )
-                            select * from cte_Process
-                            where ROW_ID='1' 
-                            AND (@custId = 'All' OR CUSD_ID = @custId)
-                            AND (@PROCESS_TYPE = 'All' OR PROCESS_TYPE = @PROCESS_TYPE)
-                            AND (@FINISH = 'All' OR FINISH = @FINISH);
-                          ";
+                _jetfDb.Database.CommandTimeout = 600;
+                _dataCenterDb.Database.CommandTimeout = 600;
 
-            
+                // 取得處置紀錄，保留原本的日期與建立時間排序。
+                var report = _jetfDb.Processes.AsNoTracking()
+                    .Where(row => row.Deleted == "0" && row.DataDate.CompareTo(sdate) >= 0
+                        && row.DataDate.CompareTo(edate) <= 0)
+                    .Where(row => processType == "All" || (processType != null && row.ProcessType == processType))
+                    .Where(row => finish == "All" || (finish != null && row.Finish == finish))
+                    .OrderBy(row => row.DataDate)
+                    .ThenBy(row => row.CreateDateTime)
+                    .Select(row => new ProcessReportRowModel
+                    {
+                        DataDate = row.DataDate,
+                        DlvInv = row.DlvInv,
+                        Remark = row.Remark,
+                        UserId = row.UserId,
+                        CreateDateTime = row.CreateDateTime,
+                        Deleted = row.Deleted,
+                        Finish = row.Finish,
+                        FinishUserId = row.FinishUserId,
+                        FinishDateTime = row.FinishDateTime,
+                        ProcessType = row.ProcessType
+                    })
+                    .ToList();
+                if (report.Count == 0) return result;
 
-                using (SqlDataAdapter da = new SqlDataAdapter(sql, conn))
+                var cargoDic = GetProcessCargoDic(report.Select(row => row.DlvInv), custId);
+                if (custId != "All")
+                    report.RemoveAll(row => !cargoDic.ContainsKey(row.DlvInv?.Trim() ?? ""));
+
+                // 客戶名稱與人員姓名各查詢一次，組合時只讀取字典。
+                var customerDic = GetProcessCustomerDic();
+                var userIds = report.SelectMany(row => new[] { row.UserId, row.FinishUserId })
+                    .Where(userId => !string.IsNullOrWhiteSpace(userId))
+                    .Distinct(StringComparer.OrdinalIgnoreCase);
+
+                var userDic = _jetfDb.UserMasters.AsNoTracking()
+                    .WhereBulkContains(_jetfDb, userIds, row => row.UserId, key => key,
+                        row => new { row.UserId, row.UserName })
+                    .GroupBy(row => row.UserId, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(group => group.Key, group => group.First().UserName,
+                        StringComparer.OrdinalIgnoreCase);
+
+                foreach (var row in report)
                 {
-                    da.SelectCommand.CommandTimeout = 600;
-                    da.SelectCommand.Parameters.Add("@sdate", SqlDbType.NVarChar).Value = sdate;
-                    da.SelectCommand.Parameters.Add("@edate", SqlDbType.NVarChar).Value = edate;
-                    da.SelectCommand.Parameters.Add("@custId", SqlDbType.NVarChar).Value = custId;
-                    da.SelectCommand.Parameters.Add("@PROCESS_TYPE", SqlDbType.NVarChar).Value = processType;
-                    da.SelectCommand.Parameters.Add("@FINISH", SqlDbType.NVarChar).Value = finish;
-                    da.Fill(dt);
+                    userDic.TryGetValue(row.UserId ?? "", out var userName);
+                    userDic.TryGetValue(row.FinishUserId ?? "", out var finishUserName);
+                    row.UserName = userName;
+                    row.FinishUserName = finishUserName;
+
+                    // All 保留找不到來源貨況的處置紀錄，其貨況欄位維持空白。
+                    if (!cargoDic.TryGetValue(row.DlvInv?.Trim() ?? "", out var cargo)) continue;
+
+                    var customerKey = Tuple.Create(cargo.TransportType, (cargo.CustomerCode ?? "").Trim().ToUpperInvariant());
+                    customerDic.TryGetValue(customerKey, out var customer);
+                    row.CusdId = cargo.CustomerCode;
+                    row.Customer = string.IsNullOrEmpty(customer) ? cargo.CustomerCode?.Trim() ?? "" : customer;
+                    row.MainNumber = cargo.MainNumber;
+                    row.BlNo = cargo.BagNo;
+                    row.Importer = cargo.Importer;
+                    row.ImPhoneNo = cargo.ImPhoneNo;
+                    row.Eta = cargo.Eta;
+                    row.IDataType = cargo.DataType;
+                    row.ISignInTime = cargo.SignInTime;
+                    row.ISignOutTime = cargo.SignOutTime;
                 }
 
-                //排序
-                DataView dv = dt.DefaultView;
-                dv.Sort = "DATADATE,CRTDATETIME";
-                dt = dv.ToTable();
-
-                dataTableModel.status = Status.success;
-                dataTableModel.dt = dt;
+                result.Rows = report;
             }
             catch (Exception ex)
             {
-                dataTableModel.status = Status.error;
-                dataTableModel.msg = ex.Message;
+                result.status = Status.error;
+                result.msg = ex.Message;
             }
-            return dataTableModel;
+            finally
+            {
+                _jetfDb.Database.CommandTimeout = jetfTimeout;
+                _dataCenterDb.Database.CommandTimeout = dataCenterTimeout;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 查詢海空運原始貨況、到港日與清關資訊，建立每個貨號的最新資料字典。
+        /// </summary>
+        /// <param name="dlvInvs">處置紀錄中的物流貨號。</param>
+        /// <param name="custId">客戶代碼；傳入 All 時不限制客戶。</param>
+        /// <returns>以物流貨號為鍵的完整貨況資料。</returns>
+        private Dictionary<string, ProcessReportCargoModel> GetProcessCargoDic(IEnumerable<string> dlvInvs, string custId)
+        {
+            var numbers = dlvInvs.Select(number => number?.Trim())
+                .Where(number => !string.IsNullOrEmpty(number))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            // 兩種來源直接投影為相同 Model；空運貨號統一使用 TRACKINGNO。
+            var sea = _dataCenterDb.SeaOrderOriginals.AsNoTracking()
+                .Where(row => row.JetfSerial != null)
+                .WhereBulkContains(_dataCenterDb, numbers, row => row.JetfSerial, key => key,
+                    row => new ProcessReportCargoModel
+                    {
+                        Id = row.RowId,
+                        CreateDate = row.CreateDate,
+                        TransportType = "SEA",
+                        DlvInv = row.JetfSerial,
+                        MainNumber = row.MainNumber,
+                        BagNo = row.BlNo,
+                        CustomerCode = row.DespatchName,
+                        Eta = row.Eta,
+                        Importer = row.Importer,
+                        ImPhoneNo = row.ImporterPhone
+                    });
+            var air = _dataCenterDb.OriginalLists.AsNoTracking()
+                .Where(row => row.TrackingNo != null)
+                .WhereBulkContains(_dataCenterDb, numbers, row => row.TrackingNo, key => key,
+                    row => new ProcessReportCargoModel
+                    {
+                        Id = row.Id,
+                        CreateDate = row.CreateDate,
+                        TransportType = "AIR",
+                        DlvInv = row.TrackingNo,
+                        MainNumber = row.MainNumber,
+                        BagNo = row.BagNo,
+                        CustomerCode = row.DespatchNo,
+                        Importer = row.Recipient,
+                        ImPhoneNo = row.RecPhone
+                    });
+
+            // 同貨號先取最新來源，再篩選客戶；空運同時接受原碼與補足五碼的代碼。
+            var customerId = custId?.Trim();
+            var cargos = sea.Concat(air)
+                .GroupBy(cargo => cargo.DlvInv.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.OrderByDescending(cargo => cargo.CreateDate)
+                    .ThenByDescending(cargo => cargo.Id)
+                    .ThenBy(cargo => cargo.TransportType, StringComparer.Ordinal)
+                    .First())
+                .Where(cargo => custId == "All"
+                    || string.Equals(cargo.CustomerCode?.Trim(), customerId, StringComparison.OrdinalIgnoreCase)
+                    || (cargo.CustomerCode == null && customerId == "")
+                    || (cargo.TransportType == "AIR" && !string.IsNullOrWhiteSpace(cargo.CustomerCode)
+                        && string.Equals(cargo.CustomerCode.Trim().PadLeft(5, '0'), customerId, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+
+            var mainOrderDic = _dataCenterDb.MainOrderInfos.AsNoTracking()
+                .Where(row => row.MainNumber != null && row.DeliveryDate != null)
+                .WhereBulkContains(_dataCenterDb,
+                    cargos.Where(cargo => cargo.TransportType == "AIR").Select(cargo => cargo.MainNumber).Distinct(),
+                    row => row.MainNumber, key => key,
+                    row => new { row.MainNumber, row.DeliveryDate, row.CreateTime, row.Id })
+                .GroupBy(row => row.MainNumber.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.OrderByDescending(row => row.CreateTime)
+                    .ThenByDescending(row => row.Id).First().DeliveryDate, StringComparer.OrdinalIgnoreCase);
+
+            var clearanceDic = GetProcessClearanceDic(cargos);
+
+            foreach (var cargo in cargos)
+            {
+                if (cargo.TransportType == "AIR" && mainOrderDic.TryGetValue(cargo.MainNumber?.Trim() ?? "", out var eta))
+                    cargo.Eta = eta;
+
+                if (!clearanceDic.TryGetValue(cargo.DlvInv.Trim(), out var clearance)) continue;
+                cargo.DataType = clearance.DataType;
+                cargo.SignInTime = clearance.SignInTime;
+                cargo.SignOutTime = clearance.SignOutTime;
+            }
+
+            return cargos.ToDictionary(cargo => cargo.DlvInv.Trim(), StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// 一次讀取 SYS_CUST 客戶資料，依海運代碼及空運舊代碼建立名稱字典。
+        /// </summary>
+        /// <returns>以運別及客戶代碼組成鍵值的客戶名稱字典。</returns>
+        private Dictionary<Tuple<string, string>, string> GetProcessCustomerDic()
+        {
+            var customers = _dataCenterDb.SysCusts.AsNoTracking()
+                .Select(row => new { row.CustType, row.CustCode, row.OldCode, row.CustName })
+                .ToList();
+
+            var seaCustomerNames = customers
+                .Where(row => row.CustType == "SEA" && !string.IsNullOrWhiteSpace(row.CustCode))
+                .Select(row => new { Key = Tuple.Create("SEA", row.CustCode.Trim().ToUpperInvariant()), row.CustName });
+            var airCustomerNames = customers
+                .Where(row => row.CustType == "AIR" && !string.IsNullOrWhiteSpace(row.OldCode))
+                .Select(row => new { Key = Tuple.Create("AIR", row.OldCode.Trim().ToUpperInvariant()), row.CustName });
+
+            return seaCustomerNames.Concat(airCustomerNames)
+                .GroupBy(row => row.Key)
+                .ToDictionary(group => group.Key,
+                    group => group.Select(row => row.CustName).FirstOrDefault() ?? string.Empty);
+        }
+
+        /// <summary>
+        /// 取得各貨號對應的清關資料，海運比對主號及袋號，空運依貨號、FTZ 袋號及一般袋號依序比對。
+        /// </summary>
+        /// <param name="cargos">已選定來源與客戶的貨況資料。</param>
+        /// <returns>以物流貨號為鍵的清關資料字典。</returns>
+        private Dictionary<string, ClearanceInfoEntity> GetProcessClearanceDic(IEnumerable<ProcessReportCargoModel> cargos)
+        {
+            var keys = cargos.Select(cargo => new
+            {
+                cargo.TransportType,
+                DlvInv = cargo.DlvInv.Trim().ToUpperInvariant(),
+                MainNumber = (cargo.MainNumber ?? "").Trim().ToUpperInvariant(),
+                BagNo = (cargo.BagNo ?? "").Trim().ToUpperInvariant()
+            }).Where(key => key.MainNumber.Length > 0).ToList();
+            var clearanceDic = new Dictionary<string, ClearanceInfoEntity>(StringComparer.OrdinalIgnoreCase);
+            if (keys.Count == 0) return clearanceDic;
+
+            var seaKeys = keys.Where(key => key.TransportType == "SEA" && key.BagNo.Length > 0)
+                .Select(key => new { key.MainNumber, BagNumber = key.BagNo }).Distinct();
+            var airKeys = keys.Where(key => key.TransportType == "AIR").ToList();
+            var airBagKeys = airKeys.Where(key => key.BagNo.Length > 0)
+                .Select(key => new { key.MainNumber, BagNumber = key.BagNo }).Distinct().ToList();
+
+            // 四種查詢共用相同欄位投影，只讀取報表與最新資料判斷需要的欄位。
+            Expression<Func<ClearanceInfoEntity, ClearanceInfoEntity>> projection = row => new ClearanceInfoEntity
+            {
+                RowId = row.RowId,
+                MainNumber = row.MainNumber,
+                BagNumber = row.BagNumber,
+                MergeNumber = row.MergeNumber,
+                DataType = row.DataType,
+                SignInTime = row.SignInTime,
+                SignOutTime = row.SignOutTime,
+                ModifyTime = row.ModifyTime,
+                ModifySeq = row.ModifySeq
+            };
+            var query = _dataCenterDb.ClearanceInfos.AsNoTracking()
+                .Where(row => row.MainNumber != null);
+            var airQuery = query.Where(row => row.ModifyFile != null && row.ModifyFile != "MANUAL");
+
+            // 海運：主號 + 袋號。
+            var seaRows = query.Where(row => row.BagNumber != null)
+                .WhereBulkContains(_dataCenterDb, seaKeys,
+                    row => new { row.MainNumber, row.BagNumber },
+                    key => new { key.MainNumber, key.BagNumber }, projection);
+
+            // 空運：主號 + 貨號，對應清關資料的 MERGE_NUMBER。
+            var airRows = airQuery.Where(row => row.MergeNumber != null)
+                .WhereBulkContains(_dataCenterDb,
+                    airKeys.Where(key => key.DlvInv.Length > 0)
+                        .Select(key => new { key.MainNumber, MergeNumber = key.DlvInv }).Distinct(),
+                    row => new { row.MainNumber, row.MergeNumber },
+                    key => new { key.MainNumber, key.MergeNumber }, projection);
+
+            // 空運 FTZ：主號 + 袋號，對應清關資料的 MERGE_NUMBER。
+            var ftzRows = airQuery.Where(row => row.DataType == "FTZ" && row.MergeNumber != null)
+                .WhereBulkContains(_dataCenterDb,
+                    airBagKeys.Select(key => new { key.MainNumber, MergeNumber = key.BagNumber }),
+                    row => new { row.MainNumber, row.MergeNumber },
+                    key => new { key.MainNumber, key.MergeNumber }, projection);
+
+            // 空運袋號備援：MERGE_NUMBER 空白時，以主號 + BAG_NUMBER 比對。
+            var bagRows = airQuery.Where(row => row.MergeNumber == "" && row.BagNumber != null)
+                .WhereBulkContains(_dataCenterDb, airBagKeys,
+                    row => new { row.MainNumber, row.BagNumber },
+                    key => new { key.MainNumber, key.BagNumber }, projection);
+
+            // 各比對規則分開取最新一筆，避免不同規則的資料互相覆蓋。
+            var matches = seaRows.Select(row => (Rule: "SEA", Number: row.BagNumber, Info: row))
+                .Concat(airRows.Select(row => (Rule: "AIR", Number: row.MergeNumber, Info: row)))
+                .Concat(ftzRows.Select(row => (Rule: "FTZ", Number: row.MergeNumber, Info: row)))
+                .Concat(bagRows.Select(row => (Rule: "BAG", Number: row.BagNumber, Info: row)));
+            var latestDic = matches
+                .GroupBy(match => (match.Rule,
+                    MainNumber: match.Info.MainNumber.Trim().ToUpperInvariant(),
+                    Number: match.Number.Trim().ToUpperInvariant()))
+                .ToDictionary(group => group.Key, group => group
+                    .OrderByDescending(match => match.Info.ModifyTime)
+                    .ThenByDescending(match => match.Info.ModifySeq)
+                    .ThenByDescending(match => match.Info.RowId)
+                    .First().Info);
+
+            foreach (var key in keys)
+            {
+                ClearanceInfoEntity clearance;
+                if (key.TransportType == "SEA")
+                    latestDic.TryGetValue(("SEA", key.MainNumber, key.BagNo), out clearance);
+                else if (!latestDic.TryGetValue(("AIR", key.MainNumber, key.DlvInv), out clearance)
+                    && !latestDic.TryGetValue(("FTZ", key.MainNumber, key.BagNo), out clearance))
+                    latestDic.TryGetValue(("BAG", key.MainNumber, key.BagNo), out clearance);
+
+                if (clearance != null)
+                    clearanceDic[key.DlvInv] = clearance;
+            }
+            return clearanceDic;
         }
 
         /// <summary>

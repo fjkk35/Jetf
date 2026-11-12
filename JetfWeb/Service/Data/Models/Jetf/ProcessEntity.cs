@@ -1,10 +1,11 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Service.Data
 {
     /// <summary>
-    /// 貨物處理紀錄的查重與批次新增資料，查詢僅投影單號及類型且不追蹤實體。
+    /// 貨物處理紀錄，供處置說明報表與批次新增流程使用。
     /// </summary>
     [Table("Process", Schema = "dbo")]
     public sealed class ProcessEntity
@@ -27,6 +28,36 @@ namespace Service.Data
         /// </summary>
         [Column("REMARK")]
         public string Remark { get; set; }
+
+        /// <summary>
+        /// 紀錄建立時間。
+        /// </summary>
+        [Column("CRTDATETIME")]
+        public DateTime? CreateDateTime { get; set; }
+
+        /// <summary>
+        /// 刪除狀態。
+        /// </summary>
+        [Column("DEL")]
+        public string Deleted { get; set; }
+
+        /// <summary>
+        /// 結案狀態。
+        /// </summary>
+        [Column("FINISH")]
+        public string Finish { get; set; }
+
+        /// <summary>
+        /// 結案人員代碼。
+        /// </summary>
+        [Column("FINISH_USER_ID")]
+        public string FinishUserId { get; set; }
+
+        /// <summary>
+        /// 結案時間。
+        /// </summary>
+        [Column("FINISH_DATETIME")]
+        public DateTime? FinishDateTime { get; set; }
 
         /// <summary>
         /// 附件路徑，本匯入流程使用空字串。

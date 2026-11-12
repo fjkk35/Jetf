@@ -541,13 +541,11 @@ namespace JETFTAX.Controllers
         {
             var sDate = Convert.ToDateTime(vm.sDate).ToString("yyyyMMdd");
             var eDate = Convert.ToDateTime(vm.eDate).ToString("yyyyMMdd");
-            var dataTableModel = _cargoService.ProcessReport(vm.custId, sDate, eDate, vm.ProcessType,vm.Finish);
-            if (dataTableModel.status == Status.error)
-                return new JsonResult() { Data = new { msg = dataTableModel.msg } };
+            var report = _cargoService.ProcessReport(vm.custId, sDate, eDate, vm.ProcessType, vm.Finish);
+            if (report.status == Status.error)
+                return new JsonResult() { Data = new { msg = report.msg } };
 
-            var dt = dataTableModel.dt;
-
-            IWorkbook workbook = GetProcessWorkbook(dt);
+            IWorkbook workbook = GetProcessWorkbook(report.Rows);
 
             string handle = Guid.NewGuid().ToString();
             string fileName = "";
@@ -562,16 +560,16 @@ namespace JETFTAX.Controllers
 
             return new JsonResult()
             {
-                Data = new { fileGuid = handle, fileName = fileName, msg = dataTableModel.msg }
+                Data = new { fileGuid = handle, fileName = fileName, msg = report.msg }
             };
         }
 
         /// <summary>
         /// 處置說明 Excel格式
         /// </summary>
-        /// <param name="dt"></param>
-        /// <returns></returns>
-        public IWorkbook GetProcessWorkbook(DataTable dt)
+        /// <param name="rows">處置說明報表資料列。</param>
+        /// <returns>包含處置說明工作表的 Excel 活頁簿。</returns>
+        public IWorkbook GetProcessWorkbook(IList<ProcessReportRowModel> rows)
         {
             IWorkbook workbook = new XSSFWorkbook();
 
@@ -621,50 +619,53 @@ namespace JETFTAX.Controllers
             sheet.SetColumnWidth(16, 6000);
 
 
-            DateTime eta, sign_in_time, sign_out_time, finish_datetime;
-            for (int i = 0; i < dt.Rows.Count; i++)
+            for (int i = 0; i < rows.Count; i++)
             {
                 row = sheet.CreateRow(i + 1);
 
-                row.CreateCell(0).SetCellValue(dt.Rows[i]["DATADATE"].ToString());
-                row.CreateCell(1).SetCellValue(dt.Rows[i]["I_DATA_TYPE"].ToString());
-                row.CreateCell(2).SetCellValue(dt.Rows[i]["CUSTOMER"].ToString());
-                if (DateTime.TryParse(dt.Rows[i]["ETA"].ToString(), out eta))
+                var item = rows[i];
+                row.CreateCell(0).SetCellValue(item.DataDate ?? "");
+                row.CreateCell(1).SetCellValue(item.IDataType ?? "");
+                row.CreateCell(2).SetCellValue(item.Customer ?? "");
+                if (item.Eta.HasValue)
                 {
-                    row.CreateCell(3).SetCellValue(eta);
+                    row.CreateCell(3).SetCellValue(item.Eta.Value);
                     row.GetCell(3).CellStyle = date2Style;
                 }
                 else
                 {
-                    row.CreateCell(3).SetCellValue(dt.Rows[i]["ETA"].ToString());
+                    row.CreateCell(3).SetCellValue("");
                 }
 
-                row.CreateCell(4).SetCellValue(dt.Rows[i]["MAINNUMBER"].ToString());
-                row.CreateCell(5).SetCellValue(dt.Rows[i]["BL_NO"].ToString());
-                row.CreateCell(6).SetCellValue(dt.Rows[i]["DLV_INV"].ToString());
-                if (DateTime.TryParse(dt.Rows[i]["I_SIGN_IN_TIME"].ToString(), out sign_in_time))
+                row.CreateCell(4).SetCellValue(item.MainNumber ?? "");
+                row.CreateCell(5).SetCellValue(item.BlNo ?? "");
+                row.CreateCell(6).SetCellValue(item.DlvInv ?? "");
+                if (item.ISignInTime.HasValue)
                 {
-                    row.CreateCell(7).SetCellValue(sign_in_time);
+                    row.CreateCell(7).SetCellValue(item.ISignInTime.Value);
                     row.GetCell(7).CellStyle = dateStyle;
                 }
-                if (DateTime.TryParse(dt.Rows[i]["I_SIGN_OUT_TIME"].ToString(), out sign_out_time))
+                if (item.ISignOutTime.HasValue)
                 {
-                    row.CreateCell(8).SetCellValue(sign_out_time);
+                    row.CreateCell(8).SetCellValue(item.ISignOutTime.Value);
                     row.GetCell(8).CellStyle = dateStyle;
                 }
-                row.CreateCell(9).SetCellValue(dt.Rows[i]["IMPORTER"].ToString());
-                row.CreateCell(10).SetCellValue(dt.Rows[i]["IM_PHONENO"].ToString());
-                row.CreateCell(11).SetCellValue(dt.Rows[i]["REMARK"].ToString());
-                row.CreateCell(12).SetCellValue(Convert.ToDateTime(dt.Rows[i]["CRTDATETIME"]));
-                row.GetCell(12).CellStyle = dateStyle;
-                row.CreateCell(13).SetCellValue(dt.Rows[i]["USER_NAME"].ToString());
-                row.CreateCell(14).SetCellValue(dt.Rows[i]["FINISH"].ToString());
-                if (DateTime.TryParse(dt.Rows[i]["FINISH_DATETIME"].ToString(), out finish_datetime))
+                row.CreateCell(9).SetCellValue(item.Importer ?? "");
+                row.CreateCell(10).SetCellValue(item.ImPhoneNo ?? "");
+                row.CreateCell(11).SetCellValue(item.Remark ?? "");
+                if (item.CreateDateTime.HasValue)
                 {
-                    row.CreateCell(15).SetCellValue(finish_datetime);
+                    row.CreateCell(12).SetCellValue(item.CreateDateTime.Value);
+                    row.GetCell(12).CellStyle = dateStyle;
+                }
+                row.CreateCell(13).SetCellValue(item.UserName ?? "");
+                row.CreateCell(14).SetCellValue(item.Finish ?? "");
+                if (item.FinishDateTime.HasValue)
+                {
+                    row.CreateCell(15).SetCellValue(item.FinishDateTime.Value);
                     row.GetCell(15).CellStyle = dateStyle;
                 }
-                row.CreateCell(16).SetCellValue(dt.Rows[i]["FINISH_USER_NAME"].ToString());
+                row.CreateCell(16).SetCellValue(item.FinishUserName ?? "");
             }
 
             return workbook;
