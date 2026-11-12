@@ -36,7 +36,7 @@ namespace Service.Services.BatchSearchCargo2
             SaveBatchTrackingNos(trackingNos, uploadTime, userId);
 
             var reportTable = GetBatchSearchCargoReport(uploadTime, userId);
-            return BuildWorkbook(reportTable);
+            return BuildWorkbook(reportTable, trackingNos);
         }
 
         private static List<string> ParseTrackingNos(BatchSearchCargo2Request request)
@@ -95,7 +95,7 @@ namespace Service.Services.BatchSearchCargo2
             return reportTable;
         }
 
-        private static IWorkbook BuildWorkbook(DataTable reportTable)
+        private static IWorkbook BuildWorkbook(DataTable reportTable, IReadOnlyList<string> trackingNos)
         {
             var workbook = new XSSFWorkbook();
             var sheet = workbook.CreateSheet("批量貨況查詢明細表");
@@ -123,9 +123,27 @@ namespace Service.Services.BatchSearchCargo2
                 sheet.SetColumnWidth(columnIndex, widths[columnIndex]);
             }
 
-            for (var rowIndex = 0; rowIndex < reportTable.Rows.Count; rowIndex++)
+            // 依貼上的單號順序排列匯出資料，同一單號保留查詢結果的原始順序。
+            var trackingOrder = trackingNos
+                .Select((trackingNo, index) => new { trackingNo, index })
+                .ToDictionary(item => item.trackingNo, item => item.index, StringComparer.OrdinalIgnoreCase);
+            var orderedRows = reportTable.Rows
+                .Cast<DataRow>()
+                .Select((sourceRow, index) => new { sourceRow, index })
+                .OrderBy(item =>
+                {
+                    int order;
+                    return trackingOrder.TryGetValue(item.sourceRow["TrackingNo"].ToString(), out order)
+                        ? order
+                        : int.MaxValue;
+                })
+                .ThenBy(item => item.index)
+                .Select(item => item.sourceRow)
+                .ToList();
+
+            for (var rowIndex = 0; rowIndex < orderedRows.Count; rowIndex++)
             {
-                var sourceRow = reportTable.Rows[rowIndex];
+                var sourceRow = orderedRows[rowIndex];
                 var row = sheet.CreateRow(rowIndex + 1);
 
                 CreateDateCell(row, 0, sourceRow["ETA"], dateOnlyStyle, textStyle);
