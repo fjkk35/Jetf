@@ -672,7 +672,7 @@ namespace Service.Services.AirMainComparison
                     })
                     .ToList();
 
-                unreceivedRowsByItem[item] = FilterInvalidMultiPieceRows(candidates);
+                unreceivedRowsByItem[item] = candidates;
             }
 
             return unreceivedRowsByItem;
@@ -684,41 +684,6 @@ namespace Service.Services.AirMainComparison
             {
                 values.Add(value.Trim());
             }
-        }
-
-        /// <summary>
-        /// 未收單補列時，若一分號多件主分號沒有出現在同批未收單分號中，整筆資料不顯示。
-        /// </summary>
-        private List<AirMainUploadExcelRow> FilterInvalidMultiPieceRows(List<AirMainUploadExcelRow> uploadRows)
-        {
-            var rows = uploadRows ?? new List<AirMainUploadExcelRow>();
-            var bagNos = new HashSet<string>(
-                rows.Select(row => (row?.BagNo ?? "").Trim())
-                    .Where(bagNo => !string.IsNullOrWhiteSpace(bagNo)),
-                StringComparer.OrdinalIgnoreCase);
-
-            if (!bagNos.Any())
-            {
-                return rows;
-            }
-
-            return rows.Where(row =>
-            {
-                var relatedValue = (row?.OneHwbMultiPieceHwb ?? "").Trim();
-                if (string.IsNullOrWhiteSpace(relatedValue))
-                {
-                    return true;
-                }
-
-                var relatedBagNos = relatedValue
-                    .Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(value => value.Trim())
-                    .Where(value => !string.IsNullOrWhiteSpace(value))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-
-                return !relatedBagNos.Any() || relatedBagNos.All(bagNos.Contains);
-            }).ToList();
         }
 
         /// <summary>
