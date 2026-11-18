@@ -20,6 +20,8 @@ using FluentFTP;
 using iTextSharp.text.pdf.parser;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using FluentFTP.Helpers;
 using NLog;
 
@@ -333,9 +335,40 @@ namespace Service.Services.SevenElevenEtlTaxTax
         }
 
         /// <summary>
-        /// 上傳FTP
+        /// 上傳FTP（失敗時重試）
         /// </summary>
         private bool UploadFtp(string localFilePath, string fileName)
+        {
+            const int maxRetry = 3;
+            const int retryDelayMs = 2000;
+
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    if (UploadFtpOnce(localFilePath, fileName))
+                    {
+                        return true;
+                    }
+                    if (attempt >= maxRetry)
+                    {
+                        return false;
+                    }
+                    Logger.Warn($"7-11 FTP 上傳回傳失敗，{retryDelayMs / 1000} 秒後進行第 {attempt + 1}/{maxRetry} 次重試");
+                }
+                catch (Exception ex) when (attempt < maxRetry)
+                {
+                    Logger.Warn(ex, $"7-11 FTP 上傳發生錯誤，{retryDelayMs / 1000} 秒後進行第 {attempt + 1}/{maxRetry} 次重試");
+                }
+
+                System.Threading.Thread.Sleep(retryDelayMs);
+            }
+        }
+
+        /// <summary>
+        /// 上傳FTP（單次）
+        /// </summary>
+        private bool UploadFtpOnce(string localFilePath, string fileName)
         {
             using (FtpClient ftp = new FtpClient())
             {
@@ -343,6 +376,22 @@ namespace Service.Services.SevenElevenEtlTaxTax
                 ftp.Port = 990;
                 ftp.Credentials = new NetworkCredential("74B016", "ihPu+ElOLWN2WmCFhD1GlY9e");
                 ftp.Config.EncryptionMode = FtpEncryptionMode.Implicit;
+                ftp.ValidateCertificate += (control, e) =>
+                {
+                    // 維持原本的驗證結果，只多做記錄，不放寬安全性
+                    e.Accept = e.PolicyErrors == SslPolicyErrors.None;
+                    if (e.Accept) return;
+
+                    var chain = e.Chain == null ? "" : string.Join(" -> ",
+                        e.Chain.ChainElements.Cast<X509ChainElement>().Select(x =>
+                            $"{x.Certificate.Subject} [{string.Join(",", x.ChainElementStatus.Select(s => s.Status))}]"));
+                    var status = e.Chain?.ChainStatus == null ? "" : string.Join("; ",
+                        e.Chain.ChainStatus.Select(s => $"{s.Status}: {s.StatusInformation?.Trim()}"));
+
+                    Logger.Error($"7-11 FTPS 憑證驗證失敗 PolicyErrors={e.PolicyErrors}, " +
+                                 $"Subject={e.Certificate?.Subject}, Issuer={e.Certificate?.Issuer}, " +
+                                 $"Chain=[{chain}], ChainStatus=[{status}]");
+                };
                 ftp.Connect();
                 var remoteFilePath = $"/SUP/{fileName}";
                 var ftpStatus = ftp.UploadFile(localFilePath, remoteFilePath);
