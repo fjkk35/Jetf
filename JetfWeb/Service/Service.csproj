@@ -513,11 +513,6 @@
     <Compile Include="Services\Ezway\Domain\EzwaySeaConsolidatorOption.cs" />
     <Compile Include="Services\Ezway\Domain\EzwaySeaQueryOptions.cs" />
     <Compile Include="Services\Ezway\Domain\EzwayQueryResult.cs" />
-    <Compile Include="Services\AccsShopee\AccsShopeeService.cs" />
-    <Compile Include="Services\AccsShopee\Domain\AccsLoginRequest.cs" />
-    <Compile Include="Services\AccsShopee\Domain\AccsQueryRequest.cs" />
-    <Compile Include="Services\AccsShopee\Domain\AccsQueryResult.cs" />
-    <Compile Include="Services\AccsShopee\Domain\AccsSessionInfo.cs" />
     <Compile Include="Services\ApprovalCategory\ApprovalCategoryService.cs" />
     <Compile Include="Services\AuthorityGroup\AuthorityGroupService.cs" />
     <Compile Include="Services\AuthorityGroup\Domain\AuthorityGroupDto.cs" />
