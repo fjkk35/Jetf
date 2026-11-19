@@ -208,10 +208,16 @@ namespace Service.Services.AirMainComparison
             var headerStyle = NpoiStyle.CreateHeaderStyle(workbook, 12, true);
             var dataStyle = NpoiStyle.CreateDataStyle(workbook);
             var numberStyle = NpoiStyle.CreateNumberStyle(workbook);
+            // 黃底樣式：總袋數 - 收單件數 不等於 未收單件數 時整列標示。
+            var highlightDataStyle = CreateHighlightStyle(workbook, dataStyle);
+            var highlightNumberStyle = CreateHighlightStyle(workbook, numberStyle);
 
             // 先把上傳資料整理成實際需要補到未進倉明細的未收單資料，供兩個頁籤共用。
             var uploadTotalPieceByMwb = BuildUploadTotalPieceByMwb(uploadData.SummaryRows);
             var uploadSummaryByMwb = BuildUploadSummaryByMwb(uploadData.SummaryRows);
+            // 需要標示黃底的主號，供兩個頁籤共用。
+            var highlightItems = new HashSet<IAirMainComparisonItem>(
+                resultList.Where(item => IsTotalBagMismatch(item, uploadTotalPieceByMwb)));
 
             CreateMainResultSheet(
                 workbook,
@@ -219,17 +225,73 @@ namespace Service.Services.AirMainComparison
                 resultList,
                 uploadTotalPieceByMwb,
                 uploadSummaryByMwb,
+                highlightItems,
                 headerStyle,
                 dataStyle,
-                numberStyle);
+                numberStyle,
+                highlightDataStyle,
+                highlightNumberStyle);
 
             CreateNotGciDetailSheet(
                 workbook,
                 resultList,
+                highlightItems,
                 headerStyle,
                 dataStyle,
+                highlightDataStyle,
                 useUploadBagCountForUnreceivedDeclaredPiece);
             return workbook;
+        }
+
+        /// <summary>
+        /// 以基礎樣式建立黃色底色樣式。
+        /// </summary>
+        private ICellStyle CreateHighlightStyle(IWorkbook workbook, ICellStyle baseStyle)
+        {
+            var style = workbook.CreateCellStyle();
+            style.CloneStyleFrom(baseStyle);
+            style.FillForegroundColor = IndexedColors.Yellow.Index;
+            style.FillPattern = FillPattern.SolidForeground;
+            return style;
+        }
+
+        /// <summary>
+        /// 取得匯出的總袋數：主號2 的「總件數」扣除同主號的無派件公司統計數量。
+        /// </summary>
+        private string GetTotalBagText(
+            IAirMainComparisonItem item,
+            Dictionary<string, string> uploadTotalPieceByMwb)
+        {
+            var mwb = (item.Mwb ?? "").Trim();
+            string uploadTotalPiece;
+            if (!uploadTotalPieceByMwb.TryGetValue(mwb, out uploadTotalPiece))
+            {
+                return "";
+            }
+
+            int totalBagCount;
+            if (!int.TryParse(uploadTotalPiece, out totalBagCount))
+            {
+                // 非整數內容保留上傳檔原值，避免匯出時誤改資料。
+                return uploadTotalPiece;
+            }
+
+            int noTransNameCount;
+            (item.TransNameCounts ?? new Dictionary<string, int>())
+                .TryGetValue(NoTransName, out noTransNameCount);
+            return (totalBagCount - noTransNameCount).ToString(CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>
+        /// 總袋數 - 收單件數 是否不等於 未收單件數；總袋數非整數或無資料時不標示。
+        /// </summary>
+        private bool IsTotalBagMismatch(
+            IAirMainComparisonItem item,
+            Dictionary<string, string> uploadTotalPieceByMwb)
+        {
+            int totalBagCount;
+            return int.TryParse(GetTotalBagText(item, uploadTotalPieceByMwb), out totalBagCount)
+                && totalBagCount - item.ReceivedPieceCount != item.UnreceivedCount;
         }
 
         /// <summary>
@@ -1196,9 +1258,12 @@ namespace Service.Services.AirMainComparison
             IList<IAirMainComparisonItem> results,
             Dictionary<string, string> uploadTotalPieceByMwb,
             Dictionary<string, AirMainUploadSummaryRow> uploadSummaryByMwb,
+            HashSet<IAirMainComparisonItem> highlightItems,
             ICellStyle headerStyle,
-            ICellStyle dataStyle,
-            ICellStyle numberStyle)
+            ICellStyle defaultDataStyle,
+            ICellStyle defaultNumberStyle,
+            ICellStyle highlightDataStyle,
+            ICellStyle highlightNumberStyle)
         {
             // ========== 第一個頁籤：主號查詢結果 ==========
             var sheet = workbook.CreateSheet(sheetName);
@@ -1232,6 +1297,10 @@ namespace Service.Services.AirMainComparison
                 var row = sheet.CreateRow(index + 1);
                 var column = 0;
                 var mwb = (item.Mwb ?? "").Trim();
+                // 總袋數 - 收單件數 不等於 未收單件數 時整列套用黃底。
+                var isHighlight = highlightItems.Contains(item);
+                var dataStyle = isHighlight ? highlightDataStyle : defaultDataStyle;
+                var numberStyle = isHighlight ? highlightNumberStyle : defaultNumberStyle;
 
                 AirMainUploadSummaryRow uploadSummary;
                 uploadSummaryByMwb.TryGetValue(mwb, out uploadSummary);
@@ -1240,27 +1309,8 @@ namespace Service.Services.AirMainComparison
                 NpoiCell.CreateCell(row, column++, item.Customer ?? "", dataStyle);
                 NpoiCell.CreateCell(row, column++, uploadSummary?.FlightNumber ?? "", dataStyle);
 
-                string uploadTotalPiece;
-                var totalBagText = "";
                 // 主號2 的「總件數」作為總袋數基準，扣除同主號的無派件公司統計數量。
-                if (uploadTotalPieceByMwb.TryGetValue(mwb, out uploadTotalPiece))
-                {
-                    int totalBagCount;
-                    if (int.TryParse(uploadTotalPiece, out totalBagCount))
-                    {
-                        int noTransNameCount;
-                        (item.TransNameCounts ?? new Dictionary<string, int>())
-                            .TryGetValue(NoTransName, out noTransNameCount);
-                        totalBagText = (totalBagCount - noTransNameCount).ToString(CultureInfo.InvariantCulture);
-                    }
-                    else
-                    {
-                        // 非整數內容保留上傳檔原值，避免匯出時誤改資料。
-                        totalBagText = uploadTotalPiece;
-                    }
-                }
-
-                NpoiCell.CreateIntCell(row, column++, totalBagText, numberStyle);
+                NpoiCell.CreateIntCell(row, column++, GetTotalBagText(item, uploadTotalPieceByMwb), numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.ReceivedPieceCount, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.NotGciTotal, numberStyle);
                 NpoiCell.CreateIntCell(row, column++, item.DeclaredPiece, numberStyle);
@@ -1296,8 +1346,10 @@ namespace Service.Services.AirMainComparison
         private void CreateNotGciDetailSheet(
             IWorkbook workbook,
             IEnumerable<IAirMainComparisonItem> results,
+            HashSet<IAirMainComparisonItem> highlightItems,
             ICellStyle headerStyle,
-            ICellStyle dataStyle,
+            ICellStyle defaultDataStyle,
+            ICellStyle highlightDataStyle,
             bool useUploadBagCountForUnreceivedDeclaredPiece)
         {
             // ========== 第二個頁籤：未進倉明細 ==========
@@ -1322,6 +1374,8 @@ namespace Service.Services.AirMainComparison
             foreach (var item in results ?? Enumerable.Empty<IAirMainComparisonItem>())
             {
                 var itemNo = 1;
+                // 主號在查詢結果頁籤標示黃底時，其明細列也一併標示。
+                var dataStyle = highlightItems.Contains(item) ? highlightDataStyle : defaultDataStyle;
                 foreach (var detail in item.NotGciDetails ?? Enumerable.Empty<IAirMainDetailRow>())
                 {
                     var row = sheet.CreateRow(rowIndex++);
