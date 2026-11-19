@@ -620,6 +620,7 @@ namespace Service.Services.SeaShenzhenOriginal
 
         /// <summary>
         /// 以材積乘以 10 計算傳給物流的重量。
+        /// 材積為 1 時以 0.5 計算、材積為 5 時以 4 計算，其餘以原材積計算。
         /// </summary>
         private decimal CalculateDlvGw(decimal? volume)
         {
@@ -628,7 +629,17 @@ namespace Service.Services.SeaShenzhenOriginal
                 throw new InvalidOperationException("材積不可為空");
             }
 
-            return volume.Value * 10m;
+            var dlvVolume = volume.Value;
+            if (dlvVolume == 1m)
+            {
+                dlvVolume = 0.5m;
+            }
+            else if (dlvVolume == 5m)
+            {
+                dlvVolume = 4m;
+            }
+
+            return dlvVolume * 10m;
         }
 
         /// <summary>
