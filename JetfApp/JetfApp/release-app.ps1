@@ -5,10 +5,11 @@
 .DESCRIPTION
     1. 輸入發行路徑與版本號（版本號必須大於目前版本，格式 x.y.z，y、z 為 0~99）
     2. 更新 app/build.gradle.kts 的 appVersionName
-    3. 使用 jks/jetf.jks 簽章並建置 release APK
-    4. 確認 APK 內的版本號與輸入相同
-    5. 將 APK 複製到發行路徑（檔名 JetfApp.apk）
-    建置或版本確認失敗時會自動還原版本號。
+    3. 更新 PdtPortalApi/appsettings.json 的 AppVersion.LatestVersionCode
+    4. 使用 jks/jetf.jks 簽章並建置 release APK
+    5. 確認 APK 內的版本號與輸入相同
+    6. 將 APK 複製到發行路徑（檔名 JetfApp.apk）
+    任一步驟失敗時會自動還原 APP 與 API 的版本號。
 
 .EXAMPLE
     .\release-app.ps1
@@ -23,6 +24,7 @@ $ErrorActionPreference = 'Stop'
 
 $appRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $gradleFile = Join-Path $appRoot 'app\build.gradle.kts'
+$apiSettingsFile = Join-Path (Split-Path -Parent $appRoot) 'PdtPortalApi\PdtPortalApi\appsettings.json'
 $keystoreFile = Join-Path $appRoot 'jks\jetf.jks'
 $apkOutputFile = Join-Path $appRoot 'app\build\outputs\apk\release\app-release.apk'
 $releaseApkName = 'JetfApp.apk'
@@ -57,6 +59,27 @@ function Set-GradleVersion([string]$newVersion) {
     [System.IO.File]::WriteAllText($gradleFile, $updated, $utf8NoBom)
 }
 
+function Get-ApiLatestVersion {
+    $settings = [System.IO.File]::ReadAllText($apiSettingsFile) | ConvertFrom-Json
+    return [string]$settings.AppVersion.LatestVersionCode
+}
+
+function Set-ApiLatestVersion([string]$newVersion) {
+    # 只替換 LatestVersionCode 的值，保留 appsettings.json 原本的排版
+    $content = [System.IO.File]::ReadAllText($apiSettingsFile)
+    $pattern = '("LatestVersionCode"\s*:\s*")[^"]*(")'
+    if (-not [regex]::IsMatch($content, $pattern)) {
+        throw "找不到 $apiSettingsFile 的 AppVersion.LatestVersionCode"
+    }
+    $updated = [regex]::Replace($content, $pattern, "`${1}$newVersion`${2}")
+    [System.IO.File]::WriteAllText($apiSettingsFile, $updated, $utf8NoBom)
+
+    $savedVersion = Get-ApiLatestVersion
+    if ($savedVersion -ne $newVersion) {
+        throw "API 版本號更新失敗，目前為 $savedVersion"
+    }
+}
+
 function Get-ApkVersionName([string]$apkFile) {
     # 使用 Android SDK build-tools 的 aapt2 讀取 APK 內的 versionName
     $sdkRoot = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { Join-Path $env:LOCALAPPDATA 'Android\Sdk' }
@@ -78,7 +101,11 @@ function Get-ApkVersionName([string]$apkFile) {
 # ---- 讀取目前版本 ----
 $currentVersionText = Get-CurrentVersion
 $currentVersion = ConvertTo-VersionNumber $currentVersionText
-Write-Host "目前版本：$currentVersionText" -ForegroundColor Cyan
+if (-not (Test-Path $apiSettingsFile)) {
+    throw "找不到 API 設定檔 $apiSettingsFile"
+}
+$currentApiVersionText = Get-ApiLatestVersion
+Write-Host "目前版本：APP $currentVersionText / API $currentApiVersionText" -ForegroundColor Cyan
 
 # ---- 輸入發行路徑 ----
 while ([string]::IsNullOrWhiteSpace($ReleasePath)) {
@@ -107,12 +134,8 @@ while ($true) {
 
 Write-Host ''
 Write-Host "發行路徑：$ReleasePath"
-Write-Host "版本號　：$currentVersionText -> $Version"
-$confirm = Read-Host '確認發行？(Y/N)'
-if ($confirm -notmatch '^[Yy]') {
-    Write-Host '已取消' -ForegroundColor Yellow
-    return
-}
+Write-Host "APP 版本：$currentVersionText -> $Version"
+Write-Host "API 版本：$currentApiVersionText -> $Version"
 
 if (-not (Test-Path $keystoreFile)) {
     throw "找不到簽章檔 $keystoreFile"
@@ -120,9 +143,12 @@ if (-not (Test-Path $keystoreFile)) {
 
 # ---- 更新版本號 ----
 $gradleBackup = [System.IO.File]::ReadAllText($gradleFile)
+$apiSettingsBackup = [System.IO.File]::ReadAllText($apiSettingsFile)
 
 try {
     Set-GradleVersion $Version
+    Set-ApiLatestVersion $Version
+    Write-Host "API 版本號已更新：$Version" -ForegroundColor Green
 
     # ---- 建置簽章版 APK ----
     Write-Host ''
@@ -163,9 +189,10 @@ try {
     }
 }
 catch {
-    # 建置或版本確認失敗，還原版本號
+    # 任一步驟失敗，還原 APP 與 API 版本號
     [System.IO.File]::WriteAllText($gradleFile, $gradleBackup, $utf8NoBom)
-    Write-Host "發行失敗，已還原版本號為 $currentVersionText" -ForegroundColor Red
+    [System.IO.File]::WriteAllText($apiSettingsFile, $apiSettingsBackup, $utf8NoBom)
+    Write-Host "發行失敗，已還原版本號：APP $currentVersionText / API $currentApiVersionText" -ForegroundColor Red
     throw
 }
 
@@ -179,3 +206,4 @@ Write-Host '發行完成' -ForegroundColor Green
 Write-Host "APK　　：$releaseApkFile"
 Write-Host "版本號　：$Version"
 Write-Host '已更新　：app/build.gradle.kts (appVersionName)'
+Write-Host '　　　　　PdtPortalApi/appsettings.json (AppVersion.LatestVersionCode)'
