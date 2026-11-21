@@ -29,7 +29,10 @@ import com.example.jetfapp.ui.locationtransfer.LocationTransferMenuFragment
 import com.example.jetfapp.ui.locationtransfer.SingleLocationTransferFragment
 import com.example.jetfapp.ui.login.LoginFragment
 import com.example.jetfapp.ui.menu.MenuFragment
+import com.example.jetfapp.ui.menu.SiteMenuFragment
+import com.example.jetfapp.ui.menu.WarehouseMenuFragment
 import com.example.jetfapp.ui.splash.SplashFragment
+import com.example.jetfapp.ui.unpacking.UnpackingFragment
 
 class MainActivity : AppCompatActivity() {
     private companion object {
@@ -107,6 +110,9 @@ class MainActivity : AppCompatActivity() {
             when (event.keyCode) {
                 KeyEvent.KEYCODE_F3 -> {
                     if (
+                        currentFragment() is WarehouseMenuFragment ||
+                        currentFragment() is SiteMenuFragment ||
+                        currentFragment() is UnpackingFragment ||
                         currentFragment() is InboundSettingsFragment ||
                         currentFragment() is InboundWorkFragment ||
                         currentFragment() is ShipmentExceptionFragment ||
@@ -177,6 +183,27 @@ class MainActivity : AppCompatActivity() {
         if (event.action == KeyEvent.ACTION_UP && currentFragment() is MenuFragment) {
             if (event.keyCode == KeyEvent.KEYCODE_1 || event.keyCode == KeyEvent.KEYCODE_NUMPAD_1) {
                 hideKeyboardAndClearFocus()
+                showSiteMenu()
+                return true
+            }
+            if (event.keyCode == KeyEvent.KEYCODE_2 || event.keyCode == KeyEvent.KEYCODE_NUMPAD_2) {
+                hideKeyboardAndClearFocus()
+                showWarehouseMenu()
+                return true
+            }
+        }
+
+        if (event.action == KeyEvent.ACTION_UP && currentFragment() is SiteMenuFragment) {
+            if (event.keyCode == KeyEvent.KEYCODE_1 || event.keyCode == KeyEvent.KEYCODE_NUMPAD_1) {
+                hideKeyboardAndClearFocus()
+                showUnpacking()
+                return true
+            }
+        }
+
+        if (event.action == KeyEvent.ACTION_UP && currentFragment() is WarehouseMenuFragment) {
+            if (event.keyCode == KeyEvent.KEYCODE_1 || event.keyCode == KeyEvent.KEYCODE_NUMPAD_1) {
+                hideKeyboardAndClearFocus()
                 showInboundSettings()
                 return true
             }
@@ -218,6 +245,33 @@ class MainActivity : AppCompatActivity() {
 
     fun showMenu() {
         navigateTo(MenuFragment(), clearBackStack = true, addToBackStack = false)
+    }
+
+    fun showSiteMenu() {
+        navigateTo(SiteMenuFragment(), clearBackStack = false, addToBackStack = true)
+    }
+
+    fun showWarehouseMenu() {
+        navigateTo(WarehouseMenuFragment(), clearBackStack = false, addToBackStack = true)
+    }
+
+    fun showUnpacking() {
+        navigateTo(UnpackingFragment(), clearBackStack = false, addToBackStack = true)
+    }
+
+    /**
+     * 回到倉庫選單；若返回堆疊中沒有倉庫選單則重建主選單 → 倉庫選單。
+     */
+    fun returnToWarehouseMenu() {
+        hideKeyboardAndClearFocus()
+        val popped = supportFragmentManager.popBackStackImmediate(WarehouseMenuFragment::class.java.simpleName, 0)
+        if (popped && currentFragment() is WarehouseMenuFragment) {
+            updateBottomActionBar()
+            return
+        }
+
+        showMenu()
+        showWarehouseMenu()
     }
 
     fun showInboundSettings() {
@@ -284,6 +338,9 @@ class MainActivity : AppCompatActivity() {
             is SplashFragment -> showBottomActionBar(false)
             is LoginFragment -> showBottomActionBar(false)
             is MenuFragment -> showBottomActionBar(false)
+            is SiteMenuFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), "")
+            is WarehouseMenuFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), "")
+            is UnpackingFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), "")
             is InboundSettingsFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), getString(R.string.label_function_f4, getString(R.string.action_next)))
             is InboundWorkFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), getString(R.string.label_function_f4, getString(R.string.action_change_location)))
             is ShipmentExceptionFragment -> showBottomActionBar(true, getString(R.string.label_function_f3, getString(R.string.action_back)), getString(R.string.label_function_f4, getString(R.string.action_upload)))

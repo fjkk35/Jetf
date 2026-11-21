@@ -136,7 +136,7 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeSca
                 launch {
                     shipmentInboundViewModel.events.collect { event ->
                         when (event) {
-                            ShipmentInboundEvent.NavigateToMenu -> (activity as? MainActivity)?.showMenu()
+                            ShipmentInboundEvent.NavigateToMenu -> (activity as? MainActivity)?.returnToWarehouseMenu()
                             ShipmentInboundEvent.NavigateToWork -> {
                                 isNavigatingToWork = false
                                 (activity as? MainActivity)?.showInboundWork()
@@ -184,7 +184,7 @@ class InboundSettingsFragment : Fragment(), FunctionKeyHandler, KeyboardWedgeSca
 
     override fun onFunctionKeyPressed(functionKey: FunctionKey) {
         when (functionKey) {
-            FunctionKey.F3 -> (activity as? MainActivity)?.showMenu()
+            FunctionKey.F3 -> (activity as? MainActivity)?.returnToWarehouseMenu()
             FunctionKey.F4 -> shipmentInboundViewModel.confirmSettings()
         }
     }

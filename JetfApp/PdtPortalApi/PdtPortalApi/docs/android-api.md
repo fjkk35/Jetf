@@ -353,6 +353,63 @@ API 文件頁面:
 | 409 | DUPLICATE_TRACKING_NO | 入庫資料重複 |
 | 500 | INTERNAL_SERVER_ERROR | 系統錯誤 |
 
+## 6. 拆袋作業（FTZ、TACT）
+
+移植自 PDTWebAPI `UnpackingController` 的 TACT / FTZ 分支，資料表為 `jetf.dbo.B6F_UNPACKING_UPLOAD`，每次掃描皆寫入 `jetf.dbo.PdtUnpacking` 紀錄。
+
+### 6.1 袋號掃描
+
+`POST /api/unpacking/bag-no`（需 `X-Timestamp`、`X-Signature`）
+
+| 欄位 | 型別 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| dataType | string | 是 | `FTZ` 或 `TACT` |
+| bagNo | string | 是 | 袋號 |
+| uploadOpe | string | 是 | 作業人員帳號 |
+
+簽章 payload：`{X-Timestamp}\n{DataType}\n{BagNo}\n{UploadOpe}`
+
+- 查詢 `BAGNO = bagNo and SCAN_UPLOAD_OPE2 = ''`，有資料即需拆袋，並更新 `SCAN_UPLOAD_OPE`、`SCAN_UPLOAD_TIME`
+- 有備註（REMARK）的分提單號會發送 Telegram（`Unpacking:TelegramChatId`）
+- `data`：`{ needUnpacking: bool, pendingTrackingNos: string[] }`
+
+### 6.2 分提單號掃描
+
+`POST /api/unpacking/tracking-no`（需 `X-Timestamp`、`X-Signature`）
+
+| 欄位 | 型別 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| dataType | string | 是 | `FTZ` 或 `TACT` |
+| bagNo | string | 是 | 袋號 |
+| trackingNo | string | 是 | 分提單號 |
+| uploadOpe | string | 是 | 作業人員帳號 |
+
+簽章 payload：`{X-Timestamp}\n{DataType}\n{BagNo}\n{TrackingNo}\n{UploadOpe}`
+
+- 查詢 `BAGNO = bagNo and TRACKINGNO = trackingNo`，有資料即為拆出貨件，並更新 `SCAN_UPLOAD_OPE2`、`SCAN_UPLOAD_TIME2`
+- `data`：`{ isUnpackTarget: bool, resultMessage: string（備註或「拆出」） }`
+- 待掃描清單由 APP 自行移除已拆出的分提單號，不再回傳
+
+### 6.3 查詢未掃描分提單號
+
+`POST /api/unpacking/pending`（唯讀，不需簽章）
+
+| 欄位 | 型別 | 必填 | 說明 |
+| --- | --- | --- | --- |
+| dataType | string | 是 | `FTZ` 或 `TACT` |
+| bagNo | string | 是 | 袋號 |
+| uploadOpe | string | 否 | 僅供日誌 |
+
+- `data`：`string[]`，`SCAN_UPLOAD_OPE2 = ''` 的分提單號；空陣列代表全部掃描完成
+
+### 可能錯誤
+
+| HTTP Status | errorCode | 說明 |
+| --- | --- | --- |
+| 400 | VALIDATION_ERROR | 缺欄位或 dataType 不是 FTZ / TACT |
+| 401 | INVALID_SIGNATURE | 簽章錯誤或 timestamp 過期 |
+| 500 | INTERNAL_SERVER_ERROR | 系統錯誤 |
+
 ## Android 串接建議流程
 
 1. APP 啟動後先呼叫 `GET /api/app/version-check`
@@ -370,6 +427,9 @@ API 文件頁面:
 | GET | `/api/shipmentinbound/source-types` | 取得貨件來源 |
 | POST | `/api/shipmentinbound/check` | 檢查是否有原單資料 |
 | POST | `/api/shipmentinbound` | 寫入入庫資料 |
+| POST | `/api/unpacking/bag-no` | 拆袋-袋號掃描 |
+| POST | `/api/unpacking/tracking-no` | 拆袋-分提單號掃描 |
+| POST | `/api/unpacking/pending` | 拆袋-查詢未掃描分提單號 |
 
 ## API 日誌
 

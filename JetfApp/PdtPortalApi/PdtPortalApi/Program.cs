@@ -77,6 +77,9 @@ builder.Services.AddSingleton<IHmacSignatureService, HmacSignatureService>();
 builder.Services.AddSingleton<IApiAuditLogger, ApiAuditLogger>();
 builder.Services.AddScoped<ApiRequestTraceFilter>();
 builder.Services.AddScoped<IPortalService, PortalService>();
+builder.Services.Configure<UnpackingOptions>(builder.Configuration.GetSection(UnpackingOptions.SectionName));
+builder.Services.AddHttpClient(UnpackingService.TelegramHttpClientName, client => client.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddScoped<IUnpackingService, UnpackingService>();
 
 var app = builder.Build();
 

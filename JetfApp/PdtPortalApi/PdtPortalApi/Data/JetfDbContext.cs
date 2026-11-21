@@ -24,4 +24,10 @@ public sealed class JetfDbContext(DbContextOptions<JetfDbContext> options) : DbC
     public DbSet<SeaShenzhenOriginalEntity> SeaShenzhenOriginals => Set<SeaShenzhenOriginalEntity>();
 
     public DbSet<FeeMasterCodEntity> FeeMasterCods => Set<FeeMasterCodEntity>();
+
+    public DbSet<B6fUnpackingUploadEntity> B6fUnpackingUploads => Set<B6fUnpackingUploadEntity>();
+
+    public DbSet<PdtUnpackingEntity> PdtUnpackings => Set<PdtUnpackingEntity>();
+
+    public DbSet<TelegramBotConfigEntity> TelegramBotConfigs => Set<TelegramBotConfigEntity>();
 }

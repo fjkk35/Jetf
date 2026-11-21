@@ -4,6 +4,8 @@ import com.example.jetfapp.data.model.BatchUpdateLocationCodeRequest
 import com.example.jetfapp.data.model.GetBatchLocationUpdateCountRequest
 import com.example.jetfapp.data.model.ShipmentInboundExceptionRequest
 import com.example.jetfapp.data.model.ShipmentInboundRequest
+import com.example.jetfapp.data.model.UnpackingBagNoRequest
+import com.example.jetfapp.data.model.UnpackingTrackingNoRequest
 import com.example.jetfapp.data.model.UpdateLocationCodeRequest
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -88,6 +90,37 @@ object HmacSigner {
             append(request.editUser)
         }
 
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(secretKey.toByteArray(Charsets.UTF_8), "HmacSHA256"))
+        return mac.doFinal(payload.toByteArray(Charsets.UTF_8)).joinToString(separator = "") { byte ->
+            "%02x".format(byte)
+        }
+    }
+
+    fun sign(timestamp: Long, request: UnpackingBagNoRequest, secretKey: String): String {
+        val payload = buildString {
+            appendLine(timestamp)
+            appendLine(request.dataType)
+            appendLine(request.bagNo)
+            append(request.uploadOpe)
+        }
+
+        return hmacHex(payload, secretKey)
+    }
+
+    fun sign(timestamp: Long, request: UnpackingTrackingNoRequest, secretKey: String): String {
+        val payload = buildString {
+            appendLine(timestamp)
+            appendLine(request.dataType)
+            appendLine(request.bagNo)
+            appendLine(request.trackingNo)
+            append(request.uploadOpe)
+        }
+
+        return hmacHex(payload, secretKey)
+    }
+
+    private fun hmacHex(payload: String, secretKey: String): String {
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(secretKey.toByteArray(Charsets.UTF_8), "HmacSHA256"))
         return mac.doFinal(payload.toByteArray(Charsets.UTF_8)).joinToString(separator = "") { byte ->

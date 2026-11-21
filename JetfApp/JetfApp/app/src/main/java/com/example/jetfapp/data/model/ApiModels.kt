@@ -101,3 +101,32 @@ data class BatchUpdateLocationCodeRequest(
     @SerializedName("newLocationCode") val newLocationCode: String,
     @SerializedName("editUser") val editUser: String
 )
+
+data class UnpackingBagNoRequest(
+    @SerializedName("dataType") val dataType: String,
+    @SerializedName("bagNo") val bagNo: String,
+    @SerializedName("uploadOpe") val uploadOpe: String
+)
+
+data class UnpackingTrackingNoRequest(
+    @SerializedName("dataType") val dataType: String,
+    @SerializedName("bagNo") val bagNo: String,
+    @SerializedName("trackingNo") val trackingNo: String,
+    @SerializedName("uploadOpe") val uploadOpe: String
+)
+
+data class UnpackingPendingRequest(
+    @SerializedName("dataType") val dataType: String,
+    @SerializedName("bagNo") val bagNo: String,
+    @SerializedName("uploadOpe") val uploadOpe: String
+)
+
+data class UnpackingBagResult(
+    @SerializedName("needUnpacking") val needUnpacking: Boolean,
+    @SerializedName("pendingTrackingNos") val pendingTrackingNos: List<String>?
+)
+
+data class UnpackingTrackingResult(
+    @SerializedName("isUnpackTarget") val isUnpackTarget: Boolean,
+    @SerializedName("resultMessage") val resultMessage: String?
+)

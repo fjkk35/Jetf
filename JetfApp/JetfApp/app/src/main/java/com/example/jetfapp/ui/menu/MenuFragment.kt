@@ -38,14 +38,11 @@ class MenuFragment : Fragment(), FunctionKeyHandler {
         super.onViewCreated(view, savedInstanceState)
         binding.root.requestFocus()
         hideKeyboard(binding.root)
-        binding.buttonInbound.setOnClickListener {
-            (activity as? MainActivity)?.showInboundSettings()
+        binding.buttonSite.setOnClickListener {
+            (activity as? MainActivity)?.showSiteMenu()
         }
-        binding.buttonException.setOnClickListener {
-            (activity as? MainActivity)?.showShipmentException()
-        }
-        binding.buttonLocationTransfer.setOnClickListener {
-            (activity as? MainActivity)?.showLocationTransferMenu()
+        binding.buttonWarehouse.setOnClickListener {
+            (activity as? MainActivity)?.showWarehouseMenu()
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -63,7 +60,7 @@ class MenuFragment : Fragment(), FunctionKeyHandler {
     override fun onFunctionKeyPressed(functionKey: FunctionKey) {
         when (functionKey) {
             FunctionKey.F3 -> activity?.finish()
-            FunctionKey.F4 -> (activity as? MainActivity)?.showInboundSettings()
+            FunctionKey.F4 -> Unit
         }
     }
 

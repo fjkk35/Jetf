@@ -55,4 +55,22 @@ public interface IHmacSignatureService
     /// <param name="signature">HMAC 簽章字串。</param>
     /// <returns>有效時回傳 true，否則回傳 false。</returns>
     bool IsSignatureValid(BatchUpdateLocationCodeRequest request, long unixTimeSeconds, string? signature);
+
+    /// <summary>
+    /// 驗證拆袋袋號掃描請求簽章是否正確。
+    /// </summary>
+    /// <param name="request">拆袋袋號掃描請求資料。</param>
+    /// <param name="unixTimeSeconds">Unix 秒數時間戳記。</param>
+    /// <param name="signature">HMAC 簽章字串。</param>
+    /// <returns>有效時回傳 true，否則回傳 false。</returns>
+    bool IsSignatureValid(UnpackingBagNoRequest request, long unixTimeSeconds, string? signature);
+
+    /// <summary>
+    /// 驗證拆袋分提單號掃描請求簽章是否正確。
+    /// </summary>
+    /// <param name="request">拆袋分提單號掃描請求資料。</param>
+    /// <param name="unixTimeSeconds">Unix 秒數時間戳記。</param>
+    /// <param name="signature">HMAC 簽章字串。</param>
+    /// <returns>有效時回傳 true，否則回傳 false。</returns>
+    bool IsSignatureValid(UnpackingTrackingNoRequest request, long unixTimeSeconds, string? signature);
 }

@@ -4,6 +4,7 @@ import com.example.jetfapp.BuildConfig
 import com.example.jetfapp.data.model.AppConfig
 import com.example.jetfapp.data.repository.AppRepository
 import com.example.jetfapp.data.repository.ShipmentInboundRepository
+import com.example.jetfapp.data.repository.UnpackingRepository
 import com.example.jetfapp.network.PdtPortalApiService
 import com.google.gson.Gson
 import okhttp3.OkHttpClient
@@ -46,7 +47,13 @@ object ServiceLocator {
         ShipmentInboundRepository(apiService = apiService, appConfig = appConfig, gson = gson)
     }
 
+    private val unpackingRepository: UnpackingRepository by lazy {
+        UnpackingRepository(apiService = apiService, appConfig = appConfig, gson = gson)
+    }
+
     fun provideAppConfig(): AppConfig = appConfig
+
+    fun provideUnpackingRepository(): UnpackingRepository = unpackingRepository
 
     fun provideAppRepository(): AppRepository = appRepository
 

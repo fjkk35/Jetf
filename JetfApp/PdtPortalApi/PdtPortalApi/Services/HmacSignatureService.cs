@@ -239,6 +239,71 @@ public sealed class HmacSignatureService(IOptions<HmacOptions> options, ILogger<
         }
     }
 
+    /// <summary>
+    /// 驗證拆袋袋號掃描請求簽章是否正確。
+    /// </summary>
+    /// <param name="request">拆袋袋號掃描請求資料。</param>
+    /// <param name="unixTimeSeconds">Unix 秒數時間戳記。</param>
+    /// <param name="signature">HMAC 簽章字串。</param>
+    /// <returns>有效時回傳 true，否則回傳 false。</returns>
+    public bool IsSignatureValid(UnpackingBagNoRequest request, long unixTimeSeconds, string? signature)
+    {
+        try
+        {
+            if (!IsTimestampValid(unixTimeSeconds) || string.IsNullOrWhiteSpace(signature) || string.IsNullOrWhiteSpace(_options.Secret))
+            {
+                return false;
+            }
+
+            var payload = string.Join(
+                "\n",
+                unixTimeSeconds.ToString(CultureInfo.InvariantCulture),
+                request.DataType ?? string.Empty,
+                request.BagNo ?? string.Empty,
+                request.UploadOpe ?? string.Empty);
+
+            return IsPayloadSignatureValid(payload, signature, "拆袋袋號掃描", request.BagNo ?? string.Empty);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "驗證拆袋袋號掃描 HMAC 簽章發生錯誤，BagNo: {BagNo}", request.BagNo);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 驗證拆袋分提單號掃描請求簽章是否正確。
+    /// </summary>
+    /// <param name="request">拆袋分提單號掃描請求資料。</param>
+    /// <param name="unixTimeSeconds">Unix 秒數時間戳記。</param>
+    /// <param name="signature">HMAC 簽章字串。</param>
+    /// <returns>有效時回傳 true，否則回傳 false。</returns>
+    public bool IsSignatureValid(UnpackingTrackingNoRequest request, long unixTimeSeconds, string? signature)
+    {
+        try
+        {
+            if (!IsTimestampValid(unixTimeSeconds) || string.IsNullOrWhiteSpace(signature) || string.IsNullOrWhiteSpace(_options.Secret))
+            {
+                return false;
+            }
+
+            var payload = string.Join(
+                "\n",
+                unixTimeSeconds.ToString(CultureInfo.InvariantCulture),
+                request.DataType ?? string.Empty,
+                request.BagNo ?? string.Empty,
+                request.TrackingNo ?? string.Empty,
+                request.UploadOpe ?? string.Empty);
+
+            return IsPayloadSignatureValid(payload, signature, "拆袋分提單號掃描", request.TrackingNo ?? string.Empty);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "驗證拆袋分提單號掃描 HMAC 簽章發生錯誤，TrackingNo: {TrackingNo}", request.TrackingNo);
+            return false;
+        }
+    }
+
     private bool IsPayloadSignatureValid(string payload, string signature, string operationName, string identifier)
     {
         var key = Encoding.UTF8.GetBytes(_options.Secret);

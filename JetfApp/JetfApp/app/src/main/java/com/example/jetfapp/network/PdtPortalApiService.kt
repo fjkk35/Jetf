@@ -9,6 +9,11 @@ import com.example.jetfapp.data.model.ShipmentInboundExceptionRequest
 import com.example.jetfapp.data.model.ShipmentInboundRequest
 import com.example.jetfapp.data.model.SourceType
 import com.example.jetfapp.data.model.TrackingCheckRequest
+import com.example.jetfapp.data.model.UnpackingBagNoRequest
+import com.example.jetfapp.data.model.UnpackingBagResult
+import com.example.jetfapp.data.model.UnpackingPendingRequest
+import com.example.jetfapp.data.model.UnpackingTrackingNoRequest
+import com.example.jetfapp.data.model.UnpackingTrackingResult
 import com.example.jetfapp.data.model.UpdateLocationCodeRequest
 import com.example.jetfapp.data.model.VersionCheckData
 import retrofit2.http.Body
@@ -73,4 +78,23 @@ interface PdtPortalApiService {
         @Header("X-Signature") signature: String,
         @Body request: BatchUpdateLocationCodeRequest
     ): ApiEnvelope<Boolean>
+
+    @POST("api/unpacking/bag-no")
+    suspend fun scanUnpackingBagNo(
+        @Header("X-Timestamp") timestamp: Long,
+        @Header("X-Signature") signature: String,
+        @Body request: UnpackingBagNoRequest
+    ): ApiEnvelope<UnpackingBagResult>
+
+    @POST("api/unpacking/tracking-no")
+    suspend fun scanUnpackingTrackingNo(
+        @Header("X-Timestamp") timestamp: Long,
+        @Header("X-Signature") signature: String,
+        @Body request: UnpackingTrackingNoRequest
+    ): ApiEnvelope<UnpackingTrackingResult>
+
+    @POST("api/unpacking/pending")
+    suspend fun getUnpackingPending(
+        @Body request: UnpackingPendingRequest
+    ): ApiEnvelope<List<String>>
 }
