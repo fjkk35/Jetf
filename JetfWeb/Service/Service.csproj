@@ -981,6 +981,7 @@
     <Compile Include="Extensions\QueryableExtensions.cs" />
     <Compile Include="Models\ShortOverUnload\ShortOverUnloadRow.cs" />
     <Compile Include="Models\ShortOverUnload\ShortOverUnloadCargo.cs" />
+    <Compile Include="Models\ShortOverUnload\ShortOverUnloadCargoItem.cs" />
     <Compile Include="Models\ShortOverUnload\ShortOverUnloadExportResult.cs" />
     <Compile Include="Models\ShortOverUnload\ShortOverUnloadMissingData.cs" />
     <Compile Include="Models\ShortOverUnload\ShortOverUnloadVessel.cs" />

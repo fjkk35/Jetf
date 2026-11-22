@@ -263,40 +263,65 @@ namespace Service.Services.ShortOverUnload
                 || message?.Contains("執行成功") == true;
         }
 
-        /// <summary>每個主號一次載入有效毛重製單資料，重複分號優先選用 MERGE_OVER_FLAG=O。</summary>
+        /// <summary>每個主號一次載入有效毛重製單資料及全部品項，重複分號優先選用 MERGE_OVER_FLAG=O。</summary>
         private void LoadOverUnloadCargo(string mainNumber, List<ShortOverUnloadRow> rows)
         {
-            // 只載入本次匯入分號且 GW > 0 的製單，依 ROW_ID 排序後按分號分組。
+            // 載入本次匯入分號的全部品項（只有 ITEM_NO=1 有毛重），依 ROW_ID 排序後按分號分組。
             var blNos = rows.Select(row => row.BlNo).Distinct().ToList();
             var candidates = DataCenterDb.SeaOrderEdits.AsNoTracking()
-                .Where(item => item.MainNumber == mainNumber && blNos.Contains(item.BlNo) && item.Gw > 0)
+                .Where(item => item.MainNumber == mainNumber && blNos.Contains(item.BlNo))
                 .OrderBy(item => item.RowId)
-                .Select(item => new ShortOverUnloadCargo
+                .Select(item => new
                 {
-                    BlNo = item.BlNo,
-                    MergeOverFlag = item.MergeOverFlag,
-                    JetfId = item.JetfId,
-                    Gw = item.Gw,
-                    Piece = item.Piece,
-                    PieceUnit = item.PieceUnit,
-                    Marks = item.Marks,
-                    ItemName = item.ItemName,
-                    Quantity = item.Quantity,
-                    UnitPrice = item.UnitPrice,
-                    Importer = item.Importer,
-                    ImporterAddress = item.ImporterAddress,
-                    ContainerType = item.ContType,
-                    ContainerNo = item.ContNo,
-                    SealNo = item.SealNo
+                    item.ItemNo,
+                    Cargo = new ShortOverUnloadCargo
+                    {
+                        BlNo = item.BlNo,
+                        MergeOverFlag = item.MergeOverFlag,
+                        JetfId = item.JetfId,
+                        Gw = item.Gw,
+                        Piece = item.Piece,
+                        PieceUnit = item.PieceUnit,
+                        Marks = item.Marks,
+                        ItemName = item.ItemName,
+                        Quantity = item.Quantity,
+                        UnitPrice = item.UnitPrice,
+                        Importer = item.Importer,
+                        ImporterAddress = item.ImporterAddress,
+                        ContainerType = item.ContType,
+                        ContainerNo = item.ContNo,
+                        SealNo = item.SealNo
+                    }
                 }).ToList()
-                .GroupBy(item => item.BlNo?.Trim() ?? "")
-                .ToDictionary(group => group.Key, group => group.ToList());
+                .GroupBy(item => item.Cargo.BlNo?.Trim() ?? "")
+                .ToDictionary(group => group.Key, group =>
+                {
+                    // 同一分號可能有多組製單（例如原製單及溢卸註記 O 的製單），每組自 ITEM_NO=1 開始。
+                    var sets = new List<ShortOverUnloadCargo>();
+                    ShortOverUnloadCargo current = null;
+                    foreach (var item in group)
+                    {
+                        if (current == null || item.ItemNo?.Trim() == "1")
+                        {
+                            current = item.Cargo;
+                            sets.Add(current);
+                        }
+                        current.Items.Add(new ShortOverUnloadCargoItem
+                        {
+                            ItemName = item.Cargo.ItemName,
+                            Quantity = item.Cargo.Quantity,
+                            UnitPrice = item.Cargo.UnitPrice
+                        });
+                    }
+                    // 只保留首筆毛重大於零的有效製單組。
+                    return sets.Where(set => set.Gw > 0).ToList();
+                });
 
             foreach (var row in rows)
             {
                 // 依上傳的分提單號碼，取得同主號下有效毛重（GW > 0）的製單資料。
                 candidates.TryGetValue(row.BlNo, out var items);
-                // 優先取 MERGE_OVER_FLAG=O 的第一筆；若無 O，則依 ROW_ID 順序取第一筆。
+                // 優先取 MERGE_OVER_FLAG=O 的第一組；若無 O，則依 ROW_ID 順序取第一組。
                 // 查無製單資料時建立空白物件，讓對應欄位保留空白並繼續匯出。
                 row.Cargo = items?.FirstOrDefault(item => item.MergeOverFlag?.Trim() == "O")
                     ?? items?.FirstOrDefault() ?? new ShortOverUnloadCargo();
@@ -690,7 +715,7 @@ namespace Service.Services.ShortOverUnload
         {
             // 頁籤二：(二)溢卸申請書，每頁 14 筆，申請筆數使用此主號全部明細筆數。
             AddOverUnloadApplicationSheets(workbook, details, vessel, importedAt, styles, dateStyles, usedNames);
-            // 頁籤三：(三)裝機明細表，每頁 46 筆，列出選定製單的貨物及進口人資料。
+            // 頁籤三：(三)裝機明細表，每頁 46 列，列出選定製單的全部品項、貨物及進口人資料。
             AddCargoSheets(workbook, details, vessel, styles, usedNames);
             // 頁籤四：(四)艙單更正申請書，每頁 25 筆，分別列出主艙號及各分號的分艙號。
             AddCorrectionSheets(workbook, details, vessel, styles, usedNames);
@@ -743,27 +768,59 @@ namespace Service.Services.ShortOverUnload
             }
         }
 
-        /// <summary>頁籤三：(三)裝機明細表。每頁 46 筆，表頭使用相同主號的船舶資料。</summary>
+        /// <summary>頁籤三：(三)裝機明細表。每頁 46 列，每個分號列出全部品項，表頭使用相同主號的船舶資料。</summary>
         private static void AddCargoSheets(XSSFWorkbook workbook, List<ShortOverUnloadRow> details,
             ShortOverUnloadVessel vessel, ICellStyle[] styles, ISet<string> usedNames)
         {
-            for (var offset = 0; offset < details.Count; offset += 46)
+            const int rowsPerSheet = 46;
+            var pages = new List<List<object[]>>();
+            var page = new List<object[]>();
+            foreach (var row in details)
             {
-                // 使用裝機明細表版面，每 46 筆建立帶有主號及頁碼的新頁籤。
+                var cargo = row.Cargo ?? new ShortOverUnloadCargo();
+                // 查無品項時仍輸出一列，保留分號並讓貨物欄位留白。
+                var items = cargo.Items.Count > 0 ? cargo.Items : new List<ShortOverUnloadCargoItem>
+                {
+                    new ShortOverUnloadCargoItem { ItemName = cargo.ItemName, Quantity = cargo.Quantity, UnitPrice = cargo.UnitPrice }
+                };
+                // 同一分號的品項盡量放在同一頁；目前頁放不下且整組可放入新頁時才換頁。
+                if (page.Count > 0 && page.Count + items.Count > rowsPerSheet && items.Count <= rowsPerSheet)
+                {
+                    pages.Add(page);
+                    page = new List<object[]>();
+                }
+                for (var index = 0; index < items.Count; index++)
+                {
+                    if (page.Count == rowsPerSheet)
+                    {
+                        pages.Add(page);
+                        page = new List<object[]>();
+                    }
+                    var item = items[index];
+                    // 第一列填入分號及完整貨物資料；其餘品項只填貨物名稱、數量及單價金額。
+                    page.Add(index == 0
+                        ? new object[] { row.BlNo, cargo.JetfId, cargo.Gw, cargo.Piece, cargo.PieceUnit,
+                            item.ItemName, item.Quantity, item.UnitPrice, cargo.Importer, cargo.ImporterAddress,
+                            cargo.ContainerType, cargo.ContainerNo, cargo.SealNo }
+                        : new object[] { null, null, null, null, null, item.ItemName, item.Quantity, item.UnitPrice });
+                }
+            }
+            if (page.Count > 0)
+                pages.Add(page);
+
+            for (var pageIndex = 0; pageIndex < pages.Count; pageIndex++)
+            {
+                // 使用裝機明細表版面，每 46 列建立帶有主號及頁碼的新頁籤。
                 var sheet = TaichungOverUnloadLayout.CreateSheet(workbook,
-                    CreateSheetName("(三)裝機明細表", details[0].MainNumber, offset / 46 + 1, usedNames), 1, styles);
+                    CreateSheetName("(三)裝機明細表", details[0].MainNumber, pageIndex + 1, usedNames), 1, styles);
                 // A3 起填入主號、船舶及前港資料；H3 依指定版面保留空白。
                 SetValues(sheet, 2, 0, details[0].MainNumber, vessel.VslRegNo, vessel.VoyageFlightNo,
                     vessel.VslSign, vessel.ShipCoCd, "TXG018DH", vessel.LastPorCd, null, vessel.ImoNo);
-                var pageRows = details.Skip(offset).Take(46).ToList();
-                for (var line = 0; line < pageRows.Count; line++)
+                var lines = pages[pageIndex];
+                for (var line = 0; line < lines.Count; line++)
                 {
-                    var row = pageRows[line];
-                    var cargo = row.Cargo ?? new ShortOverUnloadCargo();
-                    // A5 起填入分號及貨物明細，識別碼保留文字，件重與金額寫入數值。
-                    SetValues(sheet, 4 + line, 0, row.BlNo, cargo.JetfId, cargo.Gw, cargo.Piece, cargo.PieceUnit,
-                        cargo.ItemName, cargo.Quantity, cargo.UnitPrice, cargo.Importer, cargo.ImporterAddress,
-                        cargo.ContainerType, cargo.ContainerNo, cargo.SealNo);
+                    // A5 起填入分號及貨物明細，識別碼保留文字，件重、數量與金額寫入數值。
+                    SetValues(sheet, 4 + line, 0, lines[line]);
                 }
             }
         }

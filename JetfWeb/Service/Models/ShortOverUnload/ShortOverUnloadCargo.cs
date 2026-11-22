@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Service.Models.ShortOverUnload
 {
     /// <summary>
@@ -49,5 +51,8 @@ namespace Service.Models.ShortOverUnload
 
         /// <summary>封條號碼。</summary>
         public string SealNo { get; set; }
+
+        /// <summary>同一組製單的全部品項，依 ROW_ID 排序，第一筆即本筆品項。</summary>
+        public List<ShortOverUnloadCargoItem> Items { get; set; } = new List<ShortOverUnloadCargoItem>();
     }
 }
