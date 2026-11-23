@@ -478,7 +478,6 @@
     <Compile Include="Models\BatchEditOrder\BatchEditOrderSearchViewModel.cs" />
     <Compile Include="Models\UserMaster\SaveUserRequest.cs" />
     <Compile Include="Models\WorkDay\WorkDayViewModel.cs" />
-    <Compile Include="Models\WorkLoad\EtlErrorWorkViewModel.cs" />
     <Compile Include="Models\WorkLoad\SeaBagNoWorkViewModel.cs" />
     <Compile Include="Models\WorkLoad\UploadFileSeaBagNoViewModel.cs" />
     <Compile Include="Models\WorkLoad\UploadFileSeaManifestViewModel.cs" />
@@ -2568,7 +2567,6 @@
     <Content Include="Views\CCLWork\ScanCargoDetails.cshtml" />
     <Content Include="Views\Cargo\CargoSignReceipt.cshtml" />
     <Content Include="Views\Upload\AgainCargo.cshtml" />
-    <Content Include="Views\WorkLoad\EtlErrorWork.cshtml" />
     <Content Include="Views\ScanCargoCustomer\ScanCargoCustomerDetails.cshtml" />
     <Content Include="Views\Invoice\InvoiceWork.cshtml" />
     <Content Include="Views\Upload\CainiaoTaxEdit.cshtml" />

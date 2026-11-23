@@ -72,7 +72,6 @@ mainApp.controller('LayoutController', function ($scope, $http) {
                 { id: 'BatchSearchCargoShopee', text: '蝦皮預約入倉明細表', url: '~/Cargo/BatchSearchCargoShopee', auth: ['BatchSearchCargoShopee'] },
                 { id: 'BatchUploadProcess', text: '處置說明批次上傳', url: '~/BatchUploadProcess/Index', auth: ['BatchUploadProcess'] },
                 { id: 'DownloadProcess', text: '處置說明下載', url: '~/Cargo/DownloadProcess', auth: ['DownloadProcess'] },
-                //{ id: 'EtlErrorWork', text: '空快錯單統計及明細下載', url: '~/WorkLoad/EtlErrorWork', auth: ['DownloadEtlErrorReport'] },
                 { id: 'EtlErrorWork', text: '空快錯單統計及明細下載', url: '~/EtlErrorWork/Index', auth: ['DownloadEtlErrorReport'] },
                 { id: 'WorkDay', text: '工作天', url: '~/WorkDay/Index' },
                 { id: 'WorkDayArea', text: '工作天作業地區', url: '~/WorkDayArea/Index' },
