@@ -33,7 +33,13 @@ namespace JETFTAX.Controllers
         [AllowAnonymous]
         public ActionResult Login()
         {
+#if DEBUG
+            // DEBUG 自動登入 admin，不顯示登入頁
+            SignInUser("admin", "admin");
+            return RedirectToAction("Index", "LoginSuccess");
+#else
             return View();
+#endif
         }
 
         [AllowAnonymous]
