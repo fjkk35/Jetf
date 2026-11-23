@@ -1,263 +1,570 @@
-@{
+﻿﻿@{
     ViewBag.Title = "稅金查詢";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <style>
-    .search-tax-table-container {
-        overflow: auto;
-        border: 1px solid #dee2e6;
+    /* 查詢結果樣式，同貨況查詢V2(SearchCargo/Index) */
+    .search-tax-result .loading-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 200px;
     }
 
-        .search-tax-table-container table {
-            margin-bottom: 0;
-        }
+    .search-tax-result .table-container {
+        background: #fff;
+        padding: 20px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow-x: auto;
+    }
 
-        .search-tax-table-container th,
-        .search-tax-table-container td {
-            white-space: nowrap;
+    .search-tax-result .table {
+        margin-bottom: 0;
+    }
+
+        .search-tax-result .table thead th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+            text-align: center;
             vertical-align: middle;
+            white-space: nowrap;
         }
 
-    .search-tax-detail th {
-        width: 12%;
-        background-color: #f1f3f5;
-        white-space: nowrap;
+        .search-tax-result .table tbody td {
+            vertical-align: middle;
+            text-align: center;
+        }
+
+    .search-tax-result .no-data-message {
+        text-align: center;
+        padding: 40px;
+        color: #6c757d;
+        font-size: 16px;
+        background: #fff;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
-    .search-tax-detail td {
-        width: 21%;
-        word-break: break-all;
+        .search-tax-result .no-data-message i {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+
+    /* 明細視窗樣式，同貨況查詢V2(SearchCargo/Index、SearchCargo/Detail) */
+    .search-tax-detail-modal .modal-dialog {
+        width: calc(100% - 2rem);
+        max-width: 1400px;
+        margin: 1rem auto;
     }
 
-    .search-tax-detail .section-title {
-        background-color: #343a40;
-        color: #fff;
+    .search-tax-detail-modal .modal-content {
+        max-height: calc(100vh - 2rem);
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #ffffff;
+        box-shadow: 0 16px 48px rgba(15, 23, 42, 0.2);
+    }
+
+    .search-tax-detail-modal .search-tax-detail-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-shrink: 0;
+        padding: 6px 12px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .search-tax-detail-modal .search-tax-detail-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: #64748b;
+        font-size: 28px;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+        .search-tax-detail-modal .search-tax-detail-close:hover {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+    .search-tax-detail-modal .modal-body {
+        min-height: 0;
+        padding: 8px 12px 12px;
+        overflow-y: auto;
+        background: #ffffff;
+    }
+
+    .search-tax-detail-modal .detail-section {
+        margin: 0;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        background: #ffffff;
+    }
+
+        .search-tax-detail-modal .detail-section + .detail-section {
+            border-top: 0;
+        }
+
+    .search-tax-detail-modal .section-title {
+        background: #f1f5f9;
+        padding: 6px 12px;
+        margin: 0;
+        font-size: 19px;
+        font-weight: 600;
+        color: #475569;
+        border-bottom: 2px solid #cbd5e1;
+    }
+
+    .search-tax-detail-modal .basic-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 6px 12px;
+        background: #f1f5f9;
+        border-bottom: 2px solid #cbd5e1;
+    }
+
+        .search-tax-detail-modal .basic-section-header .section-title {
+            padding: 0;
+            border-bottom: 0;
+        }
+
+        .search-tax-detail-modal .basic-section-header .btn {
+            flex-shrink: 0;
+        }
+
+    .search-tax-detail-modal .detail-empty-block {
+        min-height: 36px;
+    }
+
+    .search-tax-detail-modal .detail-table,
+    .search-tax-detail-modal .status-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #ffffff;
+    }
+
+        .search-tax-detail-modal .detail-table tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s ease;
+        }
+
+            .search-tax-detail-modal .detail-table tbody tr:hover,
+            .search-tax-detail-modal .status-table tbody tr:hover {
+                background-color: #fafcfe;
+            }
+
+            .search-tax-detail-modal .detail-table tbody tr:last-child {
+                border-bottom: none;
+            }
+
+        .search-tax-detail-modal .detail-table td {
+            padding: 6px 12px;
+            color: #475569;
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+            .search-tax-detail-modal .detail-table td.label {
+                background: #fafcfe;
+                font-weight: 600;
+                color: #64748b;
+                border-right: 1px solid #f1f5f9;
+                font-size: 16px;
+            }
+
+    .search-tax-detail-modal .status-table thead {
+        background: #f8fafc;
+    }
+
+    .search-tax-detail-modal .status-table th {
+        padding: 6px 12px;
+        text-align: left;
+        font-weight: 600;
+        color: #475569;
+        border-bottom: 2px solid #cbd5e1;
+        font-size: 16px;
+    }
+
+    .search-tax-detail-modal .status-table td {
+        padding: 6px 12px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #475569;
+        font-size: 16px;
+        line-height: 1.4;
+    }
+
+    .search-tax-detail-modal .status-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .search-tax-detail-modal .btn-info {
+        background: #3b82f6;
+        border: none;
+        color: #ffffff;
+        font-weight: 500;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
+        transition: all 0.2s ease;
+    }
+
+        .search-tax-detail-modal .btn-info:hover {
+            background: #2563eb;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+            transform: translateY(-1px);
+            color: #ffffff;
+        }
+
+    .search-tax-detail-modal .btn-sm {
+        padding: 4px 10px;
+        font-size: 14px;
+    }
+
+    /* 查詢紀錄視窗樣式，同貨況查詢V2 */
+    .search-tax-log-modal .modal-content {
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    .search-tax-log-modal .modal-header {
+        background: #f8fafc;
+        color: #334155;
+        border-bottom: 2px solid #e2e8f0;
+        padding: 20px 24px;
+    }
+
+        .search-tax-log-modal .modal-header .modal-title {
+            color: #334155;
+            font-weight: 600;
+            font-size: 20px;
+        }
+
+        .search-tax-log-modal .modal-header .close {
+            color: #64748b;
+            opacity: 0.8;
+            text-shadow: none;
+            font-size: 28px;
+        }
+
+    .search-tax-log-modal .modal-body {
+        background-color: #ffffff;
+        padding: 24px;
+    }
+
+    .search-tax-log-modal .modal-footer {
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        padding: 16px 24px;
+    }
+
+    .search-tax-log-modal .table-striped tbody tr:nth-of-type(odd) {
+        background-color: #ffffff;
+    }
+
+    .search-tax-log-modal .table-striped tbody tr:hover {
+        background-color: #fafcfe;
+    }
+
+    .search-tax-log-modal .table-bordered {
+        border-color: #e2e8f0;
+    }
+
+        .search-tax-log-modal .table-bordered th,
+        .search-tax-log-modal .table-bordered td {
+            border-color: #e2e8f0;
+            padding: 6px 12px;
+            font-size: 16px;
+            line-height: 1.4;
+            color: #475569;
+        }
+
+    .search-tax-log-modal .table thead th {
+        background: #f8fafc;
+        font-weight: 600;
+        border-bottom: 2px solid #cbd5e1;
         text-align: center;
     }
 
-    .search-tax-detail .amount {
-        text-align: right;
+    .search-tax-log-modal .btn-secondary {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        padding: 10px 18px;
+        font-size: 15px;
+        font-weight: 500;
+        border-radius: 6px;
     }
 </style>
 
 <div ng-controller="SearchTaxController">
     <span class="headtype">稅金查詢</span>
     <hr />
-
-    <form class="card bg-light rounded p-4 mb-4" style="border:none" ng-submit="search()" novalidate>
-        <div class="row align-items-center">
-            <div class="form-group row col-lg-6 mb-0">
-                <label for="searchTaxKeyword" class="col-lg-4 col-form-label text-right">物流貨號／分提單號／袋號</label>
-                <div class="col-lg-8">
-                    <input type="text"
-                           id="searchTaxKeyword"
-                           class="form-control"
-                           ng-model="keyword"
-                           placeholder="請輸入物流貨號、分提單號或袋號" />
-                </div>
-            </div>
-            <div class="col-lg-6 text-right">
-                <button type="submit" class="btn btn-primary" ng-disabled="loading">
-                    <i class="fa fa-search"></i> 查詢
-                </button>
-                <button type="button" class="btn btn-secondary ml-2" ng-click="clearSearch()" ng-disabled="loading">
-                    <i class="fa fa-eraser"></i> 清除
-                </button>
-            </div>
+    <form class="containertype" ng-submit="search()" novalidate>
+        <div class="col-lg-12" style="margin-bottom:0.5rem;">
+            <input type="text" id="invoice" name="invoice" ng-model="keyword" />
+            <div id="btntSearch" class="btn btn-success" style="font-size: 1.2rem;" ng-click="search()"><i class="fas fa-search"></i> 查詢</div>
         </div>
+
     </form>
 
-    <div ng-show="loading" class="text-center">
-        <i class="fa fa-spinner fa-spin fa-3x"></i>
-        <p>載入中...</p>
-    </div>
+    <!-- 查詢結果 -->
+    <div class="containertype search-tax-result">
+        <!-- 載入中 -->
+        <div ng-if="loading" class="loading-container">
+            <div class="text-center">
+                <i class="fa fa-spinner fa-spin fa-3x"></i>
+                <p>查詢中...</p>
+            </div>
+        </div>
 
-    <div ng-show="isSearched && !loading">
-        <div class="text-right mb-2">共 {{data.length}} 筆</div>
-        <div class="search-tax-table-container">
-            <table class="table table-striped table-bordered table-hover">
-                <thead class="thead-dark">
+        <!-- 查無資料 -->
+        <div ng-if="!loading && isSearched && data.length === 0" class="no-data-message">
+            <i class="fas fa-info-circle"></i>查無資料
+        </div>
+
+        <!-- 資料表格 -->
+        <div ng-if="!loading && data.length > 0" class="table-container">
+            <table class="table table-striped table-hover">
+                <thead>
                     <tr>
-                        <th>作業日</th>
-                        <th>倉儲類型</th>
-                        <th>出倉日期</th>
-                        <th>客戶名稱</th>
-                        <th>主提單號</th>
-                        <th>清關袋號</th>
-                        <th>物流貨號</th>
+                        <th style="width: 5%;">明細</th>
+                        <th style="width: 10%;">作業日</th>
+                        <th style="width: 10%;">倉儲類型</th>
+                        <th style="width: 10%;">出倉日期</th>
+                        <th style="width: 20%;">客戶名稱</th>
+                        <th style="width: 15%;">主提單號</th>
+                        <th style="width: 15%;">清關袋號</th>
+                        <th style="width: 15%;">物流貨號</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr ng-if="data.length === 0">
-                        <td colspan="7" class="text-center">查無資料</td>
-                    </tr>
                     <tr ng-repeat="item in data track by item.Id">
+                        <td>
+                            <button type="button" class="btn btn-info btn-sm" ng-if="item.DlvInv" ng-click="openDetail(item.DlvInv)">
+                                明細
+                            </button>
+                        </td>
                         <td>{{item.DataDate}}</td>
                         <td>{{item.Source}}</td>
                         <td>{{item.OutDateText}}</td>
                         <td>{{item.CustName}}</td>
                         <td>{{item.MainNumber}}</td>
                         <td>{{item.BagNumber}}</td>
-                        <td>
-                            <button type="button"
-                                    class="btn btn-info btn-sm"
-                                    ng-if="item.DlvInv"
-                                    ng-click="openDetail(item.DlvInv)">
-                                {{item.DlvInv}}
-                            </button>
-                        </td>
+                        <td>{{item.DlvInv}}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- 明細 -->
-    <div class="modal fade" id="searchTaxDetailModal" tabindex="-1" role="dialog" aria-labelledby="searchTaxDetailModalTitle">
-        <div class="modal-dialog modal-xl" role="document">
+    <!-- 明細、物流狀態(樣式同貨況查詢V2明細) -->
+    <div class="modal fade search-tax-detail-modal" id="searchTaxDetailModal" tabindex="-1" role="dialog" aria-label="稅金明細" aria-hidden="true">
+        <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="searchTaxDetailModalTitle">稅金明細 - {{detailDlvInv}}</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="關閉">
+                <div class="search-tax-detail-toolbar">
+                    <button type="button" class="search-tax-detail-close" data-dismiss="modal" aria-label="關閉">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <div ng-show="detailLoading" class="text-center">
-                        <i class="fa fa-spinner fa-spin fa-2x"></i>
-                        <p>載入中...</p>
-                    </div>
-
-                    <div ng-show="!detailLoading && detail">
-                        <div class="text-right mb-2">
-                            <button type="button" class="btn btn-success btn-sm" ng-click="toggleLogs()">
-                                <i class="fa fa-search"></i> {{showLogs ? '隱藏查詢紀錄' : '查詢紀錄'}}
-                            </button>
-                        </div>
-
-                        <div ng-show="showLogs" class="mb-3">
-                            <div ng-show="logsLoading" class="text-center">
-                                <i class="fa fa-spinner fa-spin"></i> 載入中...
+                    <div class="detail-container">
+                        <!-- 基本資料 -->
+                        <div class="detail-section">
+                            <div class="basic-section-header">
+                                <h5 class="section-title">基本資料</h5>
+                                <button type="button" class="btn btn-info btn-sm" ng-click="openLogs()">
+                                    <i class="fas fa-search"></i> 查詢紀錄
+                                </button>
                             </div>
-                            <table class="table table-bordered table-sm mb-0" ng-show="!logsLoading">
-                                <thead class="thead-dark">
-                                    <tr>
-                                        <th>貨號</th>
-                                        <th>查詢時間</th>
-                                        <th>查詢人員</th>
-                                        <th>查詢IP</th>
-                                    </tr>
-                                </thead>
+                            <table class="detail-table">
+                                <colgroup>
+                                    <col style="width: 10%;">
+                                    <col style="width: 20%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 25%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 25%;">
+                                </colgroup>
                                 <tbody>
-                                    <tr ng-if="logs.length === 0">
-                                        <td colspan="4" class="text-center">無查詢紀錄</td>
+                                    <tr>
+                                        <td class="label">出倉日期</td>
+                                        <td>{{detail.Fee.OutDateText}}</td>
+                                        <td class="label">倉儲類型</td>
+                                        <td>{{detail.Fee.Source}}</td>
+                                        <td class="label">報關類型</td>
+                                        <td>{{detail.Fee.Type}}</td>
                                     </tr>
-                                    <tr ng-repeat="log in logs">
-                                        <td>{{log.DlvInv}}</td>
-                                        <td>{{log.SearchTime}}</td>
-                                        <td>{{log.UserId}}</td>
-                                        <td>{{log.UserIp}}</td>
+                                    <tr>
+                                        <td class="label">主提單號</td>
+                                        <td>{{detail.Fee.MainNumber}}</td>
+                                        <td class="label">清關袋號</td>
+                                        <td>{{detail.Fee.BagNumber}}</td>
+                                        <td class="label">稅單號碼</td>
+                                        <td>{{detail.Fee.TaxNumber}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label">客戶名稱</td>
+                                        <td>{{detail.Fee.CustName}}</td>
+                                        <td class="label">派件公司</td>
+                                        <td>{{detail.Fee.TransName}}</td>
+                                        <td class="label">物流貨號</td>
+                                        <td>{{detail.Fee.DlvInv}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label">收件人名稱</td>
+                                        <td>{{detail.Fee.Recipient}}</td>
+                                        <td class="label">收件人電話</td>
+                                        <td>{{detail.Fee.RecPhone}}</td>
+                                        <td class="label">收件人地址</td>
+                                        <td>{{detail.Fee.RecAddress}}</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <div ng-if="!detail.Fee" class="alert alert-warning">查無費用資料</div>
+                        <!-- 清關進度 -->
+                        <div class="detail-section">
+                            <h5 class="section-title">清關進度</h5>
+                            <table class="detail-table">
+                                <colgroup>
+                                    <col style="width: 10%;">
+                                    <col style="width: 20%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 25%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 25%;">
+                                </colgroup>
+                                <tbody>
+                                    <tr>
+                                        <td class="label">進倉時間</td>
+                                        <td>{{detail.Fee.InDateTimeText}}</td>
+                                        <td class="label">出倉時間</td>
+                                        <td>{{detail.Fee.OutDateTimeText}}</td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                        <table class="table table-bordered table-sm search-tax-detail" ng-if="detail.Fee">
-                            <tbody>
-                                <tr>
-                                    <th>出倉日期</th>
-                                    <td>{{detail.Fee.OutDateText}}</td>
-                                    <th>倉儲類型</th>
-                                    <td>{{detail.Fee.Source}}</td>
-                                    <th>報關類型</th>
-                                    <td>{{detail.Fee.Type}}</td>
-                                </tr>
-                                <tr>
-                                    <th>主提單號</th>
-                                    <td>{{detail.Fee.MainNumber}}</td>
-                                    <th>清關袋號</th>
-                                    <td>{{detail.Fee.BagNumber}}</td>
-                                    <th>稅單號碼</th>
-                                    <td>{{detail.Fee.TaxNumber}}</td>
-                                </tr>
-                                <tr>
-                                    <th>客戶名稱</th>
-                                    <td>{{detail.Fee.CustName}}</td>
-                                    <th>派件公司</th>
-                                    <td>{{detail.Fee.TransName}}</td>
-                                    <th>物流貨號</th>
-                                    <td>{{detail.Fee.DlvInv}}</td>
-                                </tr>
-                                <tr>
-                                    <th>收件人名稱</th>
-                                    <td>{{detail.Fee.Recipient}}</td>
-                                    <th>收件人電話</th>
-                                    <td>{{detail.Fee.RecPhone}}</td>
-                                    <th>收件人地址</th>
-                                    <td>{{detail.Fee.RecAddress}}</td>
-                                </tr>
-                                <tr>
-                                    <td colspan="6" class="section-title">清關進度</td>
-                                </tr>
-                                <tr>
-                                    <th>進倉時間</th>
-                                    <td>{{detail.Fee.InDateTimeText}}</td>
-                                    <th>出倉時間</th>
-                                    <td>{{detail.Fee.OutDateTimeText}}</td>
-                                    <th>稅金類別</th>
-                                    <td>{{detail.Fee.IncludeTax}}</td>
-                                </tr>
-                                <tr>
-                                    <th>稅金1</th>
-                                    <td class="amount">{{detail.Fee.Tax1 | number}}</td>
-                                    <th>稅金2</th>
-                                    <td class="amount">{{detail.Fee.Tax2 | number}}</td>
-                                    <th>稅金合計</th>
-                                    <td class="amount">{{detail.Fee.TotalTax | number}}</td>
-                                </tr>
-                                <tr>
-                                    <th>報關費</th>
-                                    <td class="amount">{{detail.Fee.CcFee | number}}</td>
-                                    <th>代收手續費</th>
-                                    <td class="amount">{{detail.Fee.Fee | number}}</td>
-                                    <th>到付款</th>
-                                    <td class="amount">{{detail.Fee.Cod | number}}</td>
-                                </tr>
-                                <tr>
-                                    <th>物流代收款</th>
-                                    <td class="amount">{{detail.Fee.ToDlvCod}}</td>
-                                    <th></th>
-                                    <td></td>
-                                    <th></th>
-                                    <td></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <!-- 處置說明 -->
+                        <div class="detail-section">
+                            <h5 class="section-title">處置說明</h5>
+                            <div class="detail-empty-block"></div>
+                        </div>
 
-                        <table class="table table-bordered table-sm mb-0">
-                            <thead>
-                                <tr>
-                                    <th colspan="2" class="text-center" style="background-color:#343a40;color:#fff;">配送進度</th>
-                                </tr>
-                                <tr>
-                                    <th>作業時間</th>
-                                    <th>配送狀態</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr ng-if="!detail.CargoStatuses || detail.CargoStatuses.length === 0">
-                                    <td colspan="2" class="text-center">無配送狀態</td>
-                                </tr>
-                                <tr ng-repeat="status in detail.CargoStatuses">
-                                    <td>{{status.TransModifyTimeText}}</td>
-                                    <td>{{status.TransStatusDesc}}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <!-- 稅金資料 -->
+                        <div class="detail-section tax-section">
+                            <h5 class="section-title">稅金類別：{{detail.Fee.IncludeTax}}</h5>
+                            <table class="detail-table">
+                                <colgroup>
+                                    <col style="width: 10%;">
+                                    <col style="width: 20%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 25%;">
+                                    <col style="width: 10%;">
+                                    <col style="width: 25%;">
+                                </colgroup>
+                                <tbody>
+                                    <tr>
+                                        <td class="label">稅金1</td>
+                                        <td style="text-align: right;">{{detail.Fee.Tax1}}</td>
+                                        <td class="label">稅金2</td>
+                                        <td style="text-align: right;">{{detail.Fee.Tax2}}</td>
+                                        <td class="label">稅金合計</td>
+                                        <td style="text-align: right;">{{detail.Fee.TotalTax}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label">報關費</td>
+                                        <td style="text-align: right;">{{detail.Fee.CcFee}}</td>
+                                        <td class="label">代收手續費</td>
+                                        <td style="text-align: right;">{{detail.Fee.Fee}}</td>
+                                        <td class="label">到付款</td>
+                                        <td style="text-align: right;">{{detail.Fee.Cod}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="label">物流代收款</td>
+                                        <td style="text-align: right;">{{detail.Fee.ToDlvCod}}</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 配送進度 -->
+                        <div class="detail-section">
+                            <h5 class="section-title">配送進度</h5>
+                            <table class="status-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30%;">作業時間</th>
+                                        <th style="width: 70%;">配送狀態</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-if="!detail.CargoStatuses || detail.CargoStatuses.length === 0">
+                                        <td colspan="2" style="text-align: center;">無配送狀態</td>
+                                    </tr>
+                                    <tr ng-repeat="status in detail.CargoStatuses">
+                                        <td>{{status.TransModifyTimeText}}</td>
+                                        <td>{{status.TransStatusDesc}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查詢紀錄(樣式同貨況查詢V2) -->
+    <div class="modal fade search-tax-log-modal" id="searchTaxLogModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">查詢紀錄</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="關閉">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">貨號</th>
+                                <th style="width: 30%;">查詢時間</th>
+                                <th style="width: 20%;">查詢人員</th>
+                                <th style="width: 25%;">查詢IP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="log in logs">
+                                <td>{{log.DlvInv}}</td>
+                                <td>{{log.SearchTime}}</td>
+                                <td>{{log.UserId}}</td>
+                                <td>{{log.UserIp}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>

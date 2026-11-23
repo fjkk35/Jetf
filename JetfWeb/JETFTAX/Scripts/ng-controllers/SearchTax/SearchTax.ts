@@ -52,16 +52,12 @@ interface SearchTaxScope extends ng.IScope {
     data: SearchTaxRow[];
     loading: boolean;
     isSearched: boolean;
-    detail: SearchTaxDetail | null;
+    detail: SearchTaxDetail;
     detailDlvInv: string;
-    detailLoading: boolean;
     logs: SearchTaxLog[];
-    logsLoading: boolean;
-    showLogs: boolean;
     search: () => void;
-    clearSearch: () => void;
     openDetail: (dlvInv: string) => void;
-    toggleLogs: () => void;
+    openLogs: () => void;
 }
 
 mainApp.controller('SearchTaxController', ['$scope', '$http', function (
@@ -72,23 +68,14 @@ mainApp.controller('SearchTaxController', ['$scope', '$http', function (
     $scope.data = [];
     $scope.loading = false;
     $scope.isSearched = false;
-    $scope.detail = null;
+    $scope.detail = { Fee: null, CargoStatuses: [] };
     $scope.detailDlvInv = '';
-    $scope.detailLoading = false;
     $scope.logs = [];
-    $scope.logsLoading = false;
-    $scope.showLogs = false;
 
     $scope.search = function (): void {
-        var keyword = normalizeText($scope.keyword);
-        if (!keyword) {
-            alert('請輸入物流貨號、分提單號或袋號');
-            return;
-        }
-
         $scope.loading = true;
 
-        $http.post(Router.action('SearchTax', 'Search'), { keyword: keyword })
+        $http.post(Router.action('SearchTax', 'Search'), { keyword: normalizeText($scope.keyword) })
             .then(function (response: ng.IHttpResponse<SearchTaxResponse<SearchTaxRow[]>>): void {
                 var result = response.data || {};
                 if (result.error) {
@@ -107,24 +94,12 @@ mainApp.controller('SearchTaxController', ['$scope', '$http', function (
             });
     };
 
-    $scope.clearSearch = function (): void {
-        $scope.keyword = '';
-        $scope.data = [];
-        $scope.isSearched = false;
-    };
-
+    // 物流貨號按鈕：載入明細後開啟視窗
     $scope.openDetail = function (dlvInv: string): void {
         dlvInv = normalizeText(dlvInv);
         if (!dlvInv) {
             return;
         }
-
-        $scope.detailDlvInv = dlvInv;
-        $scope.detail = null;
-        $scope.detailLoading = true;
-        $scope.logs = [];
-        $scope.showLogs = false;
-        $('#searchTaxDetailModal').modal('show');
 
         $http.post(Router.action('SearchTax', 'GetDetail'), { dlvInv: dlvInv })
             .then(function (response: ng.IHttpResponse<SearchTaxResponse<SearchTaxDetail>>): void {
@@ -134,31 +109,17 @@ mainApp.controller('SearchTaxController', ['$scope', '$http', function (
                     return;
                 }
 
+                $scope.detailDlvInv = dlvInv;
                 $scope.detail = result.Data || { Fee: null, CargoStatuses: [] };
+                $('#searchTaxDetailModal').modal('show');
             })
             .catch(function (): void {
                 alert('查詢明細失敗，請稍後再試');
-            })
-            .finally(function (): void {
-                $scope.detailLoading = false;
             });
     };
 
-    // 明細視窗內展開/收合查詢紀錄；每次展開重新讀取
-    $scope.toggleLogs = function (): void {
-        if ($scope.showLogs) {
-            $scope.showLogs = false;
-            return;
-        }
-
-        if (!$scope.detailDlvInv) {
-            return;
-        }
-
-        $scope.showLogs = true;
-        $scope.logs = [];
-        $scope.logsLoading = true;
-
+    // 查詢紀錄按鈕：載入紀錄後開啟第二層視窗
+    $scope.openLogs = function (): void {
         $http.post(Router.action('SearchTax', 'GetSearchLogs'), { dlvInv: $scope.detailDlvInv })
             .then(function (response: ng.IHttpResponse<SearchTaxResponse<SearchTaxLog[]>>): void {
                 var result = response.data || {};
@@ -168,16 +129,21 @@ mainApp.controller('SearchTaxController', ['$scope', '$http', function (
                 }
 
                 $scope.logs = result.Data || [];
+                $('#searchTaxLogModal').modal('show');
             })
             .catch(function (): void {
                 alert('查詢紀錄失敗，請稍後再試');
-            })
-            .finally(function (): void {
-                $scope.logsLoading = false;
             });
     };
 
     function normalizeText(value: string): string {
         return value ? value.toString().trim() : '';
     }
+
+    // 查詢紀錄疊在明細視窗上，關閉後保留明細視窗的捲動狀態
+    $('#searchTaxLogModal').on('hidden.bs.modal', function (): void {
+        if ($('#searchTaxDetailModal').hasClass('show')) {
+            $('body').addClass('modal-open');
+        }
+    });
 }]);

@@ -1,4 +1,4 @@
-namespace Service.Services.SearchTax.Domain
+﻿namespace Service.Services.SearchTax.Domain
 {
     /// <summary>
     /// 稅金查詢明細的配送進度。

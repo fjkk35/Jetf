@@ -1,4 +1,4 @@
-using Service.Data;
+﻿using Service.Data;
 using Service.Services.SearchTax.Domain;
 using System;
 using System.Collections.Generic;

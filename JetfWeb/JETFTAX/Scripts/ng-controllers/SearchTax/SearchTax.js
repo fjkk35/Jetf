@@ -3,20 +3,12 @@ mainApp.controller('SearchTaxController', ['$scope', '$http', function ($scope, 
         $scope.data = [];
         $scope.loading = false;
         $scope.isSearched = false;
-        $scope.detail = null;
+        $scope.detail = { Fee: null, CargoStatuses: [] };
         $scope.detailDlvInv = '';
-        $scope.detailLoading = false;
         $scope.logs = [];
-        $scope.logsLoading = false;
-        $scope.showLogs = false;
         $scope.search = function () {
-            var keyword = normalizeText($scope.keyword);
-            if (!keyword) {
-                alert('請輸入物流貨號、分提單號或袋號');
-                return;
-            }
             $scope.loading = true;
-            $http.post(Router.action('SearchTax', 'Search'), { keyword: keyword })
+            $http.post(Router.action('SearchTax', 'Search'), { keyword: normalizeText($scope.keyword) })
                 .then(function (response) {
                 var result = response.data || {};
                 if (result.error) {
@@ -33,22 +25,12 @@ mainApp.controller('SearchTaxController', ['$scope', '$http', function ($scope, 
                 $scope.loading = false;
             });
         };
-        $scope.clearSearch = function () {
-            $scope.keyword = '';
-            $scope.data = [];
-            $scope.isSearched = false;
-        };
+        // 物流貨號按鈕：載入明細後開啟視窗
         $scope.openDetail = function (dlvInv) {
             dlvInv = normalizeText(dlvInv);
             if (!dlvInv) {
                 return;
             }
-            $scope.detailDlvInv = dlvInv;
-            $scope.detail = null;
-            $scope.detailLoading = true;
-            $scope.logs = [];
-            $scope.showLogs = false;
-            $('#searchTaxDetailModal').modal('show');
             $http.post(Router.action('SearchTax', 'GetDetail'), { dlvInv: dlvInv })
                 .then(function (response) {
                 var result = response.data || {};
@@ -56,27 +38,16 @@ mainApp.controller('SearchTaxController', ['$scope', '$http', function ($scope, 
                     alert('查詢明細失敗: ' + result.error);
                     return;
                 }
+                $scope.detailDlvInv = dlvInv;
                 $scope.detail = result.Data || { Fee: null, CargoStatuses: [] };
+                $('#searchTaxDetailModal').modal('show');
             })
                 .catch(function () {
                 alert('查詢明細失敗，請稍後再試');
-            })
-                .finally(function () {
-                $scope.detailLoading = false;
             });
         };
-        // 明細視窗內展開/收合查詢紀錄；每次展開重新讀取
-        $scope.toggleLogs = function () {
-            if ($scope.showLogs) {
-                $scope.showLogs = false;
-                return;
-            }
-            if (!$scope.detailDlvInv) {
-                return;
-            }
-            $scope.showLogs = true;
-            $scope.logs = [];
-            $scope.logsLoading = true;
+        // 查詢紀錄按鈕：載入紀錄後開啟第二層視窗
+        $scope.openLogs = function () {
             $http.post(Router.action('SearchTax', 'GetSearchLogs'), { dlvInv: $scope.detailDlvInv })
                 .then(function (response) {
                 var result = response.data || {};
@@ -85,15 +56,19 @@ mainApp.controller('SearchTaxController', ['$scope', '$http', function ($scope, 
                     return;
                 }
                 $scope.logs = result.Data || [];
+                $('#searchTaxLogModal').modal('show');
             })
                 .catch(function () {
                 alert('查詢紀錄失敗，請稍後再試');
-            })
-                .finally(function () {
-                $scope.logsLoading = false;
             });
         };
         function normalizeText(value) {
             return value ? value.toString().trim() : '';
         }
+        // 查詢紀錄疊在明細視窗上，關閉後保留明細視窗的捲動狀態
+        $('#searchTaxLogModal').on('hidden.bs.modal', function () {
+            if ($('#searchTaxDetailModal').hasClass('show')) {
+                $('body').addClass('modal-open');
+            }
+        });
     }]);

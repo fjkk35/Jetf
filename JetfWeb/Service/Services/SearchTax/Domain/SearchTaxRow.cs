@@ -1,4 +1,4 @@
-namespace Service.Services.SearchTax.Domain
+﻿namespace Service.Services.SearchTax.Domain
 {
     /// <summary>
     /// 稅金查詢結果資料列（費用主檔）。

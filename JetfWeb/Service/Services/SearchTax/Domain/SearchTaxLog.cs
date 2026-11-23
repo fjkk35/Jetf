@@ -1,4 +1,4 @@
-namespace Service.Services.SearchTax.Domain
+﻿namespace Service.Services.SearchTax.Domain
 {
     /// <summary>
     /// 貨況查詢紀錄。
