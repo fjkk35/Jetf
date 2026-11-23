@@ -63,7 +63,7 @@ mainApp.controller('LayoutController', function ($scope, $http) {
         },
         {
             id: 'search', title: '查詢', icon: 'fas fa-fw fa-search', partner: 'Search', children: [
-                { id: 'SearchCargo', text: '稅金查詢', url: '~/Cargo/SearchCargo', auth: ['SearchTax'] },
+                { id: 'SearchTax', text: '稅金查詢', url: '~/SearchTax/Index', auth: ['SearchTax'] },
                 { id: 'SearchCargo', text: '貨況查詢V2', url: '~/SearchCargo/Index', auth: ['SearchCargo'] },
                 { id: 'BatchSearchCargo2', text: '批量貨況查詢明細表', url: '~/BatchSearchCargo2/Index', auth: ['BatchSearchCargo'] },
                 { id: 'CoupangReportForm', text: '批量查詢Coupang', url: '~/CoupangReportForm/Index', auth: ['CoupangReportForm'] },

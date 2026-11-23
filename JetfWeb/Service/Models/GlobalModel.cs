@@ -56,13 +56,5 @@ namespace Service.Models
         public DataTable dt { get; set; }
     }
 
-    public class JDataTableModel
-    {
-        public int draw { get; set; }
-        public int recordsTotal { get; set; }
-        public int recordsFiltered { get; set; }
-        public string data { get; set; }
-    }
-
 
 }

@@ -37,71 +37,6 @@ namespace Service.Services
         }
 
         /// <summary>
-        /// 取得貨況
-        /// </summary>
-        /// <returns></returns>
-        public DataTable GetFee_Master(string invoice)
-        {
-            DateTime date;
-            StringBuilder sb = new StringBuilder();
-            sb.Append("select DATADATE,SOURCE,TYPE,isnull(b.CUST_NAME,a.CUSTOMER) as CUST_NAME,IN_DATETIME,OUT_DATETIME,MAIN_NUMBER,TRACKINGNO as 'BAG_NUMBER',DLV_INV,TAX_NUMBER,DLV_COM as 'TRANS_NAME',RECIPIENT,RECPHONE,RECADDRESS,a.INCLUDE_TAX,CCFEE,a.FEE,a.COD,a.TAX1,a.TAX2,TO_DLV_COD from [jetf].[dbo].[FEE_MASTER] a ");
-            sb.Append("left join Data_center.dbo.sys_cust b on a.CUSTOMER=b.CUST_CODE ");
-            sb.Append("where [SOURCE_TYPE] in('1','2') and (DLV_INV=@DLV_INV or TRACKINGNO=@DLV_INV) ");
-            sb.Append("union all ");
-            sb.Append("select DATADATE,SOURCE,TYPE,b.CUSTOMER,IN_DATETIME,OUT_DATETIME,MAIN_NUMBER,BAG_NUMBER,DLV_INV,TAX_NUMBER,b.TRANS_NAME,RECIPIENT,RECPHONE,RECADDRESS,a.INCLUDE_TAX,CCFEE,a.FEE,a.COD,a.TAX1,a.TAX2,TO_DLV_COD from [jetf].[dbo].[FEE_MASTER] a ");
-            sb.Append("left join jetf.dbo.customer_master b on [jetf].[dbo].[PadLeft]('0',a.customer,5)=b.CUST_ID and a.dlv_com=b.TRANS_NO and b.TRAN_TYPE='空運' ");
-            sb.Append("where[SOURCE_TYPE]='3' and (DLV_INV=@DLV_INV or BAG_NUMBER=@DLV_INV) ");
-
-            DataTable dt = new DataTable();
-            if (invoice != "")
-            {
-                using (SqlDataAdapter da = new SqlDataAdapter(sb.ToString(), conn))
-                {
-                    da.SelectCommand.Parameters.Add("@DLV_INV", SqlDbType.NVarChar).Value = invoice;
-                    da.Fill(dt);
-                }
-
-                //if (dt.Rows.Count == 0)
-                //{
-                //    dt = GetSource_Fee_Master(invoice);
-                //}
-            }
-
-            dt.Columns.Add("Format_OUT_DATETIME", typeof(string));
-            for (int i = 0; i < dt.Rows.Count; i++)
-            {
-                if (DateTime.TryParse(dt.Rows[i]["OUT_DATETIME"].ToString(), out date))
-                {
-                    dt.Rows[i]["Format_OUT_DATETIME"] = date.ToString("yyyy-MM-dd");
-                }
-                dt.Rows[i]["INCLUDE_TAX"] = _globalService.GetTaxType(dt.Rows[i]["INCLUDE_TAX"].ToString());
-            }
-
-            return dt;
-        }
-
-        /// <summary>
-        /// 取得物流配送狀態
-        /// </summary>
-        /// <param name="invoice"></param>
-        /// <returns></returns>
-        public DataTable GetCargo_Status_Detail(string trans_number)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("select * from [DATA_CENTER].[dbo].[CARGO_STATUS_DETAIL] (nolock) where TRANS_NUMBER=@TRANS_NUMBER order by TRANS_MODIFY_TIME desc  ");
-            DataTable dt = new DataTable();
-            if (trans_number != "")
-            {
-                using (SqlDataAdapter da = new SqlDataAdapter(sb.ToString(), conn))
-                {
-                    da.SelectCommand.Parameters.Add("@TRANS_NUMBER", SqlDbType.NVarChar).Value = trans_number;
-                    da.Fill(dt);
-                }
-            }
-            return dt;
-        }
-
-        /// <summary>
         /// 新增貨況查詢記錄
         /// </summary>
         /// <param name="model"></param>
@@ -137,27 +72,6 @@ namespace Service.Services
                 }
             }
             return resopnseModel;
-        }
-
-        /// <summary>
-        /// 取得貨況查詢記錄
-        /// </summary>
-        /// <param name="dlv_inv"></param>
-        /// <returns></returns>
-        public DataTable GetLog_Cargo_Status(string dlv_inv)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("select  * from  [jetf].[dbo].[LOG_CARGO_STATUS] where DLV_INV=@DLV_INV and REMARK='貨況查詢' ");
-            DataTable dt = new DataTable();
-            if (dlv_inv != "")
-            {
-                using (SqlDataAdapter da = new SqlDataAdapter(sb.ToString(), conn))
-                {
-                    da.SelectCommand.Parameters.Add("@DLV_INV", SqlDbType.NVarChar).Value = dlv_inv;
-                    da.Fill(dt);
-                }
-            }
-            return dt;
         }
 
         /// <summary>
