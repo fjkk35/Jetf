@@ -279,7 +279,7 @@ namespace Service.Services.ReconciliationTaxDlvInvAdjustment
         }
 
         /// <summary>
-        /// 批次更新費用主檔及費用明細的物流貨號，並寫入上傳紀錄。
+        /// 批次更新費用主檔、費用明細及空運原單的物流貨號，並寫入上傳紀錄。
         /// </summary>
         /// <param name="uploadRows">上傳列資料。</param>
         /// <returns>上傳結果。</returns>
@@ -302,6 +302,15 @@ namespace Service.Services.ReconciliationTaxDlvInvAdjustment
                     row => new { row.TrackingNo, DlvInv = row.OldDlvInv })
                 .ToList();
 
+            // 空運原單：分提單號(TRACKINGNO)＋物流貨號(DELIVERYNO)。
+            var originalLists = DataCenterDb.OriginalLists
+                .WhereBulkContains(
+                    DataCenterDb,
+                    uploadRows,
+                    entity => new { entity.TrackingNo, entity.DeliveryNo },
+                    row => new { row.TrackingNo, DeliveryNo = row.OldDlvInv })
+                .ToList();
+
             // Step 2：判斷每列是否命中資料，並將符合資料的物流貨號改成新值。
             foreach (var row in uploadRows)
             {
@@ -313,13 +322,18 @@ namespace Service.Services.ReconciliationTaxDlvInvAdjustment
                     .Where(x => string.Equals(x.TrackingNo.Trim(), row.TrackingNo, StringComparison.OrdinalIgnoreCase) &&
                                 string.Equals(x.DlvInv.Trim(), row.OldDlvInv, StringComparison.OrdinalIgnoreCase))
                     .ToList();
+                var matchedOriginalLists = originalLists
+                    .Where(x => string.Equals(x.TrackingNo?.Trim(), row.TrackingNo, StringComparison.OrdinalIgnoreCase) &&
+                                string.Equals(x.DeliveryNo?.Trim(), row.OldDlvInv, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
 
                 row.IsSuccess = matchedFeeMasters.Any() || matchedFeeMasterDetails.Any();
                 row.Status = row.IsSuccess ? "更新成功" : "查無資料";
 
-                //更新物流貨號
+                //更新物流貨號（費用主檔、費用明細、空運原單）
                 matchedFeeMasters.ForEach(x => x.DlvInv = row.NewDlvInv);
                 matchedFeeMasterDetails.ForEach(x => x.DlvInv = row.NewDlvInv);
+                matchedOriginalLists.ForEach(x => x.DeliveryNo = row.NewDlvInv);
             }
 
             var currentTime = DateTime.Now;
@@ -329,30 +343,32 @@ namespace Service.Services.ReconciliationTaxDlvInvAdjustment
                 currentUserId,
                 currentTime);
 
+            // Jetf 與 DataCenter 為不同連線，各自開交易；任一步驟失敗時，
+            // 未 Commit 的交易會在 Dispose 時自動 Rollback。
+            using (var dataCenterTransaction = DataCenterDb.Database.BeginTransaction(IsolationLevel.ReadCommitted))
             using (var transaction = JetfDb.Database.BeginTransaction(IsolationLevel.ReadCommitted))
             {
-                try
+                // Step 3：以批次方式更新兩張費用表，避免逐筆送出 UPDATE。
+                if (feeMasters.Any())
                 {
-                    // Step 3：以批次方式更新兩張費用表，避免逐筆送出 UPDATE。
-                    if (feeMasters.Any())
-                    {
-                        JetfDb.BulkUpdate(feeMasters);
-                    }
-
-                    if (feeMasterDetails.Any())
-                    {
-                        JetfDb.BulkUpdate(feeMasterDetails);
-                    }
-
-                    // Step 4：成功、查無資料及欄位錯誤都寫入 LOG，保留完整上傳軌跡。
-                    JetfDb.BulkInsert(logEntities);
-                    transaction.Commit();
+                    JetfDb.BulkUpdate(feeMasters);
                 }
-                catch
+
+                if (feeMasterDetails.Any())
                 {
-                    transaction.Rollback();
-                    throw;
+                    JetfDb.BulkUpdate(feeMasterDetails);
                 }
+
+                // 同步更新空運原單的物流貨號。
+                if (originalLists.Any())
+                {
+                    DataCenterDb.BulkUpdate(originalLists);
+                }
+
+                // Step 4：成功、查無資料及欄位錯誤都寫入 LOG，保留完整上傳軌跡。
+                JetfDb.BulkInsert(logEntities);
+                dataCenterTransaction.Commit();
+                transaction.Commit();
             }
 
             return new ReconciliationTaxDlvInvAdjustmentUploadResult
