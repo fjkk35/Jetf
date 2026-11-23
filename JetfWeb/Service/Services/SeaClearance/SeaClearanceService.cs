@@ -158,6 +158,19 @@ namespace Service.Services.SeaClearance
                 .GroupBy(x => x.Id)
                 .ToDictionary(g => g.Key, g => g.Select(x => x.StepName).FirstOrDefault() ?? string.Empty);
             var customerNameMap = GetSeaCustomerNames(items.Select(x => x.CustCode));
+            var abnormalStateIds = items
+                .Where(x => x.CurrentAbnormalStateId.HasValue)
+                .Select(x => x.CurrentAbnormalStateId.Value)
+                .Distinct()
+                .ToList();
+            var abnormalStateNameMap = abnormalStateIds.Count == 0
+                ? new Dictionary<int, string>()
+                : JetfDb.AbnormalStates
+                    .AsNoTracking()
+                    .Where(x => abnormalStateIds.Contains(x.Id))
+                    .Select(x => new { x.Id, x.AbnormalStateName })
+                    .ToList()
+                    .ToDictionary(x => x.Id, x => x.AbnormalStateName ?? string.Empty);
 
             return items.Select(x => new SeaClearanceModel
             {
@@ -181,6 +194,9 @@ namespace Service.Services.SeaClearance
                 SignOutTime = x.SignOutTime,
                 StepName = x.CurrentStepId.HasValue && stepNameMap.TryGetValue(x.CurrentStepId.Value, out var stepName)
                     ? stepName
+                    : string.Empty,
+                AbnormalStateName = x.CurrentAbnormalStateId.HasValue && abnormalStateNameMap.TryGetValue(x.CurrentAbnormalStateId.Value, out var abnormalStateName)
+                    ? abnormalStateName
                     : string.Empty
             }).ToList();
         }

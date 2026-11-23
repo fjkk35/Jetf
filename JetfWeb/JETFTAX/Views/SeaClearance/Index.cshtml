@@ -173,6 +173,7 @@
                         <tr>
                             <th>日期</th>
                             <th>步驟</th>
+                            <th>異常狀態</th>
                             <th>倉別</th>
                             <th>報關方式</th>
                             <th>客戶名稱</th>
@@ -189,16 +190,17 @@
                     </thead>
                     <tbody>
                         <tr ng-if="loading">
-                            <td colspan="9" class="text-center">
+                            <td colspan="15" class="text-center">
                                 <i class="fas fa-spinner fa-spin"></i> 載入中...
                             </td>
                         </tr>
                         <tr ng-if="!loading && data.length === 0">
-                            <td colspan="9" class="text-center">查無資料</td>
+                            <td colspan="15" class="text-center">查無資料</td>
                         </tr>
                         <tr ng-repeat="item in data" ng-if="!loading">
                             <td>{{item.DataDate || ''}}</td>
                             <td>{{item.StepName || ''}}</td>
+                            <td>{{item.AbnormalStateName || ''}}</td>
                             <td>{{item.Modifyby || ''}}</td>
                             <td>{{item.Post_Entry || ''}}</td>
                             <td>{{item.Cust_Name || ''}}</td>

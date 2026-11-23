@@ -85,5 +85,10 @@ namespace Service.Services.SeaClearance
         /// 步驟名稱
         /// </summary>
         public string StepName { get; set; }
+
+        /// <summary>
+        /// 異常狀態名稱
+        /// </summary>
+        public string AbnormalStateName { get; set; }
     }
 }
