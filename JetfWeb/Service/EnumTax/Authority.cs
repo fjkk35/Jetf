@@ -288,20 +288,6 @@ namespace Service.EnumTax
         /// </summary>
         UploadEtlExportFlight,
 
-        /// <summary>
-        /// LINE群組建立
-        /// </summary>
-        CreateLineGroup,
-
-        /// <summary>
-        /// LINE群組查詢
-        /// </summary>
-        SearchLineGroup,
-
-        /// <summary>
-        /// 轉檔查詢
-        /// </summary>
-        SearchWork,
 
         /// <summary>
         /// CPT單一入口網站查詢

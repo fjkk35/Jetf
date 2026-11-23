@@ -555,29 +555,6 @@ namespace Service.Services
         }
 
         /// <summary>
-        /// 取得轉檔紀錄
-        /// </summary>
-        /// <returns></returns>
-        public DataTable GetLog_Work()
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.Append("select top 500 * from [jetf].[dbo].[LOG_WORK] order by StartTime desc ");
-            DataTable dt = new DataTable();
-            using (SqlDataAdapter da = new SqlDataAdapter(sb.ToString(), conn))
-            {
-                da.Fill(dt);
-            }
-            dt.Columns.Add("Format_StartTime", typeof(string));
-            dt.Columns.Add("Format_EndTime", typeof(string));
-            for (int i = 0; i < dt.Rows.Count; i++)
-            {
-                dt.Rows[i]["Format_StartTime"] = Convert.ToDateTime(dt.Rows[i]["StartTime"]).ToString("yyyy-MM-dd HH:mm:ss");
-                dt.Rows[i]["Format_EndTime"] = Convert.ToDateTime(dt.Rows[i]["EndTime"]).ToString("yyyy-MM-dd HH:mm:ss");
-            }
-            return dt;
-        }
-
-        /// <summary>
         /// 取得稅單PDF路徑
         /// </summary>
         /// <param name="taxNumber"></param>

@@ -1,7 +1,5 @@
 ﻿using FluentFTP;
 using JETFTAX.Models;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
 using Service.EnumTax;
@@ -537,30 +535,6 @@ namespace JETFTAX.Controllers
             }
 
             return workbook;
-        }
-
-        /// <summary>
-        /// 轉檔查詢
-        /// </summary>
-        /// <returns></returns>
-        //[UserAuthorize("1")]
-        [UserAuthorize(Authority.SearchWork)]
-        public ActionResult SearchWork()
-        {
-            return View();
-        }
-
-        /// <summary>
-        /// 轉檔查詢-明細
-        /// </summary>
-        /// <returns></returns>
-        //[UserAuthorize("1")]
-        [UserAuthorize(Authority.SearchWork)]
-        public ActionResult GetLogWork()
-        {
-            DataTable dt = _cargoService.GetLog_Work();
-            string data = JsonConvert.SerializeObject(dt);
-            return Json(data, JsonRequestBehavior.AllowGet);
         }
 
         /// <summary>

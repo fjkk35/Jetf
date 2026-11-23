@@ -445,7 +445,6 @@
     <Compile Include="Models\PostClearance\PostClearanceModel.cs" />
     <Compile Include="Models\PostClearance\PostClearanceUploadModel.cs" />
     <Compile Include="Models\ProcessModel.cs" />
-    <Compile Include="Models\ScanCargoArrivalTime\ScanCargoArrivalTimeModel.cs" />
     <Compile Include="Models\SeaClearanceCreate\ApprovalCategoryModel.cs" />
     <Compile Include="Models\SeaClearanceCreate\SeaClearanceCreateRequest.cs" />
     <Compile Include="Models\SeaClearanceCreate\SeaClearanceCreateResponse.cs" />
@@ -647,7 +646,6 @@
     <Compile Include="Services\LineLogin\LineLoginService.cs" />
     <Compile Include="Services\LogRecService.cs" />
     <Compile Include="Services\PostClearanceService.cs" />
-    <Compile Include="Services\ScanCargoArrivalTimeService.cs" />
     <Compile Include="Services\ScanCargoCustomer\ScanCargoCustomerService.cs" />
     <Compile Include="Services\SeaClearanceCreate\SeaClearanceCreateService.cs" />
     <Compile Include="Services\SeaClearanceCustTaxPayment\SeaClearanceCustTaxPaymentService.cs" />
@@ -733,13 +731,13 @@
     <Compile Include="Services\ReconciliationLogistics\Domain\ReconciliationLogisticsUploadRow.cs" />
     <Compile Include="Services\ReconciliationLogistics\ReconciliationLogisticsService.cs" />
     <Compile Include="Services\ReconciliationTaxDlvInvAdjustment\Domain\ReconciliationTaxDlvInvAdjustmentUploadResult.cs" />
+    <Compile Include="Services\ReconciliationTaxDlvInvAdjustment\Domain\ReconciliationTaxDlvInvAdjustmentUploadRow.cs" />
+    <Compile Include="Services\ReconciliationTaxDlvInvAdjustment\ReconciliationTaxDlvInvAdjustmentService.cs" />
     <Compile Include="Services\SearchTax\Domain\SearchTaxCargoStatus.cs" />
     <Compile Include="Services\SearchTax\Domain\SearchTaxDetail.cs" />
     <Compile Include="Services\SearchTax\Domain\SearchTaxLog.cs" />
     <Compile Include="Services\SearchTax\Domain\SearchTaxRow.cs" />
     <Compile Include="Services\SearchTax\SearchTaxService.cs" />
-    <Compile Include="Services\ReconciliationTaxDlvInvAdjustment\Domain\ReconciliationTaxDlvInvAdjustmentUploadRow.cs" />
-    <Compile Include="Services\ReconciliationTaxDlvInvAdjustment\ReconciliationTaxDlvInvAdjustmentService.cs" />
     <Compile Include="Services\ReconciliationTaxCustomerAdjustment\Domain\ReconciliationTaxCustomerAdjustmentUploadResult.cs" />
     <Compile Include="Services\ReconciliationTaxCustomerAdjustment\Domain\ReconciliationTaxCustomerAdjustmentUploadRow.cs" />
     <Compile Include="Services\ReconciliationTaxCustomerAdjustment\ReconciliationTaxCustomerAdjustmentService.cs" />
