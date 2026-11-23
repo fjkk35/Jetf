@@ -14,10 +14,16 @@
     <link href="~/Content/sb-admin-2.min.css" rel="stylesheet">
     <link href="~/Content/css-loader.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/Content/jquery-ui.css">
-    @Styles.Render("~/Content/DataTables/media/css/jquery.dataTables.min.css")
-    @Styles.Render("~/Content/DataTables/extensions/Responsive/css/responsive.dataTables.min.css")
     <script src="~/Scripts/jquery-1.10.2.min.js"></script>
     <style>
+        /* 原 DataTables 套件的基本表格樣式；部分頁面仍以 class="dataTable" 套用 */
+        table.dataTable { width: 100%; margin: 0 auto; clear: both; border-collapse: separate; border-spacing: 0; }
+        table.dataTable, table.dataTable th, table.dataTable td { box-sizing: content-box; }
+        table.dataTable thead th { font-weight: bold; }
+        table.dataTable thead th, table.dataTable thead td { padding: 10px 18px; border-bottom: 1px solid #111; }
+        table.dataTable tbody tr { background-color: #ffffff; }
+        table.dataTable tbody th, table.dataTable tbody td { padding: 8px 10px; }
+        table.dataTable.no-footer { border-bottom: 1px solid #111; }
         .hidden { display: none !important; }
         .menu-group-icon { width: 18px; text-align: center; }
         [ng-cloak] { display: none !important; }
@@ -126,9 +132,6 @@
     @Scripts.Render("~/Scripts/lib/sweetalert.min.js")
     @Scripts.Render("~/Scripts/lib/jquery.tmpl.js")
     @Scripts.Render(RouteJs.RouteJsHandler.HandlerUrl)
-    @Scripts.Render("~/Scripts/DataTables/media/js/jquery.dataTables.min.js")
-    @Scripts.Render("~/Scripts/DataTables/extensions/Responsive/js/dataTables.responsive.min.js")
-    @Scripts.Render("~/Scripts/DataTables/extensions/FixedHeader/js/dataTables.fixedHeader.min.js")
     @Scripts.Render("~/Scripts/lib/jquery.twbsPagination.min.js")
     @Scripts.Render("~/bundles/angular")
     <script src="~/Scripts/lib/jquery-ui.min.js"></script>
