@@ -109,31 +109,6 @@ namespace Service.EnumTax
         SeaMainNumberShippingDetails,
 
         /// <summary>
-        /// 4-1.物流代收金額上傳
-        /// </summary>
-        UploadCollectibleAmount,
-
-        /// <summary>
-        /// 4-2.物流代收金額差異表
-        /// </summary>
-        DownloadCollectibleAmount,
-
-        /// <summary>
-        /// 5-1.物流代收匯款上傳
-        /// </summary>
-        UploadCollectibleRemittance,
-
-        /// <summary>
-        /// 5-2.物流代收匯款明細表
-        /// </summary>
-        DownloadCollectibleRemittanceDetails,
-
-        /// <summary>
-        /// 5-3.物流代收未匯款明細表
-        /// </summary>
-        DownloadNotCollectibleRemittanceDetails,
-
-        /// <summary>
         /// 6-1.開立電子發票作業
         /// </summary>
         InvoiceProcessing,
