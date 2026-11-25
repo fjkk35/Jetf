@@ -44,7 +44,7 @@ namespace Service.Services.Job.FtzWebClientJob
                     }
 
                     // 步驟 2: 查詢資料
-                    var startDate = DateTime.Now.AddDays(-7).ToString("yyyyMMdd");
+                    var startDate = DateTime.Now.AddDays(-15).ToString("yyyyMMdd");
                     var endDate = DateTime.Now.ToString("yyyyMMdd");
                     var jsonResult = await QueryData(client, "I", "0335", startDate, endDate);
 
