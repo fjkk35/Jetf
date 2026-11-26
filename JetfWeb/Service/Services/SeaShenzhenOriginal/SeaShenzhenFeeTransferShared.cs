@@ -65,7 +65,7 @@ namespace Service.Services.SeaShenzhenOriginal
         {
             var cod = codOverride.HasValue && codOverride.Value > 0
                 ? codOverride.Value
-                : ToAmount(original.Cc);
+                : GetOriginalCod(original.Cc);
             var includeTax = tax >= 1000
                 ? ShenzhenTaxPayment.C.ToString()
                 : original.TaxPayment;
@@ -115,7 +115,7 @@ namespace Service.Services.SeaShenzhenOriginal
         /// <summary>
         /// 將原始代收金額轉成轉檔表使用的整數金額。
         /// </summary>
-        private static int ToAmount(double? value)
+        internal static int GetOriginalCod(double? value)
         {
             if (!value.HasValue)
             {

@@ -7,6 +7,7 @@ using Service.Models;
 using Service.Services.SeaShenzhenOriginal.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Entity;
 using System.Globalization;
 using System.IO;
@@ -379,7 +380,7 @@ namespace Service.Services.SeaShenzhenOriginal
                     }
 
                     model.TransTime = ParseNullableDate(row, headerMap["廠商交易時間"], model.TransTimeText);
-                    model.Cc = ParseNullableDouble(model.CcText);
+                    model.Cc = ParseNullableInt(model.CcText);
                     model.Quantity = ParseNullableInt(model.QuantityText);
                     model.Gw = ParseNullableDecimal(model.GwText);
 
@@ -521,7 +522,7 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
-        /// 將驗證成功的上傳資料寫入 SeaShenzhenOriginal。
+        /// 儲存託運資料，並在同一交易內轉入本次上傳的正額代收款。
         /// </summary>
         private SaveResult SaveUploadRows(List<SeaShenzhenOriginalUploadRow> uploadRows, DateTime dataDate, SeaShenzhenTaxDataType dataType)
         {
@@ -532,21 +533,20 @@ namespace Service.Services.SeaShenzhenOriginal
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var existingEntities = JetfDb.SeaShenzhenOriginals
-                .Where(x => jetfSerials.Contains(x.JetfSerial))
-                .ToList();
-
-            var existingMap = existingEntities
-                .GroupBy(x => x.JetfSerial, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
-
             var insertCount = 0;
             var updateCount = 0;
 
-            using (var transaction = JetfDb.Database.BeginTransaction())
+            using (var transaction = JetfDb.Database.BeginTransaction(IsolationLevel.Serializable))
             {
                 try
                 {
+                    var existingMap = JetfDb.SeaShenzhenOriginals
+                        .Where(x => jetfSerials.Contains(x.JetfSerial))
+                        .ToList()
+                        .GroupBy(x => x.JetfSerial.TrimEnd(), StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+                    var collectibleRows = new List<SeaShenzhenFeeDownloadRow>();
+
                     foreach (var row in uploadRows)
                     {
                         var key = row.JetfSerial.Trim();
@@ -571,9 +571,15 @@ namespace Service.Services.SeaShenzhenOriginal
                             JetfDb.SeaShenzhenOriginals.Add(entity);
                             insertCount++;
                         }
+
+                        if (row.Cc > 0)
+                        {
+                            collectibleRows.Add(SeaShenzhenCodTransfer.CreateOriginalRow(entity, row.Cc.Value));
+                        }
                     }
 
                     JetfDb.SaveChanges();
+                    SeaShenzhenCodTransfer.SaveCollectibleRows(JetfDb, collectibleRows, dataDate.Date);
                     transaction.Commit();
                 }
                 catch
@@ -775,26 +781,6 @@ namespace Service.Services.SeaShenzhenOriginal
                 || decimal.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out decimalValue))
             {
                 return decimalValue;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// 將文字轉成 nullable double。
-        /// </summary>
-        private double? ParseNullableDouble(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return null;
-            }
-
-            double doubleValue;
-            if (double.TryParse(text, NumberStyles.Any, CultureInfo.CurrentCulture, out doubleValue)
-                || double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out doubleValue))
-            {
-                return doubleValue;
             }
 
             return null;

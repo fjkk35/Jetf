@@ -43,7 +43,11 @@ namespace Service.Services.SeaShenzhenOriginal
             }
 
             // 先將當次下載資料轉入到付款資料，資料庫更新完成後才產生檔案；銷帳狀態僅影響寫入。
-            SaveCollectibleRows(feeRows, dataDate);
+            using (var transaction = JetfDb.Database.BeginTransaction(IsolationLevel.Serializable))
+            {
+                SeaShenzhenCodTransfer.SaveCollectibleRows(JetfDb, feeRows, dataDate);
+                transaction.Commit();
+            }
 
             var customerNameDic = GetCustomerNameDic(feeRows);
             var workbook = CreateCollectibleWorkbook(feeRows, customerNameDic);
@@ -108,7 +112,8 @@ namespace Service.Services.SeaShenzhenOriginal
             // 以費用主檔的 DlvInv 比對原始託運資料的 JetfSerial，僅保留主檔中不存在的貨號，並轉成下載資料。
             var originalRows = originals
                 .Where(original => !feeMasters.Any(fee => fee.DlvInv == original.JetfSerial))
-                .Select(CreateOriginalDownloadRow);
+                .Select(original => SeaShenzhenCodTransfer.CreateOriginalRow(
+                    original, SeaShenzhenFeeTransferShared.GetOriginalCod(original.Cc)));
 
             // 優先保留費用主檔的欄位與金額，再接上原始託運資料補入的資料，產生下載清單。
             return feeMasters
@@ -136,104 +141,6 @@ namespace Service.Services.SeaShenzhenOriginal
                 DlvCom = fee.DlvCom,
                 IncludeTax = fee.IncludeTax
             };
-        }
-
-        /// <summary>
-        /// 將原始託運資料轉成下載資料，僅收取其原始代收金額。
-        /// </summary>
-        private static SeaShenzhenFeeDownloadRow CreateOriginalDownloadRow(SeaShenzhenOriginalEntity original)
-        {
-            var cod = Convert.ToInt32(Math.Round(original.Cc ?? 0, MidpointRounding.AwayFromZero));
-            return new SeaShenzhenFeeDownloadRow
-            {
-                TrackingNo = original.TrackingNo,
-                DlvInv = original.JetfSerial,
-                Cod = cod,
-                Fee = 0,
-                ToDlvCod = cod,
-                Recipient = original.Importer,
-                RecPhone = original.ImporterPhone,
-                DlvCom = original.TransName,
-                IncludeTax = original.TaxPayment
-            };
-        }
-
-        /// <summary>
-        /// 將當次下載資料的代收總金額轉入 FEE_MASTER_COD 的 CC 與 ToDlvCod，已銷帳或兩欄金額皆相同的既有資料不更新。
-        /// </summary>
-        /// <param name="feeRows">與下載檔案相同的來源資料。</param>
-        /// <param name="dataDate">下載所選資料日期。</param>
-        private void SaveCollectibleRows(List<SeaShenzhenFeeDownloadRow> feeRows, DateTime dataDate)
-        {
-            // 僅處理當次下載中具有物流貨號的資料。
-            var rows = feeRows
-                .Where(x => !string.IsNullOrWhiteSpace(x.DlvInv))
-                .ToList();
-            if (rows.Count == 0)
-            {
-                return;
-            }
-
-            // 查詢及寫入共用交易，防止查詢後才銷帳的資料被覆寫，也保護不存在的單號。
-            using (var transaction = JetfDb.Database.BeginTransaction(IsolationLevel.Serializable))
-            {
-                // 批次查詢既有到付款資料，以物流貨號建立字典，同一貨號保留全部既有資料。
-                var dlvInvs = rows.Select(x => x.DlvInv).ToList();
-                var existingRowsDic = JetfDb.FeeMasterCods
-                    .AsNoTracking()
-                    .WhereBulkContains(JetfDb, dlvInvs, x => x.DlvInv, x => x)
-                    .GroupBy(x => x.DlvInv.TrimEnd())
-                    .ToDictionary(group => group.Key, group => group.ToList());
-                var inserts = new List<FeeMasterCodEntity>();
-                var updates = new List<FeeMasterCodEntity>();
-                var now = DateTime.Now;
-
-                foreach (var row in rows)
-                {
-                    if (!existingRowsDic.TryGetValue(row.DlvInv.TrimEnd(), out var targets))
-                    {
-                        // 物流貨號不存在時新增；來源沒有主號，資料日期作為出倉日期。
-                        inserts.Add(new FeeMasterCodEntity
-                        {
-                            DataType = "新遞",
-                            MainNumber = string.Empty,
-                            Customer = row.Customer,
-                            BagNumber = row.TrackingNo,
-                            TrackingNo = row.TrackingNo,
-                            DlvInv = row.DlvInv,
-                            OriginalImporter = row.Recipient,
-                            Cc = row.ToDlvCod,
-                            ToDlvCod = row.ToDlvCod,
-                            SignOutTime = dataDate,
-                            CreatedTime = now
-                        });
-                        continue;
-                    }
-
-                    foreach (var target in targets)
-                    {
-                        // 已有銷帳時間、銷帳紀錄，或 CC 與代收總金額皆相同時，略過該筆更新。
-                        if (target.ReceivedCcTime.HasValue || target.ReconciliationLogisticsId.HasValue ||
-                            (target.Cc == row.ToDlvCod && target.ToDlvCod == row.ToDlvCod))
-                        {
-                            continue;
-                        }
-
-                        // 到付款及代收總金額皆使用來源 ToDlvCod，保留既有手續費與其他欄位。
-                        target.Cc = row.ToDlvCod;
-                        target.ToDlvCod = row.ToDlvCod;
-                        updates.Add(target);
-                    }
-                }
-
-                // 批次寫入新增與更新資料，全部成功才提交交易；失敗時由交易回復。
-                JetfDb.BulkUpdate(updates);
-                JetfDb.BulkInsert(inserts, options =>
-                {
-                    options.TimeoutSeconds = CommandTimeoutSeconds;
-                });
-                transaction.Commit();
-            }
         }
 
         /// <summary>

@@ -23,7 +23,8 @@ namespace Service.Services.SeaShenzhenOriginal.Domain
         public string ImporterPhone { get; set; }
         public string ItemName { get; set; }
         public string CcText { get; set; }
-        public double? Cc { get; set; }
+        /// <summary>上傳的整數代收金額。</summary>
+        public int? Cc { get; set; }
         public string QuantityText { get; set; }
         public int? Quantity { get; set; }
 
