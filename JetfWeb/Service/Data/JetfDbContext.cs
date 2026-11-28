@@ -111,8 +111,6 @@ namespace Service.Data
         /// </summary>
         public DbSet<SeaUnboxingRecordEntity> SeaUnboxingRecords { get; set; }
 
-        public DbSet<SeaShenzhenTaxEntity> SeaShenzhenTaxes { get; set; }
-
         public DbSet<SeaShenzhenOriginalEntity> SeaShenzhenOriginals { get; set; }
 
         public DbSet<SeaShenzhenTrackingNoRangeEntity> SeaShenzhenTrackingNoRanges { get; set; }

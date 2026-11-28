@@ -77,7 +77,7 @@ namespace Service.Services.SeaShenzhenOriginal
             {
                 try
                 {
-                    // 舊轉檔流程只覆蓋未標示報關行的資料，避免誤刪同日不同報關行的上傳結果。
+                    // 只重建捷豐來源的轉檔資料，保留同日其他報關行的資料。
                     deletedCount = DeleteExistingTransferRows(dataDate, SeaShenzhenTaxDataType.Jetf);
                     if (transferRows.Count > 0)
                     {

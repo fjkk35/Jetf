@@ -60,12 +60,9 @@ namespace Service.Services.SeaShenzhenOriginal
             int? feeMasterId,
             string userId,
             DateTime now,
-            int? codOverride = null,
             int? feeOverride = null)
         {
-            var cod = codOverride.HasValue && codOverride.Value > 0
-                ? codOverride.Value
-                : GetOriginalCod(original.Cc);
+            var cod = GetOriginalCod(original.Cc);
             var includeTax = tax >= 1000
                 ? ShenzhenTaxPayment.C.ToString()
                 : original.TaxPayment;

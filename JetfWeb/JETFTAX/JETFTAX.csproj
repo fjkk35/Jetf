@@ -379,7 +379,6 @@
     <Compile Include="Controllers\SeaShenzhenFeeTransferController.cs" />
     <Compile Include="Controllers\SeaShenzhenOriginalController.cs" />
     <Compile Include="Controllers\SeaShenzhenOriginalQueryController.cs" />
-    <Compile Include="Controllers\SeaShenzhenTaxController.cs" />
     <Compile Include="Controllers\ReconciliationInvoiceController.cs" />
     <Compile Include="Controllers\ReconciliationAirController.cs" />
     <Compile Include="Controllers\ReconciliationCustomerGroupController.cs" />
@@ -571,7 +570,6 @@
     <Content Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenFeeTransfer.js" />
     <Content Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginal.js" />
     <Content Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginalQuery.js" />
-    <Content Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenTax.js" />
     <Content Include="Scripts\ng-controllers\ReconciliationInvoice\UploadInvoice.js" />
     <Content Include="Scripts\ng-controllers\ReconciliationAir\UploadAir.js" />
     <Content Include="Scripts\ng-controllers\ReconciliationCustomerGroup\ReconciliationCustomerGroup.js" />
@@ -2681,7 +2679,6 @@
     <Content Include="Views\SeaShenzhenFeeTransfer\Index.cshtml" />
     <Content Include="Views\SeaShenzhenOriginal\Index.cshtml" />
     <Content Include="Views\SeaShenzhenOriginalQuery\Index.cshtml" />
-    <Content Include="Views\SeaShenzhenTax\Index.cshtml" />
     <Content Include="Views\SjlBilling\Index.cshtml" />
     <Content Include="Views\SjlTaxResponse\Index.cshtml" />
   </ItemGroup>
@@ -2718,7 +2715,6 @@
     <TypeScriptCompile Include="Scripts\ng-controllers\ShortOverUnload\ShortOverUnload.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginal.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenOriginalQuery.ts" />
-    <TypeScriptCompile Include="Scripts\ng-controllers\SeaShenzhenOriginal\SeaShenzhenTax.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ReconciliationInvoice\UploadInvoice.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ReconciliationAir\UploadAir.ts" />
     <TypeScriptCompile Include="Scripts\ng-controllers\ReconciliationCustomerGroup\ReconciliationCustomerGroup.ts" />
