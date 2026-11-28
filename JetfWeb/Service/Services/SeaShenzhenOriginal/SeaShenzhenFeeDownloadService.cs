@@ -68,11 +68,11 @@ namespace Service.Services.SeaShenzhenOriginal
             var nextDate = dataDate.AddDays(1);
             var taxPaymentC = ShenzhenTaxPayment.C.ToString();
 
-            // 來源一：[dbo].[ShenzhenFeeMasterManualToDlvCod]，取得 ModifiedTime 在所選日期內的人工調整貨號。
+            // 來源一：[dbo].[ShenzhenFeeMasterManualToDlvCod]，依調整紀錄的建立時間取得當日貨號。
             // 僅用貨號篩選後續資料來源，下載欄位及金額優先使用費用主檔，不存在時使用原始託運資料。
             var manualDlvInvs = JetfDb.ShenzhenFeeMasterManualToDlvCods
                 .AsNoTracking()
-                .Where(x => x.ModifiedTime >= dataDate && x.ModifiedTime < nextDate)
+                .Where(x => x.CreatedTime >= dataDate && x.CreatedTime < nextDate)
                 .Select(x => x.DlvInv)
                 .ToList()
                 .Where(x => !string.IsNullOrWhiteSpace(x))

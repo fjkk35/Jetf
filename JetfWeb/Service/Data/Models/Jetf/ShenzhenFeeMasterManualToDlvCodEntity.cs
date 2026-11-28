@@ -46,18 +46,6 @@ namespace Service.Data
         public int Fee { get; set; }
 
         /// <summary>
-        /// 修改人員。
-        /// </summary>
-        [Column("ModifiedUser")]
-        public string ModifiedUser { get; set; }
-
-        /// <summary>
-        /// 修改時間。
-        /// </summary>
-        [Column("ModifiedTime")]
-        public DateTime? ModifiedTime { get; set; }
-
-        /// <summary>
         /// 建立人員。
         /// </summary>
         [Column("CreatedUser")]

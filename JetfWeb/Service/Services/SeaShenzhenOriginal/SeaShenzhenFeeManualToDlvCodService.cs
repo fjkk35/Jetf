@@ -6,6 +6,7 @@ using Service.Models;
 using Service.Services.SeaShenzhenOriginal.Domain;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Entity;
 using System.Globalization;
 using System.IO;
@@ -20,7 +21,7 @@ namespace Service.Services.SeaShenzhenOriginal
     {
         private const string DlvInvHeader = "託運單號(條碼號)";
 
-        private const string CodHeader = "到付金额";
+        private const string CodHeader = "到付运费金额";
 
         private const string TaxHeader = "税金金额";
 
@@ -72,8 +73,8 @@ namespace Service.Services.SeaShenzhenOriginal
                     };
                 }
 
-                var saveResult = SaveUploadRows(uploadRows);
-                var successMessage = $"成功上傳 {uploadRows.Count} 筆資料，新增 {saveResult.InsertCount} 筆，修改 {saveResult.UpdateCount} 筆";
+                var adjustmentCount = SaveUploadRows(uploadRows);
+                var successMessage = $"成功上傳 {uploadRows.Count} 筆資料，新增 {adjustmentCount} 筆人工調整紀錄";
 
                 return new ResponseModel
                 {
@@ -82,8 +83,8 @@ namespace Service.Services.SeaShenzhenOriginal
                     ReturnObject = new
                     {
                         count = uploadRows.Count,
-                        insertCount = saveResult.InsertCount,
-                        updateCount = saveResult.UpdateCount,
+                        insertCount = adjustmentCount,
+                        updateCount = 0,
                         failCount = 0,
                         data = new List<SeaShenzhenFeeManualToDlvCodUploadRow>(),
                         message = successMessage
@@ -216,14 +217,14 @@ namespace Service.Services.SeaShenzhenOriginal
                         FailReason = string.Empty
                     };
 
-                    if (IsEmptyRow(model))
+                    if (string.IsNullOrWhiteSpace(model.DlvInv) && AreAmountsBlank(model))
                     {
                         continue;
                     }
 
-                    model.Cod = ParseNullableInt(model.CodText);
-                    model.Tax = ParseNullableInt(model.TaxText);
-                    model.Fee = ParseNullableInt(model.FeeText);
+                    model.Cod = ParseAmount(model.CodText);
+                    model.Tax = ParseAmount(model.TaxText);
+                    model.Fee = ParseAmount(model.FeeText);
                     result.Add(model);
                 }
             }
@@ -268,7 +269,7 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
-        /// 驗證金額人工調整上傳資料，並確認可對應到既有託運資料與稅金資料。
+        /// 驗證金額人工調整上傳資料，並確認可對應到既有託運資料。
         /// </summary>
         private void ValidateUploadRows(List<SeaShenzhenFeeManualToDlvCodUploadRow> uploadRows)
         {
@@ -279,29 +280,22 @@ namespace Service.Services.SeaShenzhenOriginal
                     AddValidationError(item, DlvInvHeader, "必填");
                 }
 
-                if (string.IsNullOrWhiteSpace(item.CodText))
+                if (AreAmountsBlank(item))
                 {
-                    AddValidationError(item, CodHeader, "必填");
+                    AddValidationError(item, "金額欄位", "到付運費、稅金、稅金手續費至少須填一項");
                 }
-                else if (!item.Cod.HasValue)
+
+                if (!item.Cod.HasValue)
                 {
                     AddValidationError(item, CodHeader, "格式錯誤");
                 }
 
-                if (string.IsNullOrWhiteSpace(item.TaxText))
-                {
-                    AddValidationError(item, TaxHeader, "必填");
-                }
-                else if (!item.Tax.HasValue)
+                if (!item.Tax.HasValue)
                 {
                     AddValidationError(item, TaxHeader, "格式錯誤");
                 }
 
-                if (string.IsNullOrWhiteSpace(item.FeeText))
-                {
-                    AddValidationError(item, FeeHeader, "必填");
-                }
-                else if (!item.Fee.HasValue)
+                if (!item.Fee.HasValue)
                 {
                     AddValidationError(item, FeeHeader, "格式錯誤");
                 }
@@ -318,60 +312,31 @@ namespace Service.Services.SeaShenzhenOriginal
                 return;
             }
 
-            var originalLookup = JetfDb.SeaShenzhenOriginals
-                .AsNoTracking()
+            var originalDlvInvs = JetfDb.SeaShenzhenOriginals
                 .Where(x => dlvInvs.Contains(x.JetfSerial))
-                .ToList()
-                .Where(x => !string.IsNullOrWhiteSpace(x.JetfSerial))
-                .GroupBy(x => x.JetfSerial.Trim(), StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(group => group.Key, group => group.OrderBy(x => x.Id).First(), StringComparer.OrdinalIgnoreCase);
-
-            var feeMasterDlvInvs = JetfDb.ShenzhenFeeMasters
-                .AsNoTracking()
-                .Where(x => dlvInvs.Contains(x.DlvInv))
-                .Select(x => x.DlvInv)
+                .Select(x => x.JetfSerial)
                 .Distinct()
-                .ToList()
-                .Where(x => !string.IsNullOrWhiteSpace(x))
                 .ToList();
-
-            foreach (var item in uploadRows)
-            {
-                if (item.UploadStatus == "失敗")
-                {
-                    continue;
-                }
-
-                var key = item.DlvInv.Trim();
-                SeaShenzhenOriginalEntity original;
-                if (!originalLookup.TryGetValue(key, out original))
-                {
-                    AddValidationError(item, DlvInvHeader, "找不到託運資料");
-                }
-                else
-                {
-                    item.TrackingNo = original.TrackingNo;
-                }
-
-                if (!feeMasterDlvInvs.Any(x => string.Equals(x, key, StringComparison.OrdinalIgnoreCase)))
-                {
-                    AddValidationError(item, DlvInvHeader, "找不到稅金資料");
-                }
-            }
+            var originalKeys = new HashSet<string>(originalDlvInvs.Select(x => x.Trim()), StringComparer.OrdinalIgnoreCase);
 
             foreach (var item in uploadRows.Where(x => x.UploadStatus != "失敗"))
             {
-                item.UploadStatus = "成功";
+                if (!originalKeys.Contains(item.DlvInv.Trim()))
+                {
+                    AddValidationError(item, DlvInvHeader, "找不到託運資料");
+                }
             }
         }
 
         /// <summary>
-        /// 將驗證成功的金額人工調整資料寫入資料表，並同步更新稅金與託運主檔。
+        /// 同步更新稅金與託運主檔，並回傳本次新增的人工調整紀錄筆數。
         /// </summary>
-        private SaveResult SaveUploadRows(List<SeaShenzhenFeeManualToDlvCodUploadRow> uploadRows)
+        private int SaveUploadRows(List<SeaShenzhenFeeManualToDlvCodUploadRow> uploadRows)
         {
             var now = DateTime.Now;
             var userId = GetUserId();
+
+            // 同一託運單號在檔案中出現多次時，以最後一列的金額為準。
             var rows = uploadRows
                 .GroupBy(x => x.DlvInv.Trim(), StringComparer.OrdinalIgnoreCase)
                 .Select(x => x.Last())
@@ -381,109 +346,86 @@ namespace Service.Services.SeaShenzhenOriginal
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var originalEntities = JetfDb.SeaShenzhenOriginals
-                .Where(x => dlvInvs.Contains(x.JetfSerial))
-                .ToList();
-
-            var feeMasterEntities = JetfDb.ShenzhenFeeMasters
-                .Where(x => dlvInvs.Contains(x.DlvInv))
-                .ToList();
-
-            var existingEntities = JetfDb.ShenzhenFeeMasterManualToDlvCods
-                .Where(x => dlvInvs.Contains(x.DlvInv))
-                .ToList();
-
-            var existingMap = existingEntities
-                .Where(x => !string.IsNullOrWhiteSpace(x.DlvInv))
-                .GroupBy(x => x.DlvInv.Trim(), StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.Id).First(), StringComparer.OrdinalIgnoreCase);
-
-            var originalLookup = originalEntities
-                .Where(x => !string.IsNullOrWhiteSpace(x.JetfSerial))
-                .ToLookup(x => x.JetfSerial.Trim(), StringComparer.OrdinalIgnoreCase);
-
-            var feeMasterLookup = feeMasterEntities
-                .Where(x => !string.IsNullOrWhiteSpace(x.DlvInv))
-                .ToLookup(x => x.DlvInv.Trim(), StringComparer.OrdinalIgnoreCase);
-
-            var insertCount = 0;
-            var updateCount = 0;
-
-            using (var transaction = JetfDb.Database.BeginTransaction())
+            // 在同一交易內更新主檔及寫入歷程，避免同時匯入同一單號時重複建立稅金主檔。
+            using (var transaction = JetfDb.Database.BeginTransaction(IsolationLevel.Serializable))
             {
-                try
+                var originalDic = JetfDb.SeaShenzhenOriginals
+                    .Where(x => dlvInvs.Contains(x.JetfSerial))
+                    .OrderBy(x => x.Id)
+                    .AsEnumerable()
+                    .GroupBy(x => x.JetfSerial.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+                var feeMasterDic = JetfDb.ShenzhenFeeMasters
+                    .Where(x => dlvInvs.Contains(x.DlvInv))
+                    .AsEnumerable()
+                    .GroupBy(x => x.DlvInv.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.OrdinalIgnoreCase);
+
+                foreach (var row in rows)
                 {
-                    foreach (var row in rows)
+                    var dlvInv = row.DlvInv.Trim();
+                    if (!originalDic.TryGetValue(dlvInv, out var originals))
                     {
-                        var key = row.DlvInv.Trim();
+                        throw new InvalidOperationException($"{dlvInv}：找不到託運資料");
+                    }
 
-                        foreach (var original in originalLookup[key])
-                        {
-                            original.Cc = row.Cod ?? 0;
-                            original.ModifiedUser = userId;
-                            original.ModifiedTime = now;
-                        }
+                    // 取 Id 最小的託運資料作為來源，並同步更新同單號所有託運資料的到付運費。
+                    var source = originals[0];
+                    foreach (var original in originals)
+                    {
+                        original.Cc = row.Cod.Value;
+                        original.ModifiedUser = userId;
+                        original.ModifiedTime = now;
+                    }
 
-                        foreach (var feeMaster in feeMasterLookup[key])
+                    // 同單號的每筆稅金主檔都套用匯入金額，並依各自的稅金支付方式重算代收金額。
+                    if (feeMasterDic.TryGetValue(dlvInv, out var feeMasters))
+                    {
+                        foreach (var feeMaster in feeMasters)
                         {
-                            feeMaster.Cod = row.Cod ?? 0;
-                            feeMaster.Tax = row.Tax ?? 0;
-                            feeMaster.Fee = row.Fee ?? 0;
+                            feeMaster.Cod = row.Cod.Value;
+                            feeMaster.Tax = row.Tax.Value;
+                            feeMaster.Fee = row.Fee.Value;
                             feeMaster.ToDlvCod = SeaShenzhenFeeTransferShared.CalculateToDlvCod(
-                                feeMaster.IncludeTax,
-                                feeMaster.Tax,
-                                feeMaster.Cod,
-                                feeMaster.Fee);
+                                feeMaster.IncludeTax, feeMaster.Tax, feeMaster.Cod, feeMaster.Fee);
                             feeMaster.ModifiedUser = userId;
                             feeMaster.ModifiedTime = now;
                         }
-
-                        ShenzhenFeeMasterManualToDlvCodEntity entity;
-                        if (existingMap.TryGetValue(key, out entity))
-                        {
-                            entity.TrackingNo = row.TrackingNo;
-                            entity.DlvInv = row.DlvInv;
-                            entity.Cod = row.Cod ?? 0;
-                            entity.Tax = row.Tax ?? 0;
-                            entity.Fee = row.Fee ?? 0;
-                            entity.ModifiedUser = userId;
-                            entity.ModifiedTime = now;
-                            updateCount++;
-                        }
-                        else
-                        {
-                            entity = new ShenzhenFeeMasterManualToDlvCodEntity
-                            {
-                                TrackingNo = row.TrackingNo,
-                                DlvInv = row.DlvInv,
-                                Cod = row.Cod ?? 0,
-                                Tax = row.Tax ?? 0,
-                                Fee = row.Fee ?? 0,
-                                CreatedUser = userId,
-                                CreatedTime = now,
-                                ModifiedUser = userId,
-                                ModifiedTime = now
-                            };
-                            JetfDb.ShenzhenFeeMasterManualToDlvCods.Add(entity);
-                            insertCount++;
-                        }
+                    }
+                    else
+                    {
+                        // 尚無稅金主檔時，用託運資料及剛更新的到付運費建立一筆。
+                        var feeMaster = SeaShenzhenFeeTransferShared.CreateTransferRow(
+                            source,
+                            row.Tax.Value,
+                            source.DataDate.ToString("yyyyMMdd", CultureInfo.InvariantCulture),
+                            customer: null,
+                            dataType: source.DataType,
+                            feeMasterId: null,
+                            userId: userId,
+                            now: now,
+                            feeOverride: row.Fee.Value);
+                        JetfDb.ShenzhenFeeMasters.Add(feeMaster);
                     }
 
-                    JetfDb.SaveChanges();
-                    transaction.Commit();
+                    // 每次套用調整都新增一筆歷程，保留當次的金額、操作人員與時間。
+                    JetfDb.ShenzhenFeeMasterManualToDlvCods.Add(new ShenzhenFeeMasterManualToDlvCodEntity
+                    {
+                        TrackingNo = source.TrackingNo,
+                        DlvInv = dlvInv,
+                        Cod = row.Cod.Value,
+                        Tax = row.Tax.Value,
+                        Fee = row.Fee.Value,
+                        CreatedUser = userId,
+                        CreatedTime = now
+                    });
                 }
-                catch
-                {
-                    transaction.Rollback();
-                    throw;
-                }
+
+                JetfDb.SaveChanges();
+                transaction.Commit();
             }
 
-            return new SaveResult
-            {
-                InsertCount = insertCount,
-                UpdateCount = updateCount
-            };
+            return rows.Count;
         }
 
         /// <summary>
@@ -501,24 +443,23 @@ namespace Service.Services.SeaShenzhenOriginal
         }
 
         /// <summary>
-        /// 判斷 Excel 列是否為空白列。
+        /// 判斷三個金額欄位是否皆未填寫。
         /// </summary>
-        private static bool IsEmptyRow(SeaShenzhenFeeManualToDlvCodUploadRow item)
+        private static bool AreAmountsBlank(SeaShenzhenFeeManualToDlvCodUploadRow item)
         {
-            return string.IsNullOrWhiteSpace(item.DlvInv)
-                && string.IsNullOrWhiteSpace(item.CodText)
+            return string.IsNullOrWhiteSpace(item.CodText)
                 && string.IsNullOrWhiteSpace(item.TaxText)
                 && string.IsNullOrWhiteSpace(item.FeeText);
         }
 
         /// <summary>
-        /// 將文字轉成 nullable int。
+        /// 將金額轉為整數，空白視為零，格式錯誤則回傳 null。
         /// </summary>
-        private static int? ParseNullableInt(string text)
+        private static int? ParseAmount(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
-                return null;
+                return 0;
             }
 
             int intValue;
@@ -531,7 +472,8 @@ namespace Service.Services.SeaShenzhenOriginal
             decimal decimalValue;
             if ((decimal.TryParse(text, NumberStyles.Any, CultureInfo.CurrentCulture, out decimalValue)
                 || decimal.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out decimalValue))
-                && decimal.Truncate(decimalValue) == decimalValue)
+                && decimal.Truncate(decimalValue) == decimalValue
+                && decimalValue >= int.MinValue && decimalValue <= int.MaxValue)
             {
                 return Convert.ToInt32(decimalValue);
             }
@@ -574,14 +516,5 @@ namespace Service.Services.SeaShenzhenOriginal
             item.FailReason += $"{fieldName}：{reason}";
         }
 
-        /// <summary>
-        /// 寫入結果統計。
-        /// </summary>
-        private class SaveResult
-        {
-            public int InsertCount { get; set; }
-
-            public int UpdateCount { get; set; }
-        }
     }
 }

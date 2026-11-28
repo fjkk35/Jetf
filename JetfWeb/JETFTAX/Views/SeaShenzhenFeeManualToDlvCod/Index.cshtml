@@ -123,7 +123,7 @@
                     <tr>
                         <th>序號</th>
                         <th>託運單號</th>
-                        <th>到付金額</th>
+                        <th>到付運費金額</th>
                         <th>稅金金額</th>
                         <th>稅金手續費</th>
                         <th>上傳時間</th>
@@ -177,7 +177,17 @@
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <input type="file" class="form-control" id="seaShenzhenFeeManualToDlvCodFileInput" accept=".xlsx" />
+                        <input type="file" class="form-control" id="seaShenzhenFeeManualToDlvCodFileInput" accept=".xlsx" aria-describedby="seaShenzhenManualUploadHint" />
+                        <div id="seaShenzhenManualUploadHint" class="alert alert-info mt-2 mb-0 py-2 px-3">
+                            <p class="d-flex align-items-baseline mb-1">
+                                <i class="fas fa-info-circle fa-fw mr-2" aria-hidden="true"></i>
+                                <span>到付運費、稅金、稅金手續費至少須填一項，留白的金額會以 0 寫入。</span>
+                            </p>
+                            <p class="d-flex align-items-baseline mb-0">
+                                <i class="fas fa-info-circle fa-fw mr-2" aria-hidden="true"></i>
+                                <span>若已建檔的託運單尚無稅金資料，系統會在匯入時自動新增。</span>
+                            </p>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <a href="@Url.Action("DownloadTemplate", "SeaShenzhenFeeManualToDlvCod")" target="_blank">下載範例</a>
@@ -197,7 +207,7 @@
                                         <th>失敗欄位</th>
                                         <th>失敗原因</th>
                                         <th>託運單號</th>
-                                        <th>到付金額</th>
+                                        <th>到付運費金額</th>
                                         <th>稅金金額</th>
                                         <th>稅金手續費</th>
                                     </tr>
